@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "openapi.json"
+      - ".github/workflows/ci.yml"
+  push:
+    branches: [develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.13"
+  NODE_VERSION: "22"
+
+jobs:
+  # The workspace does not exist until #12 lands. Without this guard every job
+  # fails red on a repository that simply has no code yet, which trains everyone
+  # to ignore a red pipeline. Remove nothing here once #12 lands: the guard then
+  # always reports true and costs a few seconds.
+  guard:
+    name: Workspace present
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.check.outputs.python }}
+      web: ${{ steps.check.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          test -f pyproject.toml && echo "python=true" >> "$GITHUB_OUTPUT" || echo "python=false" >> "$GITHUB_OUTPUT"
+          test -f package.json  && echo "web=true"    >> "$GITHUB_OUTPUT" || echo "web=false"    >> "$GITHUB_OUTPUT"
+
+  python:
+    name: Python
+    needs: guard
+    if: needs.guard.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+      - run: uv sync --all-packages --dev
+      - name: Lint
+        run: uv run ruff check .
+      - name: Format
+        run: uv run ruff format --check .
+      - name: Types
+        run: uv run ty check
+      - name: Unit tests
+        run: uv run pytest -m "not integration" --cov --cov-report=xml
+      - name: Diff coverage
+        run: |
+          git fetch origin ${{ github.base_ref || 'develop' }} --depth=1
+          uv run diff-cover coverage.xml \
+            --compare-branch=origin/${{ github.base_ref || 'develop' }} \
+            --fail-under=80
+
+  web:
+    name: Web
+    needs: guard
+    if: needs.guard.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # No version input on purpose: the version comes from the `packageManager`
+      # field in package.json, which is the single source of truth. #12 must set it.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Lint and format
+        run: pnpm biome check .
+      - name: Types
+        run: pnpm tsc --noEmit
+      - name: Unit tests
+        run: pnpm vitest run
+
+  contract:
+    name: Contract and migrations
+    needs: guard
+    if: needs.guard.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: pornarr
+          POSTGRES_PASSWORD: pornarr
+          POSTGRES_DB: pornarr
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+        ports: ["5432:5432"]
+    env:
+      DATABASE_URL: postgresql+psycopg://pornarr:pornarr@localhost:5432/pornarr
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+      - run: uv sync --all-packages --dev
+      - name: Migrations apply cleanly
+        run: uv run alembic upgrade head
+      - name: No undeclared schema drift
+        run: |
+          uv run alembic check
+      - name: OpenAPI document is current
+        run: |
+          uv run python -m apps.api.scripts.export_openapi > /tmp/openapi.json
+          diff -u openapi.json /tmp/openapi.json

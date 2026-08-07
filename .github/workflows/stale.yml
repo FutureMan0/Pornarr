@@ -1,0 +1,31 @@
+name: Stale
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          days-before-stale: 60
+          days-before-close: 14
+          # The planned backlog is years of work and must never be closed by a
+          # bot. See docs/adr/0027-repository-hygiene.md
+          exempt-all-milestones: true
+          exempt-all-assignees: true
+          exempt-issue-labels: "meta:epic,meta:blocked,type:security"
+          exempt-pr-labels: "meta:blocked"
+          stale-issue-message: >
+            No activity for 60 days. If this is still relevant, say so and it
+            stays open. Otherwise it closes in 14 days.
+          stale-pr-message: >
+            No activity for 60 days. Comment to keep it open.
+          operations-per-run: 100

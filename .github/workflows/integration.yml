@@ -1,0 +1,67 @@
+name: Integration
+
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - "packages/integrations/**"
+      - "packages/db/**"
+      - "packages/media/**"
+      - "apps/worker/**"
+      - ".github/workflows/integration.yml"
+  push:
+    branches: [develop]
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: Workspace present
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.check.outputs.python }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: test -f pyproject.toml && echo "python=true" >> "$GITHUB_OUTPUT" || echo "python=false" >> "$GITHUB_OUTPUT"
+
+  integration:
+    name: Integration tests
+    needs: guard
+    if: needs.guard.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: pornarr
+          POSTGRES_PASSWORD: pornarr
+          POSTGRES_DB: pornarr
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+        ports: ["5432:5432"]
+      redis:
+        image: redis:8
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+        ports: ["6379:6379"]
+    env:
+      DATABASE_URL: postgresql+psycopg://pornarr:pornarr@localhost:5432/pornarr
+      REDIS_URL: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --all-packages --dev
+      - name: Start download client fixtures
+        run: docker compose -f infrastructure/docker/compose.test.yml up -d --wait
+      - run: uv run alembic upgrade head
+      - run: uv run pytest -m integration
+      - if: always()
+        run: docker compose -f infrastructure/docker/compose.test.yml logs --tail=50

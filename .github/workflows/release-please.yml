@@ -1,0 +1,22 @@
+name: Release PR
+
+# Runs on develop, not on main. release-please opens its release pull request
+# here, so no bot ever writes to main and the "develop only" rule on main needs
+# no exception. See docs/adr/0013-release-automation.md
+on:
+  push:
+    branches: [develop]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          target-branch: develop
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

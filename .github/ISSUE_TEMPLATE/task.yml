@@ -1,0 +1,39 @@
+name: Task
+description: A unit of planned work
+labels: ["type:chore"]
+body:
+  - type: input
+    id: epic
+    attributes:
+      label: Epic
+      placeholder: "#12"
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why this exists and what it depends on.
+    validations: { required: true }
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks
+      value: |
+        - [ ]
+    validations: { required: true }
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Observable outcomes. Someone else must be able to verify these without asking you.
+      value: |
+        - [ ]
+    validations: { required: true }
+
+  - type: input
+    id: paths
+    attributes:
+      label: Affected paths
+      placeholder: "packages/core/eta.py, apps/api/routers/search.py"

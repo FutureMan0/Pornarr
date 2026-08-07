@@ -1,0 +1,22 @@
+name: Feature request
+description: Suggest something Pornarr should do
+labels: ["type:feat"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that Pornarr makes hard or impossible? Describe the situation, not the solution.
+    validations: { required: true }
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you have in mind
+      description: Optional. If you already have a shape in mind, describe it.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do today instead
+      description: The workaround, if any. This tells us how much it hurts.
