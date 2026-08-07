@@ -1,0 +1,105 @@
+"""Migrations against a real PostgreSQL.
+
+These run against a real database rather than SQLite or a mock, because the
+things that break — extensions, server defaults, constraint naming, type
+comparison — are exactly the things a substitute does not reproduce.
+"""
+
+from __future__ import annotations
+
+import os
+import subprocess
+from collections.abc import Iterator
+from pathlib import Path
+
+import psycopg
+import pytest
+
+pytestmark = pytest.mark.integration
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _database_url() -> str:
+    url = os.environ.get("DATABASE_URL")
+    if not url:
+        pytest.fail("DATABASE_URL is not set. Integration tests need a real database.")
+    return url
+
+
+def _psycopg_url() -> str:
+    return _database_url().replace("postgresql+psycopg://", "postgresql://")
+
+
+def _alembic(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["uv", "run", "alembic", *args],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+@pytest.fixture
+def clean_database() -> Iterator[None]:
+    """Start and finish with an empty public schema."""
+    _reset_schema()
+    yield
+    _reset_schema()
+
+
+def _reset_schema() -> None:
+    with psycopg.connect(_psycopg_url(), autocommit=True) as connection:
+        connection.execute("DROP SCHEMA public CASCADE")
+        connection.execute("CREATE SCHEMA public")
+
+
+def test_upgrade_applies_from_an_empty_database(clean_database: None) -> None:
+    result = _alembic("upgrade", "head")
+
+    assert result.returncode == 0, result.stderr
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        row = connection.execute("SELECT version_num FROM alembic_version").fetchone()
+
+    assert row is not None
+
+
+def test_pg_trgm_is_available_after_upgrade(clean_database: None) -> None:
+    """Trigram similarity carries local search, fuzzy matching and deduplication.
+    Without the extension every one of those silently has no index to use."""
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        installed = connection.execute(
+            "SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm'"
+        ).fetchone()
+        similarity = connection.execute("SELECT similarity('kitten', 'sitting')").fetchone()
+
+    assert installed is not None
+    assert similarity is not None
+    assert 0.0 <= similarity[0] <= 1.0
+
+
+def test_autogenerate_reports_no_drift(clean_database: None) -> None:
+    """The models and the migration history must agree. When they do not, someone
+    changed a model without writing a migration and the next deployment fails."""
+    assert _alembic("upgrade", "head").returncode == 0
+
+    result = _alembic("check")
+
+    assert result.returncode == 0, f"schema drift detected:\n{result.stdout}\n{result.stderr}"
+
+
+def test_downgrade_leaves_no_application_tables(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+    assert _alembic("downgrade", "base").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        remaining = connection.execute(
+            "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
+        ).fetchall()
+
+    # alembic_version survives a downgrade to base; nothing of ours should.
+    assert {row[0] for row in remaining} <= {"alembic_version"}

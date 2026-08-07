@@ -121,6 +121,8 @@ jobs:
         ports: ["5432:5432"]
     env:
       DATABASE_URL: postgresql+psycopg://pornarr:pornarr@localhost:5432/pornarr
+      REDIS_URL: redis://localhost:6379/0
+      APP_SECRET: 0123456789abcdef0123456789abcdef
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -133,7 +135,11 @@ jobs:
       - name: No undeclared schema drift
         run: |
           uv run alembic check
+      # The export script and the committed document arrive with #25.
+      - id: contract
+        run: test -f openapi.json && echo "exists=true" >> "$GITHUB_OUTPUT" || echo "exists=false" >> "$GITHUB_OUTPUT"
       - name: OpenAPI document is current
+        if: steps.contract.outputs.exists == 'true'
         run: |
           uv run python -m pornarr_api.scripts.export_openapi > /tmp/openapi.json
           diff -u openapi.json /tmp/openapi.json
