@@ -1,0 +1,13 @@
+[project]
+name = "pornarr-core"
+version = "0.0.0"
+description = "Pure domain logic. No I/O of any kind."
+requires-python = "==3.13.*"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pornarr_core"]

@@ -1,0 +1,107 @@
+[project]
+name = "pornarr"
+version = "0.0.0"
+description = "Self-hosted, multi-user adult media platform"
+requires-python = "==3.13.*"
+dependencies = [
+    "pornarr-api",
+    "pornarr-worker",
+]
+
+[tool.uv.workspace]
+# packages/ui and packages/api-client are JavaScript and are listed in
+# pnpm-workspace.yaml instead, which is why the members are explicit rather
+# than a packages/* glob.
+members = [
+    "apps/api",
+    "apps/worker",
+    "packages/core",
+    "packages/db",
+    "packages/integrations",
+    "packages/media",
+    "packages/shared",
+]
+
+[tool.uv.sources]
+pornarr-api = { workspace = true }
+pornarr-worker = { workspace = true }
+pornarr-core = { workspace = true }
+pornarr-db = { workspace = true }
+pornarr-integrations = { workspace = true }
+pornarr-media = { workspace = true }
+pornarr-shared = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "diff-cover>=9.2",
+    "ruff>=0.8",
+    "ty>=0.0.1a1",
+]
+
+# ---------------------------------------------------------------------------
+# Tooling
+# ---------------------------------------------------------------------------
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["apps", "packages", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",      # pycodestyle
+    "F",           # pyflakes
+    "I",           # isort
+    "N",           # pep8-naming
+    "UP",          # pyupgrade
+    "B",           # bugbear
+    "A",           # builtins shadowing
+    "C4",          # comprehensions
+    "DTZ",         # naive datetimes
+    "T20",         # print statements
+    "SIM",         # simplify
+    "PTH",         # pathlib over os.path
+    "RUF",
+]
+ignore = [
+    "E501",  # line length is enforced by the formatter, not the linter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "pornarr_api", "pornarr_worker", "pornarr_core", "pornarr_db",
+    "pornarr_integrations", "pornarr_media", "pornarr_shared",
+]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ty.src]
+include = ["apps", "packages", "tests"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "--strict-markers --strict-config"
+markers = [
+    "integration: requires real PostgreSQL, Redis or download clients",
+]
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["apps", "packages"]
+omit = ["*/tests/*", "*/__main__.py"]
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@overload",
+]
