@@ -75,7 +75,7 @@ class MediaFile(TimestampMixin, Base):
     custom_format_score: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default="0"
     )
-    oshash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    oshash: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )
