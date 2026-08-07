@@ -10,6 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import APIRouter, FastAPI
+from fastapi.routing import APIRoute
 
 from pornarr_api.errors import register_error_handlers
 from pornarr_api.lifespan import lifespan
@@ -18,6 +19,18 @@ from pornarr_api.spa import mount_spa
 from pornarr_shared.config import Settings, get_settings
 
 API_PREFIX = "/api"
+
+
+def stable_operation_id(route: APIRoute) -> str:
+    """Derive an operation id from the tag and the function name.
+
+    FastAPI's default appends the path and method, so renaming a route or adding
+    a path parameter renames the generated TypeScript symbol. That produces a
+    frontend diff for a backend change that altered no behaviour.
+    """
+    tag = route.tags[0] if route.tags else "default"
+    return f"{tag}_{route.name}"
+
 
 api_router = APIRouter(prefix=API_PREFIX)
 
@@ -39,6 +52,7 @@ def create_app(
         docs_url=f"{API_PREFIX}/docs" if resolved.app_env != "production" else None,
         redoc_url=None,
         openapi_url=f"{API_PREFIX}/openapi.json",
+        generate_unique_id_function=stable_operation_id,
     )
     app.state.settings = resolved
 

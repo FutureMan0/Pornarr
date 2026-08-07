@@ -78,7 +78,7 @@ test-e2e:
 ## openapi: regenerate the committed API contract
 openapi:
 	docker compose exec api uv run python -m pornarr_api.scripts.export_openapi > openapi.json
-	pnpm --filter @pornarr/api-client generate
+	pnpm --filter @pornarr/api-client run generate
 
 ## check: everything CI blocks on, locally
 check: lint typecheck test
