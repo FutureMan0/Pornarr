@@ -54,6 +54,9 @@ jobs:
     env:
       DATABASE_URL: postgresql+psycopg://pornarr:pornarr@localhost:5432/pornarr
       REDIS_URL: redis://localhost:6379/0
+      # Throwaway value for a throwaway database. Not a secret, and deliberately
+      # not stored as one: a repository secret here would imply it matters.
+      APP_SECRET: 0123456789abcdef0123456789abcdef
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -61,9 +64,17 @@ jobs:
           python-version: "3.13"
           enable-cache: true
       - run: uv sync --all-packages --dev
+
+      # The download client fixtures are large images and only the downloader
+      # tests need them. Starting them for a migration test would add minutes
+      # and a failure mode unrelated to what is being tested.
+      - id: fixtures
+        run: test -d tests/integration/downloaders && echo "needed=true" >> "$GITHUB_OUTPUT" || echo "needed=false" >> "$GITHUB_OUTPUT"
       - name: Start download client fixtures
+        if: steps.fixtures.outputs.needed == 'true'
         run: docker compose -f infrastructure/docker/compose.test.yml up -d --wait
-      - run: uv run alembic upgrade head
+
       - run: uv run pytest -m integration
-      - if: always()
+
+      - if: always() && steps.fixtures.outputs.needed == 'true'
         run: docker compose -f infrastructure/docker/compose.test.yml logs --tail=50
