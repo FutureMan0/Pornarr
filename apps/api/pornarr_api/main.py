@@ -17,6 +17,7 @@ from pornarr_api.errors import register_error_handlers
 from pornarr_api.lifespan import lifespan
 from pornarr_api.middleware import RequestIdMiddleware
 from pornarr_api.routers.auth import router as auth_router
+from pornarr_api.routers.health import router as health_router
 from pornarr_api.spa import mount_spa
 from pornarr_shared.config import Settings, get_settings
 
@@ -36,6 +37,7 @@ def stable_operation_id(route: APIRoute) -> str:
 
 api_router = APIRouter(prefix=API_PREFIX, dependencies=[Depends(enforce_csrf)])
 api_router.include_router(auth_router)
+api_router.include_router(health_router)
 
 
 def create_app(
@@ -63,6 +65,7 @@ def create_app(
     register_error_handlers(app)
 
     app.include_router(api_router)
+    app.add_api_route("/health", lambda: {"status": "ok"}, methods=["GET"], include_in_schema=False)
 
     # Mounts /assets and records where index.html lives. The SPA fallback itself
     # is a 404 handler, so adding routers after this call is safe.
