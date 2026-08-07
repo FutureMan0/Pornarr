@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from pornarr_core.eta import (
     Confidence,
     Job,
@@ -33,8 +35,9 @@ def test_running_job_falls_back_to_its_moving_average() -> None:
     )
 
 
-def test_torrent_with_zero_seeders_is_unknown() -> None:
-    assert search_estimate(Protocol.TORRENT, 1_000, 100, seeders=0).is_unknown
+@pytest.mark.parametrize("seeders", [None, 0])
+def test_torrent_without_seeders_is_unknown(seeders: int | None) -> None:
+    assert search_estimate(Protocol.TORRENT, 1_000, 100, seeders=seeders).is_unknown
 
 
 def test_protocol_aware_search_estimates_return_ranges() -> None:

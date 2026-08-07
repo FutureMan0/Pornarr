@@ -51,9 +51,14 @@ def search_estimate(
     protocol: Protocol, size_bytes: int, line_bytes_per_second: int, *, seeders: int | None
 ) -> Estimate:
     """Estimate a release before it is a job; zero-seeder torrents stay unknown."""
-    if line_bytes_per_second <= 0 or (protocol is Protocol.TORRENT and not seeders):
+    if line_bytes_per_second <= 0:
         return unknown()
-    factor = 1 if protocol is Protocol.USENET else min(seeders / 10, 1)
+    if protocol is Protocol.TORRENT:
+        if not seeders:
+            return unknown()
+        factor = min(seeders / 10, 1)
+    else:
+        factor = 1
     return _range(size_bytes / (line_bytes_per_second * factor), Confidence.LOW)
 
 
