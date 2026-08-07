@@ -17,8 +17,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  guard:
+    name: Workspace present
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.check.outputs.python }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: test -f pyproject.toml && echo "python=true" >> "$GITHUB_OUTPUT" || echo "python=false" >> "$GITHUB_OUTPUT"
+
   integration:
     name: Integration tests
+    needs: guard
+    if: needs.guard.outputs.python == 'true'
     runs-on: ubuntu-latest
     services:
       postgres:

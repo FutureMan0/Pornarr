@@ -11,15 +11,17 @@ permissions:
   packages: write
   id-token: write
 
-env:
-  IMAGE: ghcr.io/${{ github.repository_owner }}/pornarr
-
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
+
+      # GHCR rejects mixed-case repository names and the owner is `FutureMan0`.
+      - id: image
+        run: |
+          echo "ref=ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/pornarr" >> "$GITHUB_OUTPUT"
 
       - name: Read version
         id: version
@@ -53,7 +55,7 @@ jobs:
         if: steps.version.outputs.exists == 'false'
         id: meta
         with:
-          images: ${{ env.IMAGE }}
+          images: ${{ steps.image.outputs.ref }}
           tags: |
             type=semver,pattern={{version}},value=v${{ steps.version.outputs.version }}
             type=semver,pattern={{major}}.{{minor}},value=v${{ steps.version.outputs.version }}
@@ -77,7 +79,7 @@ jobs:
         if: steps.version.outputs.exists == 'false'
         uses: aquasecurity/trivy-action@0.29.0
         with:
-          image-ref: ${{ env.IMAGE }}:${{ steps.version.outputs.version }}
+          image-ref: ${{ steps.image.outputs.ref }}:${{ steps.version.outputs.version }}
           format: sarif
           output: trivy.sarif
           severity: HIGH,CRITICAL

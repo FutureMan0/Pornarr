@@ -24,8 +24,27 @@ env:
   NODE_VERSION: "22"
 
 jobs:
+  # The workspace does not exist until #12 lands. Without this guard every job
+  # fails red on a repository that simply has no code yet, which trains everyone
+  # to ignore a red pipeline. Remove nothing here once #12 lands: the guard then
+  # always reports true and costs a few seconds.
+  guard:
+    name: Workspace present
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.check.outputs.python }}
+      web: ${{ steps.check.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          test -f pyproject.toml && echo "python=true" >> "$GITHUB_OUTPUT" || echo "python=false" >> "$GITHUB_OUTPUT"
+          test -f package.json  && echo "web=true"    >> "$GITHUB_OUTPUT" || echo "web=false"    >> "$GITHUB_OUTPUT"
+
   python:
     name: Python
+    needs: guard
+    if: needs.guard.outputs.python == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,9 +70,13 @@ jobs:
 
   web:
     name: Web
+    needs: guard
+    if: needs.guard.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # No version input on purpose: the version comes from the `packageManager`
+      # field in package.json, which is the single source of truth. #12 must set it.
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -69,6 +92,8 @@ jobs:
 
   contract:
     name: Contract and migrations
+    needs: guard
+    if: needs.guard.outputs.python == 'true'
     runs-on: ubuntu-latest
     services:
       postgres:
