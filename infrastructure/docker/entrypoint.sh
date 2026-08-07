@@ -20,7 +20,25 @@ case "$ROLE" in
     ;;
 
   worker)
-    exec arq pornarr_worker.settings.WorkerSettings "$@"
+    WORKER_SETTINGS="pornarr_worker.settings.WorkerSettings"
+    case "${1:-}" in
+      default)
+        shift
+        ;;
+      import)
+        WORKER_SETTINGS="pornarr_worker.settings.ImportWorkerSettings"
+        shift
+        ;;
+      transcode)
+        WORKER_SETTINGS="pornarr_worker.settings.TranscodeWorkerSettings"
+        shift
+        ;;
+      indexer)
+        WORKER_SETTINGS="pornarr_worker.settings.IndexerWorkerSettings"
+        shift
+        ;;
+    esac
+    exec arq "$WORKER_SETTINGS" "$@"
     ;;
 
   beat)

@@ -32,6 +32,42 @@ services:
     ports:
       - "5679:5678"   # debugpy
 
+  worker-import:
+    build:
+      context: .
+      target: development
+    command: worker import --watch
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    volumes:
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+
+  worker-transcode:
+    build:
+      context: .
+      target: development
+    command: worker transcode --watch
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    volumes:
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+
+  worker-indexer:
+    build:
+      context: .
+      target: development
+    command: worker indexer --watch
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    volumes:
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+
   beat:
     build:
       context: .

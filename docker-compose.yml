@@ -35,7 +35,7 @@ services:
 
   worker:
     <<: *pornarr
-    command: worker
+    command: worker default
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -49,6 +49,30 @@ services:
     #         - { driver: nvidia, count: 1, capabilities: [gpu, video] }
     # For Intel or AMD instead:
     # devices: ["/dev/dri:/dev/dri"]
+
+  worker-import:
+    <<: *pornarr
+    command: worker import
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+
+  worker-transcode:
+    <<: *pornarr
+    command: worker transcode
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+
+  worker-indexer:
+    <<: *pornarr
+    command: worker indexer
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
 
   beat:
     <<: *pornarr
