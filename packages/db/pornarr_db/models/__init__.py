@@ -8,4 +8,6 @@ explicit rather than a directory scan.
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from pornarr_db.models.user import User, UserRole
+
+__all__ = ["User", "UserRole"]
