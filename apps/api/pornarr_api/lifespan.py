@@ -37,6 +37,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     try:
         yield
     finally:
+        # `aclose()` closes the client's own connection; the pool holds others.
+        # Without disconnecting it, a restarting API leaves sockets for the
+        # garbage collector, which shows up as a slow connection leak rather
+        # than as an error.
         await app.state.redis.aclose()
+        await app.state.redis.connection_pool.disconnect()
         await dispose_engine()
         logger.info("api stopped")

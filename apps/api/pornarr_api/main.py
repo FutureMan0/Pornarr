@@ -47,7 +47,8 @@ def create_app(
 
     app.include_router(api_router)
 
-    # Registered last so every real route takes precedence over the fallback.
+    # Mounts /assets and records where index.html lives. The SPA fallback itself
+    # is a 404 handler, so adding routers after this call is safe.
     mount_spa(app, static_root)
 
     return app

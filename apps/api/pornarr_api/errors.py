@@ -15,6 +15,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.responses import Response
 
 from pornarr_shared.errors import PornarrError
 
@@ -59,9 +60,20 @@ async def handle_pornarr_error(request: Request, exc: Exception) -> JSONResponse
     return JSONResponse(status_code=exc.status, content=exc.as_dict())
 
 
-async def handle_http_exception(request: Request, exc: Exception) -> JSONResponse:
+async def handle_http_exception(request: Request, exc: Exception) -> Response:
     if not isinstance(exc, StarletteHTTPException):
         return await handle_unexpected_error(request, exc)
+
+    # A 404 outside /api is a client route the router has never heard of, which
+    # is normal for a single-page application. Handled here rather than as a
+    # catch-all route, so real routes always win regardless of registration order.
+    if exc.status_code == 404:
+        from pornarr_api.spa import spa_response
+
+        document = spa_response(request)
+        if document is not None:
+            return document
+
     return JSONResponse(
         status_code=exc.status_code,
         content=error_body(_code_for_status(exc.status_code), exc.status_code),
