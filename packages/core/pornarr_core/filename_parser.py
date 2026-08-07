@@ -34,7 +34,8 @@ def parse_filename(path: PurePath, *, nfo_text: str | None = None) -> FilenameMe
     values = _from_pattern(stem)
     if nfo_text:
         values = _fill_nfo(values, nfo_text)
-    values["studio"] = values.get("studio") or _folder_studio(path)
+    if not values.get("studio") and (studio := _folder_studio(path)):
+        values["studio"] = studio
     title = values.get("title") or stem
     return FilenameMetadata(
         title=title.strip(),
