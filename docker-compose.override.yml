@@ -40,16 +40,17 @@ services:
       - ./apps:/app/apps
       - ./packages:/app/packages
 
+  # The Vite dev server does not use the application image: it needs Node, and
+  # the production image deliberately has none — the built assets are served by
+  # FastAPI. See docs/adr/0008-vite-spa.md
   web:
-    build:
-      context: .
-      target: web-dev
-    command: pnpm --filter @pornarr/web dev --host
+    image: node:22-slim
+    working_dir: /app
     environment:
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
       VITE_API_URL: http://localhost:8000
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @pornarr/web run dev --host"
     volumes:
-      - ./apps/web:/app/apps/web
-      - ./packages/ui:/app/packages/ui
-      - ./packages/api-client:/app/packages/api-client
+      - .:/app
       - /app/node_modules
     ports: ["5173:5173"]
