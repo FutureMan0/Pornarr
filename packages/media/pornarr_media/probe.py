@@ -62,16 +62,20 @@ def _result(format_data: dict[str, Any], streams: tuple[dict[str, Any], ...]) ->
 
 
 def _float(value: object) -> float | None:
+    if not isinstance(value, (str, int, float)):
+        return None
     try:
-        return float(value) if value is not None else None
-    except (TypeError, ValueError):
+        return float(value)
+    except ValueError:
         return None
 
 
 def _integer(value: object) -> int | None:
+    if not isinstance(value, (str, int, float)):
+        return None
     try:
-        return int(value) if value is not None else None
-    except (TypeError, ValueError):
+        return int(value)
+    except ValueError:
         return None
 
 

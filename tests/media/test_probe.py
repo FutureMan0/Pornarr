@@ -71,3 +71,17 @@ def test_missing_or_invalid_optional_metadata_stays_unknown(
     assert result.duration is None
     assert result.bitrate is None
     assert result.container is None
+
+
+def test_non_scalar_optional_metadata_stays_unknown(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    payload = """{"format":{"duration":[],"bit_rate":{}},"streams":[]}"""
+    monkeypatch.setattr(
+        subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(args, 0, payload, "")
+    )
+
+    result = probe(tmp_path / "unknown.mkv")
+
+    assert result.duration is None
+    assert result.bitrate is None
