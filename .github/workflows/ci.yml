@@ -34,12 +34,14 @@ jobs:
     outputs:
       python: ${{ steps.check.outputs.python }}
       web: ${{ steps.check.outputs.web }}
+      alembic: ${{ steps.check.outputs.alembic }}
     steps:
       - uses: actions/checkout@v4
       - id: check
         run: |
-          test -f pyproject.toml && echo "python=true" >> "$GITHUB_OUTPUT" || echo "python=false" >> "$GITHUB_OUTPUT"
-          test -f package.json  && echo "web=true"    >> "$GITHUB_OUTPUT" || echo "web=false"    >> "$GITHUB_OUTPUT"
+          test -f pyproject.toml && echo "python=true"  >> "$GITHUB_OUTPUT" || echo "python=false"  >> "$GITHUB_OUTPUT"
+          test -f package.json  && echo "web=true"     >> "$GITHUB_OUTPUT" || echo "web=false"     >> "$GITHUB_OUTPUT"
+          test -f alembic.ini   && echo "alembic=true" >> "$GITHUB_OUTPUT" || echo "alembic=false" >> "$GITHUB_OUTPUT"
 
   python:
     name: Python
@@ -84,16 +86,20 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Lint and format
-        run: pnpm biome check .
+        run: pnpm run lint
+      # Project references are composite, so this is `tsc --build`, not
+      # `tsc --noEmit` — the two are mutually exclusive.
       - name: Types
-        run: pnpm tsc --noEmit
+        run: pnpm run typecheck
       - name: Unit tests
-        run: pnpm vitest run
+        run: pnpm run test
 
+  # Alembic arrives with #15 and the FastAPI application with #16, so this job
+  # keys off alembic.ini rather than off the workspace existing.
   contract:
     name: Contract and migrations
     needs: guard
-    if: needs.guard.outputs.python == 'true'
+    if: needs.guard.outputs.alembic == 'true'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -122,5 +128,5 @@ jobs:
           uv run alembic check
       - name: OpenAPI document is current
         run: |
-          uv run python -m apps.api.scripts.export_openapi > /tmp/openapi.json
+          uv run python -m pornarr_api.scripts.export_openapi > /tmp/openapi.json
           diff -u openapi.json /tmp/openapi.json
