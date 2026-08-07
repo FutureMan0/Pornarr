@@ -4,7 +4,7 @@ from pathlib import PurePath
 
 import pytest
 
-from pornarr_core.filename_parser import FILENAME_PATTERNS, FILENAME_CONFIDENCE, parse_filename
+from pornarr_core.filename_parser import FILENAME_CONFIDENCE, FILENAME_PATTERNS, parse_filename
 
 
 @pytest.mark.parametrize(
