@@ -125,6 +125,70 @@ def test_deleting_a_user_removes_its_filter_profile(clean_database: None) -> Non
     assert remaining == (0,)
 
 
+def test_media_files_reject_two_active_rows_for_one_medium(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        media_id = "1f94c6e2-60a5-4e88-9682-06a6b9156a19"
+        connection.execute(
+            "INSERT INTO media (id, title, normalized_title) VALUES (%s, %s, %s)",
+            (media_id, "Example", "example"),
+        )
+        connection.execute(
+            "INSERT INTO media_files (id, media_id, path, size) VALUES (%s, %s, %s, %s)",
+            ("588deaf0-1f8a-4721-bcae-9675dd10be85", media_id, "/library/one.mkv", 1),
+        )
+        with pytest.raises(psycopg.errors.UniqueViolation):
+            connection.execute(
+                "INSERT INTO media_files (id, media_id, path, size) VALUES (%s, %s, %s, %s)",
+                ("3b192f41-6c60-4b04-8c42-b60c241a7a7a", media_id, "/library/two.mkv", 2),
+            )
+
+
+def test_deleting_media_cascades_to_files_and_history(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        media_id = "83b66c65-8224-489f-95a8-ae7a578a4f56"
+        old_file_id = "7492c671-3c9f-48a4-af2a-044c2ec544ff"
+        new_file_id = "e29e7871-515d-4698-a30a-5b88c7e7fe7f"
+        connection.execute(
+            "INSERT INTO media (id, title, normalized_title) VALUES (%s, %s, %s)",
+            (media_id, "Example", "example"),
+        )
+        connection.execute(
+            "INSERT INTO media_files (id, media_id, path, size, is_active) VALUES (%s, %s, %s, %s, %s)",
+            (old_file_id, media_id, "/library/old.mkv", 1, False),
+        )
+        connection.execute(
+            "INSERT INTO media_files (id, media_id, path, size) VALUES (%s, %s, %s, %s)",
+            (new_file_id, media_id, "/library/new.mkv", 2),
+        )
+        connection.execute(
+            "INSERT INTO media_file_history (id, replaced_file_id, replacement_file_id) VALUES (%s, %s, %s)",
+            ("56d9ca22-77ba-4e14-b997-f7bb274bd877", old_file_id, new_file_id),
+        )
+        connection.execute("DELETE FROM media WHERE id = %s", (media_id,))
+        remaining = connection.execute(
+            "SELECT (SELECT count(*) FROM media_files), (SELECT count(*) FROM media_file_history)"
+        ).fetchone()
+        connection.commit()
+
+    assert remaining == (0, 0)
+
+
+def test_trigram_similarity_uses_the_media_title_index(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        connection.execute("SET enable_seqscan = off")
+        plan = connection.execute(
+            "EXPLAIN (COSTS OFF) SELECT id FROM media WHERE normalized_title % 'example'"
+        ).fetchall()
+
+    assert "ix_media_normalized_title_trgm" in "\n".join(row[0] for row in plan)
+
+
 def test_autogenerate_reports_no_drift(clean_database: None) -> None:
     """The models and the migration history must agree. When they do not, someone
     changed a model without writing a migration and the next deployment fails."""
