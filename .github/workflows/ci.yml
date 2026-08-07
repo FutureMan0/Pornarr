@@ -49,7 +49,11 @@ jobs:
     if: needs.guard.outputs.python == 'true'
     runs-on: ubuntu-latest
     steps:
+      # Full history: diff-cover needs a merge base with the target branch, and
+      # a shallow clone has none.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -63,11 +67,14 @@ jobs:
         run: uv run ty check
       - name: Unit tests
         run: uv run pytest -m "not integration" --cov --cov-report=xml
+      # Only meaningful on a pull request: on a push to develop there is nothing
+      # to compare against.
       - name: Diff coverage
+        if: github.event_name == 'pull_request'
         run: |
-          git fetch origin ${{ github.base_ref || 'develop' }} --depth=1
+          git fetch --no-tags origin "+refs/heads/${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
           uv run diff-cover coverage.xml \
-            --compare-branch=origin/${{ github.base_ref || 'develop' }} \
+            --compare-branch=origin/${{ github.base_ref }} \
             --fail-under=80
 
   web:
