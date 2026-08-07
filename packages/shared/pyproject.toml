@@ -4,6 +4,7 @@ version = "0.0.0"
 description = "Configuration, logging, errors, encryption, event bus"
 requires-python = "==3.13.*"
 dependencies = [
+    "arq>=0.28,<0.29",
     "pydantic>=2.10",
     "pydantic-settings>=2.7",
     "cryptography>=44.0",
