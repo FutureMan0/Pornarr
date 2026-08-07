@@ -47,23 +47,23 @@ psql:
 lint:
 	docker compose exec api uv run ruff check .
 	docker compose exec api uv run ruff format --check .
-	docker compose exec web pnpm biome check .
+	docker compose exec web pnpm run lint
 
 ## format: apply formatting
 format:
 	docker compose exec api uv run ruff check --fix .
 	docker compose exec api uv run ruff format .
-	docker compose exec web pnpm biome check --write .
+	docker compose exec web pnpm run format
 
 ## typecheck: run type checkers
 typecheck:
 	docker compose exec api uv run ty check
-	docker compose exec web pnpm tsc --noEmit
+	docker compose exec web pnpm run typecheck
 
 ## test: unit tests only
 test:
 	docker compose exec api uv run pytest -m "not integration"
-	docker compose exec web pnpm vitest run
+	docker compose exec web pnpm run test
 
 ## test-integration: integration tests against real clients
 test-integration:
@@ -77,7 +77,7 @@ test-e2e:
 
 ## openapi: regenerate the committed API contract
 openapi:
-	docker compose exec api uv run python -m apps.api.scripts.export_openapi > openapi.json
+	docker compose exec api uv run python -m pornarr_api.scripts.export_openapi > openapi.json
 	pnpm --filter @pornarr/api-client generate
 
 ## check: everything CI blocks on, locally
