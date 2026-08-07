@@ -15,6 +15,8 @@ from pathlib import Path
 import psycopg
 import pytest
 
+from pornarr_db.models.filters import FilterRuleKind
+
 pytestmark = pytest.mark.integration
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -80,6 +82,47 @@ def test_pg_trgm_is_available_after_upgrade(clean_database: None) -> None:
     assert installed is not None
     assert similarity is not None
     assert 0.0 <= similarity[0] <= 1.0
+
+
+def test_filter_migration_seeds_one_disabled_global_profile(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        profiles = connection.execute(
+            "SELECT id, scope, user_id FROM content_filter_profiles"
+        ).fetchall()
+        rules = connection.execute(
+            "SELECT kind, pattern, enabled FROM content_filter_rules"
+        ).fetchall()
+
+    assert len(profiles) == 1
+    assert profiles[0][1:] == ("global", None)
+    assert {(kind, pattern, enabled) for kind, pattern, enabled in rules} == {
+        (kind.value, "", False) for kind in FilterRuleKind
+    }
+
+
+def test_deleting_a_user_removes_its_filter_profile(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        user_id = "c4ed1ec6-a2d4-4f2e-a7ce-33e1a0bc4b8a"
+        profile_id = "d3f6332d-71cd-487f-b03f-0a1d2f6d9c31"
+        connection.execute(
+            "INSERT INTO users (id, username, password_hash) VALUES (%s, %s, %s)",
+            (user_id, "filter-owner", "not-a-real-password"),
+        )
+        connection.execute(
+            "INSERT INTO content_filter_profiles (id, scope, user_id) VALUES (%s, %s, %s)",
+            (profile_id, "user", user_id),
+        )
+        connection.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        remaining = connection.execute(
+            "SELECT count(*) FROM content_filter_profiles WHERE id = %s", (profile_id,)
+        ).fetchone()
+        connection.commit()
+
+    assert remaining == (0,)
 
 
 def test_autogenerate_reports_no_drift(clean_database: None) -> None:
