@@ -8,6 +8,7 @@ explicit rather than a directory scan.
 
 from __future__ import annotations
 
+from pornarr_db.models.oidc import OidcProvider
 from pornarr_db.models.user import User, UserRole
 
-__all__ = ["User", "UserRole"]
+__all__ = ["OidcProvider", "User", "UserRole"]
