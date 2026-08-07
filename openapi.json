@@ -1,6 +1,34 @@
 {
   "components": {
     "schemas": {
+      "ComponentHealth": {
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "status": {
+            "enum": [
+              "healthy",
+              "unhealthy"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "ComponentHealth",
+        "type": "object"
+      },
       "CurrentUserResponse": {
         "properties": {
           "id": {
@@ -46,6 +74,40 @@
           "context"
         ],
         "title": "ErrorResponse",
+        "type": "object"
+      },
+      "HealthReport": {
+        "properties": {
+          "database": {
+            "$ref": "#/components/schemas/ComponentHealth"
+          },
+          "filesystem": {
+            "$ref": "#/components/schemas/ComponentHealth"
+          },
+          "redis": {
+            "$ref": "#/components/schemas/ComponentHealth"
+          },
+          "status": {
+            "enum": [
+              "healthy",
+              "degraded",
+              "unhealthy"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "worker": {
+            "$ref": "#/components/schemas/ComponentHealth"
+          }
+        },
+        "required": [
+          "status",
+          "database",
+          "redis",
+          "worker",
+          "filesystem"
+        ],
+        "title": "HealthReport",
         "type": "object"
       },
       "LoginRequest": {
@@ -253,6 +315,27 @@
         "summary": "Current User",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "health_dependency_health",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Dependency Health",
+        "tags": [
+          "health"
         ]
       }
     }

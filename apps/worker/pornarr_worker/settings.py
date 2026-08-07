@@ -41,6 +41,7 @@ class WorkerSettings:
     max_tries: ClassVar = JOB_MAX_TRIES
     retry_jobs: ClassVar = True
     job_completion_wait: ClassVar = JOB_COMPLETION_WAIT_SECONDS
+    health_check_interval: ClassVar = 30
 
 
 class ImportWorkerSettings:
@@ -53,6 +54,7 @@ class ImportWorkerSettings:
     max_tries: ClassVar = JOB_MAX_TRIES
     retry_jobs: ClassVar = True
     job_completion_wait: ClassVar = JOB_COMPLETION_WAIT_SECONDS
+    health_check_interval: ClassVar = 30
 
 
 class TranscodeWorkerSettings:
@@ -65,6 +67,7 @@ class TranscodeWorkerSettings:
     max_tries: ClassVar = JOB_MAX_TRIES
     retry_jobs: ClassVar = True
     job_completion_wait: ClassVar = JOB_COMPLETION_WAIT_SECONDS
+    health_check_interval: ClassVar = 30
 
 
 class IndexerWorkerSettings:
@@ -77,6 +80,7 @@ class IndexerWorkerSettings:
     max_tries: ClassVar = JOB_MAX_TRIES
     retry_jobs: ClassVar = True
     job_completion_wait: ClassVar = JOB_COMPLETION_WAIT_SECONDS
+    health_check_interval: ClassVar = 30
 
 
 class SchedulerSettings:
@@ -89,6 +93,7 @@ class SchedulerSettings:
     max_tries: ClassVar = JOB_MAX_TRIES
     retry_jobs: ClassVar = True
     job_completion_wait: ClassVar = JOB_COMPLETION_WAIT_SECONDS
+    health_check_interval: ClassVar = 30
     cron_jobs: ClassVar = [
         cron(
             HEARTBEAT_JOB.coroutine,
