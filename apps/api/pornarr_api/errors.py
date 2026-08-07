@@ -14,10 +14,20 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import Response
 
 from pornarr_shared.errors import PornarrError
+
+
+class ErrorResponse(BaseModel):
+    """The contract shape for every machine-readable API error."""
+
+    code: str
+    status: int
+    context: dict[str, Any]
+
 
 # Codes for conditions Starlette raises before our own code sees the request.
 _STATUS_CODES: dict[int, str] = {

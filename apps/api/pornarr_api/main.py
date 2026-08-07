@@ -9,12 +9,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, Depends, FastAPI
 from fastapi.routing import APIRoute
 
+from pornarr_api.auth import enforce_csrf
 from pornarr_api.errors import register_error_handlers
 from pornarr_api.lifespan import lifespan
 from pornarr_api.middleware import RequestIdMiddleware
+from pornarr_api.routers.auth import router as auth_router
 from pornarr_api.spa import mount_spa
 from pornarr_shared.config import Settings, get_settings
 
@@ -32,7 +34,8 @@ def stable_operation_id(route: APIRoute) -> str:
     return f"{tag}_{route.name}"
 
 
-api_router = APIRouter(prefix=API_PREFIX)
+api_router = APIRouter(prefix=API_PREFIX, dependencies=[Depends(enforce_csrf)])
+api_router.include_router(auth_router)
 
 
 def create_app(
