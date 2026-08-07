@@ -8,6 +8,8 @@ develop                     merge-commit into  main
 ```
 
 `main` accepts pull requests from `develop` only. Nothing else merges there, ever.
+The **Only develop may merge to main** check enforces this; an administrator must
+mark it required in the `main` ruleset (see issue #1).
 
 Branch names are lowercase with hyphens and carry the issue number when one exists:
 `feat/142-torznab-adapter`.

@@ -11,7 +11,7 @@ on:
       - "package.json"
       - "pnpm-lock.yaml"
       - "openapi.json"
-      - ".github/workflows/ci.yml"
+      - ".github/workflows/**"
   push:
     branches: [develop]
 
