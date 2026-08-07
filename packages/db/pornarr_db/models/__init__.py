@@ -15,6 +15,7 @@ from pornarr_db.models.filters import (
     FilterProfileScope,
     FilterRuleKind,
 )
+from pornarr_db.models.media import Media, MediaFile, MediaFileHistory
 from pornarr_db.models.oidc import OidcProvider
 from pornarr_db.models.user import User, UserRole
 
@@ -24,6 +25,9 @@ __all__ = [
     "FilterAction",
     "FilterProfileScope",
     "FilterRuleKind",
+    "Media",
+    "MediaFile",
+    "MediaFileHistory",
     "OidcProvider",
     "User",
     "UserRole",
