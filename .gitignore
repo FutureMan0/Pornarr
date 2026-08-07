@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+*.local
+
+# Data (never commit media or runtime state)
+/data/
+/media/
+
+# Tooling caches (local only)
+.codegraph/
+graphify-out/
+.impeccable/
+
+# Editors
+.idea/
+.vscode/
+*.swp
+.DS_Store
