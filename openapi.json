@@ -318,6 +318,20 @@
         ]
       }
     },
+    "/api/events": {
+      "get": {
+        "operationId": "events_events",
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Events",
+        "tags": [
+          "events"
+        ]
+      }
+    },
     "/api/health": {
       "get": {
         "operationId": "health_dependency_health",

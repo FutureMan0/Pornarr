@@ -17,6 +17,7 @@ from pornarr_api.errors import register_error_handlers
 from pornarr_api.lifespan import lifespan
 from pornarr_api.middleware import RequestIdMiddleware
 from pornarr_api.routers.auth import router as auth_router
+from pornarr_api.routers.events import router as events_router
 from pornarr_api.routers.health import router as health_router
 from pornarr_api.spa import mount_spa
 from pornarr_shared.config import Settings, get_settings
@@ -37,6 +38,7 @@ def stable_operation_id(route: APIRoute) -> str:
 
 api_router = APIRouter(prefix=API_PREFIX, dependencies=[Depends(enforce_csrf)])
 api_router.include_router(auth_router)
+api_router.include_router(events_router)
 api_router.include_router(health_router)
 
 
