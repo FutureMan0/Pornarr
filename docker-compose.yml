@@ -1,0 +1,87 @@
+name: pornarr
+
+x-pornarr: &pornarr
+  image: ghcr.io/futureman0/pornarr:${PORNARR_TAG:-latest}
+  build: { context: . }
+  env_file: [.env]
+  restart: unless-stopped
+  depends_on:
+    postgres: { condition: service_healthy }
+    redis: { condition: service_healthy }
+  volumes:
+    # ONE mount. Splitting downloads and library across volumes breaks
+    # hardlinking. See docs/operations/deployment.md
+    - ${DATA_PATH_HOST:-./data}:/data
+
+services:
+  migrate:
+    <<: *pornarr
+    command: migrate
+    restart: "no"
+
+  api:
+    <<: *pornarr
+    command: api
+    ports: ["8000:8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    <<: *pornarr
+    command: worker
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    # Transcoding happens here. Uncomment for NVIDIA; requires the NVIDIA
+    # Container Toolkit on the host.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - { driver: nvidia, count: 1, capabilities: [gpu, video] }
+    # For Intel or AMD instead:
+    # devices: ["/dev/dri:/dev/dri"]
+
+  beat:
+    <<: *pornarr
+    command: beat
+    depends_on:
+      redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pornarr
+      POSTGRES_PASSWORD: pornarr
+      POSTGRES_DB: pornarr
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pornarr"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: redis-server --save 60 1 --appendonly no
+    volumes: ["redis-data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:
+  redis-data:

@@ -1,0 +1,55 @@
+# Development overrides. Applied automatically by `docker compose up`.
+# Source is bind-mounted and every process reloads on change.
+# See docs/adr/0014-containerized-development.md
+
+services:
+  api:
+    build:
+      context: .
+      target: development
+    command: api --reload
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    volumes:
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+    ports:
+      - "8000:8000"
+      - "5678:5678"   # debugpy
+
+  worker:
+    build:
+      context: .
+      target: development
+    command: worker --watch
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    volumes:
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+    ports:
+      - "5679:5678"   # debugpy
+
+  beat:
+    build:
+      context: .
+      target: development
+    volumes:
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+
+  web:
+    build:
+      context: .
+      target: web-dev
+    command: pnpm --filter @pornarr/web dev --host
+    environment:
+      VITE_API_URL: http://localhost:8000
+    volumes:
+      - ./apps/web:/app/apps/web
+      - ./packages/ui:/app/packages/ui
+      - ./packages/api-client:/app/packages/api-client
+      - /app/node_modules
+    ports: ["5173:5173"]

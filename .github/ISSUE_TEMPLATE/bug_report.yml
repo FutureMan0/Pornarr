@@ -1,0 +1,50 @@
+name: Bug report
+description: Something behaves incorrectly
+labels: ["type:fix"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you got instead.
+    validations: { required: true }
+
+  - type: input
+    id: version
+    attributes:
+      label: Pornarr version
+      placeholder: "0.3.1, or the image tag you are running"
+    validations: { required: true }
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options: ["Docker Compose", "Docker (manual)", "Kubernetes", "Development (source)", "Other"]
+    validations: { required: true }
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Host OS, whether downloads and library share a filesystem, GPU and driver if transcoding is involved.
+      placeholder: |
+        Host: Ubuntu 24.04
+        Single /data mount: yes
+        GPU: RTX 3060, driver 595.84, NVIDIA Container Toolkit installed
+    validations: { required: true }
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: The shortest excerpt that shows the failure. Redact API keys.
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I checked the health page and included any warnings shown there
+        - label: I searched existing issues

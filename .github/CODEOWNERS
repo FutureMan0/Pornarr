@@ -1,0 +1,11 @@
+# Ownership boundary is the API contract. See docs/adr/0009-ownership-boundary.md
+
+*                       @raphaelbleier
+
+/apps/web/              @FutureMan0
+/packages/ui/           @FutureMan0
+
+# The contract needs both owners
+/openapi.json           @raphaelbleier @FutureMan0
+/PRODUCT.md             @raphaelbleier @FutureMan0
+/DESIGN.md              @FutureMan0
