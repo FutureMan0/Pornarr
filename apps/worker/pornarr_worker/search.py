@@ -12,6 +12,7 @@ from uuid import UUID
 
 from sqlalchemy import select
 
+from pornarr_core.dedup import ReleaseCandidate, deduplicate_releases
 from pornarr_db.models.indexer import Indexer, IndexerStats
 from pornarr_db.models.release import ReleaseCache
 from pornarr_db.release_cache import ReleaseCacheRepository, normalize_release_title
@@ -40,6 +41,8 @@ class SearchTarget:
     adapter: SearchIndexerAdapter | None
     skip_status: str | None = None
     cached_releases: list[Release] | None = None
+    priority: int = 0
+    healthy: bool = True
 
 
 @dataclass(slots=True)
@@ -48,7 +51,7 @@ class SearchState:
     user_id: str
     query: str
     statuses: dict[str, str] = field(default_factory=dict)
-    results: dict[str, list[dict[str, object]]] = field(default_factory=dict)
+    results: list[dict[str, object]] = field(default_factory=list)
     cancelled: bool = False
 
 
@@ -77,7 +80,7 @@ async def run_search(
     timeout: float = INDEXER_SEARCH_TIMEOUT_SECONDS,
     on_result: SearchResultCallback | None = None,
 ) -> SearchState:
-    """Search all targets concurrently, preserving each completed result immediately."""
+    """Search all targets concurrently and progressively publish display-ready releases."""
     state = SearchState(
         id=search_id,
         user_id=user_id,
@@ -86,12 +89,16 @@ async def run_search(
     )
     await _store(redis, state)
     tasks = [asyncio.create_task(_search(target, query, timeout)) for target in targets]
+    target_by_id = {target.id: target for target in targets}
+    discovered: list[tuple[SearchTarget, Release]] = []
     try:
         for task in asyncio.as_completed(tasks):
             target_id, status, releases, error = await task
             state.statuses[target_id] = status
             if releases is not None:
-                state.results[target_id] = [_release_data(release) for release in releases]
+                target = target_by_id[target_id]
+                discovered.extend((target, release) for release in releases)
+                state.results = _deduplicated_data(discovered)
             if on_result is not None:
                 await on_result(target_id, status, releases, error)
             await _store(redis, state)
@@ -102,7 +109,7 @@ async def run_search(
                     "search_id": search_id,
                     "indexer_id": target_id,
                     "status": status,
-                    "results": state.results.get(target_id, []),
+                    "results": state.results,
                 },
                 user_id=user_id,
             )
@@ -155,6 +162,8 @@ async def configured_targets(redis: Any) -> list[SearchTarget]:
                         api_key=indexer.api_key,
                         adapter=None,
                         skip_status=IndexerHealth.UNHEALTHY.value,
+                        priority=indexer.priority,
+                        healthy=False,
                     )
                 )
                 continue
@@ -165,6 +174,7 @@ async def configured_targets(redis: Any) -> list[SearchTarget]:
                     base_url=indexer.base_url,
                     api_key=indexer.api_key,
                     adapter=ADAPTERS.get(indexer.implementation),
+                    priority=indexer.priority,
                 )
             )
     return targets
@@ -289,6 +299,65 @@ def _release_data(release: Release) -> dict[str, object]:
     )
 
 
+def _deduplicated_data(
+    discovered: list[tuple[SearchTarget, Release]],
+) -> list[dict[str, object]]:
+    releases = {f"{target.id}:{release.guid}": (target, release) for target, release in discovered}
+    candidates = (
+        ReleaseCandidate(
+            key=key,
+            title=release.title,
+            size=release.size,
+            published_at=release.published_at,
+            info_hash=release.info_hash,
+            priority=target.priority,
+            healthy=target.healthy,
+            completeness=_release_completeness(release),
+        )
+        for key, (target, release) in releases.items()
+    )
+    return [
+        _display_data(group.primary.key, releases, group.alternates)
+        for group in deduplicate_releases(candidates)
+    ]
+
+
+def _display_data(
+    primary_key: str,
+    releases: dict[str, tuple[SearchTarget, Release]],
+    alternates: tuple[ReleaseCandidate, ...],
+) -> dict[str, object]:
+    target, release = releases[primary_key]
+    data = _source_data(target, release)
+    data["alternates"] = [
+        _source_data(releases[item.key][0], releases[item.key][1]) for item in alternates
+    ]
+    return data
+
+
+def _source_data(target: SearchTarget, release: Release) -> dict[str, object]:
+    return {"indexer_id": target.id, **_release_data(release)}
+
+
+def _release_completeness(release: Release) -> int:
+    values = (
+        release.details_url,
+        release.download_url,
+        release.published_at,
+        release.size,
+        release.categories,
+        release.seeders,
+        release.peers,
+        release.info_hash,
+        release.magnet_url,
+        release.groups,
+        release.poster,
+        release.parts,
+        release.password_protected,
+    )
+    return sum(value is not None and value != () for value in values)
+
+
 def _json_value(value: object) -> str:
     if isinstance(value, datetime):
         return value.isoformat()
@@ -344,9 +413,15 @@ async def cache_releases(session: Any, indexer_id: UUID, releases: list[Release]
 async def cached_targets(query: str) -> list[SearchTarget]:
     async with session_scope() as session:
         cached = await ReleaseCacheRepository(session).search(query)
-    grouped: dict[str, list[Release]] = {}
+        indexers = {
+            indexer.id: indexer
+            for indexer in await session.scalars(
+                select(Indexer).where(Indexer.id.in_({release.indexer_id for release in cached}))
+            )
+        }
+    grouped: dict[UUID, list[Release]] = {}
     for release in cached:
-        grouped.setdefault(str(release.indexer_id), []).append(
+        grouped.setdefault(release.indexer_id, []).append(
             Release(
                 guid=release.guid,
                 title=release.title,
@@ -366,6 +441,14 @@ async def cached_targets(query: str) -> list[SearchTarget]:
             )
         )
     return [
-        SearchTarget(indexer_id, "", "", None, cached_releases=releases)
+        SearchTarget(
+            str(indexer_id),
+            "",
+            "",
+            None,
+            cached_releases=releases,
+            priority=indexers[indexer_id].priority,
+            healthy=indexers[indexer_id].health != IndexerHealth.UNHEALTHY.value,
+        )
         for indexer_id, releases in grouped.items()
     ]

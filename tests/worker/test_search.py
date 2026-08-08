@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from contextlib import asynccontextmanager
+from typing import cast
 from uuid import UUID, uuid4
 
 from pornarr_db.models.indexer import Indexer, IndexerStats
@@ -50,10 +51,13 @@ class Redis:
 
 
 class Adapter:
-    def __init__(self, delay: float, *, fail: bool = False) -> None:
+    def __init__(
+        self, delay: float, *, fail: bool = False, releases: list[Release] | None = None
+    ) -> None:
         self.delay = delay
         self.fail = fail
         self.cancelled = False
+        self.releases = releases or [Release("one", "Example", None, None, None, None, ())]
 
     async def test_connection(self, *, base_url: str, api_key: str) -> list[IndexerCategory]:
         return []
@@ -66,7 +70,7 @@ class Adapter:
             raise
         if self.fail:
             raise RuntimeError
-        return [Release("one", "Example", None, None, None, None, ())]
+        return self.releases
 
 
 async def test_results_are_progressive_and_one_timeout_does_not_block_others() -> None:
@@ -86,8 +90,8 @@ async def test_results_are_progressive_and_one_timeout_does_not_block_others() -
     )
 
     assert state.statuses == {"fast": "completed", "broken": "failed", "slow": "timed_out"}
-    assert state.results["fast"][0]["title"] == "Example"
-    assert "download_url" not in state.results["fast"][0]
+    assert state.results[0]["title"] == "Example"
+    assert "download_url" not in state.results[0]
     assert redis.events[0][0] == "indexer.search.completed"
     assert redis.events[0][1]["indexer_id"] == "fast"
     assert (await read_search_state(redis, "search-1")) == state
@@ -164,8 +168,65 @@ async def test_cached_releases_are_published_without_an_adapter_request() -> Non
     )
 
     assert state.statuses == {"indexer-1": "cached"}
-    assert state.results["indexer-1"][0]["title"] == "Cached Example"
+    assert state.results[0]["title"] == "Cached Example"
     assert redis.events[0][1]["status"] == "cached"
+
+
+async def test_search_deduplicates_releases_and_retains_ranked_alternates() -> None:
+    redis = Redis()
+
+    def release(guid: str, *, details_url: str | None = None, poster: str | None = None) -> Release:
+        return Release(
+            guid=guid,
+            title="Example Release 1080p",
+            details_url=details_url,
+            download_url=None,
+            published_at=None,
+            size=1_000,
+            categories=(),
+            info_hash="shared-hash",
+            poster=poster,
+        )
+
+    state = await run_search(
+        redis,
+        search_id="search-5",
+        user_id="user-1",
+        query="example",
+        targets=[
+            SearchTarget(
+                "detailed",
+                "https://detailed",
+                "key",
+                Adapter(0, releases=[release("detailed", details_url="https://details")]),
+                priority=2,
+            ),
+            SearchTarget(
+                "unhealthy",
+                "https://unhealthy",
+                "key",
+                Adapter(0, releases=[release("unhealthy", poster="poster")]),
+                priority=0,
+                healthy=False,
+            ),
+            SearchTarget(
+                "priority",
+                "https://priority",
+                "key",
+                Adapter(0.01, releases=[release("priority")]),
+                priority=1,
+            ),
+        ],
+    )
+
+    assert len(state.results) == 1
+    assert state.results[0]["indexer_id"] == "priority"
+    alternates = cast(list[dict[str, object]], state.results[0]["alternates"])
+    assert [alternate["indexer_id"] for alternate in alternates] == [
+        "detailed",
+        "unhealthy",
+    ]
+    assert redis.events[-1][1]["results"] == state.results
 
 
 async def test_worker_outcomes_persist_failure_health_and_redacted_error(monkeypatch) -> None:
