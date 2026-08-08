@@ -190,7 +190,8 @@ async def test_mutating_request_without_the_csrf_token_is_rejected(
     assert (await client.get("/api/auth/me")).status_code == 200
 
 
-async def test_six_failed_logins_are_rate_limited(client: AsyncClient) -> None:
+async def test_six_failed_logins_are_rate_limited(app: FastAPI, client: AsyncClient) -> None:
+    await create_user(app)
     responses = [
         await client.post("/api/auth/login", json={"username": "unknown", "password": "wrong"})
         for _ in range(6)

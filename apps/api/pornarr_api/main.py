@@ -28,9 +28,11 @@ from pornarr_api.routers.health import router as health_router
 from pornarr_api.routers.playback import progress_router as playback_progress_router
 from pornarr_api.routers.playback import router as playback_router
 from pornarr_api.routers.search import router as search_router
+from pornarr_api.routers.setup import router as setup_router
 from pornarr_api.routers.stream import router as stream_router
 from pornarr_api.routers.transcode import admin_router as admin_transcode_router
 from pornarr_api.routers.transcode import router as transcode_router
+from pornarr_api.setup import SetupMiddleware
 from pornarr_api.spa import mount_spa
 from pornarr_integrations.qbittorrent import QbittorrentAdapter
 from pornarr_integrations.sabnzbd import SabnzbdAdapter
@@ -63,6 +65,7 @@ api_router.include_router(health_router)
 api_router.include_router(playback_router)
 api_router.include_router(playback_progress_router)
 api_router.include_router(search_router)
+api_router.include_router(setup_router)
 api_router.include_router(stream_router)
 api_router.include_router(transcode_router)
 api_router.include_router(admin_transcode_router)
@@ -93,6 +96,7 @@ def create_app(
         "sabnzbd": SabnzbdAdapter(),
     }
 
+    app.add_middleware(SetupMiddleware)
     app.add_middleware(RequestIdMiddleware)
     register_error_handlers(app)
 
