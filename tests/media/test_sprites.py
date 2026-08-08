@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+from shutil import which
 
 import pytest
 
@@ -13,6 +14,8 @@ from pornarr_media.sprites import (
     generate_preview_sprite,
     try_generate_preview_sprite,
 )
+
+FFMPEG_AVAILABLE = which("ffmpeg") is not None and which("ffprobe") is not None
 
 
 def test_preview_sprite_options_reject_invalid_dimensions_and_intervals() -> None:
@@ -75,6 +78,7 @@ def test_failed_generation_returns_no_preview(
     assert result is None
 
 
+@pytest.mark.skipif(not FFMPEG_AVAILABLE, reason="ffmpeg and ffprobe are required")
 def test_generate_preview_sprite_writes_a_tiled_image_and_vtt(tmp_path: Path) -> None:
     source = tmp_path / "source.mp4"
     subprocess.run(
