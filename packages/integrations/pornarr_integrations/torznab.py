@@ -77,6 +77,10 @@ def parse_results(document: str) -> list[Release]:
                 peers=_integer(attribute_values.get("peers")),
                 info_hash=attribute_values.get("infohash"),
                 magnet_url=attribute_values.get("magneturl"),
+                groups=tuple(value for name, value in attributes if name == "group"),
+                poster=attribute_values.get("poster"),
+                parts=_integer(attribute_values.get("parts")),
+                password_protected=_boolean(attribute_values.get("password")),
             )
         )
     return releases
@@ -104,3 +108,13 @@ def _date(value: str | None) -> datetime | None:
     except (TypeError, ValueError):
         return None
     return date.replace(tzinfo=UTC) if date.tzinfo is None else date
+
+
+def _boolean(value: str | None) -> bool | None:
+    if value is None:
+        return None
+    if value.casefold() in {"1", "true", "yes"}:
+        return True
+    if value.casefold() in {"0", "false", "no"}:
+        return False
+    return None

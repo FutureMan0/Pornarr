@@ -28,6 +28,10 @@ class Release:
     peers: int | None = None
     info_hash: str | None = None
     magnet_url: str | None = None
+    groups: tuple[str, ...] = ()
+    poster: str | None = None
+    parts: int | None = None
+    password_protected: bool | None = None
 
 
 class IndexerAdapter(Protocol):
