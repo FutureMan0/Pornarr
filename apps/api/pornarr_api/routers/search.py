@@ -21,6 +21,7 @@ from pornarr_core.filters import (
 from pornarr_core.filters import FilterAction as CoreFilterAction
 from pornarr_core.filters import FilterRule as CoreFilterRule
 from pornarr_core.filters import FilterRuleKind as CoreFilterRuleKind
+from pornarr_db.audit import write_audit
 from pornarr_db.media_search import (
     MediaSearch,
     MediaSearchResult,
@@ -97,11 +98,19 @@ async def local_search(
     page = results[:limit]
     metadata = await search_metadata(session, [result.media.id for result in page])
     rules = await _rules_for_user(session, user.id)
-    items = [
-        _search_item(result, metadata[result.media.id])
-        for result in page
-        if _is_visible(result, metadata[result.media.id], rules)
-    ]
+    items = []
+    for result in page:
+        decision = _filter_decision(result, metadata[result.media.id], rules)
+        if decision.action is CoreFilterAction.ALLOW:
+            items.append(_search_item(result, metadata[result.media.id]))
+        elif decision.action is CoreFilterAction.REJECT and decision.rule is not None:
+            write_audit(
+                session,
+                actor_id=user.id,
+                action="filter.rejected",
+                target=str(result.media.id),
+                context={"rule_id": decision.rule.id},
+            )
     next_cursor = _next_cursor(results, limit, sort, q)
     return LocalSearchResponse(items=items, next_cursor=next_cursor)
 
@@ -135,7 +144,7 @@ def _core_rule(rule: ContentFilterRule) -> CoreFilterRule:
     )
 
 
-def _is_visible(result: MediaSearchResult, metadata, rules: tuple[CoreFilterRule, ...]) -> bool:
+def _filter_decision(result: MediaSearchResult, metadata, rules: tuple[CoreFilterRule, ...]):
     candidate = ContentCandidate(
         title=result.media.title,
         description=result.media.description or "",
@@ -145,7 +154,7 @@ def _is_visible(result: MediaSearchResult, metadata, rules: tuple[CoreFilterRule
         has_unknown_performer_age=metadata.has_unknown_performer_age,
         file_type=result.media_file.container,
     )
-    return evaluate_filters(candidate, rules).action is CoreFilterAction.ALLOW
+    return evaluate_filters(candidate, rules)
 
 
 def _search_item(result: MediaSearchResult, metadata) -> LocalSearchItem:

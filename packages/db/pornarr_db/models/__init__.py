@@ -8,6 +8,7 @@ explicit rather than a directory scan.
 
 from __future__ import annotations
 
+from pornarr_db.models.audit import AuditLog
 from pornarr_db.models.custom_formats import (
     CustomFormat,
     CustomFormatCondition,
@@ -33,6 +34,7 @@ from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.models.user import User, UserRole
 
 __all__ = [
+    "AuditLog",
     "BlockedRelease",
     "ContentFilterProfile",
     "ContentFilterRule",
