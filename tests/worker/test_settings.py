@@ -41,7 +41,11 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "heartbeat",
         "cleanup_transcodes",
     ]
-    assert settings.TranscodeWorkerSettings.functions[0].name == "generate_preview_sprite_job"
+    assert [job.name for job in settings.TranscodeWorkerSettings.functions] == [
+        "generate_preview_sprite_job",
+        "generate_artwork_job",
+        "regenerate_library_artwork_job",
+    ]
     required_arq_options = {
         "functions",
         "queue_name",

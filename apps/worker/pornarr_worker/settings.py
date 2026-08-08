@@ -18,6 +18,7 @@ from pornarr_shared.jobs import (
     TRANSCODE_QUEUE,
     job,
 )
+from pornarr_worker.artwork import ARTWORK_JOB, LIBRARY_ARTWORK_JOB
 from pornarr_worker.cleanup import cleanup_transcodes
 from pornarr_worker.sprites import SPRITE_JOB
 
@@ -63,7 +64,7 @@ class ImportWorkerSettings:
 class TranscodeWorkerSettings:
     """Worker dedicated to FFmpeg work so it cannot starve other queues."""
 
-    functions: ClassVar = [SPRITE_JOB]
+    functions: ClassVar = [SPRITE_JOB, ARTWORK_JOB, LIBRARY_ARTWORK_JOB]
     queue_name: ClassVar = TRANSCODE_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
     job_timeout: ClassVar = JOB_TIMEOUT_SECONDS
