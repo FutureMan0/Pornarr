@@ -46,6 +46,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "generate_artwork_job",
         "regenerate_library_artwork_job",
     ]
+    assert settings.IndexerWorkerSettings.functions[0].name == "search_indexers"
     required_arq_options = {
         "functions",
         "queue_name",

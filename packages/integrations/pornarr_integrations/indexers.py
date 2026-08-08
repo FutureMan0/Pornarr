@@ -36,3 +36,7 @@ class Release:
 
 class IndexerAdapter(Protocol):
     async def test_connection(self, *, base_url: str, api_key: str) -> list[IndexerCategory]: ...
+
+
+class SearchIndexerAdapter(IndexerAdapter, Protocol):
+    async def search(self, *, base_url: str, api_key: str, query: str) -> list[Release]: ...
