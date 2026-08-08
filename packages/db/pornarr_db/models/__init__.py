@@ -14,6 +14,7 @@ from pornarr_db.models.custom_formats import (
     CustomFormatField,
     CustomFormatOperator,
 )
+from pornarr_db.models.download import BlockedRelease, DownloadHistory, DownloadJob
 from pornarr_db.models.download_client import DownloadClient
 from pornarr_db.models.entities import MediaPerformer, MediaTag, Performer, Studio, Tag
 from pornarr_db.models.filters import (
@@ -30,6 +31,7 @@ from pornarr_db.models.quality import QualityDefinition, QualityProfile, Quality
 from pornarr_db.models.user import User, UserRole
 
 __all__ = [
+    "BlockedRelease",
     "ContentFilterProfile",
     "ContentFilterRule",
     "CustomFormat",
@@ -37,6 +39,8 @@ __all__ = [
     "CustomFormatField",
     "CustomFormatOperator",
     "DownloadClient",
+    "DownloadHistory",
+    "DownloadJob",
     "FilterAction",
     "FilterProfileScope",
     "FilterRuleKind",
