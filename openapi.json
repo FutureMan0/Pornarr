@@ -643,6 +643,39 @@
         "title": "ProviderWrite",
         "type": "object"
       },
+      "TranscodeLimitResponse": {
+        "properties": {
+          "hardware": {
+            "title": "Hardware",
+            "type": "integer"
+          },
+          "hardware_in_use": {
+            "title": "Hardware In Use",
+            "type": "integer"
+          },
+          "per_user": {
+            "title": "Per User",
+            "type": "integer"
+          },
+          "software": {
+            "title": "Software",
+            "type": "integer"
+          },
+          "software_in_use": {
+            "title": "Software In Use",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "hardware",
+          "software",
+          "per_user",
+          "hardware_in_use",
+          "software_in_use"
+        ],
+        "title": "TranscodeLimitResponse",
+        "type": "object"
+      },
       "TranscodeSessionResponse": {
         "properties": {
           "created_at": {
@@ -1160,6 +1193,27 @@
           }
         },
         "summary": "Test Provider",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/transcode/limits": {
+      "get": {
+        "operationId": "admin_limit_state",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscodeLimitResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Limit State",
         "tags": [
           "admin"
         ]

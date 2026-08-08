@@ -16,6 +16,7 @@ import redis.asyncio as redis
 from fastapi import FastAPI
 
 from pornarr_db.session import dispose_engine, get_engine
+from pornarr_media.capabilities import detect_hardware_capabilities
 from pornarr_media.sessions import TranscodeSessionRegistry
 from pornarr_shared.config import Settings
 from pornarr_shared.logging import install_redaction, register_secret
@@ -41,6 +42,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     app.state.redis = redis.from_url(settings.redis_url, decode_responses=True)
     app.state.engine = get_engine()
+    app.state.hardware_capabilities = detect_hardware_capabilities(
+        requested=settings.transcode_hwaccel
+    )
     app.state.transcode_sessions = TranscodeSessionRegistry(
         app.state.redis, settings.transcode_path
     )

@@ -15,9 +15,14 @@ import signal
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, Protocol
 from uuid import UUID
+
+from pornarr_media.capabilities import HardwareCapabilities
+from pornarr_shared.config import Settings
+from pornarr_shared.errors import PornarrError
 
 SESSION_TTL_SECONDS = 60
 SESSION_RECORD_TTL_SECONDS = SESSION_TTL_SECONDS * 2
@@ -44,6 +49,7 @@ class TranscodeSession:
     user_id: UUID
     media_id: UUID
     mode: str
+    hardware: bool
     process_id: int
     created_at: datetime
 
@@ -54,6 +60,52 @@ def session_key(session_id: UUID) -> str:
 
 def heartbeat_key(session_id: UUID) -> str:
     return f"{session_key(session_id)}:heartbeat"
+
+
+class TranscodeMode(StrEnum):
+    HARDWARE = "hardware"
+    SOFTWARE = "software"
+
+
+class TranscodeLimitReachedError(PornarrError):
+    code = "TRANSCODE_LIMIT_REACHED"
+    status = 429
+
+
+@dataclass(frozen=True, slots=True)
+class TranscodeLimits:
+    hardware: int
+    software: int
+    per_user: int
+
+    @classmethod
+    def from_settings(
+        cls, settings: Settings, capabilities: HardwareCapabilities
+    ) -> TranscodeLimits:
+        detected_hardware = len(capabilities.nvidia_gpus) or int(bool(capabilities.methods))
+        return cls(
+            hardware=settings.transcode_max_hw_sessions
+            if settings.transcode_max_hw_sessions is not None
+            else detected_hardware,
+            software=settings.transcode_max_sw_sessions
+            if settings.transcode_max_sw_sessions is not None
+            else 1,
+            per_user=settings.transcode_max_per_user,
+        )
+
+
+def choose_transcode_mode(
+    sessions: list[TranscodeSession], user_id: UUID, limits: TranscodeLimits
+) -> TranscodeMode:
+    if sum(session.user_id == user_id for session in sessions) >= limits.per_user:
+        raise TranscodeLimitReachedError(
+            "The per-user transcode limit was reached.", limit="per_user"
+        )
+    if sum(session.hardware for session in sessions) < limits.hardware:
+        return TranscodeMode.HARDWARE
+    if sum(not session.hardware for session in sessions) < limits.software:
+        return TranscodeMode.SOFTWARE
+    raise TranscodeLimitReachedError("All transcode slots are occupied.", limit="software")
 
 
 class TranscodeSessionRegistry:
@@ -71,6 +123,8 @@ class TranscodeSessionRegistry:
         media_id: UUID,
         mode: str,
         transcode: RunningTranscode,
+        *,
+        hardware: bool = False,
     ) -> TranscodeSession:
         if transcode.process.pid is None:
             raise ValueError("A transcode process must be running before it can be registered")
@@ -79,6 +133,7 @@ class TranscodeSessionRegistry:
             user_id=user_id,
             media_id=media_id,
             mode=mode,
+            hardware=hardware,
             process_id=transcode.process.pid,
             created_at=datetime.now(UTC),
         )
@@ -116,6 +171,9 @@ class TranscodeSessionRegistry:
             else:
                 sessions.append(session)
         return sorted(sessions, key=lambda session: session.created_at)
+
+    async def select_mode(self, user_id: UUID, limits: TranscodeLimits) -> TranscodeMode:
+        return choose_transcode_mode(await self.active_sessions(), user_id, limits)
 
     async def terminate(self, session_id: UUID) -> bool:
         if await self._record(session_id) is None:
@@ -165,6 +223,7 @@ def _serialize(session: TranscodeSession) -> str:
             "user_id": str(session.user_id),
             "media_id": str(session.media_id),
             "mode": session.mode,
+            "hardware": session.hardware,
             "process_id": session.process_id,
             "created_at": session.created_at.isoformat(),
         }
@@ -177,14 +236,21 @@ def _deserialize(stored: str | None) -> TranscodeSession | None:
     try:
         data = json.loads(stored)
         mode = data["mode"]
+        hardware = data.get("hardware", False)
         process_id = data["process_id"]
-        if not isinstance(mode, str) or not isinstance(process_id, int) or process_id <= 0:
+        if (
+            not isinstance(mode, str)
+            or not isinstance(hardware, bool)
+            or not isinstance(process_id, int)
+            or process_id <= 0
+        ):
             return None
         return TranscodeSession(
             id=UUID(data["id"]),
             user_id=UUID(data["user_id"]),
             media_id=UUID(data["media_id"]),
             mode=mode,
+            hardware=hardware,
             process_id=process_id,
             created_at=datetime.fromisoformat(data["created_at"]),
         )
