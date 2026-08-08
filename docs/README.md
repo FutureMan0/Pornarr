@@ -10,7 +10,7 @@ Start here.
 | [adr/](adr/) | Every architecture decision, numbered, with its context and consequences |
 | [integrations/](integrations/) | Indexers, download clients, metadata providers |
 | [pipelines/](pipelines/) | Import, transcoding, recommendations |
-| [operations/](operations/) | Deployment, backup, troubleshooting |
+| [operations/](operations/) | [Installation](operations/installation.md), deployment, backup, troubleshooting |
 | [contributing/](contributing/) | Branching, releases, testing |
 | [design/](design/) | What the client looks like: screen mockups, renders, brand assets |
 
