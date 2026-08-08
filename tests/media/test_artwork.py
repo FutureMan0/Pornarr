@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+from shutil import which
 from uuid import uuid4
+
+import pytest
 
 from pornarr_media.artwork import (
     ArtworkPaths,
@@ -10,6 +13,8 @@ from pornarr_media.artwork import (
     build_frame_command,
     generate_artwork,
 )
+
+FFMPEG_AVAILABLE = which("ffmpeg") is not None and which("ffprobe") is not None
 
 
 def test_artwork_paths_are_deterministic_per_media_item(tmp_path: Path) -> None:
@@ -42,6 +47,7 @@ def test_unreadable_source_creates_a_placeholder_with_an_explicit_state(tmp_path
     assert artwork.frames == ()
 
 
+@pytest.mark.skipif(not FFMPEG_AVAILABLE, reason="ffmpeg and ffprobe are required")
 def test_artwork_generation_replaces_prior_frames_without_accumulating(tmp_path: Path) -> None:
     source = tmp_path / "source.mp4"
     subprocess.run(
