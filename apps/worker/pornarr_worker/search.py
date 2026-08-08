@@ -4,14 +4,22 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections.abc import Awaitable, Callable
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, cast
+from uuid import UUID
 
 from sqlalchemy import select
 
-from pornarr_db.models.indexer import Indexer
+from pornarr_db.models.indexer import Indexer, IndexerStats
 from pornarr_db.session import session_scope
+from pornarr_integrations.health import (
+    CircuitBreaker,
+    IndexerFailure,
+    IndexerHealth,
+    failure_for,
+)
 from pornarr_integrations.indexers import Release, SearchIndexerAdapter
 from pornarr_integrations.newznab import NewznabAdapter
 from pornarr_integrations.torznab import TorznabAdapter
@@ -27,6 +35,7 @@ class SearchTarget:
     base_url: str
     api_key: str
     adapter: SearchIndexerAdapter | None
+    skip_status: str | None = None
 
 
 @dataclass(slots=True)
@@ -37,6 +46,9 @@ class SearchState:
     statuses: dict[str, str] = field(default_factory=dict)
     results: dict[str, list[dict[str, object]]] = field(default_factory=dict)
     cancelled: bool = False
+
+
+SearchResultCallback = Callable[[str, str, Exception | None], Awaitable[None]]
 
 
 def search_state_key(search_id: str) -> str:
@@ -59,6 +71,7 @@ async def run_search(
     query: str,
     targets: list[SearchTarget],
     timeout: float = INDEXER_SEARCH_TIMEOUT_SECONDS,
+    on_result: SearchResultCallback | None = None,
 ) -> SearchState:
     """Search all targets concurrently, preserving each completed result immediately."""
     state = SearchState(
@@ -71,10 +84,12 @@ async def run_search(
     tasks = [asyncio.create_task(_search(target, query, timeout)) for target in targets]
     try:
         for task in asyncio.as_completed(tasks):
-            target_id, status, releases = await task
+            target_id, status, releases, error = await task
             state.statuses[target_id] = status
             if releases is not None:
                 state.results[target_id] = [_release_data(release) for release in releases]
+            if on_result is not None:
+                await on_result(target_id, status, error)
             await _store(redis, state)
             await publish_event(
                 redis,
@@ -109,8 +124,9 @@ ADAPTERS: dict[str, SearchIndexerAdapter] = {
 }
 
 
-async def configured_targets() -> list[SearchTarget]:
+async def configured_targets(redis: Any) -> list[SearchTarget]:
     """Load enabled indexers without persisting their credentials in search state."""
+    breaker = CircuitBreaker(redis)
     async with session_scope() as session:
         indexers = list(
             await session.scalars(
@@ -119,15 +135,35 @@ async def configured_targets() -> list[SearchTarget]:
                 .order_by(Indexer.priority, Indexer.name)
             )
         )
-    return [
-        SearchTarget(
-            id=str(indexer.id),
-            base_url=indexer.base_url,
-            api_key=indexer.api_key,
-            adapter=ADAPTERS.get(indexer.implementation),
-        )
-        for indexer in indexers
-    ]
+        targets = []
+        for indexer in indexers:
+            state = await breaker.probe(
+                str(indexer.id),
+                IndexerHealth(indexer.health),
+                indexer.last_tested_at,
+                _health_reason(indexer.health_reason),
+            )
+            if state is None:
+                targets.append(
+                    SearchTarget(
+                        id=str(indexer.id),
+                        base_url=indexer.base_url,
+                        api_key=indexer.api_key,
+                        adapter=None,
+                        skip_status=IndexerHealth.UNHEALTHY.value,
+                    )
+                )
+                continue
+            indexer.health = state.value
+            targets.append(
+                SearchTarget(
+                    id=str(indexer.id),
+                    base_url=indexer.base_url,
+                    api_key=indexer.api_key,
+                    adapter=ADAPTERS.get(indexer.implementation),
+                )
+            )
+    return targets
 
 
 async def search_indexers(
@@ -141,7 +177,10 @@ async def search_indexers(
             search_id=search_id,
             user_id=user_id,
             query=query,
-            targets=await configured_targets(),
+            targets=await configured_targets(redis),
+            on_result=lambda target_id, status, error: record_search_outcome(
+                redis, target_id, status, error
+            ),
         )
     except asyncio.CancelledError:
         # Search cancellation is intentional (for example, the requester left
@@ -155,21 +194,61 @@ async def search_indexers(
 SEARCH_INDEXERS_JOB = job(search_indexers)
 
 
+async def record_search_outcome(
+    redis: Any, indexer_id: str, status: str, error: Exception | None
+) -> None:
+    """Persist one actual query's health and aggregate statistics."""
+    if status in {IndexerHealth.UNHEALTHY.value, "unavailable"}:
+        return
+    async with session_scope() as session:
+        indexer = await session.get(Indexer, UUID(indexer_id))
+        stats = await session.get(IndexerStats, UUID(indexer_id))
+        if indexer is None or stats is None:
+            return
+        stats.queries += 1
+        if status == "completed":
+            indexer.health = (await CircuitBreaker(redis).record_success(indexer_id)).value
+            indexer.health_reason = None
+            indexer.last_error = None
+        else:
+            failure = _failure(status, error)
+            outcome = await CircuitBreaker(redis).record_failure(
+                indexer_id, IndexerHealth(indexer.health), failure
+            )
+            stats.failures += 1
+            indexer.health = outcome.health.value
+            indexer.health_reason = (
+                failure.value if outcome.health is IndexerHealth.UNHEALTHY else None
+            )
+            indexer.last_error = _safe_error(error, indexer.api_key, failure)
+        indexer.last_tested_at = datetime.now(UTC)
+
+
 async def _search(
     target: SearchTarget, query: str, timeout: float
-) -> tuple[str, str, list[Release] | None]:
+) -> tuple[str, str, list[Release] | None, Exception | None]:
+    if target.skip_status is not None:
+        return target.id, target.skip_status, None, None
     if target.adapter is None:
-        return target.id, "unavailable", None
+        return target.id, "unavailable", None, None
     try:
         releases = await asyncio.wait_for(
             target.adapter.search(base_url=target.base_url, api_key=target.api_key, query=query),
             timeout,
         )
-        return target.id, "completed", releases
+        return target.id, "completed", releases, None
     except TimeoutError:
-        return target.id, "timed_out", None
-    except Exception:
-        return target.id, "failed", None
+        return target.id, "timed_out", None, TimeoutError("The indexer search timed out.")
+    except Exception as error:
+        failure = _failure("failed", error)
+        status = (
+            "authentication_failed"
+            if failure is IndexerFailure.AUTHENTICATION
+            else "malformed_response"
+            if failure is IndexerFailure.MALFORMED_RESPONSE
+            else "failed"
+        )
+        return target.id, status, None, error
 
 
 async def _store(redis: Any, state: SearchState) -> None:
@@ -193,3 +272,20 @@ def _json_value(value: object) -> str:
     if isinstance(value, datetime):
         return value.isoformat()
     raise TypeError
+
+
+def _failure(status: str, error: Exception | None) -> IndexerFailure:
+    if status == "timed_out":
+        return IndexerFailure.TIMEOUT
+    return failure_for(error)
+
+
+def _health_reason(value: str | None) -> IndexerFailure | None:
+    try:
+        return IndexerFailure(value) if value is not None else None
+    except ValueError:
+        return None
+
+
+def _safe_error(error: Exception | None, api_key: str, failure: IndexerFailure) -> str:
+    return (str(error).replace(api_key, "[redacted]") if error is not None else "") or failure.value

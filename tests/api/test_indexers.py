@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pornarr_db.models.indexer import Indexer
 from pornarr_db.models.user import UserRole
 from pornarr_db.types import set_cipher
+from pornarr_integrations.health import CircuitBreaker
 from pornarr_integrations.indexers import IndexerCategory
 from pornarr_shared.crypto import CredentialCipher
 from tests.api.test_app import SECRET
@@ -106,7 +107,43 @@ async def test_indexer_connection_failure_reports_a_redacted_cause(app, client) 
     assert "secret-value" not in failed.text
     stored = (await client.get("/api/admin/indexers")).json()[0]
     assert stored["health"] == "unhealthy"
+    assert stored["health_reason"] == "transient"
     assert stored["last_error"] == "https://indexer.example rejected [redacted]"
+
+
+async def test_admin_can_reset_an_unhealthy_indexer(app, client) -> None:
+    admin = await create_user(app, username="admin", role=UserRole.ADMIN)
+    await login(client, admin.username, "correct horse battery staple")
+    created = await client.post(
+        "/api/admin/indexers",
+        json={
+            "name": "example",
+            "protocol": "torznab",
+            "implementation": "torznab",
+            "base_url": "https://indexer.example",
+            "api_key": "secret-value",
+        },
+        headers=csrf_headers(client),
+    )
+    indexer_id = created.json()["id"]
+    breaker = CircuitBreaker(app.state.redis)
+    await app.state.redis.set(breaker.failure_key(indexer_id), "3", ex=300)
+    async with AsyncSession(app.state.engine, expire_on_commit=False) as session:
+        indexer = await session.get(Indexer, UUID(indexer_id))
+        assert indexer is not None
+        indexer.health = "unhealthy"
+        indexer.last_error = "The indexer search timed out."
+        await session.commit()
+
+    reset = await client.post(
+        f"/api/admin/indexers/{indexer_id}/reset", headers=csrf_headers(client)
+    )
+
+    assert reset.status_code == 200
+    assert reset.json()["health"] == "unknown"
+    assert reset.json()["health_reason"] is None
+    assert reset.json()["last_error"] is None
+    assert await app.state.redis.get(breaker.failure_key(indexer_id)) is None
 
 
 async def test_regular_users_cannot_manage_indexers(app, client) -> None:
