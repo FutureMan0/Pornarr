@@ -1,0 +1,48 @@
+/**
+ * Tooltip. A floating layer, so it takes the shadow and no border.
+ *
+ * Every value is a token. There are no literal lengths here at all — the
+ * tooltip owns no control border and no focus ring, because it is not
+ * interactive; the trigger the caller supplies owns both.
+ */
+
+.root {
+  position: relative;
+  display: inline-flex;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + var(--space-2));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-tooltip);
+  /* Wider than the spacing scale names, so derived from it. Wrapping is the
+     point: a truncated release name is exactly what goes in here. */
+  max-width: calc(var(--space-16) * 5);
+  width: max-content;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  box-shadow: var(--shadow-floating);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  font-weight: var(--text-xs-weight);
+  /* A raw release name has no spaces to break on. */
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+  /* The element only exists while shown, so there is an entry transition and
+     no exit one. Motion conveys state; a fade-out conveys nothing. */
+  opacity: 1;
+  transition: opacity var(--duration-fast) var(--ease);
+  pointer-events: none;
+}
+
+@starting-style {
+  .tooltip {
+    opacity: 0;
+  }
+}

@@ -1,0 +1,91 @@
+/**
+ * Tokens only. The single literal border width and the 2px focus ring are the
+ * only lengths not read from tokens.css, and every duration is a
+ * var(--duration-*) so prefers-reduced-motion cannot be opted out of.
+ */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* The resting boundary is --border-control, the one line token that clears 3:1
+   on all four surfaces. --border would look right and fail WCAG 1.4.11. */
+.input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-2);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  transition: background-color var(--duration-fast) var(--ease), border-color var(--duration-fast)
+    var(--ease);
+}
+
+/* Placeholder text is held to the body requirement, not to a muted grey that
+   fails it: --ink-muted is verified at 4.5:1 on every surface. */
+.input::placeholder {
+  color: var(--ink-muted);
+}
+
+/* Hover lifts the surface and leaves the boundary alone — raising it to
+   --primary on mere hover would make every form flicker pink. */
+.input:hover:not(:disabled) {
+  background-color: var(--surface-3);
+}
+
+.input:focus-visible {
+  border-color: var(--primary);
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.input:active:not(:disabled) {
+  border-color: var(--primary);
+  background-color: var(--surface-3);
+}
+
+/* --border is legal here only because 1.4.11 exempts disabled controls. */
+.input:disabled {
+  border-color: var(--border);
+  background-color: var(--surface);
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+/* Loading sets disabled too, so this must follow :disabled to win the tie. */
+.input.loading {
+  color: var(--ink-muted);
+  cursor: progress;
+}
+
+/* Specificity is raised past :hover on purpose: an invalid field stays visibly
+   invalid while the pointer is over it. */
+.input.error:not(:disabled) {
+  border-color: var(--danger);
+  background-color: var(--danger-weak);
+  color: var(--ink);
+}
+
+.input.error:hover:not(:disabled) {
+  background-color: var(--danger-weak);
+}
+
+/* The message is --ink on a --danger-weak tint, never --danger as text:
+   --danger reaches 3:1 on a surface, which is an icon threshold. The tint plus
+   the position under the field is what says "error"; hue never carries it
+   alone. */
+.message {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background-color: var(--danger-weak);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}

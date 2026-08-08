@@ -1,0 +1,73 @@
+/**
+ * DESIGN.md: "Loading is a skeleton matching the eventual layout, never a
+ * spinner centred in a content area." The poster holds 16:9 so the library grid
+ * does not reflow when real cards arrive.
+ */
+
+/* <output> is inline by default; the region wraps block-level placeholders. */
+.region {
+  display: block;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.line,
+.poster {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--surface-2);
+}
+
+.line {
+  height: var(--space-3);
+  border-radius: var(--radius-sm);
+}
+
+/* A paragraph's last line is short. Only when there is more than one, otherwise
+   a single-line skeleton would misrepresent the content it stands in for. */
+.line:last-child:not(:first-child) {
+  width: 60%;
+}
+
+.poster {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+}
+
+/**
+ * The shimmer duration is a token multiple, never a literal: reduced motion
+ * works by collapsing the duration tokens, so a hardcoded 1500ms would silently
+ * opt this animation out of the system-wide override in tokens.css.
+ */
+.line::after,
+.poster::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(90deg, transparent, var(--surface-3), transparent);
+  animation: shimmer calc(var(--duration-slow) * 6) var(--ease) infinite;
+}
+
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/**
+ * Collapsed tokens would still leave a 6ms strobe, which is worse than the
+ * animation it replaces. A loading placeholder carries no state, so stopping it
+ * outright loses nothing: the sheen rests off to the left, clipped away.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .line::after,
+  .poster::after {
+    animation: none;
+  }
+}
