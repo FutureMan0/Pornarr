@@ -27,6 +27,7 @@ from pornarr_api.routers.stream import router as stream_router
 from pornarr_api.routers.transcode import admin_router as admin_transcode_router
 from pornarr_api.routers.transcode import router as transcode_router
 from pornarr_api.spa import mount_spa
+from pornarr_integrations.qbittorrent import QbittorrentAdapter
 from pornarr_shared.config import Settings, get_settings
 
 API_PREFIX = "/api"
@@ -76,6 +77,7 @@ def create_app(
         generate_unique_id_function=stable_operation_id,
     )
     app.state.settings = resolved
+    app.state.download_client_adapters = {"qbittorrent": QbittorrentAdapter()}
 
     app.add_middleware(RequestIdMiddleware)
     register_error_handlers(app)

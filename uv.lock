@@ -556,12 +556,14 @@ name = "pornarr-integrations"
 version = "0.0.0"
 source = { editable = "packages/integrations" }
 dependencies = [
+    { name = "httpx" },
     { name = "pornarr-core" },
     { name = "pornarr-shared" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "httpx", specifier = ">=0.28" },
     { name = "pornarr-core", editable = "packages/core" },
     { name = "pornarr-shared", editable = "packages/shared" },
 ]
