@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -80,6 +81,30 @@ class FakeTranscode:
 
     async def stop(self) -> None:
         self.stopped = True
+
+
+class FailingProcess:
+    pid = 1
+
+    def __init__(self) -> None:
+        self.wait_started = asyncio.Event()
+        self.finish = asyncio.Event()
+
+    async def wait(self) -> int:
+        self.wait_started.set()
+        await self.finish.wait()
+        return 23
+
+
+class FailingTranscode(FakeTranscode):
+    def __init__(self, directory: Path, process: FailingProcess) -> None:
+        super().__init__(directory)
+        self.process = process
+        self.stopped_event = asyncio.Event()
+
+    async def stop(self) -> None:
+        await super().stop()
+        self.stopped_event.set()
 
 
 async def test_session_survives_a_registry_restart_and_heartbeat_refreshes_its_ttl(
@@ -162,6 +187,34 @@ async def test_termination_removes_the_session_and_its_hls_files(tmp_path: Path)
     assert transcode.stopped is True
     assert await registry.active_sessions() == []
     assert not directory.exists()
+
+
+async def test_failed_ffmpeg_is_recorded_without_its_command_or_log(tmp_path: Path) -> None:
+    from pornarr_media.sessions import TranscodeSessionRegistry
+
+    registry = TranscodeSessionRegistry(RecordingRedis(), tmp_path)
+    session_id = uuid4()
+    directory = tmp_path / str(session_id)
+    directory.mkdir()
+    process = FailingProcess()
+    transcode = FailingTranscode(directory, process)
+    await registry.register(session_id, uuid4(), uuid4(), "hls", transcode)
+    await asyncio.wait_for(process.wait_started.wait(), timeout=1)
+    process.finish.set()
+    await asyncio.wait_for(transcode.stopped_event.wait(), timeout=1)
+
+    failures = await registry.recent_failures()
+
+    assert len(failures) == 1
+    assert failures[0].session_id == session_id
+    assert failures[0].exit_code == 23
+
+    async def session_removed() -> bool:
+        while await registry.active_sessions():
+            await asyncio.sleep(0)
+        return True
+
+    assert await asyncio.wait_for(session_removed(), timeout=1)
 
 
 def test_hardware_saturation_falls_back_to_software_and_then_names_the_limit() -> None:

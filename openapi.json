@@ -1,6 +1,24 @@
 {
   "components": {
     "schemas": {
+      "CodecCapabilityResponse": {
+        "properties": {
+          "codec": {
+            "title": "Codec",
+            "type": "string"
+          },
+          "maximum_tested_resolution": {
+            "title": "Maximum Tested Resolution",
+            "type": "string"
+          }
+        },
+        "required": [
+          "codec",
+          "maximum_tested_resolution"
+        ],
+        "title": "CodecCapabilityResponse",
+        "type": "object"
+      },
       "ComponentHealth": {
         "properties": {
           "detail": {
@@ -284,6 +302,84 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HardwareCapabilitiesResponse": {
+        "properties": {
+          "methods": {
+            "items": {
+              "$ref": "#/components/schemas/HardwareCapabilityResponse"
+            },
+            "title": "Methods",
+            "type": "array"
+          },
+          "nvidia_gpus": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Nvidia Gpus",
+            "type": "array"
+          },
+          "rejections": {
+            "items": {
+              "$ref": "#/components/schemas/HardwareRejectionResponse"
+            },
+            "title": "Rejections",
+            "type": "array"
+          }
+        },
+        "required": [
+          "methods",
+          "rejections",
+          "nvidia_gpus"
+        ],
+        "title": "HardwareCapabilitiesResponse",
+        "type": "object"
+      },
+      "HardwareCapabilityResponse": {
+        "properties": {
+          "acceleration": {
+            "title": "Acceleration",
+            "type": "string"
+          },
+          "codecs": {
+            "items": {
+              "$ref": "#/components/schemas/CodecCapabilityResponse"
+            },
+            "title": "Codecs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "acceleration",
+          "codecs"
+        ],
+        "title": "HardwareCapabilityResponse",
+        "type": "object"
+      },
+      "HardwareRejectionResponse": {
+        "properties": {
+          "acceleration": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acceleration"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "acceleration",
+          "reason"
+        ],
+        "title": "HardwareRejectionResponse",
         "type": "object"
       },
       "HealthReport": {
@@ -643,8 +739,93 @@
         "title": "ProviderWrite",
         "type": "object"
       },
+      "TranscodeFailureResponse": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "exit_code": {
+            "title": "Exit Code",
+            "type": "integer"
+          },
+          "media_id": {
+            "format": "uuid",
+            "title": "Media Id",
+            "type": "string"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "user_id",
+          "media_id",
+          "mode",
+          "exit_code",
+          "reason",
+          "created_at"
+        ],
+        "title": "TranscodeFailureResponse",
+        "type": "object"
+      },
       "TranscodeLimitResponse": {
         "properties": {
+          "configured_hardware": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Configured Hardware"
+          },
+          "configured_per_user": {
+            "title": "Configured Per User",
+            "type": "integer"
+          },
+          "configured_software": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Configured Software"
+          },
+          "effective_hardware": {
+            "title": "Effective Hardware",
+            "type": "integer"
+          },
+          "effective_per_user": {
+            "title": "Effective Per User",
+            "type": "integer"
+          },
+          "effective_software": {
+            "title": "Effective Software",
+            "type": "integer"
+          },
           "hardware": {
             "title": "Hardware",
             "type": "integer"
@@ -671,7 +852,13 @@
           "software",
           "per_user",
           "hardware_in_use",
-          "software_in_use"
+          "software_in_use",
+          "configured_hardware",
+          "configured_software",
+          "configured_per_user",
+          "effective_hardware",
+          "effective_software",
+          "effective_per_user"
         ],
         "title": "TranscodeLimitResponse",
         "type": "object"
@@ -683,6 +870,14 @@
             "title": "Created At",
             "type": "string"
           },
+          "elapsed_seconds": {
+            "title": "Elapsed Seconds",
+            "type": "integer"
+          },
+          "hardware": {
+            "title": "Hardware",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -693,6 +888,17 @@
             "title": "Media Id",
             "type": "string"
           },
+          "media_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Title"
+          },
           "mode": {
             "title": "Mode",
             "type": "string"
@@ -701,14 +907,29 @@
             "format": "uuid",
             "title": "User Id",
             "type": "string"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
           }
         },
         "required": [
           "id",
           "user_id",
           "media_id",
+          "username",
+          "media_title",
           "mode",
-          "created_at"
+          "hardware",
+          "created_at",
+          "elapsed_seconds"
         ],
         "title": "TranscodeSessionResponse",
         "type": "object"
@@ -1193,6 +1414,52 @@
           }
         },
         "summary": "Test Provider",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/transcode/capabilities": {
+      "get": {
+        "operationId": "admin_capabilities",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HardwareCapabilitiesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Capabilities",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/transcode/failures": {
+      "get": {
+        "operationId": "admin_recent_failures",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TranscodeFailureResponse"
+                  },
+                  "title": "Response Admin Recent Failures",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Recent Failures",
         "tags": [
           "admin"
         ]
