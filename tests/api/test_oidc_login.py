@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.oidc import OidcAuthenticationError, validate_id_token
 from pornarr_db.models.oidc import OidcIdentity, OidcProvider
+from pornarr_db.models.user import UserRole
 from pornarr_db.types import set_cipher
 from pornarr_shared.crypto import CredentialCipher
 from tests.api.test_app import SECRET
@@ -32,7 +33,7 @@ def _cipher() -> Iterator[None]:
     set_cipher(None)
 
 
-async def _provider(app) -> OidcProvider:
+async def _provider(app, **settings: object) -> OidcProvider:
     async with AsyncSession(app.state.engine, expire_on_commit=False) as session:
         provider = OidcProvider(
             name="example",
@@ -46,6 +47,7 @@ async def _provider(app) -> OidcProvider:
                 "token_endpoint": "https://issuer.example/token",
                 "jwks_uri": "https://issuer.example/jwks",
             },
+            **settings,
         )
         session.add(provider)
         await session.commit()
@@ -107,6 +109,82 @@ async def test_oidc_callback_creates_the_normal_session_and_consumes_state(
     )
     assert replay.status_code == 400
     assert replay.json()["code"] == "OIDC_STATE_INVALID"
+
+
+async def test_oidc_jit_provisions_and_re_evaluates_the_role(app, client, monkeypatch) -> None:
+    await create_user(app)
+    provider = await _provider(
+        app,
+        default_role=UserRole.USER,
+        username_claim="preferred_username",
+        role_claim="groups",
+        role_mapping={"administrators": UserRole.ADMIN},
+    )
+    claims: dict[str, object] = {
+        "sub": "provider-user",
+        "preferred_username": "oidc-user",
+        "groups": ["viewer"],
+    }
+
+    async def exchange_code(*_: object) -> str:
+        return "id-token"
+
+    async def validate_id_token(*_: object) -> dict[str, object]:
+        return claims
+
+    monkeypatch.setattr("pornarr_api.routers.auth_oidc.exchange_code", exchange_code)
+    monkeypatch.setattr("pornarr_api.routers.auth_oidc.validate_id_token", validate_id_token)
+
+    async def callback() -> None:
+        started = await client.get(f"/api/auth/oidc/{provider.id}/login", follow_redirects=False)
+        state = parse_qs(urlparse(started.headers["location"]).query)["state"][0]
+        response = await client.get(
+            "/api/auth/oidc/callback",
+            params={"code": "authorization-code", "state": state},
+            follow_redirects=False,
+        )
+        assert response.status_code == 303
+
+    await callback()
+    current = (await client.get("/api/auth/me")).json()
+    assert current["username"] == "oidc-user"
+    assert current["role"] == "user"
+    local_login = await client.post(
+        "/api/auth/login", json={"username": "oidc-user", "password": "not-the-random-password"}
+    )
+    assert local_login.status_code == 401
+
+    claims["groups"] = ["administrators"]
+    await callback()
+
+    assert (await client.get("/api/auth/me")).json()["role"] == "admin"
+
+
+async def test_oidc_refuses_an_identity_outside_the_provider_allowlist(
+    app, client, monkeypatch
+) -> None:
+    await create_user(app)
+    provider = await _provider(app, required_claim="tenant", required_claim_value="trusted")
+
+    async def exchange_code(*_: object) -> str:
+        return "id-token"
+
+    async def validate_id_token(*_: object) -> dict[str, str]:
+        return {"sub": "provider-user", "preferred_username": "oidc-user", "tenant": "other"}
+
+    monkeypatch.setattr("pornarr_api.routers.auth_oidc.exchange_code", exchange_code)
+    monkeypatch.setattr("pornarr_api.routers.auth_oidc.validate_id_token", validate_id_token)
+    started = await client.get(f"/api/auth/oidc/{provider.id}/login", follow_redirects=False)
+    state = parse_qs(urlparse(started.headers["location"]).query)["state"][0]
+
+    response = await client.get(
+        "/api/auth/oidc/callback",
+        params={"code": "authorization-code", "state": state},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "OIDC_IDENTITY_NOT_ALLOWED"
 
 
 async def test_oidc_token_validation_rejects_expired_and_wrongly_signed_tokens(

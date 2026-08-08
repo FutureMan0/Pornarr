@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Self
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request
-from pydantic import BaseModel, Field, SecretStr, field_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,6 +28,12 @@ class ProviderWrite(BaseModel):
     client_id: Annotated[str, Field(min_length=1, max_length=512)]
     client_secret: SecretStr
     scopes: list[str] = Field(default_factory=lambda: ["openid", "profile", "email"])
+    username_claim: Annotated[str, Field(min_length=1, max_length=128)] = "preferred_username"
+    role_claim: Annotated[str, Field(min_length=1, max_length=128)] = "groups"
+    role_mapping: dict[str, UserRole] = Field(default_factory=dict)
+    default_role: UserRole = UserRole.USER
+    required_claim: Annotated[str | None, Field(min_length=1, max_length=128)] = None
+    required_claim_value: Annotated[str | None, Field(min_length=1, max_length=512)] = None
     enabled: bool = True
 
     @field_validator("issuer")
@@ -38,6 +44,12 @@ class ProviderWrite(BaseModel):
         except OidcDiscoveryError as exc:
             raise ValueError(exc.message) from exc
 
+    @model_validator(mode="after")
+    def restriction_is_complete(self) -> Self:
+        if (self.required_claim is None) != (self.required_claim_value is None):
+            raise ValueError("required_claim and required_claim_value must be set together")
+        return self
+
 
 class ProviderResponse(BaseModel):
     id: UUID
@@ -45,6 +57,12 @@ class ProviderResponse(BaseModel):
     issuer: str
     client_id: str
     scopes: list[str]
+    username_claim: str
+    role_claim: str
+    role_mapping: dict[str, UserRole]
+    default_role: UserRole
+    required_claim: str | None
+    required_claim_value: str | None
     enabled: bool
     discovery_fetched_at: datetime | None
 
@@ -56,6 +74,12 @@ def provider_response(provider: OidcProvider) -> ProviderResponse:
         issuer=provider.issuer,
         client_id=provider.client_id,
         scopes=provider.scopes,
+        username_claim=provider.username_claim,
+        role_claim=provider.role_claim,
+        role_mapping={key: UserRole(value) for key, value in provider.role_mapping.items()},
+        default_role=UserRole(provider.default_role),
+        required_claim=provider.required_claim,
+        required_claim_value=provider.required_claim_value,
         enabled=provider.enabled,
         discovery_fetched_at=provider.discovery_fetched_at,
     )
@@ -85,6 +109,12 @@ async def create_provider(
         client_id=payload.client_id,
         client_secret=payload.client_secret.get_secret_value(),
         scopes=payload.scopes,
+        username_claim=payload.username_claim,
+        role_claim=payload.role_claim,
+        role_mapping={key: value.value for key, value in payload.role_mapping.items()},
+        default_role=payload.default_role.value,
+        required_claim=payload.required_claim,
+        required_claim_value=payload.required_claim_value,
         enabled=payload.enabled,
     )
     session.add(provider)

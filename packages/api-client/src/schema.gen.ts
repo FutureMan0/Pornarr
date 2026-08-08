@@ -1024,6 +1024,7 @@ export interface components {
         ProviderResponse: {
             /** Client Id */
             client_id: string;
+            default_role: components["schemas"]["UserRole"];
             /** Discovery Fetched At */
             discovery_fetched_at: string | null;
             /** Enabled */
@@ -1037,8 +1038,20 @@ export interface components {
             issuer: string;
             /** Name */
             name: string;
+            /** Required Claim */
+            required_claim: string | null;
+            /** Required Claim Value */
+            required_claim_value: string | null;
+            /** Role Claim */
+            role_claim: string;
+            /** Role Mapping */
+            role_mapping: {
+                [key: string]: components["schemas"]["UserRole"];
+            };
             /** Scopes */
             scopes: string[];
+            /** Username Claim */
+            username_claim: string;
         };
         /** ProviderWrite */
         ProviderWrite: {
@@ -1049,6 +1062,8 @@ export interface components {
              * Format: password
              */
             client_secret: string;
+            /** @default user */
+            default_role: components["schemas"]["UserRole"];
             /**
              * Enabled
              * @default true
@@ -1058,8 +1073,26 @@ export interface components {
             issuer: string;
             /** Name */
             name: string;
+            /** Required Claim */
+            required_claim?: string | null;
+            /** Required Claim Value */
+            required_claim_value?: string | null;
+            /**
+             * Role Claim
+             * @default groups
+             */
+            role_claim: string;
+            /** Role Mapping */
+            role_mapping?: {
+                [key: string]: components["schemas"]["UserRole"];
+            };
             /** Scopes */
             scopes?: string[];
+            /**
+             * Username Claim
+             * @default preferred_username
+             */
+            username_claim: string;
         };
         /** RootFolderResponse */
         RootFolderResponse: {
@@ -2215,6 +2248,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

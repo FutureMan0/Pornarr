@@ -21,6 +21,21 @@ class OidcProvider(TimestampMixin, Base):
     client_id: Mapped[str] = mapped_column(String(512), nullable=False)
     client_secret: Mapped[str] = mapped_column(EncryptedString(), nullable=False)
     scopes: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    username_claim: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        default="preferred_username",
+        server_default="preferred_username",
+    )
+    role_claim: Mapped[str] = mapped_column(
+        String(128), nullable=False, default="groups", server_default="groups"
+    )
+    role_mapping: Mapped[dict[str, str]] = mapped_column(JSON, nullable=False, default=dict)
+    default_role: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="user", server_default="user"
+    )
+    required_claim: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    required_claim_value: Mapped[str | None] = mapped_column(String(512), nullable=True)
     enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )
