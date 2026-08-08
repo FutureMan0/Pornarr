@@ -369,6 +369,52 @@ def test_automation_migration_backfills_disabled_rules(clean_database: None) -> 
     assert rule == (False, 10, 2, 3)
 
 
+def test_request_survives_download_job_deletion(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        user_id = "8471c197-3db3-476f-9127-38d4d1ae5dcb"
+        client_id = "d94b20e7-0502-456a-b6da-fba4e6bf0e4a"
+        job_id = "ee337e00-eef6-4b1f-b7ca-9ce4d2a4b690"
+        request_id = "de649d41-9adb-4f60-9ebc-8a4e6a9e4f75"
+        connection.execute(
+            "INSERT INTO users (id, username, password_hash) VALUES (%s, %s, %s)",
+            (user_id, "request-owner", "not-a-real-password"),
+        )
+        connection.execute(
+            "INSERT INTO download_clients (id, name, protocol, implementation, host, port, url_base, credentials, health) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (
+                client_id,
+                "client",
+                "torrent",
+                "qbittorrent",
+                "client.example",
+                8080,
+                "",
+                "ciphertext",
+                "healthy",
+            ),
+        )
+        connection.execute(
+            "INSERT INTO download_jobs (id, download_client_id, client_name, protocol, release_guid, status) "
+            "VALUES (%s, %s, %s, %s, %s, %s)",
+            (job_id, client_id, "client", "torrent", "release", "queued"),
+        )
+        connection.execute(
+            "INSERT INTO requests (id, user_id, query, status, priority, download_job_id) "
+            "VALUES (%s, %s, %s, %s, %s, %s)",
+            (request_id, user_id, "Example", "queued", 50, job_id),
+        )
+        connection.execute("DELETE FROM download_jobs WHERE id = %s", (job_id,))
+        request = connection.execute(
+            "SELECT status, download_job_id FROM requests WHERE id = %s", (request_id,)
+        ).fetchone()
+        connection.commit()
+
+    assert request == ("queued", None)
+
+
 def test_autogenerate_reports_no_drift(clean_database: None) -> None:
     """The models and the migration history must agree. When they do not, someone
     changed a model without writing a migration and the next deployment fails."""
