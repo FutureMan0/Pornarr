@@ -48,6 +48,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "regenerate_library_artwork_job",
     ]
     assert settings.IndexerWorkerSettings.functions[0].name == "search_indexers"
+    assert settings.IndexerWorkerSettings.functions[1].name == "cleanup_release_cache"
     assert [function.name for function in settings.ImportWorkerSettings.functions] == [
         "heartbeat",
         "cleanup_transcodes",

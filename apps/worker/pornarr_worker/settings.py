@@ -22,7 +22,7 @@ from pornarr_worker.artwork import ARTWORK_JOB, LIBRARY_ARTWORK_JOB
 from pornarr_worker.cleanup import cleanup_transcodes
 from pornarr_worker.jobs.download_poll import DOWNLOAD_POLL_JOB
 from pornarr_worker.jobs.scan import SCAN_JOB
-from pornarr_worker.search import SEARCH_INDEXERS_JOB
+from pornarr_worker.search import RELEASE_CACHE_CLEANUP_JOB, SEARCH_INDEXERS_JOB
 from pornarr_worker.sprites import SPRITE_JOB
 
 REDIS_SETTINGS = RedisSettings.from_dsn(get_settings().redis_url)
@@ -80,7 +80,7 @@ class TranscodeWorkerSettings:
 class IndexerWorkerSettings:
     """Worker dedicated to indexer and feed work."""
 
-    functions: ClassVar = [SEARCH_INDEXERS_JOB]
+    functions: ClassVar = [SEARCH_INDEXERS_JOB, RELEASE_CACHE_CLEANUP_JOB]
     queue_name: ClassVar = INDEXER_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
     job_timeout: ClassVar = JOB_TIMEOUT_SECONDS
