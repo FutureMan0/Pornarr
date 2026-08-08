@@ -40,6 +40,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
     assert [function.name for function in settings.WorkerSettings.functions] == [
         "heartbeat",
         "cleanup_transcodes",
+        "download_poll",
     ]
     assert [job.name for job in settings.TranscodeWorkerSettings.functions] == [
         "generate_preview_sprite_job",
@@ -50,6 +51,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
     assert [function.name for function in settings.ImportWorkerSettings.functions] == [
         "heartbeat",
         "cleanup_transcodes",
+        "download_poll",
         "scan",
     ]
     required_arq_options = {
@@ -62,7 +64,6 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "job_completion_wait",
     }
     assert all(required_arq_options <= worker.__dict__.keys() for worker in worker_types)
-    assert [cron_job.name for cron_job in settings.SchedulerSettings.cron_jobs] == [
-        "heartbeat",
-        "cleanup_transcodes",
-    ]
+    cron_jobs = {cron_job.name: cron_job for cron_job in settings.SchedulerSettings.cron_jobs}
+    assert list(cron_jobs) == ["heartbeat", "cleanup_transcodes", "download_poll"]
+    assert cron_jobs["download_poll"].second == set(range(0, 60, 5))

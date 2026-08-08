@@ -10,7 +10,7 @@ from typing import Final
 
 import httpx
 
-from pornarr_integrations.downloaders import DownloadState
+from pornarr_integrations.downloaders import DownloadClientJob, DownloadState
 
 QBITTORRENT_STATE_MAP: Final[dict[str, DownloadState]] = {
     "error": DownloadState.FAILED,
@@ -206,6 +206,33 @@ class QbittorrentAdapter:
         if not isinstance(payload, list) or not all(isinstance(item, dict) for item in payload):
             raise QbittorrentProtocolError("qBittorrent returned an invalid torrent list.")
         return [parse_torrent(item) for item in payload]
+
+    async def list_jobs(
+        self,
+        *,
+        host: str,
+        port: int,
+        url_base: str,
+        credentials: str,
+    ) -> list[DownloadClientJob]:
+        """Read every torrent in one qBittorrent queue request."""
+        return [
+            DownloadClientJob(
+                client_job_id=torrent.client_job_id,
+                state=torrent.state,
+                size_bytes=torrent.size_bytes,
+                remaining_bytes=torrent.remaining_bytes,
+                download_speed_bytes=torrent.download_speed_bytes,
+                estimated_seconds=torrent.eta_seconds,
+            )
+            for torrent in await self.list_torrents(
+                host=host,
+                port=port,
+                url_base=url_base,
+                credentials=credentials,
+                category=None,
+            )
+        ]
 
     async def pause(
         self, *, host: str, port: int, url_base: str, credentials: str, client_job_id: str

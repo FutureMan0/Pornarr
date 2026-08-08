@@ -8,7 +8,7 @@ from typing import Final
 
 import httpx
 
-from pornarr_integrations.downloaders import DownloadState
+from pornarr_integrations.downloaders import DownloadClientJob, DownloadState
 
 SABNZBD_QUEUE_STATE_MAP: Final[dict[str, DownloadState]] = {
     "Paused": DownloadState.PAUSED,
@@ -191,6 +191,34 @@ class SabnzbdAdapter:
         if not isinstance(slots, list) or not all(isinstance(slot, dict) for slot in slots):
             raise SabnzbdProtocolError("SABnzbd returned an invalid history.")
         return [parse_history_slot(slot) for slot in slots]
+
+    async def list_jobs(
+        self,
+        *,
+        host: str,
+        port: int,
+        url_base: str,
+        credentials: str,
+    ) -> list[DownloadClientJob]:
+        """Read SABnzbd's active queue and post-processing history as one batch."""
+        queue = await self.list_queue(
+            host=host, port=port, url_base=url_base, credentials=credentials
+        )
+        history = await self.list_history(
+            host=host, port=port, url_base=url_base, credentials=credentials
+        )
+        return [
+            DownloadClientJob(
+                client_job_id=job.client_job_id,
+                state=job.state,
+                size_bytes=job.size_bytes,
+                remaining_bytes=job.remaining_bytes,
+                download_speed_bytes=job.download_speed_bytes,
+                estimated_seconds=job.eta_seconds,
+                error=job.error,
+            )
+            for job in [*queue, *history]
+        ]
 
     async def pause(
         self, *, host: str, port: int, url_base: str, credentials: str, client_job_id: str
