@@ -89,6 +89,7 @@ def parse_results(document: str) -> list[Release]:
         ]
         attribute_values = dict(attributes)
         enclosure = item.find("enclosure")
+        enclosure_size = _integer(enclosure.attrib.get("length") if enclosure is not None else None)
         releases.append(
             Release(
                 guid=guid,
@@ -96,7 +97,7 @@ def parse_results(document: str) -> list[Release]:
                 details_url=item.findtext("link"),
                 download_url=enclosure.attrib.get("url") if enclosure is not None else None,
                 published_at=_date(item.findtext("pubDate")),
-                size=_integer(enclosure.attrib.get("length") if enclosure is not None else None),
+                size=enclosure_size or _integer(attribute_values.get("size")),
                 categories=tuple(value for name, value in attributes if name == "category"),
                 seeders=_integer(attribute_values.get("seeders")),
                 peers=_integer(attribute_values.get("peers")),
