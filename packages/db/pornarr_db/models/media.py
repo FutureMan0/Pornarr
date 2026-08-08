@@ -34,6 +34,12 @@ class Media(TimestampMixin, Base):
             postgresql_using="gin",
             postgresql_ops={"normalized_title": "gin_trgm_ops"},
         ),
+        Index(
+            "ix_media_normalized_title_trgm_knn",
+            "normalized_title",
+            postgresql_using="gist",
+            postgresql_ops={"normalized_title": "gist_trgm_ops"},
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
