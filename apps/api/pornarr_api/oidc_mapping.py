@@ -7,7 +7,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pornarr_api.auth import PASSWORDLESS_PASSWORD_HASH
+from pornarr_api.auth import PASSWORDLESS_PASSWORD_HASH, has_local_password
 from pornarr_db.models.oidc import OidcIdentity, OidcProvider
 from pornarr_db.models.user import User, UserRole
 from pornarr_shared.errors import PornarrError
@@ -20,6 +20,11 @@ class OidcIdentityNotAllowedError(PornarrError):
 
 class OidcUsernameConflictError(PornarrError):
     code = "OIDC_USERNAME_CONFLICT"
+    status = 409
+
+
+class OidcIdentityAlreadyLinkedError(PornarrError):
+    code = "OIDC_IDENTITY_ALREADY_LINKED"
     status = 409
 
 
@@ -50,6 +55,45 @@ def _is_allowed(provider: OidcProvider, claims: dict[str, Any]) -> bool:
     return provider.required_claim_value in _claim_values(claims, provider.required_claim)
 
 
+def _subject(claims: dict[str, Any]) -> str:
+    subject = claims.get("sub")
+    if not isinstance(subject, str):
+        raise OidcIdentityNotAllowedError("The OIDC identity has no usable subject.")
+    return subject
+
+
+async def link_oidc_identity(
+    session: AsyncSession, provider: OidcProvider, claims: dict[str, Any], user: User
+) -> None:
+    if not _is_allowed(provider, claims):
+        raise OidcIdentityNotAllowedError(
+            "This OIDC identity is not allowed by the provider policy."
+        )
+    subject = _subject(claims)
+    identity = await session.scalar(
+        select(OidcIdentity).where(
+            OidcIdentity.provider_id == provider.id, OidcIdentity.subject == subject
+        )
+    )
+    if identity is not None:
+        if identity.user_id != user.id:
+            raise OidcIdentityAlreadyLinkedError(
+                "This OIDC identity is already linked to another account."
+            )
+        return
+    session.add(OidcIdentity(provider_id=provider.id, user_id=user.id, subject=subject))
+
+
+async def _verified_email_user(session: AsyncSession, claims: dict[str, Any]) -> User | None:
+    email = claims.get("email")
+    if claims.get("email_verified") is not True or not isinstance(email, str):
+        return None
+    user = await session.scalar(select(User).where(User.username == email))
+    if user is None or not user.is_active or not has_local_password(user):
+        return None
+    return user
+
+
 async def resolve_oidc_user(
     session: AsyncSession, provider: OidcProvider, claims: dict[str, Any]
 ) -> User:
@@ -57,9 +101,7 @@ async def resolve_oidc_user(
         raise OidcIdentityNotAllowedError(
             "This OIDC identity is not allowed by the provider policy."
         )
-    subject = claims.get("sub")
-    if not isinstance(subject, str):
-        raise OidcIdentityNotAllowedError("The OIDC identity has no usable subject.")
+    subject = _subject(claims)
     role = _role(provider, claims)
     identity = await session.scalar(
         select(OidcIdentity).where(
@@ -72,6 +114,11 @@ async def resolve_oidc_user(
             raise OidcIdentityNotAllowedError(
                 "The OIDC identity is not linked to an active account."
             )
+        user.role = role
+        return user
+    user = await _verified_email_user(session, claims)
+    if user is not None:
+        await link_oidc_identity(session, provider, claims, user)
         user.role = role
         return user
     usernames = _claim_values(claims, provider.username_claim)
