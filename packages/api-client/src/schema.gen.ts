@@ -4,6 +4,58 @@
  */
 
 export interface paths {
+    "/api/admin/download-clients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Download Clients */
+        get: operations["admin_list_download_clients"];
+        put?: never;
+        /** Create Download Client */
+        post: operations["admin_create_download_client"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/download-clients/{client_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Download Client */
+        delete: operations["admin_delete_download_client"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/download-clients/{client_id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Download Client */
+        post: operations["admin_test_download_client"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/oidc": {
         parameters: {
             query?: never;
@@ -180,6 +232,80 @@ export interface components {
             /** Username */
             username: string;
         };
+        /** DownloadClientResponse */
+        DownloadClientResponse: {
+            /** Category */
+            category: string | null;
+            /** Enabled */
+            enabled: boolean;
+            /** Health */
+            health: string;
+            /** Host */
+            host: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Implementation */
+            implementation: string;
+            /** Last Error */
+            last_error: string | null;
+            /** Last Tested At */
+            last_tested_at: string | null;
+            /** Name */
+            name: string;
+            /** Port */
+            port: number;
+            /** Priority */
+            priority: number;
+            /** Protocol */
+            protocol: string;
+            /** Remove Completed */
+            remove_completed: boolean;
+            /** Url Base */
+            url_base: string;
+        };
+        /** DownloadClientWrite */
+        DownloadClientWrite: {
+            /** Category */
+            category?: string | null;
+            /**
+             * Credentials
+             * Format: password
+             */
+            credentials: string;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Host */
+            host: string;
+            /** Implementation */
+            implementation: string;
+            /** Name */
+            name: string;
+            /** Port */
+            port: number;
+            /**
+             * Priority
+             * @default 0
+             */
+            priority: number;
+            /** Protocol */
+            protocol: string;
+            /**
+             * Remove Completed
+             * @default false
+             */
+            remove_completed: boolean;
+            /**
+             * Url Base
+             * @default
+             */
+            url_base: string;
+        };
         /**
          * ErrorResponse
          * @description The contract shape for every machine-readable API error.
@@ -289,6 +415,119 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    admin_list_download_clients: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadClientResponse"][];
+                };
+            };
+        };
+    };
+    admin_create_download_client: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DownloadClientWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadClientResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_delete_download_client: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_test_download_client: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadClientResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     admin_list_providers: {
         parameters: {
             query?: never;

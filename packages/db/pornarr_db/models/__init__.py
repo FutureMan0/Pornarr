@@ -8,6 +8,7 @@ explicit rather than a directory scan.
 
 from __future__ import annotations
 
+from pornarr_db.models.download_client import DownloadClient
 from pornarr_db.models.filters import (
     ContentFilterProfile,
     ContentFilterRule,
@@ -22,6 +23,7 @@ from pornarr_db.models.user import User, UserRole
 __all__ = [
     "ContentFilterProfile",
     "ContentFilterRule",
+    "DownloadClient",
     "FilterAction",
     "FilterProfileScope",
     "FilterRuleKind",
