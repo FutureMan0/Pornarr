@@ -20,6 +20,7 @@ from pornarr_shared.jobs import (
 )
 from pornarr_worker.artwork import ARTWORK_JOB, LIBRARY_ARTWORK_JOB
 from pornarr_worker.cleanup import cleanup_transcodes
+from pornarr_worker.jobs.scan import SCAN_JOB
 from pornarr_worker.search import SEARCH_INDEXERS_JOB
 from pornarr_worker.sprites import SPRITE_JOB
 
@@ -52,7 +53,7 @@ class WorkerSettings:
 class ImportWorkerSettings:
     """Worker dedicated to slow import and filesystem work."""
 
-    functions: ClassVar = WorkerSettings.functions
+    functions: ClassVar = [*WorkerSettings.functions, SCAN_JOB]
     queue_name: ClassVar = IMPORT_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
     job_timeout: ClassVar = JOB_TIMEOUT_SECONDS
