@@ -4,6 +4,58 @@
  */
 
 export interface paths {
+    "/api/admin/indexers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Indexers */
+        get: operations["admin_list_indexers"];
+        put?: never;
+        /** Create Indexer */
+        post: operations["admin_create_indexer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/indexers/{indexer_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Indexer */
+        delete: operations["admin_delete_indexer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/indexers/{indexer_id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Indexer */
+        post: operations["admin_test_indexer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/oidc": {
         parameters: {
             query?: never;
@@ -211,6 +263,74 @@ export interface components {
             status: "healthy" | "degraded" | "unhealthy";
             worker: components["schemas"]["ComponentHealth"];
         };
+        /** IndexerResponse */
+        IndexerResponse: {
+            /** Base Url */
+            base_url: string;
+            /** Categories */
+            categories: {
+                [key: string]: string;
+            }[];
+            /** Enabled */
+            enabled: boolean;
+            /** Health */
+            health: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Implementation */
+            implementation: string;
+            /** Last Error */
+            last_error: string | null;
+            /** Last Tested At */
+            last_tested_at: string | null;
+            /** Name */
+            name: string;
+            /** Priority */
+            priority: number;
+            /** Protocol */
+            protocol: string;
+            stats: components["schemas"]["IndexerStatsResponse"];
+        };
+        /** IndexerStatsResponse */
+        IndexerStatsResponse: {
+            /** Average Latency Ms */
+            average_latency_ms: number | null;
+            /** Failures */
+            failures: number;
+            /** Grabs */
+            grabs: number;
+            /** Queries */
+            queries: number;
+        };
+        /** IndexerWrite */
+        IndexerWrite: {
+            /**
+             * Api Key
+             * Format: password
+             */
+            api_key: string;
+            /** Base Url */
+            base_url: string;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Implementation */
+            implementation: string;
+            /** Name */
+            name: string;
+            /**
+             * Priority
+             * @default 0
+             */
+            priority: number;
+            /** Protocol */
+            protocol: string;
+        };
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -289,6 +409,119 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    admin_list_indexers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndexerResponse"][];
+                };
+            };
+        };
+    };
+    admin_create_indexer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IndexerWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndexerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_delete_indexer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                indexer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_test_indexer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                indexer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndexerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     admin_list_providers: {
         parameters: {
             query?: never;

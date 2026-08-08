@@ -123,6 +123,183 @@
         "title": "HealthReport",
         "type": "object"
       },
+      "IndexerResponse": {
+        "properties": {
+          "base_url": {
+            "title": "Base Url",
+            "type": "string"
+          },
+          "categories": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "health": {
+            "title": "Health",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "implementation": {
+            "title": "Implementation",
+            "type": "string"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "last_tested_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tested At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "integer"
+          },
+          "protocol": {
+            "title": "Protocol",
+            "type": "string"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/IndexerStatsResponse"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "protocol",
+          "implementation",
+          "base_url",
+          "categories",
+          "priority",
+          "enabled",
+          "health",
+          "last_error",
+          "last_tested_at",
+          "stats"
+        ],
+        "title": "IndexerResponse",
+        "type": "object"
+      },
+      "IndexerStatsResponse": {
+        "properties": {
+          "average_latency_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Latency Ms"
+          },
+          "failures": {
+            "title": "Failures",
+            "type": "integer"
+          },
+          "grabs": {
+            "title": "Grabs",
+            "type": "integer"
+          },
+          "queries": {
+            "title": "Queries",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "queries",
+          "failures",
+          "average_latency_ms",
+          "grabs"
+        ],
+        "title": "IndexerStatsResponse",
+        "type": "object"
+      },
+      "IndexerWrite": {
+        "properties": {
+          "api_key": {
+            "format": "password",
+            "title": "Api Key",
+            "type": "string",
+            "writeOnly": true
+          },
+          "base_url": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Base Url",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "implementation": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Implementation",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "priority": {
+            "default": 0,
+            "title": "Priority",
+            "type": "integer"
+          },
+          "protocol": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Protocol",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "protocol",
+          "implementation",
+          "base_url",
+          "api_key"
+        ],
+        "title": "IndexerWrite",
+        "type": "object"
+      },
       "LoginRequest": {
         "properties": {
           "password": {
@@ -304,6 +481,149 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/admin/indexers": {
+      "get": {
+        "operationId": "admin_list_indexers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/IndexerResponse"
+                  },
+                  "title": "Response Admin List Indexers",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Indexers",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "admin_create_indexer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IndexerWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Indexer",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/indexers/{indexer_id}": {
+      "delete": {
+        "operationId": "admin_delete_indexer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "indexer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Indexer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Indexer",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/indexers/{indexer_id}/test": {
+      "post": {
+        "operationId": "admin_test_indexer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "indexer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Indexer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Test Indexer",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/admin/oidc": {
       "get": {
         "operationId": "admin_list_providers",
