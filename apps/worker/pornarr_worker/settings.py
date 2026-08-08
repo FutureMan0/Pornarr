@@ -18,6 +18,7 @@ from pornarr_shared.jobs import (
     TRANSCODE_QUEUE,
     job,
 )
+from pornarr_worker.cleanup import cleanup_transcodes
 from pornarr_worker.sprites import SPRITE_JOB
 
 REDIS_SETTINGS = RedisSettings.from_dsn(get_settings().redis_url)
@@ -30,12 +31,13 @@ async def heartbeat(_: dict[str, Any]) -> str:
 
 
 HEARTBEAT_JOB = job(heartbeat)
+CLEANUP_TRANSCODES_JOB = job(cleanup_transcodes)
 
 
 class WorkerSettings:
     """Default queue worker; ARQ settings are deliberately class attributes."""
 
-    functions: ClassVar = [HEARTBEAT_JOB]
+    functions: ClassVar = [HEARTBEAT_JOB, CLEANUP_TRANSCODES_JOB]
     queue_name: ClassVar = DEFAULT_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
     job_timeout: ClassVar = JOB_TIMEOUT_SECONDS
@@ -102,5 +104,12 @@ class SchedulerSettings:
             second=0,
             run_at_startup=True,
             max_tries=JOB_MAX_TRIES,
-        )
+        ),
+        cron(
+            CLEANUP_TRANSCODES_JOB.coroutine,
+            name=CLEANUP_TRANSCODES_JOB.name,
+            hour=3,
+            minute=0,
+            max_tries=JOB_MAX_TRIES,
+        ),
     ]
