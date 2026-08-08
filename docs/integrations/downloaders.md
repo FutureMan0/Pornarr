@@ -15,6 +15,10 @@ qBittorrent credentials are entered as an encrypted JSON object with `username` 
 `password` fields. The adapter keeps the WebUI session cookie internal and renews it
 once when qBittorrent reports an expired session.
 
+SABnzbd credentials are its API key. Extraction, moving and scripts report as
+`importing`; verification and repair report as `repairing`, so neither phase is
+mistaken for download time.
+
 ## Status mapping
 
 The most error-prone part of the integration. Each client has its own vocabulary, and
