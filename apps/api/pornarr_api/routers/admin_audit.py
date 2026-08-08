@@ -15,6 +15,7 @@ from pornarr_api.auth import database_session, require_role
 from pornarr_db.audit import prune_audit_log
 from pornarr_db.models.audit import AuditLog
 from pornarr_db.models.user import User, UserRole
+from pornarr_db.settings import get_runtime_settings
 
 router = APIRouter(prefix="/admin/audit", tags=["admin"])
 Admin = Annotated[User, Depends(require_role(UserRole.ADMIN))]
@@ -41,7 +42,8 @@ async def list_audit_log(
     since: Annotated[datetime | None, Query()] = None,
     until: Annotated[datetime | None, Query()] = None,
 ) -> list[AuditLogResponse]:
-    await prune_audit_log(session, request.app.state.settings.audit_retention_days)
+    settings = await get_runtime_settings(session, request.app.state.settings)
+    await prune_audit_log(session, settings.audit_retention_days)
     query = select(AuditLog).order_by(AuditLog.created_at.desc()).limit(200)
     if actor_id is not None:
         query = query.where(AuditLog.actor_id == actor_id)

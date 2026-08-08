@@ -1191,6 +1191,198 @@
         "title": "RootFolderWrite",
         "type": "object"
       },
+      "RuntimeSettings": {
+        "description": "Resolved values with attributes callers can use directly.",
+        "properties": {
+          "audit_retention_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audit Retention Days"
+          },
+          "default_auto_downloads_enabled": {
+            "title": "Default Auto Downloads Enabled",
+            "type": "boolean"
+          },
+          "default_daily_download_limit_gb": {
+            "title": "Default Daily Download Limit Gb",
+            "type": "integer"
+          },
+          "default_max_auto_jobs": {
+            "title": "Default Max Auto Jobs",
+            "type": "integer"
+          },
+          "min_free_disk_percent": {
+            "title": "Min Free Disk Percent",
+            "type": "integer"
+          },
+          "playback_completion_threshold_percent": {
+            "title": "Playback Completion Threshold Percent",
+            "type": "integer"
+          },
+          "transcode_max_hw_sessions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcode Max Hw Sessions"
+          },
+          "transcode_max_per_user": {
+            "title": "Transcode Max Per User",
+            "type": "integer"
+          },
+          "transcode_max_sw_sessions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcode Max Sw Sessions"
+          }
+        },
+        "required": [
+          "transcode_max_hw_sessions",
+          "transcode_max_sw_sessions",
+          "transcode_max_per_user",
+          "playback_completion_threshold_percent",
+          "audit_retention_days",
+          "min_free_disk_percent",
+          "default_daily_download_limit_gb",
+          "default_max_auto_jobs",
+          "default_auto_downloads_enabled"
+        ],
+        "title": "RuntimeSettings",
+        "type": "object"
+      },
+      "RuntimeSettingsWrite": {
+        "additionalProperties": false,
+        "description": "Partial update validated before values are persisted.",
+        "properties": {
+          "audit_retention_days": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audit Retention Days"
+          },
+          "default_auto_downloads_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Auto Downloads Enabled"
+          },
+          "default_daily_download_limit_gb": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Daily Download Limit Gb"
+          },
+          "default_max_auto_jobs": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Max Auto Jobs"
+          },
+          "min_free_disk_percent": {
+            "anyOf": [
+              {
+                "maximum": 99.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Free Disk Percent"
+          },
+          "playback_completion_threshold_percent": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Playback Completion Threshold Percent"
+          },
+          "transcode_max_hw_sessions": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcode Max Hw Sessions"
+          },
+          "transcode_max_per_user": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcode Max Per User"
+          },
+          "transcode_max_sw_sessions": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcode Max Sw Sessions"
+          }
+        },
+        "title": "RuntimeSettingsWrite",
+        "type": "object"
+      },
       "SetupCompleteResponse": {
         "properties": {
           "same_filesystem_as_downloads": {
@@ -2272,6 +2464,66 @@
           }
         },
         "summary": "Test Provider",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/settings": {
+      "get": {
+        "operationId": "admin_read_settings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeSettings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Settings",
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "admin_write_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuntimeSettingsWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeSettings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Write Settings",
         "tags": [
           "admin"
         ]

@@ -264,6 +264,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Settings */
+        get: operations["admin_read_settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Write Settings */
+        patch: operations["admin_write_settings"];
+        trace?: never;
+    };
     "/api/admin/transcode/capabilities": {
         parameters: {
             query?: never;
@@ -1039,6 +1057,54 @@ export interface components {
             /** Path */
             path: string;
         };
+        /**
+         * RuntimeSettings
+         * @description Resolved values with attributes callers can use directly.
+         */
+        RuntimeSettings: {
+            /** Audit Retention Days */
+            audit_retention_days: number | null;
+            /** Default Auto Downloads Enabled */
+            default_auto_downloads_enabled: boolean;
+            /** Default Daily Download Limit Gb */
+            default_daily_download_limit_gb: number;
+            /** Default Max Auto Jobs */
+            default_max_auto_jobs: number;
+            /** Min Free Disk Percent */
+            min_free_disk_percent: number;
+            /** Playback Completion Threshold Percent */
+            playback_completion_threshold_percent: number;
+            /** Transcode Max Hw Sessions */
+            transcode_max_hw_sessions: number | null;
+            /** Transcode Max Per User */
+            transcode_max_per_user: number;
+            /** Transcode Max Sw Sessions */
+            transcode_max_sw_sessions: number | null;
+        };
+        /**
+         * RuntimeSettingsWrite
+         * @description Partial update validated before values are persisted.
+         */
+        RuntimeSettingsWrite: {
+            /** Audit Retention Days */
+            audit_retention_days?: number | null;
+            /** Default Auto Downloads Enabled */
+            default_auto_downloads_enabled?: boolean | null;
+            /** Default Daily Download Limit Gb */
+            default_daily_download_limit_gb?: number | null;
+            /** Default Max Auto Jobs */
+            default_max_auto_jobs?: number | null;
+            /** Min Free Disk Percent */
+            min_free_disk_percent?: number | null;
+            /** Playback Completion Threshold Percent */
+            playback_completion_threshold_percent?: number | null;
+            /** Transcode Max Hw Sessions */
+            transcode_max_hw_sessions?: number | null;
+            /** Transcode Max Per User */
+            transcode_max_per_user?: number | null;
+            /** Transcode Max Sw Sessions */
+            transcode_max_sw_sessions?: number | null;
+        };
         /** SetupCompleteResponse */
         SetupCompleteResponse: {
             /** Same Filesystem As Downloads */
@@ -1738,6 +1804,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_read_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeSettings"];
+                };
+            };
+        };
+    };
+    admin_write_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuntimeSettingsWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeSettings"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

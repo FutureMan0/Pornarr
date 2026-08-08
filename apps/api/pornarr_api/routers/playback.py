@@ -31,6 +31,7 @@ from pornarr_core.playback import (
 from pornarr_db.models.media import Media, MediaFile
 from pornarr_db.models.playback import PlaybackProgress, UserEvent
 from pornarr_db.models.user import User
+from pornarr_db.settings import get_runtime_settings
 
 router = APIRouter(prefix="/media", tags=["playback"])
 progress_router = APIRouter(prefix="/playback", tags=["playback"])
@@ -177,10 +178,10 @@ async def report_progress(
         raise HTTPException(status_code=404)
 
     progress = await progress_for_user(session, user.id, media_id)
+    settings = await get_runtime_settings(session, request.app.state.settings)
     reached_threshold = (
         payload.position_seconds * 100
-        >= payload.duration_seconds
-        * request.app.state.settings.playback_completion_threshold_percent
+        >= payload.duration_seconds * settings.playback_completion_threshold_percent
     )
     if progress is None:
         progress = PlaybackProgress(

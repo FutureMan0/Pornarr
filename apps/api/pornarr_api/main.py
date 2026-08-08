@@ -22,6 +22,7 @@ from pornarr_api.routers.admin_download_clients import router as admin_download_
 from pornarr_api.routers.admin_indexers import router as admin_indexers_router
 from pornarr_api.routers.admin_library import router as admin_library_router
 from pornarr_api.routers.admin_oidc import router as admin_oidc_router
+from pornarr_api.routers.admin_settings import router as admin_settings_router
 from pornarr_api.routers.auth import router as auth_router
 from pornarr_api.routers.events import router as events_router
 from pornarr_api.routers.health import router as health_router
@@ -60,6 +61,7 @@ api_router.include_router(admin_oidc_router)
 api_router.include_router(admin_audit_router)
 api_router.include_router(admin_indexers_router)
 api_router.include_router(admin_library_router)
+api_router.include_router(admin_settings_router)
 api_router.include_router(events_router)
 api_router.include_router(health_router)
 api_router.include_router(playback_router)
