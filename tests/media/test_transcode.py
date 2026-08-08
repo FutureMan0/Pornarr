@@ -4,6 +4,7 @@ import asyncio
 import subprocess
 import sys
 from pathlib import Path
+from shutil import which
 from uuid import uuid4
 
 import pytest
@@ -15,6 +16,8 @@ from pornarr_media.transcode import (
     build_hls_command,
     start_hls_transcode,
 )
+
+FFMPEG_AVAILABLE = which("ffmpeg") is not None
 
 
 @pytest.mark.parametrize(
@@ -104,6 +107,7 @@ def test_hls_command_copies_webvtt_subtitles(tmp_path: Path) -> None:
     assert command[command.index("-c:s") + 1] == "copy"
 
 
+@pytest.mark.skipif(not FFMPEG_AVAILABLE, reason="ffmpeg is required")
 async def test_software_transcode_creates_a_master_playlist_variant_and_segment(
     tmp_path: Path,
 ) -> None:
