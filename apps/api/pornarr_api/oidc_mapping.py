@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import secrets
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pornarr_api.auth import hash_password
+from pornarr_api.auth import PASSWORDLESS_PASSWORD_HASH
 from pornarr_db.models.oidc import OidcIdentity, OidcProvider
 from pornarr_db.models.user import User, UserRole
 from pornarr_shared.errors import PornarrError
@@ -81,9 +80,7 @@ async def resolve_oidc_user(
     username = usernames[0]
     if await session.scalar(select(User.id).where(User.username == username)) is not None:
         raise OidcUsernameConflictError("The OIDC username belongs to an existing local account.")
-    user = User(
-        username=username, password_hash=hash_password(secrets.token_urlsafe(32)), role=role
-    )
+    user = User(username=username, password_hash=PASSWORDLESS_PASSWORD_HASH, role=role)
     session.add(user)
     await session.flush()
     session.add(OidcIdentity(provider_id=provider.id, user_id=user.id, subject=subject))
