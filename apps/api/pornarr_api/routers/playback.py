@@ -1,13 +1,20 @@
-"""Playback metadata for direct-play decisions."""
+"""Playback: direct-play decisions, plus progress and resume.
+
+Two routers, because the two feature sets sit under different prefixes and
+merging them would change one of their URLs: `router` serves /media for the
+direct-play decision, `progress_router` serves /playback for progress and
+resume. `transcode.py` exports two routers for the same reason.
+"""
 
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Annotated
+from datetime import UTC, datetime
+from typing import Annotated, Self
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,10 +28,12 @@ from pornarr_core.playback import (
     PlaybackSource,
     decide_direct_play,
 )
-from pornarr_db.models.media import MediaFile
+from pornarr_db.models.media import Media, MediaFile
+from pornarr_db.models.playback import PlaybackProgress, UserEvent
 from pornarr_db.models.user import User
 
 router = APIRouter(prefix="/media", tags=["playback"])
+progress_router = APIRouter(prefix="/playback", tags=["playback"])
 CurrentUser = Annotated[User, Depends(get_current_user)]
 Session = Annotated[AsyncSession, Depends(database_session)]
 
@@ -117,3 +126,111 @@ async def playback_info(
     if media_file is None:
         raise HTTPException(status_code=404)
     return _response(decide_direct_play(_source(media_file.codecs), capabilities))
+
+
+class PlaybackProgressWrite(BaseModel):
+    position_seconds: Annotated[float, Field(ge=0)]
+    duration_seconds: Annotated[float, Field(gt=0)]
+
+    @model_validator(mode="after")
+    def position_is_within_duration(self) -> Self:
+        if self.position_seconds > self.duration_seconds:
+            raise ValueError("position_seconds must not exceed duration_seconds")
+        return self
+
+
+class PlaybackProgressResponse(BaseModel):
+    media_id: UUID
+    position_seconds: float
+    duration_seconds: float
+    completed: bool
+
+
+def progress_response(progress: PlaybackProgress) -> PlaybackProgressResponse:
+    return PlaybackProgressResponse(
+        media_id=progress.media_id,
+        position_seconds=progress.position_seconds,
+        duration_seconds=progress.duration_seconds,
+        completed=progress.completed,
+    )
+
+
+async def progress_for_user(
+    session: AsyncSession, user_id: UUID, media_id: UUID
+) -> PlaybackProgress | None:
+    return await session.scalar(
+        select(PlaybackProgress).where(
+            PlaybackProgress.user_id == user_id, PlaybackProgress.media_id == media_id
+        )
+    )
+
+
+@progress_router.post("/{media_id}/progress", response_model=PlaybackProgressResponse)
+async def report_progress(
+    media_id: UUID,
+    payload: PlaybackProgressWrite,
+    request: Request,
+    user: CurrentUser,
+    session: Session,
+) -> PlaybackProgressResponse:
+    if await session.get(Media, media_id) is None:
+        raise HTTPException(status_code=404)
+
+    progress = await progress_for_user(session, user.id, media_id)
+    reached_threshold = (
+        payload.position_seconds * 100
+        >= payload.duration_seconds
+        * request.app.state.settings.playback_completion_threshold_percent
+    )
+    if progress is None:
+        progress = PlaybackProgress(
+            user_id=user.id,
+            media_id=media_id,
+            position_seconds=payload.position_seconds,
+            duration_seconds=payload.duration_seconds,
+            completed=reached_threshold,
+            completed_at=datetime.now(UTC) if reached_threshold else None,
+        )
+        session.add(progress)
+    else:
+        progress.position_seconds = payload.position_seconds
+        progress.duration_seconds = payload.duration_seconds
+        if reached_threshold and not progress.completed:
+            progress.completed = True
+            progress.completed_at = datetime.now(UTC)
+
+    if reached_threshold and progress.completed_at is not None:
+        event = await session.scalar(
+            select(UserEvent).where(
+                UserEvent.user_id == user.id,
+                UserEvent.media_id == media_id,
+                UserEvent.event_type == "playback.completed",
+            )
+        )
+        if event is None:
+            session.add(
+                UserEvent(user_id=user.id, media_id=media_id, event_type="playback.completed")
+            )
+
+    await session.flush()
+    return progress_response(progress)
+
+
+@progress_router.get("/{media_id}/progress", response_model=PlaybackProgressResponse)
+async def playback_progress(
+    media_id: UUID, user: CurrentUser, session: Session
+) -> PlaybackProgressResponse:
+    progress = await progress_for_user(session, user.id, media_id)
+    if progress is None:
+        raise HTTPException(status_code=404)
+    return progress_response(progress)
+
+
+@progress_router.get("/continue-watching", response_model=list[PlaybackProgressResponse])
+async def continue_watching(user: CurrentUser, session: Session) -> list[PlaybackProgressResponse]:
+    progress = await session.scalars(
+        select(PlaybackProgress)
+        .where(PlaybackProgress.user_id == user.id, PlaybackProgress.completed.is_(False))
+        .order_by(PlaybackProgress.updated_at.desc())
+    )
+    return [progress_response(item) for item in progress]

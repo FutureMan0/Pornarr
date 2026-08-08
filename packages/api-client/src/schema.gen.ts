@@ -4,41 +4,25 @@
  */
 
 export interface paths {
-<<<<<<< HEAD
     "/api/admin/download-clients": {
-=======
-    "/api/admin/library/root-folders": {
->>>>>>> 322de02 (feat(library): add root folder configuration)
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-<<<<<<< HEAD
         /** List Download Clients */
         get: operations["admin_list_download_clients"];
         put?: never;
         /** Create Download Client */
         post: operations["admin_create_download_client"];
-=======
-        /** List Root Folders */
-        get: operations["admin_list_root_folders"];
-        put?: never;
-        /** Create Root Folder */
-        post: operations["admin_create_root_folder"];
->>>>>>> 322de02 (feat(library): add root folder configuration)
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-<<<<<<< HEAD
     "/api/admin/download-clients/{client_id}": {
-=======
-    "/api/admin/library/root-folders/{folder_id}": {
->>>>>>> 322de02 (feat(library): add root folder configuration)
         parameters: {
             query?: never;
             header?: never;
@@ -48,7 +32,6 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-<<<<<<< HEAD
         /** Delete Download Client */
         delete: operations["admin_delete_download_client"];
         options?: never;
@@ -120,10 +103,41 @@ export interface paths {
         /** Test Indexer */
         post: operations["admin_test_indexer"];
         delete?: never;
-=======
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/library/root-folders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Root Folders */
+        get: operations["admin_list_root_folders"];
+        put?: never;
+        /** Create Root Folder */
+        post: operations["admin_create_root_folder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/library/root-folders/{folder_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
         /** Delete Root Folder */
         delete: operations["admin_delete_root_folder"];
->>>>>>> 322de02 (feat(library): add root folder configuration)
         options?: never;
         head?: never;
         patch?: never;
@@ -402,6 +416,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/playback/continue-watching": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Continue Watching */
+        get: operations["playback_continue_watching"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playback/{media_id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Playback Progress */
+        get: operations["playback_playback_progress"];
+        put?: never;
+        /** Report Progress */
+        post: operations["playback_report_progress"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/search/local": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Local Search */
+        get: operations["search_local_search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/transcode/sessions/{session_id}/heartbeat": {
         parameters: {
             query?: never;
@@ -649,6 +715,41 @@ export interface components {
             /** Protocol */
             protocol: string;
         };
+        /** LocalSearchItem */
+        LocalSearchItem: {
+            /** Duration Seconds */
+            duration_seconds: number | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Performers */
+            performers: string[];
+            /** Quality */
+            quality: string | null;
+            /** Release Date */
+            release_date: string | null;
+            /** Relevance */
+            relevance: number;
+            /** Resolution */
+            resolution: string | null;
+            /** Size */
+            size: number;
+            /** Studio */
+            studio: string | null;
+            /** Tags */
+            tags: string[];
+            /** Title */
+            title: string;
+        };
+        /** LocalSearchResponse */
+        LocalSearchResponse: {
+            /** Items */
+            items: components["schemas"]["LocalSearchItem"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -659,12 +760,38 @@ export interface components {
             /** Username */
             username: string;
         };
+        /**
+         * MediaSort
+         * @enum {string}
+         */
+        MediaSort: "relevance" | "date_added" | "title" | "size" | "duration";
         /** PlaybackInfoResponse */
         PlaybackInfoResponse: {
             /** Direct Play */
             direct_play: boolean;
             /** Reasons */
             reasons: components["schemas"]["DirectPlayReason"][];
+        };
+        /** PlaybackProgressResponse */
+        PlaybackProgressResponse: {
+            /** Completed */
+            completed: boolean;
+            /** Duration Seconds */
+            duration_seconds: number;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Position Seconds */
+            position_seconds: number;
+        };
+        /** PlaybackProgressWrite */
+        PlaybackProgressWrite: {
+            /** Duration Seconds */
+            duration_seconds: number;
+            /** Position Seconds */
+            position_seconds: number;
         };
         /** ProviderResponse */
         ProviderResponse: {
@@ -707,7 +834,36 @@ export interface components {
             /** Scopes */
             scopes?: string[];
         };
-<<<<<<< HEAD
+        /** RootFolderResponse */
+        RootFolderResponse: {
+            /** Enabled */
+            enabled: boolean;
+            /** Free Space Bytes */
+            free_space_bytes: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Scanned At */
+            last_scanned_at: string | null;
+            /** Path */
+            path: string;
+            /** Same Filesystem As Downloads */
+            same_filesystem_as_downloads: boolean;
+            /** Warning */
+            warning: string | null;
+        };
+        /** RootFolderWrite */
+        RootFolderWrite: {
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Path */
+            path: string;
+        };
         /** TranscodeFailureResponse */
         TranscodeFailureResponse: {
             /**
@@ -773,20 +929,11 @@ export interface components {
             elapsed_seconds: number;
             /** Hardware */
             hardware: boolean;
-=======
-        /** RootFolderResponse */
-        RootFolderResponse: {
-            /** Enabled */
-            enabled: boolean;
-            /** Free Space Bytes */
-            free_space_bytes: number;
->>>>>>> 322de02 (feat(library): add root folder configuration)
             /**
              * Id
              * Format: uuid
              */
             id: string;
-<<<<<<< HEAD
             /**
              * Media Id
              * Format: uuid
@@ -803,26 +950,6 @@ export interface components {
             user_id: string;
             /** Username */
             username: string | null;
-=======
-            /** Last Scanned At */
-            last_scanned_at: string | null;
-            /** Path */
-            path: string;
-            /** Same Filesystem As Downloads */
-            same_filesystem_as_downloads: boolean;
-            /** Warning */
-            warning: string | null;
-        };
-        /** RootFolderWrite */
-        RootFolderWrite: {
-            /**
-             * Enabled
-             * @default true
-             */
-            enabled: boolean;
-            /** Path */
-            path: string;
->>>>>>> 322de02 (feat(library): add root folder configuration)
         };
         /**
          * UserRole
@@ -851,11 +978,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-<<<<<<< HEAD
     admin_list_download_clients: {
-=======
-    admin_list_root_folders: {
->>>>>>> 322de02 (feat(library): add root folder configuration)
         parameters: {
             query?: never;
             header?: never;
@@ -870,20 +993,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-<<<<<<< HEAD
                     "application/json": components["schemas"]["DownloadClientResponse"][];
-=======
-                    "application/json": components["schemas"]["RootFolderResponse"][];
->>>>>>> 322de02 (feat(library): add root folder configuration)
                 };
             };
         };
     };
-<<<<<<< HEAD
     admin_create_download_client: {
-=======
-    admin_create_root_folder: {
->>>>>>> 322de02 (feat(library): add root folder configuration)
         parameters: {
             query?: never;
             header?: never;
@@ -892,11 +1007,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-<<<<<<< HEAD
                 "application/json": components["schemas"]["DownloadClientWrite"];
-=======
-                "application/json": components["schemas"]["RootFolderWrite"];
->>>>>>> 322de02 (feat(library): add root folder configuration)
             };
         };
         responses: {
@@ -906,11 +1017,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-<<<<<<< HEAD
                     "application/json": components["schemas"]["DownloadClientResponse"];
-=======
-                    "application/json": components["schemas"]["RootFolderResponse"];
->>>>>>> 322de02 (feat(library): add root folder configuration)
                 };
             };
             /** @description Validation Error */
@@ -924,20 +1031,12 @@ export interface operations {
             };
         };
     };
-<<<<<<< HEAD
     admin_delete_download_client: {
-=======
-    admin_delete_root_folder: {
->>>>>>> 322de02 (feat(library): add root folder configuration)
         parameters: {
             query?: never;
             header?: never;
             path: {
-<<<<<<< HEAD
                 client_id: string;
-=======
-                folder_id: string;
->>>>>>> 322de02 (feat(library): add root folder configuration)
             };
             cookie?: never;
         };
@@ -961,7 +1060,6 @@ export interface operations {
             };
         };
     };
-<<<<<<< HEAD
     admin_test_download_client: {
         parameters: {
             query?: never;
@@ -1106,8 +1204,88 @@ export interface operations {
             };
         };
     };
-=======
->>>>>>> 322de02 (feat(library): add root folder configuration)
+    admin_list_root_folders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RootFolderResponse"][];
+                };
+            };
+        };
+    };
+    admin_create_root_folder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RootFolderWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RootFolderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_delete_root_folder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                folder_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     admin_list_providers: {
         parameters: {
             query?: never;
@@ -1638,6 +1816,133 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    playback_continue_watching: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaybackProgressResponse"][];
+                };
+            };
+        };
+    };
+    playback_playback_progress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaybackProgressResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    playback_report_progress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaybackProgressWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaybackProgressResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_local_search: {
+        parameters: {
+            query: {
+                q: string;
+                quality?: string | null;
+                year?: number | null;
+                studio?: string | null;
+                performer?: string | null;
+                tag?: string | null;
+                minimum_duration_seconds?: number | null;
+                maximum_duration_seconds?: number | null;
+                sort?: components["schemas"]["MediaSort"];
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocalSearchResponse"];
                 };
             };
             /** @description Validation Error */
