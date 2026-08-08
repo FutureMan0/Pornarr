@@ -1,12 +1,12 @@
    [36m[1mBuilding[0m[39m pornarr-api[2m @ file:///E:/Projects/Pornarr/apps/api[0m
    [36m[1mBuilding[0m[39m pornarr-integrations[2m @ file:///E:/Projects/Pornarr/packages/integrations[0m
-      [32m[1mBuilt[0m[39m pornarr-integrations[2m @ file:///E:/Projects/Pornarr/packages/integrations[0m
       [32m[1mBuilt[0m[39m pornarr-api[2m @ file:///E:/Projects/Pornarr/apps/api[0m
-[2mUninstalled [1m2 packages[0m [2min 33ms[0m[0m
+      [32m[1mBuilt[0m[39m pornarr-integrations[2m @ file:///E:/Projects/Pornarr/packages/integrations[0m
+[2mUninstalled [1m2 packages[0m [2min 3ms[0m[0m
 [1m[33mwarning[39m[0m[1m:[0m [1mFailed to hardlink files; falling back to full copy. This may lead to degraded performance.
          If the cache and target directories are on different filesystems, hardlinking may not be supported.
          If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.[0m
-[2mInstalled [1m2 packages[0m [2min 25ms[0m[0m
+[2mInstalled [1m2 packages[0m [2min 27ms[0m[0m
 {
   "components": {
     "schemas": {
@@ -893,6 +893,85 @@
         "title": "ProviderWrite",
         "type": "object"
       },
+      "RootFolderResponse": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "free_space_bytes": {
+            "title": "Free Space Bytes",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_scanned_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Scanned At"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "same_filesystem_as_downloads": {
+            "title": "Same Filesystem As Downloads",
+            "type": "boolean"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warning"
+          }
+        },
+        "required": [
+          "id",
+          "path",
+          "enabled",
+          "free_space_bytes",
+          "last_scanned_at",
+          "same_filesystem_as_downloads",
+          "warning"
+        ],
+        "title": "RootFolderResponse",
+        "type": "object"
+      },
+      "RootFolderWrite": {
+        "properties": {
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "path": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "title": "RootFolderWrite",
+        "type": "object"
+      },
       "TranscodeFailureResponse": {
         "properties": {
           "created_at": {
@@ -1425,6 +1504,106 @@
           }
         },
         "summary": "Test Indexer",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/library/root-folders": {
+      "get": {
+        "operationId": "admin_list_root_folders",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RootFolderResponse"
+                  },
+                  "title": "Response Admin List Root Folders",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Root Folders",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "admin_create_root_folder",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RootFolderWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RootFolderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Root Folder",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/library/root-folders/{folder_id}": {
+      "delete": {
+        "operationId": "admin_delete_root_folder",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "folder_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Folder Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Root Folder",
         "tags": [
           "admin"
         ]

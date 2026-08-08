@@ -28,6 +28,7 @@ from pornarr_db.models.indexer import Indexer, IndexerStats
 from pornarr_db.models.media import Media, MediaFile, MediaFileHistory
 from pornarr_db.models.oidc import OidcProvider
 from pornarr_db.models.quality import QualityDefinition, QualityProfile, QualityProfileItem
+from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.models.user import User, UserRole
 
 __all__ = [
@@ -56,6 +57,7 @@ __all__ = [
     "QualityDefinition",
     "QualityProfile",
     "QualityProfileItem",
+    "RootFolder",
     "Studio",
     "Tag",
     "User",
