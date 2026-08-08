@@ -330,6 +330,22 @@ def test_removing_download_client_and_job_preserves_history(clean_database: None
     )
 
 
+def test_performance_measurements_use_the_expected_metric_vocabulary(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        metrics = connection.execute(
+            "SELECT unnest(enum_range(NULL::performance_metric))::text"
+        ).fetchall()
+
+    assert metrics == [
+        ("download_speed",),
+        ("post_processing_seconds_per_gib",),
+        ("import_seconds_per_gib",),
+        ("disk_write_speed",),
+    ]
+
+
 def test_autogenerate_reports_no_drift(clean_database: None) -> None:
     """The models and the migration history must agree. When they do not, someone
     changed a model without writing a migration and the next deployment fails."""
