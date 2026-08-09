@@ -54,3 +54,17 @@ class DownloadClientPollingAdapter(Protocol):
         url_base: str,
         credentials: str,
     ) -> list[DownloadClientJob]: ...
+
+
+class DownloadClientCancellationAdapter(Protocol):
+    """The one client operation a request cancellation needs."""
+
+    async def cancel(
+        self,
+        *,
+        host: str,
+        port: int,
+        url_base: str,
+        credentials: str,
+        client_job_id: str,
+    ) -> None: ...
