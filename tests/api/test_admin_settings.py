@@ -29,6 +29,7 @@ async def test_admin_changes_a_runtime_limit_without_restarting(app, client) -> 
 
     assert defaults.status_code == 200
     assert defaults.json()["playback_completion_threshold_percent"] == 90
+    assert defaults.json()["default_max_auto_downloads_per_day"] == 3
 
     updated = await client.patch(
         "/api/admin/settings",

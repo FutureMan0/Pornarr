@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     min_free_disk_percent: int = Field(default=15, ge=0, le=99)
     default_daily_download_limit_gb: int = Field(default=10, ge=0)
     default_max_auto_jobs: int = Field(default=2, ge=0)
+    default_max_auto_downloads_per_day: int = Field(default=3, ge=0)
     default_auto_downloads_enabled: bool = False
 
     oidc_allow_private_issuers: bool = False

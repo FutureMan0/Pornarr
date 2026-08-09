@@ -21,6 +21,7 @@ _RUNTIME_SETTING_FIELDS = frozenset(
         "min_free_disk_percent",
         "default_daily_download_limit_gb",
         "default_max_auto_jobs",
+        "default_max_auto_downloads_per_day",
         "default_auto_downloads_enabled",
     }
 )
@@ -37,6 +38,7 @@ class RuntimeSettings(BaseModel):
     min_free_disk_percent: int
     default_daily_download_limit_gb: int
     default_max_auto_jobs: int
+    default_max_auto_downloads_per_day: int
     default_auto_downloads_enabled: bool
 
     @classmethod
@@ -59,6 +61,7 @@ class RuntimeSettingsWrite(BaseModel):
     min_free_disk_percent: int | None = Field(default=None, ge=0, le=99)
     default_daily_download_limit_gb: int | None = Field(default=None, ge=0)
     default_max_auto_jobs: int | None = Field(default=None, ge=0)
+    default_max_auto_downloads_per_day: int | None = Field(default=None, ge=0)
     default_auto_downloads_enabled: bool | None = None
 
     @field_validator(
@@ -67,6 +70,7 @@ class RuntimeSettingsWrite(BaseModel):
         "min_free_disk_percent",
         "default_daily_download_limit_gb",
         "default_max_auto_jobs",
+        "default_max_auto_downloads_per_day",
         "default_auto_downloads_enabled",
     )
     @classmethod

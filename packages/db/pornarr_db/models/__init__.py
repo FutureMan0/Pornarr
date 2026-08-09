@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from pornarr_db.models.api_keys import UserApiKey
 from pornarr_db.models.audit import AuditLog
+from pornarr_db.models.automation import AutomationRule
 from pornarr_db.models.custom_formats import (
     CustomFormat,
     CustomFormatCondition,
@@ -39,6 +40,7 @@ from pornarr_db.models.user import User, UserRole
 
 __all__ = [
     "AuditLog",
+    "AutomationRule",
     "BlockedRelease",
     "ContentFilterProfile",
     "ContentFilterRule",

@@ -1335,6 +1335,10 @@
             "title": "Default Daily Download Limit Gb",
             "type": "integer"
           },
+          "default_max_auto_downloads_per_day": {
+            "title": "Default Max Auto Downloads Per Day",
+            "type": "integer"
+          },
           "default_max_auto_jobs": {
             "title": "Default Max Auto Jobs",
             "type": "integer"
@@ -1383,6 +1387,7 @@
           "min_free_disk_percent",
           "default_daily_download_limit_gb",
           "default_max_auto_jobs",
+          "default_max_auto_downloads_per_day",
           "default_auto_downloads_enabled"
         ],
         "title": "RuntimeSettings",
@@ -1426,6 +1431,18 @@
               }
             ],
             "title": "Default Daily Download Limit Gb"
+          },
+          "default_max_auto_downloads_per_day": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Max Auto Downloads Per Day"
           },
           "default_max_auto_jobs": {
             "anyOf": [

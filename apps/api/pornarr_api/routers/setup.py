@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import database_session, hash_password
 from pornarr_api.errors import ErrorResponse
+from pornarr_db.models.automation import AutomationRule
 from pornarr_db.models.filters import (
     ContentFilterProfile,
     ContentFilterRule,
@@ -89,6 +90,8 @@ async def complete_setup(
         role=UserRole.ADMIN,
     )
     session.add(admin)
+    await session.flush()
+    session.add(AutomationRule(user_id=admin.id))
     session.add(RootFolder(path=str(path), enabled=True, free_space_bytes=free_space_bytes))
     warning = (
         None if same_filesystem else "different filesystem from downloads; imports cannot hardlink"

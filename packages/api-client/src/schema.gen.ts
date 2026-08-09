@@ -1201,6 +1201,8 @@ export interface components {
             default_auto_downloads_enabled: boolean;
             /** Default Daily Download Limit Gb */
             default_daily_download_limit_gb: number;
+            /** Default Max Auto Downloads Per Day */
+            default_max_auto_downloads_per_day: number;
             /** Default Max Auto Jobs */
             default_max_auto_jobs: number;
             /** Min Free Disk Percent */
@@ -1225,6 +1227,8 @@ export interface components {
             default_auto_downloads_enabled?: boolean | null;
             /** Default Daily Download Limit Gb */
             default_daily_download_limit_gb?: number | null;
+            /** Default Max Auto Downloads Per Day */
+            default_max_auto_downloads_per_day?: number | null;
             /** Default Max Auto Jobs */
             default_max_auto_jobs?: number | null;
             /** Min Free Disk Percent */
