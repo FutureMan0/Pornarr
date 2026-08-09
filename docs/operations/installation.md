@@ -10,28 +10,28 @@ repository checkout to a healthy local instance at `http://localhost:8000`.
   transcodes
 - an optional NVIDIA, Intel, or AMD GPU if hardware transcoding is required
 
-The first release supports Docker Compose on a 64-bit Linux host. It requires
-PostgreSQL 17 and Redis 8 through the included Compose file; using external
-instances is supported by changing their connection URLs in `.env`.
+The first release supports Docker Compose on a 64-bit Linux host. The included
+Compose file starts PostgreSQL 17 and Redis 8; no separate database installation is
+needed.
 
 ## Start a local instance
 
-Clone the repository, create the data directory, and copy the environment
-template:
+Clone the repository and create separate host directories for media and backups:
 
 ```sh
 git clone https://github.com/FutureMan0/Pornarr.git
 cd Pornarr
-mkdir -p /srv/pornarr/data
-cp .env.example .env
+mkdir -p /srv/pornarr/data /srv/pornarr/backups
+make setup
 ```
 
-Set a unique secret and the host path that Compose mounts at `/data`:
+`make setup` creates `.env` and generates `APP_SECRET`. Set the two host paths in
+that file before starting:
 
 ```sh
-openssl rand -hex 32
-# Put the result in APP_SECRET in .env.
-# Also add: DATA_PATH_HOST=/srv/pornarr/data
+$EDITOR .env
+# DATA_PATH_HOST=/srv/pornarr/data
+# BACKUP_PATH_HOST=/srv/pornarr/backups
 ```
 
 `APP_SECRET` encrypts every saved integration credential. Back it up with the
@@ -41,14 +41,15 @@ credentials.
 Start the stack and wait for the API health check:
 
 ```sh
-docker compose up -d
+docker compose up -d --wait
 docker compose ps
 docker compose logs -f api
 ```
 
 Open `http://localhost:8000`. The first administrator account and runtime
 configuration are created in the browser. Do not expose port 8000 directly to
-the Internet; use a TLS reverse proxy instead.
+the Internet; use a TLS reverse proxy instead and restrict port 8000 with the host
+firewall to the proxy.
 
 ## The one-mount rule
 
@@ -158,20 +159,21 @@ less error-prone.
 
 ## Upgrade
 
-Read the release notes, back up PostgreSQL and `.env`, then pull and recreate
-the images:
+Read the release notes, create a backup, and pin the target image tag in `.env`:
 
 ```sh
-git fetch --tags
-git checkout <release-tag>
+$EDITOR .env
+# Set PORNARR_TAG=<release-tag>
+make backup
 docker compose pull
-docker compose up -d
+docker compose up -d --wait
 docker compose ps
 ```
 
 The `migrate` service runs migrations before the API and workers start. Keep the
-previous image available until the API health check succeeds. Downgrades across
-database migrations are not supported; restore the database backup instead.
+previous image and the backup until the API health check succeeds. The supported path
+is forward to a newer published tag (including documented prereleases); downgrades
+across database migrations are not supported. Restore the database backup instead.
 
 ## Troubleshooting
 
@@ -182,6 +184,7 @@ database migrations are not supported; restore the database backup instead.
 | Hardware transcoding uses CPU | Inspect detected capabilities, container device access, and the host driver; then use `auto` for software fallback. |
 | Playback events stall behind a proxy | Disable buffering and set a long read timeout for the event stream. |
 | Services do not start after an upgrade | Inspect `docker compose logs migrate` first; migrations must finish before API and workers start. |
+| Health reports a stale or missing backup | Check `BACKUP_PATH_HOST`, run `make backup`, and set `BACKUP_MAX_AGE_HOURS` only when backups are scheduled. |
 
 For deployment design and data-path rationale, see
 [deployment.md](deployment.md).
