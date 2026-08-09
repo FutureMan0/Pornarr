@@ -12,6 +12,7 @@ Start here.
 | [pipelines/](pipelines/) | Import, transcoding, recommendations |
 | [operations/](operations/) | Deployment, backup, troubleshooting |
 | [contributing/](contributing/) | Branching, releases, testing |
+| [design/](design/) | What the client looks like: screen mockups, renders, brand assets |
 
 The full system specification is
 [superpowers/specs/2026-08-07-pornarr-design.md](superpowers/specs/2026-08-07-pornarr-design.md).
@@ -19,4 +20,5 @@ It is the source these documents were derived from; where they disagree, the ADR
 because they are updated as decisions change.
 
 Product strategy lives in [`PRODUCT.md`](../PRODUCT.md) and the visual system in
-[`DESIGN.md`](../DESIGN.md), both at the repository root.
+[`DESIGN.md`](../DESIGN.md), both at the repository root. `DESIGN.md` defines the
+tokens; [design/](design/) shows them assembled into screens.
