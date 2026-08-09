@@ -24,6 +24,8 @@ from pornarr_api.routers.events import router as events_router
 from pornarr_api.routers.health import router as health_router
 from pornarr_api.routers.playback import router as playback_router
 from pornarr_api.routers.stream import router as stream_router
+from pornarr_api.routers.transcode import admin_router as admin_transcode_router
+from pornarr_api.routers.transcode import router as transcode_router
 from pornarr_api.spa import mount_spa
 from pornarr_shared.config import Settings, get_settings
 
@@ -50,6 +52,8 @@ api_router.include_router(events_router)
 api_router.include_router(health_router)
 api_router.include_router(playback_router)
 api_router.include_router(stream_router)
+api_router.include_router(transcode_router)
+api_router.include_router(admin_transcode_router)
 
 
 def create_app(

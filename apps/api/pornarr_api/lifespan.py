@@ -7,18 +7,27 @@ real traffic arrives.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 import redis.asyncio as redis
 from fastapi import FastAPI
 
 from pornarr_db.session import dispose_engine, get_engine
+from pornarr_media.sessions import TranscodeSessionRegistry
 from pornarr_shared.config import Settings
 from pornarr_shared.logging import install_redaction, register_secret
 
 logger = logging.getLogger(__name__)
+TRANSCODE_REAP_INTERVAL_SECONDS = 1
+
+
+async def _reap_transcode_sessions(registry: TranscodeSessionRegistry) -> None:
+    while True:
+        await registry.reap_expired()
+        await asyncio.sleep(TRANSCODE_REAP_INTERVAL_SECONDS)
 
 
 @asynccontextmanager
@@ -32,11 +41,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     app.state.redis = redis.from_url(settings.redis_url, decode_responses=True)
     app.state.engine = get_engine()
+    app.state.transcode_sessions = TranscodeSessionRegistry(
+        app.state.redis, settings.transcode_path
+    )
+    reaper = asyncio.create_task(_reap_transcode_sessions(app.state.transcode_sessions))
 
     logger.info("api started in %s mode", settings.app_env)
     try:
         yield
     finally:
+        reaper.cancel()
+        with suppress(asyncio.CancelledError):
+            await reaper
         # `aclose()` closes the client's own connection; the pool holds others.
         # Without disconnecting it, a restarting API leaves sockets for the
         # garbage collector, which shows up as a slow connection leak rather
