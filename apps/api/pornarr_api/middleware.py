@@ -7,22 +7,24 @@ some point" is not traceable through an API, a worker and a download client.
 
 from __future__ import annotations
 
+import logging
 import uuid
 from collections.abc import Awaitable, Callable
-from contextvars import ContextVar
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-REQUEST_ID_HEADER = "X-Request-Id"
+from pornarr_shared.logging import current_request_id as _current_request_id
+from pornarr_shared.logging import reset_request_id, set_request_id
 
-_request_id: ContextVar[str] = ContextVar("request_id", default="-")
+REQUEST_ID_HEADER = "X-Request-Id"
+logger = logging.getLogger(__name__)
 
 
 def current_request_id() -> str:
-    """The identifier of the request being handled, or `-` outside a request."""
-    return _request_id.get()
+    """The request identifier made available to existing API callers."""
+    return _current_request_id()
 
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
@@ -37,11 +39,17 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         incoming = request.headers.get(REQUEST_ID_HEADER)
         request_id = incoming if incoming and len(incoming) <= 128 else uuid.uuid4().hex
-        token = _request_id.set(request_id)
+        token = set_request_id(request_id)
         request.state.request_id = request_id
         try:
             response = await call_next(request)
+            logger.info(
+                "request completed: %s %s %s",
+                request.method,
+                request.url.path,
+                response.status_code,
+            )
         finally:
-            _request_id.reset(token)
+            reset_request_id(token)
         response.headers[REQUEST_ID_HEADER] = request_id
         return response

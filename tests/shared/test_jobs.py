@@ -14,6 +14,7 @@ from pornarr_shared.jobs import (
     job,
     job_key,
 )
+from pornarr_shared.logging import current_job_id
 
 
 class RecordingRedis:
@@ -65,3 +66,18 @@ async def test_job_retries_failures_with_exponential_backoff() -> None:
 
     assert error.value.defer_score == 4_000
     assert registered.max_tries == JOB_MAX_TRIES
+
+
+@pytest.mark.asyncio
+async def test_job_makes_its_arq_identifier_available_to_logs() -> None:
+    seen: list[str | None] = []
+
+    async def traced_job(_: dict[str, object]) -> None:
+        seen.append(current_job_id())
+
+    registered = job(traced_job)
+
+    await registered.coroutine({"job_id": "job-123", "job_try": 1})
+
+    assert seen == ["job-123"]
+    assert current_job_id() is None

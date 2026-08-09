@@ -17,6 +17,7 @@ from pornarr_db.models.filters import (
     FilterRuleKind,
 )
 from pornarr_db.models.media import Media, MediaFile
+from pornarr_shared.metrics import REGISTRY
 from tests.api.test_auth import create_user, login
 
 pytest_plugins = ["tests.api.test_auth"]
@@ -25,6 +26,9 @@ pytest_plugins = ["tests.api.test_auth"]
 async def test_local_search_honours_the_requesting_users_filter_profile(
     app, client, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    labels = {"operation": "search", "result": "ok"}
+    before = REGISTRY.get_sample_value("pornarr_operations_total", labels=labels)
+    assert before is not None
     user = await create_user(app)
     media = Media(
         id=uuid4(),
@@ -58,3 +62,4 @@ async def test_local_search_honours_the_requesting_users_filter_profile(
 
     assert response.status_code == 200
     assert response.json() == {"items": [], "next_cursor": None}
+    assert REGISTRY.get_sample_value("pornarr_operations_total", labels=labels) == before + 1

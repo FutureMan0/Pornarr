@@ -1255,6 +1255,10 @@ export interface components {
             default_max_auto_downloads_per_day: number;
             /** Default Max Auto Jobs */
             default_max_auto_jobs: number;
+            /** Log Level */
+            log_level: string;
+            /** Metrics Enabled */
+            metrics_enabled: boolean;
             /** Min Free Disk Percent */
             min_free_disk_percent: number;
             /** Playback Completion Threshold Percent */
@@ -1297,6 +1301,10 @@ export interface components {
             default_max_auto_downloads_per_day?: number | null;
             /** Default Max Auto Jobs */
             default_max_auto_jobs?: number | null;
+            /** Log Level */
+            log_level?: string | null;
+            /** Metrics Enabled */
+            metrics_enabled?: boolean | null;
             /** Min Free Disk Percent */
             min_free_disk_percent?: number | null;
             /** Playback Completion Threshold Percent */

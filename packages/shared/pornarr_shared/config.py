@@ -77,6 +77,7 @@ class Settings(BaseSettings):
     oidc_allow_private_issuers: bool = False
 
     log_level: Literal["debug", "info", "warning", "error"] = "info"
+    metrics_enabled: bool = False
 
     @field_validator("app_secret")
     @classmethod
