@@ -1,0 +1,75 @@
+/**
+ * DESIGN.md: "Empty states teach the interface — an empty library says how to
+ * add a root folder and links to it; it does not say 'nothing here'." The layout
+ * is therefore built around the action, not around an apologetic sentence.
+ */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-12) var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background-color: var(--surface);
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: var(--text-md-leading);
+  font-weight: var(--text-md-weight);
+  text-wrap: balance;
+}
+
+.body {
+  margin: 0;
+  /* DESIGN.md: "Prose caps at 70ch". A ch is a measure of the running text
+     itself, not a value off the spacing scale. */
+  max-width: 70ch;
+  color: var(--ink-muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--text-base-leading);
+  font-weight: var(--text-base-weight);
+  text-wrap: pretty;
+}
+
+.action {
+  margin-top: var(--space-1);
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  /* Text on --primary is --primary-ink; white does not reach 4.5:1 on a rose of
+     this lightness. Verified in contrast.test.ts. */
+  background-color: var(--primary);
+  color: var(--primary-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-weight: var(--text-md-weight);
+  text-decoration: none;
+  transition: background-color var(--duration-fast) var(--ease);
+}
+
+.action:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Pressed drops back to the resting tone, so the press reads as a press without
+   moving anything. DESIGN.md bans decorative motion. */
+.action:active {
+  background-color: var(--primary);
+}
+
+/* Offset by 2px so the ring lands on the panel surface, where --primary clears
+   3:1 — a ring drawn on top of --primary would not. */
+.action:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}

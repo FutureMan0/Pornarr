@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-167c3630-4a16-4056-855f-ba15d3f3fc74/styles.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<script src="_ds/nocturne-167c3630-4a16-4056-855f-ba15d3f3fc74/_ds_bundle.js"></script>
+<style>
+  :root {
+    --color-accent: #d9629f;
+    --color-accent-100: #fdf3f8;
+    --color-accent-200: #f9e2ee;
+    --color-accent-300: #f2c9de;
+    --color-accent-400: #e79ac0;
+    --color-accent-500: #d9629f;
+    --color-accent-600: #b34f83;
+    --color-accent-700: #8b3e66;
+    --color-accent-800: #62304a;
+    --color-accent-900: #3b2130;
+    --color-accent-2: #e79ac0;
+    --color-accent-2-100: #fdf3f8;
+    --color-accent-2-200: #f9e2ee;
+    --color-accent-2-300: #f2c9de;
+    --color-accent-2-400: #e79ac0;
+    --color-accent-2-500: #d9629f;
+    --color-accent-2-600: #b34f83;
+    --color-accent-2-700: #8b3e66;
+    --color-accent-2-800: #62304a;
+    --color-accent-2-900: #3b2130;
+  }
+</style>
+</helmet>
+<div style="flex:none;display:flex;align-items:center;gap:11.2px;padding:11.2px 16.8px;background:linear-gradient(#191b29,#161826)">
+  <div style="display:flex;flex-direction:column;gap:1px;min-width:170px">
+    <div style="font-family:Inter,sans-serif;font-weight:500;font-size:19px;letter-spacing:-0.02em">{{ title }}</div>
+    <div style="font-size:11px;color:#75798c">{{ subtitle }}</div>
+  </div>
+  <div style="position:relative;flex:1;max-width:420px;margin-left:11.2px">
+    <i class="ph ph-magnifying-glass" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:#75798c"></i>
+    <div class="input" style="padding-left:30px;display:flex;align-items:center;color:#75798c;font-size:13px">Search titles, tags, performers…</div>
+  </div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8.4px">
+    <button class="btn btn-secondary" style="gap:7px" onClick="{{ onToggle }}"><i class="{{ eyeIcon }}" style="font-size:15px"></i>{{ eyeLabel }}</button>
+    <button class="btn btn-icon btn-secondary" title="Grid size"><i class="ph ph-squares-four" style="font-size:16px"></i></button>
+    <button class="btn btn-icon btn-secondary" title="Notifications"><i class="ph ph-bell-simple" style="font-size:16px"></i></button>
+    <div style="width:28px;height:28px;border-radius:50%;background:#3f424d;display:grid;place-items:center;font-size:11px;color:#cfd3e5">K</div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1000,&quot;height&quot;:64},&quot;title&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Library&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;subtitle&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;3,482 titles&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;blurred&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;onToggle&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const blurred = this.props.blurred !== false;
+    return {
+      title: this.props.title || 'Library',
+      subtitle: this.props.subtitle || '',
+      onToggle: this.props.onToggle,
+      eyeIcon: blurred ? 'ph ph-eye-closed' : 'ph ph-eye',
+      eyeLabel: blurred ? 'Art hidden' : 'Art shown'
+    };
+  }
+}
+
+</script>
+</body>
+</html>

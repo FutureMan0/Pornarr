@@ -1,0 +1,2502 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/nocturne-167c3630-4a16-4056-855f-ba15d3f3fc74/styles.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<script src="_ds/nocturne-167c3630-4a16-4056-855f-ba15d3f3fc74/_ds_bundle.js"></script>
+<style>
+  body { margin: 0; background: #0e0f18; }
+  a { color: #d9629f; text-decoration: none; }
+  a:hover { color: #e79ac0; }
+</style>
+<style>
+  :root {
+    --color-accent: #d9629f;
+    --color-accent-100: #fdf3f8;
+    --color-accent-200: #f9e2ee;
+    --color-accent-300: #f2c9de;
+    --color-accent-400: #e79ac0;
+    --color-accent-500: #d9629f;
+    --color-accent-600: #b34f83;
+    --color-accent-700: #8b3e66;
+    --color-accent-800: #62304a;
+    --color-accent-900: #3b2130;
+    --color-accent-2: #e79ac0;
+    --color-accent-2-100: #fdf3f8;
+    --color-accent-2-200: #f9e2ee;
+    --color-accent-2-300: #f2c9de;
+    --color-accent-2-400: #e79ac0;
+    --color-accent-2-500: #d9629f;
+    --color-accent-2-600: #b34f83;
+    --color-accent-2-700: #8b3e66;
+    --color-accent-2-800: #62304a;
+    --color-accent-2-900: #3b2130;
+  }
+</style>
+</helmet>
+<div style="padding:56px 56px 96px;background:#0e0f18;font-family:Inter,system-ui,sans-serif;color:#e9e9ed;display:flex;flex-direction:column;gap:48px">
+
+  <div style="display:flex;flex-direction:column;gap:8.4px;max-width:820px">
+    <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#d9629f">Pornarr · UI mockups</div>
+    <div style="font-family:Inter,sans-serif;font-weight:500;font-size:40px;letter-spacing:-0.025em;line-height:1.05">Self-hosted video library — admin &amp; guest</div>
+    <div style="font-size:14px;color:#9397ab;text-wrap:pretty">Two roles on one server. <span style="color:#f2c9de">Admin</span> owns scanning, matching, tags, queue and access; <span style="color:#f2c9de">Guest</span> — friends on the house network — gets only the viewing frontend: browse, search, collections, play. Ratings, comments and related titles run across both roles; the feed recommends from watch behaviour and what friends send you; the quality picker sits in the player. Artwork is hidden by default — the <span style="color:#f2c9de">Art hidden</span> control in any header reveals every tile on the board at once.</div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:11.2px;padding-top:8px">
+    <div style="font-family:Inter,sans-serif;font-weight:500;font-size:24px;letter-spacing:-0.02em">A · Admin view</div>
+    <span class="tag tag-accent">kai · owner</span>
+    <div style="flex:1;height:1px;background:linear-gradient(to right, rgba(233,233,237,0.16), transparent)"></div>
+  </div>
+
+  <div id="A1" style="display:flex;flex-direction:column;gap:11.2px">
+    <div style="display:flex;align-items:center;gap:8.4px"><span style="font-size:11px;padding:2px 8px;border-radius:5px;background:#292b31;color:#b2b6ca">A1</span><span style="font-size:14px;color:#cfd3e5">Dashboard</span><span style="font-size:12px;color:#75798c">— what the server did while you were away</span></div>
+    <div style="width:1280px;height:820px;display:flex;border-radius:14px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+      <dc-import name="PonarrSidebar" role="admin" active="Dashboard" hint-size="228px,100%"></dc-import>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+        <dc-import name="PonarrTopbar" title="Dashboard" subtitle="Last scan 14 minutes ago · 2 guests watching" blurred="{{ blurred }}" on-toggle="{{ toggleBlur }}" hint-size="100%,64px"></dc-import>
+        <div style="flex:1;padding:16.8px;display:flex;flex-direction:column;gap:16.8px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11.2px">
+            <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+              <div class="card elev-sm" style="gap:4px">
+                <div style="display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c"><i class="{{ s.icon }}"></i>{{ s.label }}</div>
+                <div style="font-size:28px;font-weight:500;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">{{ s.value }}</div>
+                <div style="font-size:11px;color:#d9629f">{{ s.delta }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8.4px">
+            <div style="display:flex;align-items:baseline;gap:8.4px"><div style="font-size:16px;font-weight:500">Recently added</div><a href="#U1" style="margin-left:auto;font-size:12px">Open library →</a></div>
+            <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11.2px">
+              <sc-for list="{{ recent }}" as="it" hint-placeholder-count="5">
+                <dc-import name="PonarrThumb" item="{{ it }}" blur="{{ blurred }}" hint-size="100%,196px"></dc-import>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:11.2px;flex:1;min-height:0">
+            <div class="card elev-sm" style="gap:11.2px">
+              <div style="font-size:14px;font-weight:500">Library health</div>
+              <sc-for list="{{ health }}" as="h" hint-placeholder-count="4">
+                <div style="display:flex;flex-direction:column;gap:5px">
+                  <div style="display:flex;font-size:12px;color:#b2b6ca"><span>{{ h.label }}</span><span style="margin-left:auto;color:#75798c">{{ h.value }}</span></div>
+                  <div style="height:4px;border-radius:2px;background:#292b31;overflow:hidden"><div style="height:100%;width:{{ h.pct }};background:{{ h.color }}"></div></div>
+                </div>
+              </sc-for>
+            </div>
+            <div class="card elev-sm" style="gap:6px">
+              <div style="display:flex;align-items:center"><div style="font-size:14px;font-weight:500">Activity</div><a href="#A3" style="margin-left:auto;font-size:12px">Queue →</a></div>
+              <sc-for list="{{ activity }}" as="a" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#b2b6ca;padding:3px 0">
+                  <i class="{{ a.icon }}" style="color:#d9629f;font-size:14px"></i>
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.text }}</span>
+                  <span style="margin-left:auto;color:#5f6373;font-size:11px">{{ a.time }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="A2" style="display:flex;flex-direction:column;gap:11.2px">
+    <div style="display:flex;align-items:center;gap:8.4px"><span style="font-size:11px;padding:2px 8px;border-radius:5px;background:#292b31;color:#b2b6ca">A2</span><span style="font-size:14px;color:#cfd3e5">Scan &amp; import</span><span style="font-size:12px;color:#75798c">— watched folders, live log, review before it goes live</span></div>
+    <div style="width:1280px;height:820px;display:flex;border-radius:14px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+      <dc-import name="PonarrSidebar" role="admin" active="Scan &amp; Import" hint-size="228px,100%"></dc-import>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+        <dc-import name="PonarrTopbar" title="Scan &amp; import" subtitle="12 new files awaiting review" blurred="{{ blurred }}" on-toggle="{{ toggleBlur }}" hint-size="100%,64px"></dc-import>
+        <div style="flex:1;padding:0 16.8px 16.8px;display:flex;gap:11.2px;min-height:0">
+          <div style="width:340px;flex:none;display:flex;flex-direction:column;gap:11.2px">
+            <div class="card elev-sm" style="gap:8.4px">
+              <div style="display:flex;align-items:center"><div style="font-size:14px;font-weight:500">Watched folders</div><button class="btn btn-ghost" style="margin-left:auto;font-size:12px"><i class="ph ph-plus"></i>Add</button></div>
+              <sc-for list="{{ folders }}" as="f" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 0;box-shadow:inset 0 -1px 0 rgba(233,233,237,0.07)">
+                  <i class="ph ph-folder" style="color:#d9629f"></i>
+                  <span style="display:flex;flex-direction:column;min-width:0"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.path }}</span><span style="font-size:11px;color:#75798c">{{ f.meta }}</span></span>
+                  <span class="{{ f.cls }}" style="margin-left:auto">{{ f.state }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div class="card elev-sm" style="gap:8.4px">
+              <div style="font-size:14px;font-weight:500">Scan in progress</div>
+              <div style="display:flex;font-size:12px;color:#b2b6ca"><span>/media/vault-b</span><span style="margin-left:auto;color:#75798c">2,104 / 3,010</span></div>
+              <div style="height:4px;border-radius:2px;background:#292b31;overflow:hidden"><div style="width:70%;height:100%;background:#d9629f"></div></div>
+              <div style="display:flex;gap:5.6px;margin-top:2px"><button class="btn btn-secondary" style="font-size:12px"><i class="ph ph-pause"></i>Pause</button><button class="btn btn-secondary" style="font-size:12px"><i class="ph ph-x"></i>Cancel</button></div>
+            </div>
+            <div class="card elev-sm" style="gap:6px;flex:1;min-height:0">
+              <div style="font-size:14px;font-weight:500">Log</div>
+              <div style="font-family:ui-monospace,monospace;font-size:11px;line-height:1.7;color:#75798c;display:flex;flex-direction:column">
+                <sc-for list="{{ log }}" as="l" hint-placeholder-count="8">
+                  <span style="{{ l.style }}">{{ l.text }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8.4px">
+            <div style="display:flex;align-items:center;gap:8.4px">
+              <div style="font-size:14px;font-weight:500">Review · 12 new files</div>
+              <span class="tag tag-outline">not visible to guests yet</span>
+              <div style="margin-left:auto;display:flex;gap:5.6px"><button class="btn btn-secondary" style="font-size:12px"><i class="ph ph-magic-wand"></i>Auto-match all</button><button class="btn btn-primary" style="font-size:12px"><i class="ph ph-check"></i>Approve &amp; publish</button></div>
+            </div>
+            <table class="table">
+              <thead><tr><th style="width:30px"></th><th>File</th><th>Matched as</th><th>Confidence</th><th>Size</th><th></th></tr></thead>
+              <tbody>
+                <sc-for list="{{ importRows }}" as="r" hint-placeholder-count="9">
+                  <tr>
+                    <td><span style="display:block;width:14px;height:14px;border-radius:4px;border:1.5px solid {{ r.box }};background:{{ r.fill }}"></span></td>
+                    <td style="font-family:ui-monospace,monospace;font-size:11.5px;color:#9397ab;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.file }}</td>
+                    <td>{{ r.match }}</td>
+                    <td><span class="{{ r.cls }}">{{ r.conf }}</span></td>
+                    <td style="color:#75798c">{{ r.size }}</td>
+                    <td style="text-align:right;color:#5f6373"><i class="ph ph-pencil-simple"></i></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="A3" style="display:flex;flex-direction:column;gap:11.2px">
+    <div style="display:flex;align-items:center;gap:8.4px"><span style="font-size:11px;padding:2px 8px;border-radius:5px;background:#292b31;color:#b2b6ca">A3</span><span style="font-size:14px;color:#cfd3e5">Queue</span><span style="font-size:12px;color:#75798c">— fetch, transcode, move</span></div>
+    <div style="width:1280px;height:820px;display:flex;border-radius:14px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+      <dc-import name="PonarrSidebar" role="admin" active="Queue" hint-size="228px,100%"></dc-import>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+        <dc-import name="PonarrTopbar" title="Queue" subtitle="4 active · 18.4 MB/s" blurred="{{ blurred }}" on-toggle="{{ toggleBlur }}" hint-size="100%,64px"></dc-import>
+        <div style="flex:1;padding:0 16.8px 16.8px;display:flex;flex-direction:column;gap:11.2px;min-height:0">
+          <div style="display:flex;gap:11.2px">
+            <sc-for list="{{ queueStats }}" as="s" hint-placeholder-count="4">
+              <div class="card elev-sm" style="flex:1;gap:2px">
+                <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c">{{ s.label }}</div>
+                <div style="font-size:22px;font-weight:500;font-variant-numeric:tabular-nums">{{ s.value }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:5.6px">
+            <div class="seg">
+              <label class="seg-opt"><input type="radio" name="q-tab" defaultChecked="{{ true }}"><span>Active</span></label>
+              <label class="seg-opt"><input type="radio" name="q-tab"><span>Completed</span></label>
+              <label class="seg-opt"><input type="radio" name="q-tab"><span>Failed</span></label>
+            </div>
+            <button class="btn btn-secondary" style="font-size:12px;margin-left:auto"><i class="ph ph-pause"></i>Pause all</button>
+            <button class="btn btn-secondary" style="font-size:12px"><i class="ph ph-broom"></i>Clear completed</button>
+          </div>
+          <table class="table">
+            <thead><tr><th>Item</th><th style="width:220px">Progress</th><th>Stage</th><th>Speed</th><th>ETA</th><th></th></tr></thead>
+            <tbody>
+              <sc-for list="{{ queueRows }}" as="q" hint-placeholder-count="8">
+                <tr>
+                  <td><span style="display:flex;flex-direction:column"><span>{{ q.title }}</span><span style="font-size:11px;color:#75798c">{{ q.sub }}</span></span></td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div style="flex:1;height:4px;border-radius:2px;background:#292b31;overflow:hidden"><div style="height:100%;width:{{ q.pct }};background:{{ q.color }}"></div></div>
+                      <span style="font-size:11px;color:#75798c;font-variant-numeric:tabular-nums;min-width:34px">{{ q.pct }}</span>
+                    </div>
+                  </td>
+                  <td><span class="{{ q.cls }}">{{ q.stage }}</span></td>
+                  <td style="color:#9397ab;font-variant-numeric:tabular-nums">{{ q.speed }}</td>
+                  <td style="color:#75798c;font-variant-numeric:tabular-nums">{{ q.eta }}</td>
+                  <td style="text-align:right;color:#5f6373"><i class="ph ph-dots-three"></i></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="A4" style="display:flex;flex-direction:column;gap:11.2px">
+    <div style="display:flex;align-items:center;gap:8.4px"><span style="font-size:11px;padding:2px 8px;border-radius:5px;background:#292b31;color:#b2b6ca">A4</span><span style="font-size:14px;color:#cfd3e5">Tag manager</span><span style="font-size:12px;color:#75798c">— merge, rename, hide from guests</span></div>
+    <div style="width:1280px;height:820px;display:flex;border-radius:14px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+      <dc-import name="PonarrSidebar" role="admin" active="Tags" hint-size="228px,100%"></dc-import>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+        <dc-import name="PonarrTopbar" title="Tags" subtitle="214 tags · 12 groups" blurred="{{ blurred }}" on-toggle="{{ toggleBlur }}" hint-size="100%,64px"></dc-import>
+        <div style="flex:1;display:flex;min-height:0">
+          <div style="width:214px;flex:none;padding:0 16.8px 16.8px;display:flex;flex-direction:column;gap:2px;box-shadow:inset -1px 0 0 rgba(233,233,237,0.08)">
+            <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c;padding:5px 0">Groups</div>
+            <sc-for list="{{ tagGroups }}" as="g" hint-placeholder-count="6">
+              <div style="{{ g.style }}"><span>{{ g.label }}</span><span style="margin-left:auto;font-size:11px;color:#5f6373">{{ g.count }}</span></div>
+            </sc-for>
+            <button class="btn btn-ghost" style="font-size:12px;justify-content:flex-start;margin-top:5px"><i class="ph ph-plus"></i>New group</button>
+          </div>
+          <div style="flex:1;min-width:0;padding:0 16.8px 16.8px;display:flex;flex-direction:column;gap:11.2px">
+            <div style="display:flex;align-items:center;gap:8.4px;padding:8.4px 11.2px;border-radius:8px;background:rgba(217,98,159,0.12);box-shadow:inset 0 0 0 1px rgba(217,98,159,0.35)">
+              <span style="font-size:13px;color:#f2c9de">3 tags selected</span>
+              <div style="margin-left:auto;display:flex;gap:5.6px">
+                <button class="btn btn-secondary" style="font-size:12px"><i class="ph ph-arrows-merge"></i>Merge</button>
+                <button class="btn btn-secondary" style="font-size:12px"><i class="ph ph-pencil-simple"></i>Rename</button>
+                <button class="btn btn-secondary" style="font-size:12px"><i class="ph ph-eye-slash"></i>Hide from guests</button>
+                <button class="btn btn-secondary" style="font-size:12px;color:#b2b6ca"><i class="ph ph-trash"></i>Delete</button>
+              </div>
+            </div>
+            <table class="table">
+              <thead><tr><th style="width:30px"></th><th>Tag</th><th>Group</th><th>Titles</th><th>Guest visible</th><th>Last used</th><th></th></tr></thead>
+              <tbody>
+                <sc-for list="{{ tagRows }}" as="t" hint-placeholder-count="11">
+                  <tr>
+                    <td><span style="display:block;width:14px;height:14px;border-radius:4px;border:1.5px solid {{ t.box }};background:{{ t.fill }}"></span></td>
+                    <td><span class="{{ t.cls }}">{{ t.name }}</span></td>
+                    <td style="color:#9397ab">{{ t.group }}</td>
+                    <td style="font-variant-numeric:tabular-nums">{{ t.count }}</td>
+                    <td style="color:{{ t.visColor }}"><i class="{{ t.visIcon }}"></i></td>
+                    <td style="color:#75798c">{{ t.used }}</td>
+                    <td style="text-align:right;color:#5f6373"><i class="ph ph-dots-three"></i></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="A5" style="display:flex;flex-direction:column;gap:11.2px">
+    <div style="display:flex;align-items:center;gap:8.4px"><span style="font-size:11px;padding:2px 8px;border-radius:5px;background:#292b31;color:#b2b6ca">A5</span><span style="font-size:14px;color:#cfd3e5">Settings — users &amp; access</span><span style="font-size:12px;color:#75798c">— who on the network sees what</span></div>
+    <div style="width:1280px;height:820px;display:flex;border-radius:14px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+      <dc-import name="PonarrSidebar" role="admin" active="Settings" hint-size="228px,100%"></dc-import>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+        <dc-import name="PonarrTopbar" title="Settings" subtitle="Users &amp; access" blurred="{{ blurred }}" on-toggle="{{ toggleBlur }}" hint-size="100%,64px"></dc-import>
+        <div style="flex:1;display:flex;min-height:0">
+          <div style="width:186px;flex:none;padding:0 16.8px 16.8px;display:flex;flex-direction:column;gap:2px;box-shadow:inset -1px 0 0 rgba(233,233,237,0.08)">
+            <sc-for list="{{ settingsNav }}" as="s" hint-placeholder-count="7">
+              <div style="{{ s.style }}">{{ s.label }}</div>
+            </sc-for>
+          </div>
+          <div style="flex:1;min-width:0;padding:0 16.8px 16.8px;display:flex;flex-direction:column;gap:16.8px;overflow:hidden">
+            <div style="display:flex;align-items:center;gap:8.4px">
+              <div style="font-size:16px;font-weight:500">People on this server</div>
+              <div style="margin-left:auto;display:flex;gap:5.6px"><button class="btn btn-secondary" style="font-size:12px"><i class="ph ph-link"></i>Copy invite link</button><button class="btn btn-primary" style="font-size:12px"><i class="ph ph-user-plus"></i>Add guest</button></div>
+            </div>
+            <table class="table">
+              <thead><tr><th>Name</th><th>Role</th><th>Can see</th><th>Device</th><th>Last active</th><th></th></tr></thead>
+              <tbody>
+                <sc-for list="{{ users }}" as="u" hint-placeholder-count="5">
+                  <tr>
+                    <td><span style="display:flex;align-items:center;gap:8px"><span style="width:24px;height:24px;border-radius:50%;background:#3f424d;display:grid;place-items:center;font-size:10px;color:#cfd3e5">{{ u.initial }}</span>{{ u.name }}</span></td>
+                    <td><span class="{{ u.roleCls }}">{{ u.role }}</span></td>
+                    <td style="color:#9397ab">{{ u.scope }}</td>
+                    <td style="color:#75798c">{{ u.device }}</td>
+                    <td style="color:#75798c">{{ u.seen }}</td>
+                    <td style="text-align:right;color:#5f6373"><i class="ph ph-dots-three"></i></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16.8px">
+              <div style="display:flex;flex-direction:column;gap:11.2px">
+                <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c">Guest defaults</div>
+                <sc-for list="{{ guestToggles }}" as="g" hint-placeholder-count="5">
+                  <div style="display:flex;align-items:center;gap:11.2px">
+                    <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:13px">{{ g.label }}</span><span style="font-size:11px;color:#75798c">{{ g.note }}</span></span>
+                    <span style="{{ g.trackStyle }}"><span style="{{ g.knobStyle }}"></span></span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:11.2px">
+                <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c">Server</div>
+                <div class="field"><label>Bind address</label><input class="input" value="192.168.1.24:7878" readonly></div>
+                <div class="field"><label>Guest landing page</label>
+                  <div class="seg"><label class="seg-opt"><input type="radio" name="landing" defaultChecked="{{ true }}"><span>Continue</span></label><label class="seg-opt"><input type="radio" name="landing"><span>Library</span></label><label class="seg-opt"><input type="radio" name="landing"><span>Collections</span></label></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#75798c;padding:8.4px 11.2px;border-radius:8px;background:#1c1e2c"><i class="ph ph-wifi-x" style="color:#d9629f"></i>LAN only — no outbound connections, no telemetry.</div>
+                <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c;margin-top:5px">Language &amp; subtitles</div>
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <sc-for list="{{ languageRows }}" as="l" hint-placeholder-count="4">
+                    <div style="display:flex;align-items:center;gap:11.2px;padding:7px 0;box-shadow:inset 0 -1px 0 rgba(233,233,237,0.07)">
+                      <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:13px">{{ l.label }}</span><span style="font-size:11px;color:#75798c">{{ l.note }}</span></span>
+                      <span style="margin-left:auto;flex:none;display:flex;align-items:center;gap:6px;font-size:12px;color:#f2c9de;padding:4px 9px;border-radius:8px;box-shadow:inset 0 0 0 1px rgba(217,98,159,0.5)">{{ l.value }}<i class="ph ph-caret-down" style="font-size:11px"></i></span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="A6" style="display:flex;flex-direction:column;gap:11.2px">
+    <div style="display:flex;align-items:center;gap:8.4px"><span style="font-size:11px;padding:2px 8px;border-radius:5px;background:#292b31;color:#b2b6ca">A6</span><span style="font-size:14px;color:#cfd3e5">Ratings &amp; comments</span><span style="font-size:12px;color:#75798c">— what the friends said, and moderation</span></div>
+    <div style="width:1280px;height:820px;display:flex;border-radius:14px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+      <dc-import name="PonarrSidebar" role="admin" active="Dashboard" hint-size="228px,100%"></dc-import>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+        <dc-import name="PonarrTopbar" title="Ratings &amp; comments" subtitle="342 ratings · 96 comments · 2 reported" blurred="{{ blurred }}" on-toggle="{{ toggleBlur }}" hint-size="100%,64px"></dc-import>
+        <div style="flex:1;padding:0 16.8px 16.8px;display:flex;gap:11.2px;min-height:0">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:11.2px">
+            <div style="display:flex;align-items:center;gap:5.6px">
+              <div class="seg">
+                <label class="seg-opt"><input type="radio" name="mod-tab" defaultChecked="{{ true }}"><span>All</span></label>
+                <label class="seg-opt"><input type="radio" name="mod-tab"><span>Reported</span></label>
+                <label class="seg-opt"><input type="radio" name="mod-tab"><span>Answered</span></label>
+              </div>
+              <span class="tag tag-accent" style="margin-left:auto">2 reported</span>
+              <button class="btn btn-secondary" style="font-size:12px"><i class="ph ph-check"></i>Mark all read</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8.4px">
+              <sc-for list="{{ moderationRows }}" as="m" hint-placeholder-count="6">
+                <div style="display:flex;gap:11.2px;align-items:flex-start;padding:11.2px;border-radius:8px;background:#1c1e2c">
+                  <span style="width:28px;height:28px;flex:none;border-radius:50%;background:#3f424d;display:grid;place-items:center;font-size:11px;color:#cfd3e5">{{ m.initial }}</span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span style="font-size:13px">{{ m.name }}</span>
+                      <span style="font-size:11px;color:#75798c">on</span>
+                      <span style="font-size:12px;color:#f2c9de">{{ m.title }}</span>
+                      <span style="display:flex;gap:1px;margin-left:6px">
+                        <sc-for list="{{ m.stars }}" as="s" hint-placeholder-count="5">
+                          <i class="{{ s.icon }}" style="{{ s.style }}"></i>
+                        </sc-for>
+                      </span>
+                      <span class="{{ m.cls }}" style="margin-left:auto">{{ m.state }}</span>
+                    </div>
+                    <div style="font-size:12px;color:#b2b6ca;text-wrap:pretty">{{ m.text }}</div>
+                    <div style="display:flex;gap:5.6px;margin-top:2px">
+                      <button class="btn btn-secondary" style="font-size:11px"><i class="ph ph-arrow-bend-up-left"></i>Reply</button>
+                      <button class="btn btn-secondary" style="font-size:11px"><i class="ph ph-eye-slash"></i>Hide</button>
+                      <button class="btn btn-secondary" style="font-size:11px"><i class="ph ph-trash"></i>Delete</button>
+                      <button class="btn btn-ghost" style="font-size:11px">Open title →</button>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="width:320px;flex:none;display:flex;flex-direction:column;gap:11.2px">
+            <div class="card elev-sm" style="gap:8.4px">
+              <div style="font-size:13px;font-weight:500">Library average</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="display:flex;gap:2px">
+                  <sc-for list="{{ avgStars }}" as="s" hint-placeholder-count="5">
+                    <i class="{{ s.icon }}" style="{{ s.style }}"></i>
+                  </sc-for>
+                </span>
+                <span style="font-size:22px;font-weight:500;font-variant-numeric:tabular-nums">4.1</span>
+                <span style="font-size:11px;color:#75798c;margin-left:auto">342 ratings</span>
+              </div>
+              <sc-for list="{{ ratingBars }}" as="b" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:#9397ab">
+                  <span style="min-width:22px;color:#75798c">{{ b.n }}</span>
+                  <span style="flex:1;height:4px;border-radius:2px;background:#292b31;overflow:hidden"><span style="display:block;height:100%;width:{{ b.pct }};background:#d9629f"></span></span>
+                  <span style="min-width:18px;text-align:right;font-variant-numeric:tabular-nums">{{ b.count }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div class="card elev-sm" style="gap:8.4px">
+              <div style="font-size:13px;font-weight:500">Top rated</div>
+              <sc-for list="{{ ratingLeaders }}" as="r" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 0;box-shadow:inset 0 -1px 0 rgba(233,233,237,0.07)">
+                  <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</span>
+                  <span style="margin-left:auto;flex:none;display:flex;gap:1px">
+                    <sc-for list="{{ r.stars }}" as="s" hint-placeholder-count="5">
+                      <i class="{{ s.icon }}" style="{{ s.style }}"></i>
+                    </sc-for>
+                  </span>
+                  <span style="flex:none;color:#9397ab;font-variant-numeric:tabular-nums">{{ r.score }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div class="card elev-sm" style="gap:11.2px">
+              <div style="font-size:13px;font-weight:500">Rules</div>
+              <sc-for list="{{ guestToggles }}" as="g" hint-placeholder-count="2">
+                <div style="display:flex;align-items:center;gap:11.2px">
+                  <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:12px">{{ g.label }}</span><span style="font-size:11px;color:#75798c">{{ g.note }}</span></span>
+                  <span style="{{ g.trackStyle }}"><span style="{{ g.knobStyle }}"></span></span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:11.2px;padding-top:8px">
+    <div style="font-family:Inter,sans-serif;font-weight:500;font-size:24px;letter-spacing:-0.02em">B · Guest view</div>
+    <span class="tag tag-neutral">jonas · guest on the house network</span>
+    <div style="flex:1;height:1px;background:linear-gradient(to right, rgba(233,233,237,0.16), transparent)"></div>
+  </div>
+
+  <div id="U1" style="display:flex;flex-direction:column;gap:11.2px">
+    <div style="display:flex;align-items:center;gap:8.4px"><span style="font-size:11px;padding:2px 8px;border-radius:5px;background:#292b31;color:#b2b6ca">B1</span><span style="font-size:14px;color:#cfd3e5">Library</span><span style="font-size:12px;color:#75798c">— no scan, no queue, no file paths</span></div>
+    <div style="width:1280px;height:1010px;display:flex;border-radius:14px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+      <dc-import name="PonarrSidebar" role="user" active="Library" user="jonas" hint-size="228px,100%"></dc-import>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+        <dc-import name="PonarrTopbar" title="Library" subtitle="3,268 titles shared with you" blurred="{{ blurred }}" on-toggle="{{ toggleBlur }}" hint-size="100%,64px"></dc-import>
+        <div style="flex:none;display:flex;align-items:center;gap:8.4px;padding:0 16.8px 11.2px">
+          <div class="seg">
+            <label class="seg-opt"><input type="radio" name="u-sort" defaultChecked="{{ true }}"><span>Recent</span></label>
+            <label class="seg-opt"><input type="radio" name="u-sort"><span>Title</span></label>
+            <label class="seg-opt"><input type="radio" name="u-sort"><span>Duration</span></label>
+            <label class="seg-opt"><input type="radio" name="u-sort"><span>Unwatched</span></label>
+          </div>
+          <div style="display:flex;gap:5.6px;align-items:center">
+            <sc-for list="{{ chips }}" as="c" hint-placeholder-count="4">
+              <span class="{{ c.cls }}">{{ c.label }}</span>
+            </sc-for>
+            <a href="#U2" class="btn btn-ghost" style="font-size:12px"><i class="ph ph-funnel"></i>More filters</a>
+          </div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8.4px;font-size:12px;color:#75798c"><span>240 results</span><button class="btn btn-secondary" style="font-size:12px"><i class="ph ph-bookmark-simple"></i>Watchlist</button></div>
+        </div>
+        <div style="flex:1;padding:0 16.8px;overflow:hidden;display:flex;flex-direction:column;gap:16.8px">
+          <div style="display:flex;flex-direction:column;gap:8.4px">
+            <div style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c">Continue watching</div>
+            <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11.2px">
+              <sc-for list="{{ continueRow }}" as="it" hint-placeholder-count="5">
+                <dc-import name="PonarrThumb" item="{{ it }}" blur="{{ blurred }}" hint-size="100%,196px"></dc-import>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8.4px">
+            <div style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c">Everything</div>
+            <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11.2px">
+              <sc-for list="{{ guestGrid }}" as="it" hint-placeholder-count="10">
+                <dc-import name="PonarrThumb" item="{{ it }}" blur="{{ blurred }}" hint-size="100%,196px"></dc-import>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="flex:none;display:flex;align-items:center;justify-content:center;gap:5.6px;padding:11.2px">
+          <button class="btn btn-secondary" style="font-size:12px"><i class="ph ph-caret-left"></i></button>
+          <button class="btn btn-primary" style="font-size:12px;min-width:32px">1</button>
+          <button class="btn btn-ghost" style="font-size:12px;min-width:32px;color:#b2b6ca">2</button>
+          <button class="btn btn-ghost" style="font-size:12px;min-width:32px;color:#b2b6ca">3</button>
+          <span style="color:#5f6373;font-size:12px">…</span>
+          <button class="btn btn-ghost" style="font-size:12px;min-width:32px;color:#b2b6ca">54</button>
+          <button class="btn btn-secondary" style="font-size:12px"><i class="ph ph-caret-right"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="U2" style="display:flex;flex-direction:column;gap:11.2px">
+    <div style="display:flex;align-items:center;gap:8.4px"><span style="font-size:11px;padding:2px 8px;border-radius:5px;background:#292b31;color:#b2b6ca">B2</span><span style="font-size:14px;color:#cfd3e5">Search &amp; filters</span><span style="font-size:12px;color:#75798c">— facets, saved as a private smart list</span></div>
+    <div style="width:1280px;height:820px;display:flex;border-radius:14px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+      <dc-import name="PonarrSidebar" role="user" active="Library" user="jonas" hint-size="228px,100%"></dc-import>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+        <dc-import name="PonarrTopbar" title="Search" subtitle="studio:aurora · 20–40 min · low-light" blurred="{{ blurred }}" on-toggle="{{ toggleBlur }}" hint-size="100%,64px"></dc-import>
+        <div style="flex:1;display:flex;min-height:0">
+          <div style="width:250px;flex:none;padding:0 16.8px 16.8px;display:flex;flex-direction:column;gap:16.8px;overflow:hidden;box-shadow:inset -1px 0 0 rgba(233,233,237,0.08)">
+            <sc-for list="{{ facets }}" as="f" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c">{{ f.title }}</div>
+                <sc-for list="{{ f.rows }}" as="r" hint-placeholder-count="4">
+                  <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#b2b6ca;cursor:pointer">
+                    <span style="width:14px;height:14px;flex:none;border-radius:4px;border:1.5px solid {{ r.box }};background:{{ r.fill }}"></span>
+                    <span style="{{ r.textStyle }}">{{ r.label }}</span>
+                    <span style="margin-left:auto;font-size:11px;color:#5f6373">{{ r.count }}</span>
+                  </label>
+                </sc-for>
+              </div>
+            </sc-for>
+            <button class="btn btn-primary btn-block" style="margin-top:auto"><i class="ph ph-bookmark-simple"></i>Save as smart list</button>
+          </div>
+          <div style="flex:1;min-width:0;padding:0 16.8px 16.8px;display:flex;flex-direction:column;gap:11.2px">
+            <div style="display:flex;align-items:center;gap:5.6px;flex-wrap:wrap">
+              <span style="font-size:12px;color:#75798c">Active</span>
+              <sc-for list="{{ activeFilters }}" as="a" hint-placeholder-count="4">
+                <span class="tag tag-accent" style="gap:5px">{{ a }}<i class="ph ph-x" style="font-size:10px;opacity:0.7;margin-left:5px"></i></span>
+              </sc-for>
+              <button class="btn btn-ghost" style="font-size:12px">Clear all</button>
+              <span style="margin-left:auto;font-size:12px;color:#75798c">86 of 3,268</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11.2px">
+              <sc-for list="{{ results }}" as="it" hint-placeholder-count="12">
+                <dc-import name="PonarrThumb" item="{{ it }}" blur="{{ blurred }}" hint-size="100%,210px"></dc-import>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="U3" style="display:flex;flex-direction:column;gap:11.2px">
+    <div style="display:flex;align-items:center;gap:8.4px"><span style="font-size:11px;padding:2px 8px;border-radius:5px;background:#292b31;color:#b2b6ca">B3</span><span style="font-size:14px;color:#cfd3e5">Detail &amp; player</span><span style="font-size:12px;color:#75798c">— rating, quality picker, comments, related</span></div>
+    <div style="width:1280px;height:1420px;display:flex;border-radius:14px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+      <dc-import name="PonarrSidebar" role="user" active="Continue" user="jonas" hint-size="228px,100%"></dc-import>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+        <dc-import name="PonarrTopbar" title="Aurora 214" subtitle="Library / Aurora Studios / 2025" blurred="{{ blurred }}" on-toggle="{{ toggleBlur }}" hint-size="100%,64px"></dc-import>
+        <div style="flex:1;display:flex;min-height:0;gap:16.8px;padding:0 16.8px 16.8px">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:11.2px">
+            <div style="position:relative;border-radius:8px;overflow:hidden;background:#101220;aspect-ratio:16/9;flex:none">
+              <div style="position:absolute;inset:-8%;background:{{ heroArt }};filter:{{ heroBlur }}"></div>
+              <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(14,15,24,0.92), rgba(14,15,24,0.08) 55%)"></div>
+              <div style="position:absolute;inset:0;display:grid;place-items:center">
+                <div style="width:62px;height:62px;border-radius:50%;border:1px solid #d9629f;display:grid;place-items:center;color:#f2c9de;font-size:26px;background:rgba(22,24,38,0.55)"><i class="ph ph-play"></i></div>
+              </div>
+              <div style="position:absolute;left:0;right:0;bottom:0;padding:11.2px 14px;display:flex;flex-direction:column;gap:8px">
+                <div style="position:relative;height:4px;border-radius:2px;background:rgba(233,233,237,0.18)">
+                  <div style="position:absolute;left:0;top:0;bottom:0;width:34%;background:#d9629f;border-radius:2px"></div>
+                  <sc-for list="{{ markers }}" as="m" hint-placeholder-count="5">
+                    <span style="position:absolute;top:-3px;left:{{ m.at }};width:2px;height:10px;background:#f2c9de;opacity:0.85"></span>
+                  </sc-for>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;color:#cfd3e5;font-size:16px">
+                  <i class="ph ph-skip-back"></i><i class="ph ph-play"></i><i class="ph ph-skip-forward"></i>
+                  <span style="font-size:12px;font-variant-numeric:tabular-nums;color:#9397ab">08:12 / 24:05</span>
+                  <span style="margin-left:auto;display:flex;align-items:center;gap:14px">
+                    <i class="ph ph-speaker-high"></i><i class="ph ph-bookmark-simple"></i><i class="ph ph-cast-screen"></i>
+                    <span style="position:relative;display:flex">
+                      <span style="display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 9px;border-radius:8px;color:#f2c9de;box-shadow:inset 0 0 0 1px #d9629f;cursor:pointer"><i class="ph ph-gear-six" style="font-size:14px"></i>{{ quality }}</span>
+                      <span style="position:absolute;right:0;bottom:calc(100% + 10px);width:266px;display:flex;flex-direction:column;gap:2px;padding:8.4px;border-radius:8px;background:#232532;box-shadow:0 0 0 1px #9397ab, 0 16px 40px rgba(0,0,0,0.65)">
+                        <span style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c;padding:2px 10px 5px">Quality</span>
+                        <sc-for list="{{ qualityOptions }}" as="q" hint-placeholder-count="4">
+                          <span style="{{ q.style }}" onClick="{{ q.setQuality }}">
+                            <i class="{{ q.check }}" style="font-size:14px;color:{{ q.checkColor }}"></i>
+                            <span style="display:flex;flex-direction:column"><span style="font-size:13px">{{ q.label }}</span><span style="font-size:10px;color:#75798c">{{ q.note }}</span></span>
+                          </span>
+                        </sc-for>
+                        <span style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c;padding:8px 10px 5px;margin-top:4px;box-shadow:inset 0 1px 0 rgba(233,233,237,0.08)">Audio &amp; subtitles</span>
+                        <span style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;color:#b2b6ca"><i class="ph ph-speaker-high" style="font-size:14px"></i><span style="font-size:13px">Audio</span><span style="margin-left:auto;font-size:12px;color:#f2c9de">Deutsch</span></span>
+                        <span style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;color:#b2b6ca"><i class="ph ph-subtitles" style="font-size:14px"></i><span style="font-size:13px">Subtitles</span><span style="margin-left:auto;font-size:12px;color:#f2c9de">English</span></span>
+                      </span>
+                    </span>
+                    <i class="ph ph-corners-out"></i>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:11.2px">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+                <div style="font-size:25px;font-weight:500;letter-spacing:-0.02em">Aurora 214 — Night Sessions</div>
+                <div style="font-size:12px;color:#75798c">Aurora Studios · 12 Mar 2025 · 24:05 · 2160p</div>
+                <div style="display:flex;align-items:center;gap:14px;margin-top:5px;flex-wrap:wrap">
+                  <span style="display:flex;align-items:center;gap:7px">
+                    <span style="display:flex;gap:2px">
+                      <sc-for list="{{ avgStars }}" as="s" hint-placeholder-count="5">
+                        <i class="{{ s.icon }}" style="{{ s.style }}"></i>
+                      </sc-for>
+                    </span>
+                    <span style="font-size:15px;color:#e9e9ed;font-variant-numeric:tabular-nums">{{ avgScore }}</span>
+                    <span style="font-size:11px;color:#75798c">{{ ratingCount }}</span>
+                  </span>
+                  <span style="width:1px;height:16px;background:rgba(233,233,237,0.16)"></span>
+                  <span style="display:flex;align-items:center;gap:7px">
+                    <span style="font-size:11px;color:#75798c">Your rating</span>
+                    <span style="display:flex;gap:3px;cursor:pointer">
+                      <sc-for list="{{ myStars }}" as="s" hint-placeholder-count="5">
+                        <i class="{{ s.icon }}" style="{{ s.style }}" onClick="{{ s.setRating }}"></i>
+                      </sc-for>
+                    </span>
+                    <span style="font-size:11px;color:#9397ab;font-variant-numeric:tabular-nums">{{ myRatingLabel }}</span>
+                  </span>
+                </div>
+              </div>
+              <div style="display:flex;gap:5.6px">
+                <button class="btn btn-primary"><i class="ph ph-play"></i>Resume 08:12</button>
+                <button class="btn btn-secondary"><i class="ph ph-bookmark-simple"></i>Watchlist</button>
+                <button class="btn btn-icon btn-secondary"><i class="ph ph-dots-three"></i></button>
+              </div>
+            </div>
+            <div style="display:flex;gap:5.6px;flex-wrap:wrap">
+              <sc-for list="{{ detailTags }}" as="t" hint-placeholder-count="8">
+                <span class="tag tag-neutral">{{ t }}</span>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c">Scene markers</div>
+              <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8.4px">
+                <sc-for list="{{ markers }}" as="m" hint-placeholder-count="5">
+                  <div style="display:flex;align-items:center;gap:8px;padding:7px 8.4px;border-radius:8px;background:#1c1e2c;font-size:12px;color:#b2b6ca">
+                    <span style="color:#d9629f;font-variant-numeric:tabular-nums">{{ m.time }}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ m.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8.4px">
+              <div style="display:flex;align-items:baseline;gap:8.4px">
+                <div style="font-size:16px;font-weight:500">Related</div>
+                <span style="font-size:11px;color:#75798c">from tags, studio and what you rated 4+</span>
+                <a href="#U2" style="margin-left:auto;font-size:12px">See all →</a>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8.4px">
+                <sc-for list="{{ relatedWide }}" as="r" hint-placeholder-count="5">
+                  <dc-import name="PonarrRelatedRow" item="{{ r.item }}" reason="{{ r.reason }}" why="{{ r.why }}" blur="{{ blurred }}" thumb-width="{{ 144 }}" show-play="{{ true }}" hint-size="100%,96px"></dc-import>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="width:300px;flex:none;display:flex;flex-direction:column;gap:11.2px">
+            <div class="card elev-sm" style="gap:8.4px">
+              <div style="font-size:13px;font-weight:500">Performers</div>
+              <sc-for list="{{ performers }}" as="p" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:8.4px">
+                  <span style="width:32px;height:32px;flex:none;border-radius:50%;background:{{ p.art }};filter:{{ heroBlurSm }}"></span>
+                  <span style="display:flex;flex-direction:column"><span style="font-size:13px">{{ p.name }}</span><span style="font-size:11px;color:#75798c">{{ p.count }} titles</span></span>
+                  <i class="ph ph-caret-right" style="margin-left:auto;color:#5f6373"></i>
+                </div>
+              </sc-for>
+            </div>
+            <div class="card elev-sm" style="gap:0">
+              <div style="font-size:13px;font-weight:500;margin-bottom:5px">About</div>
+              <sc-for list="{{ guestFacts }}" as="r" hint-placeholder-count="5">
+                <div style="display:flex;gap:8px;font-size:12px;padding:5px 0;color:#b2b6ca;box-shadow:inset 0 -1px 0 rgba(233,233,237,0.07)">
+                  <span style="color:#75798c;min-width:76px">{{ r.k }}</span>
+                  <span style="margin-left:auto;text-align:right">{{ r.v }}</span>
+                </div>
+              </sc-for>
+              <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#5f6373;margin-top:11.2px"><i class="ph ph-eye-slash"></i>File location hidden by the owner</div>
+            </div>
+            <div class="card elev-sm" style="gap:11.2px">
+              <div style="font-size:13px;font-weight:500">Rating breakdown</div>
+              <sc-for list="{{ ratingBars }}" as="b" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:#9397ab">
+                  <span style="min-width:22px;color:#75798c">{{ b.n }}</span>
+                  <span style="flex:1;height:4px;border-radius:2px;background:#292b31;overflow:hidden"><span style="display:block;height:100%;width:{{ b.pct }};background:#d9629f"></span></span>
+                  <span style="min-width:18px;text-align:right;font-variant-numeric:tabular-nums">{{ b.count }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div class="card elev-sm" style="gap:11.2px;flex:1">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="font-size:13px;font-weight:500">Comments</div>
+                <span style="font-size:11px;color:#75798c">12</span>
+                <button class="btn btn-ghost" style="margin-left:auto;font-size:11px">Newest<i class="ph ph-caret-down"></i></button>
+              </div>
+              <div style="display:flex;gap:8px;align-items:flex-start">
+                <span style="width:26px;height:26px;flex:none;border-radius:50%;background:#3f424d;display:grid;place-items:center;font-size:10px;color:#cfd3e5">J</span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:7px">
+                  <div class="input" style="min-height:60px;color:#75798c;font-size:12px;display:flex">Leave a note for the others…</div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="display:flex;gap:2px">
+                      <sc-for list="{{ myStars }}" as="s" hint-placeholder-count="5">
+                        <i class="{{ s.icon }}" style="{{ s.style }}" onClick="{{ s.setRating }}"></i>
+                      </sc-for>
+                    </span>
+                    <button class="btn btn-primary" style="margin-left:auto;font-size:12px">Post</button>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:11.2px">
+                <sc-for list="{{ comments }}" as="c" hint-placeholder-count="4">
+                  <div style="display:flex;gap:8px;align-items:flex-start;padding-top:11.2px;box-shadow:inset 0 1px 0 rgba(233,233,237,0.07)">
+                    <span style="width:26px;height:26px;flex:none;border-radius:50%;background:#3f424d;display:grid;place-items:center;font-size:10px;color:#cfd3e5">{{ c.initial }}</span>
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                      <div style="display:flex;align-items:center;gap:7px">
+                        <span style="font-size:12px;color:#e9e9ed">{{ c.name }}</span>
+                        <span style="display:flex;gap:1px">
+                          <sc-for list="{{ c.stars }}" as="s" hint-placeholder-count="5">
+                            <i class="{{ s.icon }}" style="{{ s.style }}"></i>
+                          </sc-for>
+                        </span>
+                        <span style="margin-left:auto;font-size:10px;color:#5f6373">{{ c.time }}</span>
+                      </div>
+                      <div style="font-size:12px;color:#b2b6ca;text-wrap:pretty">{{ c.text }}</div>
+                      <div style="display:flex;align-items:center;gap:12px;font-size:11px;color:#5f6373">
+                        <span style="display:flex;align-items:center;gap:4px"><i class="ph ph-arrow-fat-up"></i>{{ c.likes }}</span>
+                        <span>Reply</span>
+                      </div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="U4" style="display:flex;flex-direction:column;gap:11.2px">
+    <div style="display:flex;align-items:center;gap:8.4px"><span style="font-size:11px;padding:2px 8px;border-radius:5px;background:#292b31;color:#b2b6ca">B4</span><span style="font-size:14px;color:#cfd3e5">Collections &amp; performers</span></div>
+    <div style="width:1280px;height:820px;display:flex;border-radius:14px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+      <dc-import name="PonarrSidebar" role="user" active="Collections" user="jonas" hint-size="228px,100%"></dc-import>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+        <dc-import name="PonarrTopbar" title="Collections" subtitle="128 performers · 24 collections" blurred="{{ blurred }}" on-toggle="{{ toggleBlur }}" hint-size="100%,64px"></dc-import>
+        <div style="flex:1;padding:0 16.8px 16.8px;display:flex;flex-direction:column;gap:16.8px;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:8.4px">
+            <div class="seg">
+              <label class="seg-opt"><input type="radio" name="uc-tab" defaultChecked="{{ true }}"><span>Performers</span></label>
+              <label class="seg-opt"><input type="radio" name="uc-tab"><span>Studios</span></label>
+              <label class="seg-opt"><input type="radio" name="uc-tab"><span>My playlists</span></label>
+            </div>
+            <button class="btn btn-primary" style="margin-left:auto"><i class="ph ph-plus"></i>New playlist</button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:16.8px">
+            <sc-for list="{{ people }}" as="p" hint-placeholder-count="16">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center">
+                <div style="position:relative;width:100%;aspect-ratio:1;border-radius:50%;overflow:hidden;background:#14161f;box-shadow:0 0 0 1px #3f424d">
+                  <div style="position:absolute;inset:-10%;background:{{ p.art }};filter:{{ heroBlurSm }}"></div>
+                </div>
+                <div style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%">{{ p.name }}</div>
+                <div style="font-size:11px;color:#75798c">{{ p.count }} titles</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8.4px">
+            <div style="font-size:16px;font-weight:500">Playlists</div>
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11.2px">
+              <sc-for list="{{ playlists }}" as="pl" hint-placeholder-count="4">
+                <div class="card elev-sm" style="gap:6px">
+                  <div class="card-kicker">{{ pl.kicker }}</div>
+                  <div class="card-title">{{ pl.title }}</div>
+                  <div class="card-meta"><i class="ph ph-film-strip"></i>{{ pl.count }} titles · {{ pl.dur }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="U5" style="display:flex;flex-direction:column;gap:11.2px">
+    <div style="display:flex;align-items:center;gap:8.4px"><span style="font-size:11px;padding:2px 8px;border-radius:5px;background:#292b31;color:#b2b6ca">B5</span><span style="font-size:14px;color:#cfd3e5">First run — joining a friend's server</span></div>
+    <div style="width:1280px;height:820px;position:relative;display:grid;place-items:center;border-radius:14px;overflow:hidden;background:#12141f;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+      <div style="position:absolute;inset:0;background:radial-gradient(60% 55% at 22% 18%, rgba(217,98,159,0.16), transparent 70%)"></div>
+      <div style="position:relative;width:560px;display:flex;flex-direction:column;gap:16.8px;padding:28px;border-radius:14px;background:#232532;box-shadow:0 0 0 1px #9397ab, 0 16px 40px rgba(0,0,0,0.65)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <img src="assets/logo-text.png" alt="Pornarr" style="height:26px;width:auto">
+          <span class="tag tag-outline" style="margin-left:auto">Step 2 of 3</span>
+        </div>
+        <div style="display:flex;gap:5px">
+          <span style="flex:1;height:3px;border-radius:2px;background:#d9629f"></span>
+          <span style="flex:1;height:3px;border-radius:2px;background:#d9629f"></span>
+          <span style="flex:1;height:3px;border-radius:2px;background:#3f424d"></span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="font-size:25px;font-weight:500;letter-spacing:-0.02em">You've been invited to Kai's library</div>
+          <div style="font-size:13px;color:#9397ab;text-wrap:pretty">You're on the same network as the server. Nothing leaves the house — no account, no cloud, no history shared back unless Kai turns it on.</div>
+        </div>
+        <div class="field"><label>Display name — how you show up in the library</label><input class="input" value="jonas"></div>
+        <div style="display:flex;gap:11.2px">
+          <div class="field" style="flex:1"><label>Language</label>
+            <div style="display:flex;align-items:center;gap:8px;min-height:36px;padding:6px 10px;border-radius:8px;background:#232532;box-shadow:inset 0 0 0 1px rgba(233,233,237,0.16);font-size:14px"><i class="ph ph-translate" style="color:#d9629f"></i>Deutsch<i class="ph ph-caret-down" style="margin-left:auto;color:#75798c;font-size:12px"></i></div>
+          </div>
+          <div class="field" style="flex:1"><label>Subtitles</label>
+            <div style="display:flex;align-items:center;gap:8px;min-height:36px;padding:6px 10px;border-radius:8px;background:#232532;box-shadow:inset 0 0 0 1px rgba(233,233,237,0.16);font-size:14px"><i class="ph ph-subtitles" style="color:#d9629f"></i>Deutsch (forced)<i class="ph ph-caret-down" style="margin-left:auto;color:#75798c;font-size:12px"></i></div>
+          </div>
+        </div>
+        <div class="field"><label>Artwork on tiles</label>
+          <div class="seg"><label class="seg-opt"><input type="radio" name="join-blur" defaultChecked="{{ true }}"><span>Blurred</span></label><label class="seg-opt"><input type="radio" name="join-blur"><span>Visible</span></label></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8.4px">
+          <sc-for list="{{ joinFacts }}" as="j" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#9397ab"><i class="{{ j.icon }}" style="color:#d9629f;font-size:15px"></i>{{ j.text }}</div>
+          </sc-for>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:5.6px;margin-top:5px">
+          <button class="btn btn-secondary">Back</button>
+          <button class="btn btn-primary">Enter the library<i class="ph ph-arrow-right"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="U6" style="display:flex;flex-direction:column;gap:11.2px">
+    <div style="display:flex;align-items:center;gap:8.4px"><span style="font-size:11px;padding:2px 8px;border-radius:5px;background:#292b31;color:#b2b6ca">B6</span><span style="font-size:14px;color:#cfd3e5">Shorts</span><span style="font-size:12px;color:#75798c">— vertical clips under a minute, cut from the library</span></div>
+    <div style="width:1280px;height:820px;display:flex;border-radius:14px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+      <dc-import name="PonarrSidebar" role="user" active="Shorts" user="jonas" hint-size="228px,100%"></dc-import>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+        <dc-import name="PonarrTopbar" title="Shorts" subtitle="412 clips · auto-cut from scene markers" blurred="{{ blurred }}" on-toggle="{{ toggleBlur }}" hint-size="100%,64px"></dc-import>
+        <div style="flex:none;display:flex;align-items:center;gap:8.4px;padding:0 16.8px 11.2px">
+          <div class="seg">
+            <label class="seg-opt"><input type="radio" name="sh-tab" defaultChecked="{{ true }}"><span>Trending</span></label>
+            <label class="seg-opt"><input type="radio" name="sh-tab"><span>Newest</span></label>
+            <label class="seg-opt"><input type="radio" name="sh-tab"><span>Top rated</span></label>
+            <label class="seg-opt"><input type="radio" name="sh-tab"><span>Under 30 s</span></label>
+          </div>
+          <span class="tag tag-outline">made from scene markers</span>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8.4px"><span style="font-size:12px;color:#75798c">412 clips</span><button class="btn btn-secondary" style="font-size:12px"><i class="ph ph-play-circle"></i>Play as feed</button></div>
+        </div>
+        <div style="flex:1;padding:0 16.8px;overflow:hidden;mask-image:linear-gradient(to bottom,#000 92%,transparent)">
+          <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:11.2px">
+            <sc-for list="{{ shorts }}" as="it" hint-placeholder-count="14">
+              <dc-import name="PonarrThumb" item="{{ it }}" ratio="9/16" blur="{{ blurred }}" hint-size="100%,300px"></dc-import>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="U7" style="display:flex;flex-direction:column;gap:11.2px">
+    <div style="display:flex;align-items:center;gap:8.4px"><span style="font-size:11px;padding:2px 8px;border-radius:5px;background:#292b31;color:#b2b6ca">B7</span><span style="font-size:14px;color:#cfd3e5">Shorts on desktop</span><span style="font-size:12px;color:#75798c">— vertical clip centred, keyboard ↑ ↓ through the feed</span></div>
+    <div style="width:1280px;height:980px;display:flex;border-radius:14px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+      <dc-import name="PonarrSidebar" role="user" active="Shorts" user="jonas" hint-size="228px,100%"></dc-import>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+        <dc-import name="PonarrTopbar" title="Shorts" subtitle="Clip 3 of 412 · space to pause" blurred="{{ blurred }}" on-toggle="{{ toggleBlur }}" hint-size="100%,64px"></dc-import>
+        <div style="flex:1;display:flex;gap:16.8px;padding:0 16.8px 16.8px;min-height:0">
+          <div style="flex:1;min-width:0;display:flex;align-items:stretch;justify-content:center;gap:14px">
+            <div style="position:relative;height:100%;flex:none;aspect-ratio:9/16;border-radius:14px;overflow:hidden;background:#101220;box-shadow:0 0 0 1px #3f424d">
+              <div style="position:absolute;inset:-6%;background:{{ heroArt }};filter:{{ heroBlur }}"></div>
+              <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(14,15,24,0.92), rgba(14,15,24,0) 45%)"></div>
+              <div style="position:absolute;inset:0;display:grid;place-items:center"><div style="width:58px;height:58px;border-radius:50%;border:1px solid #d9629f;display:grid;place-items:center;color:#f2c9de;font-size:24px;background:rgba(22,24,38,0.5)"><i class="ph ph-play"></i></div></div>
+              <div style="position:absolute;left:14px;right:14px;bottom:14px;display:flex;flex-direction:column;gap:7px">
+                <div style="display:flex;align-items:center;gap:7px">
+                  <span style="display:flex;gap:2px">
+                    <sc-for list="{{ avgStars }}" as="s" hint-placeholder-count="5">
+                      <i class="{{ s.icon }}" style="{{ s.style }}"></i>
+                    </sc-for>
+                  </span>
+                  <span style="font-size:12px;color:#cfd3e5;font-variant-numeric:tabular-nums">4.5</span>
+                  <span style="font-size:11px;color:#75798c">· 0:42</span>
+                  <span style="margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11px;padding:3px 8px;border-radius:8px;color:#f2c9de;box-shadow:inset 0 0 0 1px #d9629f">{{ quality }}<i class="ph ph-caret-down" style="font-size:10px"></i></span>
+                </div>
+                <div style="font-size:17px;font-weight:500">Clip 214 — the good bit</div>
+                <div style="font-size:12px;color:#9397ab">Cut from <span style="color:#f2c9de">Aurora 214 — Night Sessions</span> at 15:11</div>
+                <div style="height:3px;border-radius:2px;background:rgba(233,233,237,0.18);margin-top:2px"><div style="width:46%;height:100%;border-radius:2px;background:#d9629f"></div></div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8.4px;align-self:center">
+              <button class="btn btn-secondary btn-icon" title="Previous clip"><i class="ph ph-caret-up"></i></button>
+              <button class="btn btn-secondary btn-icon" title="Next clip"><i class="ph ph-caret-down"></i></button>
+              <div style="height:8px"></div>
+              <button class="btn btn-secondary btn-icon" title="Rate"><i class="ph-fill ph-star" style="color:#d9629f"></i></button>
+              <button class="btn btn-secondary btn-icon" title="Comments"><i class="ph ph-chat-circle"></i></button>
+              <button class="btn btn-secondary btn-icon" title="Watchlist"><i class="ph ph-bookmark-simple"></i></button>
+              <button class="btn btn-secondary btn-icon" title="Open full title"><i class="ph ph-arrows-out-simple"></i></button>
+            </div>
+          </div>
+          <div style="width:300px;flex:none;display:flex;flex-direction:column;gap:11.2px;min-height:0">
+            <div class="card elev-sm" style="gap:8.4px">
+              <div style="display:flex;align-items:center;gap:8px"><div style="font-size:13px;font-weight:500">Comments</div><span style="font-size:11px;color:#75798c">6</span></div>
+              <sc-for list="{{ mobileComments }}" as="c" hint-placeholder-count="2">
+                <div style="display:flex;gap:8px;align-items:flex-start">
+                  <span style="width:24px;height:24px;flex:none;border-radius:50%;background:#3f424d;display:grid;place-items:center;font-size:10px;color:#cfd3e5">{{ c.initial }}</span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                    <div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px">{{ c.name }}</span><span style="margin-left:auto;font-size:10px;color:#5f6373">{{ c.time }}</span></div>
+                    <div style="font-size:12px;color:#b2b6ca;text-wrap:pretty">{{ c.text }}</div>
+                  </div>
+                </div>
+              </sc-for>
+              <div class="input" style="display:flex;align-items:center;color:#75798c;font-size:12px">Add a comment…</div>
+            </div>
+            <div class="card elev-sm" style="gap:8.4px;flex:1;min-height:0">
+              <div style="font-size:13px;font-weight:500">Up next</div>
+              <div style="display:flex;flex-direction:column;gap:8.4px">
+                <sc-for list="{{ upNext }}" as="it" hint-placeholder-count="4">
+                  <dc-import name="PonarrRelatedRow" item="{{ it }}" reason="Next up" blur="{{ blurred }}" ratio="9/16" thumb-width="{{ 54 }}" compact="{{ true }}" hint-size="100%,86px"></dc-import>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="U8" style="display:flex;flex-direction:column;gap:11.2px">
+    <div style="display:flex;align-items:center;gap:8.4px"><span style="font-size:11px;padding:2px 8px;border-radius:5px;background:#292b31;color:#b2b6ca">B8</span><span style="font-size:14px;color:#cfd3e5">Feed</span><span style="font-size:12px;color:#75798c">— what the server thinks you'll like, plus what your friends sent you</span></div>
+    <div style="width:1280px;height:1180px;display:flex;border-radius:14px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+      <dc-import name="PonarrSidebar" role="user" active="Feed" user="jonas" hint-size="228px,100%"></dc-import>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+        <dc-import name="PonarrTopbar" title="For you" subtitle="Built from 41 h of watching · updated 20 min ago" blurred="{{ blurred }}" on-toggle="{{ toggleBlur }}" hint-size="100%,64px"></dc-import>
+        <div style="flex:1;display:flex;gap:16.8px;padding:0 16.8px 16.8px;min-height:0">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;gap:5.6px">
+              <div class="seg">
+                <label class="seg-opt"><input type="radio" name="feed-tab" defaultChecked="{{ true }}"><span>For you</span></label>
+                <label class="seg-opt"><input type="radio" name="feed-tab"><span>From friends</span></label>
+                <label class="seg-opt"><input type="radio" name="feed-tab"><span>Because you watched</span></label>
+                <label class="seg-opt"><input type="radio" name="feed-tab"><span>New to you</span></label>
+              </div>
+              <button class="btn btn-ghost" style="margin-left:auto;font-size:12px"><i class="ph ph-arrows-clockwise"></i>Refresh picks</button>
+            </div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:14px;mask-image:linear-gradient(to bottom,#000 96%,transparent)">
+              <div style="display:flex;flex-direction:column;gap:8.4px">
+                <div style="display:flex;align-items:baseline;gap:8.4px">
+                  <div style="font-size:16px;font-weight:500">Picked for you</div>
+                  <span style="font-size:11px;color:#75798c">ranked by what you finish, not what you open</span>
+                </div>
+                <sc-for list="{{ forYou }}" as="r" hint-placeholder-count="5">
+                  <dc-import name="PonarrRelatedRow" item="{{ r.item }}" reason="{{ r.match }}" why="{{ r.why }}" ratio="{{ r.ratio }}" thumb-width="{{ r.thumb }}" blur="{{ blurred }}" show-play="{{ true }}" hint-size="100%,96px"></dc-import>
+                </sc-for>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8.4px">
+                <div style="display:flex;align-items:baseline;gap:8.4px">
+                  <div style="font-size:16px;font-weight:500">Sent to you</div>
+                  <span style="font-size:11px;color:#75798c">a friend picked this out by hand</span>
+                </div>
+                <sc-for list="{{ sentToYou }}" as="p" hint-placeholder-count="2">
+                  <div style="display:flex;flex-direction:column;gap:8.4px;padding:11.2px;border-radius:8px;background:#1c1e2c">
+                    <div style="display:flex;align-items:center;gap:9px">
+                      <span style="width:26px;height:26px;flex:none;border-radius:50%;background:#3f424d;display:grid;place-items:center;font-size:11px;color:#cfd3e5">{{ p.initial }}</span>
+                      <span style="font-size:13px">{{ p.who }}</span>
+                      <span style="font-size:13px;color:#75798c">sent you this</span>
+                      <span style="margin-left:auto;font-size:11px;color:#5f6373">{{ p.time }}</span>
+                    </div>
+                    <div style="font-size:13px;color:#b2b6ca;text-wrap:pretty">“{{ p.note }}”</div>
+                    <dc-import name="PonarrRelatedRow" item="{{ p.item }}" reason="{{ p.match }}" why="{{ p.why }}" thumb-width="{{ 116 }}" blur="{{ blurred }}" show-play="{{ true }}" hint-size="100%,90px"></dc-import>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="width:300px;flex:none;display:flex;flex-direction:column;gap:11.2px;min-height:0">
+            <div class="card elev-sm" style="gap:11.2px">
+              <div style="display:flex;align-items:center;gap:8px"><div style="font-size:13px;font-weight:500">Why these</div><i class="ph ph-info" style="margin-left:auto;color:#5f6373"></i></div>
+              <div style="font-size:12px;color:#9397ab;text-wrap:pretty">Your strongest signals from the last 30 days.</div>
+              <sc-for list="{{ signals }}" as="g" hint-placeholder-count="5">
+                <div style="display:flex;flex-direction:column;gap:5px">
+                  <div style="display:flex;font-size:12px;color:#b2b6ca"><span>{{ g.label }}</span><span style="margin-left:auto;color:#75798c;font-variant-numeric:tabular-nums">{{ g.value }}</span></div>
+                  <div style="height:4px;border-radius:2px;background:#292b31;overflow:hidden"><div style="height:100%;width:{{ g.pct }};background:#d9629f"></div></div>
+                </div>
+              </sc-for>
+            </div>
+            <div class="card elev-sm" style="gap:11.2px">
+              <div style="font-size:13px;font-weight:500">Tune the feed</div>
+              <sc-for list="{{ feedTuning }}" as="t" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:11.2px">
+                  <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:12px">{{ t.label }}</span><span style="font-size:11px;color:#75798c">{{ t.note }}</span></span>
+                  <span style="{{ t.trackStyle }}"><span style="{{ t.knobStyle }}"></span></span>
+                </div>
+              </sc-for>
+              <button class="btn btn-secondary btn-block" style="font-size:12px"><i class="ph ph-eraser"></i>Forget my history</button>
+            </div>
+            <div class="card elev-sm" style="gap:8.4px;flex:1">
+              <div style="font-size:13px;font-weight:500">Recommend to a friend</div>
+              <div style="font-size:12px;color:#9397ab;text-wrap:pretty">Send a title straight into someone's feed with a note. They see who sent it.</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <sc-for list="{{ feedPeople }}" as="p" hint-placeholder-count="4">
+                  <span class="tag tag-neutral" style="gap:5px">{{ p.name }}</span>
+                </sc-for>
+              </div>
+              <button class="btn btn-primary btn-block"><i class="ph ph-paper-plane-tilt"></i>Send a pick</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:11.2px;padding-top:8px">
+    <div style="font-family:Inter,sans-serif;font-weight:500;font-size:24px;letter-spacing:-0.02em">C · Mobile web (guest &amp; admin)</div>
+    <span class="tag tag-neutral">390 × 844</span>
+    <div style="flex:1;height:1px;background:linear-gradient(to right, rgba(233,233,237,0.16), transparent)"></div>
+  </div>
+
+  <div id="M1" style="display:flex;gap:32px">
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">C1 · Library</div>
+      <div style="width:390px;height:844px;display:flex;flex-direction:column;border-radius:32px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+        <div style="flex:none;display:flex;align-items:center;padding:12px 22px 4px;font-size:12px;color:#b2b6ca"><span>21:04</span><span style="margin-left:auto;display:flex;gap:6px"><i class="ph ph-wifi-high"></i><i class="ph ph-battery-high"></i></span></div>
+        <div style="flex:none;display:flex;align-items:center;gap:8px;padding:8px 16px">
+          <div style="font-size:20px;font-weight:500;letter-spacing:-0.02em">Library</div>
+          <button class="btn btn-icon btn-secondary" style="margin-left:auto" onClick="{{ toggleBlur }}"><i class="{{ eyeIcon }}"></i></button>
+          <button class="btn btn-icon btn-secondary"><i class="ph ph-funnel"></i></button>
+        </div>
+        <div style="flex:none;padding:0 16px 8px"><div class="input" style="display:flex;align-items:center;gap:8px;color:#75798c;font-size:13px"><i class="ph ph-magnifying-glass"></i>Search Kai's Pornarr</div></div>
+        <div style="flex:none;display:flex;gap:6px;padding:0 16px 10px;overflow:hidden;mask-image:linear-gradient(to right,#000 88%,transparent)">
+          <sc-for list="{{ mobileChips }}" as="c" hint-placeholder-count="3">
+            <span class="{{ c.cls }}" style="white-space:nowrap">{{ c.label }}</span>
+          </sc-for>
+        </div>
+        <div style="flex:1;padding:0 16px;overflow:hidden;mask-image:linear-gradient(to bottom,#000 88%,transparent)">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px">
+            <sc-for list="{{ mobileGrid }}" as="it" hint-placeholder-count="8">
+              <dc-import name="PonarrThumb" item="{{ it }}" blur="{{ blurred }}" hint-size="100%,170px"></dc-import>
+            </sc-for>
+          </div>
+        </div>
+        <div style="flex:none;display:flex;padding:10px 16px 26px;gap:6px;background:#12141f;box-shadow:inset 0 1px 0 rgba(233,233,237,0.08)">
+          <sc-for list="{{ mobileTabs }}" as="t" hint-placeholder-count="4">
+            <span style="{{ t.style }}"><i class="{{ t.icon }}" style="font-size:19px"></i><span style="font-size:10px">{{ t.label }}</span></span>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">C2 · Player</div>
+      <div style="width:390px;height:1000px;display:flex;flex-direction:column;border-radius:32px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+        <div style="position:relative;flex:none;height:300px;overflow:hidden;background:#101220">
+          <div style="position:absolute;inset:-10%;background:{{ heroArt }};filter:{{ heroBlur }}"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(14,15,24,0.95), rgba(14,15,24,0.15) 60%)"></div>
+          <div style="position:absolute;top:14px;left:16px;right:16px;display:flex;align-items:center;color:#cfd3e5;font-size:18px"><i class="ph ph-caret-left"></i><span style="margin-left:auto;display:flex;align-items:center;gap:14px"><span style="display:flex;align-items:center;gap:5px;font-size:11px;padding:4px 9px;border-radius:8px;color:#f2c9de;background:rgba(22,24,38,0.6);box-shadow:inset 0 0 0 1px #d9629f">{{ quality }}<i class="ph ph-caret-down" style="font-size:11px"></i></span><i class="ph ph-cast-screen"></i><i class="{{ eyeIcon }}"></i></span></div>
+          <div style="position:absolute;inset:0;display:grid;place-items:center"><div style="width:56px;height:56px;border-radius:50%;border:1px solid #d9629f;display:grid;place-items:center;color:#f2c9de;font-size:24px;background:rgba(22,24,38,0.5)"><i class="ph ph-play"></i></div></div>
+          <div style="position:absolute;left:16px;right:16px;bottom:14px;display:flex;flex-direction:column;gap:8px">
+            <div style="position:relative;height:4px;border-radius:2px;background:rgba(233,233,237,0.2)"><div style="position:absolute;inset:0 66% 0 0;background:#d9629f;border-radius:2px"></div></div>
+            <div style="display:flex;font-size:11px;color:#9397ab;font-variant-numeric:tabular-nums"><span>08:12</span><span style="margin-left:auto">24:05</span></div>
+          </div>
+        </div>
+        <div style="flex:1;padding:16px;display:flex;flex-direction:column;gap:14px;overflow:hidden">
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <div style="font-size:20px;font-weight:500;letter-spacing:-0.02em">Aurora 214 — Night Sessions</div>
+            <div style="font-size:12px;color:#75798c">Aurora Studios · 24:05 · 2160p</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" style="flex:1;height:44px"><i class="ph ph-play"></i>Resume</button>
+            <button class="btn btn-secondary" style="width:44px;height:44px;padding:0"><i class="ph ph-bookmark-simple"></i></button>
+            <button class="btn btn-secondary" style="width:44px;height:44px;padding:0"><i class="ph ph-dots-three"></i></button>
+          </div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            <sc-for list="{{ detailTags }}" as="t" hint-placeholder-count="6">
+              <span class="tag tag-neutral">{{ t }}</span>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c">Comments</div>
+              <span style="font-size:11px;color:#5f6373">12</span>
+              <span style="margin-left:auto;display:flex;gap:3px">
+                <sc-for list="{{ myStars }}" as="s" hint-placeholder-count="5">
+                  <i class="{{ s.icon }}" style="{{ s.style }}" onClick="{{ s.setRating }}"></i>
+                </sc-for>
+              </span>
+            </div>
+            <sc-for list="{{ mobileComments }}" as="c" hint-placeholder-count="2">
+              <div style="display:flex;gap:9px;align-items:flex-start;padding:10px;border-radius:8px;background:#1c1e2c">
+                <span style="width:24px;height:24px;flex:none;border-radius:50%;background:#3f424d;display:grid;place-items:center;font-size:10px;color:#cfd3e5">{{ c.initial }}</span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <span style="font-size:12px">{{ c.name }}</span>
+                    <span style="display:flex;gap:1px">
+                      <sc-for list="{{ c.stars }}" as="s" hint-placeholder-count="5">
+                        <i class="{{ s.icon }}" style="{{ s.style }}"></i>
+                      </sc-for>
+                    </span>
+                    <span style="margin-left:auto;font-size:10px;color:#5f6373">{{ c.time }}</span>
+                  </div>
+                  <div style="font-size:12px;color:#b2b6ca;text-wrap:pretty">{{ c.text }}</div>
+                </div>
+              </div>
+            </sc-for>
+            <div class="input" style="display:flex;align-items:center;gap:8px;color:#75798c;font-size:12px;min-height:44px"><i class="ph ph-chat-circle"></i>Add a comment…</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c">Related</div>
+              <span style="margin-left:auto;font-size:11px;color:#d9629f">See all</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ mobileRelated }}" as="r" hint-placeholder-count="3">
+                <dc-import name="PonarrRelatedRow" item="{{ r.item }}" reason="{{ r.reason }}" blur="{{ blurred }}" thumb-width="{{ 104 }}" compact="{{ true }}" hint-size="100%,82px"></dc-import>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">C3 · Filter sheet</div>
+      <div style="width:390px;height:844px;position:relative;display:flex;flex-direction:column;border-radius:32px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+        <div style="flex:1;padding:16px;opacity:0.35;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-content:start">
+          <sc-for list="{{ sheetBackdrop }}" as="it" hint-placeholder-count="4">
+            <dc-import name="PonarrThumb" item="{{ it }}" blur="{{ blurred }}" hint-size="100%,170px"></dc-import>
+          </sc-for>
+        </div>
+        <div style="position:absolute;inset:0;background:rgba(14,15,24,0.6)"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;max-height:78%;display:flex;flex-direction:column;gap:14px;padding:12px 16px 26px;border-radius:20px 20px 32px 32px;background:#232532;box-shadow:0 -1px 0 #9397ab, 0 -16px 40px rgba(0,0,0,0.6)">
+          <span style="width:36px;height:4px;border-radius:2px;background:#3f424d;align-self:center"></span>
+          <div style="display:flex;align-items:center"><div style="font-size:18px;font-weight:500">Filters</div><button class="btn btn-ghost" style="margin-left:auto;font-size:12px">Clear all</button></div>
+          <sc-for list="{{ sheetFacets }}" as="f" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c">{{ f.title }}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <sc-for list="{{ f.rows }}" as="r" hint-placeholder-count="4">
+                  <span style="{{ r.chipStyle }}">{{ r.label }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <button class="btn btn-primary btn-block" style="height:44px">Show 86 titles</button>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">C4 · Shorts feed</div>
+      <div style="width:390px;height:844px;position:relative;overflow:hidden;border-radius:32px;background:#101220;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+        <div style="position:absolute;inset:-6%;background:{{ heroArt }};filter:{{ heroBlur }}"></div>
+        <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(14,15,24,0.92), rgba(14,15,24,0) 40%, rgba(14,15,24,0.55))"></div>
+        <div style="position:absolute;top:12px;left:22px;right:22px;display:flex;align-items:center;font-size:12px;color:#b2b6ca"><span>21:04</span><span style="margin-left:auto;display:flex;gap:6px"><i class="ph ph-wifi-high"></i><i class="ph ph-battery-high"></i></span></div>
+        <div style="position:absolute;top:44px;left:16px;right:16px;display:flex;align-items:center;gap:14px;color:#e9e9ed">
+          <span style="font-size:18px;font-weight:500">Shorts</span>
+          <span style="font-size:13px;color:#75798c">Following</span>
+          <span style="margin-left:auto;display:flex;gap:14px;font-size:18px"><i class="{{ eyeIcon }}"></i><i class="ph ph-magnifying-glass"></i></span>
+        </div>
+        <div style="position:absolute;inset:0;display:grid;place-items:center"><div style="width:58px;height:58px;border-radius:50%;border:1px solid #d9629f;display:grid;place-items:center;color:#f2c9de;font-size:24px;background:rgba(22,24,38,0.5)"><i class="ph ph-play"></i></div></div>
+        <div style="position:absolute;right:12px;bottom:150px;display:flex;flex-direction:column;gap:20px;align-items:center">
+          <sc-for list="{{ shortsRail }}" as="r" hint-placeholder-count="4">
+            <span style="display:flex;flex-direction:column;align-items:center;gap:4px;color:{{ r.color }}"><i class="{{ r.icon }}" style="font-size:24px"></i><span style="font-size:11px;color:#cfd3e5">{{ r.label }}</span></span>
+          </sc-for>
+          <span style="display:flex;flex-direction:column;align-items:center;gap:4px;color:#e9e9ed"><i class="ph ph-dots-three" style="font-size:24px"></i></span>
+        </div>
+        <div style="position:absolute;left:16px;right:76px;bottom:104px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:7px">
+            <span style="display:flex;gap:2px">
+              <sc-for list="{{ avgStars }}" as="s" hint-placeholder-count="5">
+                <i class="{{ s.icon }}" style="{{ s.style }}"></i>
+              </sc-for>
+            </span>
+            <span style="font-size:12px;color:#cfd3e5;font-variant-numeric:tabular-nums">4.5</span>
+            <span style="font-size:11px;color:#75798c">· 0:42 · Short</span>
+          </div>
+          <div style="font-size:16px;font-weight:500;letter-spacing:-0.01em">Clip 214 — the good bit</div>
+          <div style="font-size:12px;color:#9397ab">Cut from <span style="color:#f2c9de">Aurora 214 — Night Sessions</span> at 15:11</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            <span class="tag tag-neutral">low-light</span><span class="tag tag-neutral">16mm</span><span class="tag tag-outline">Watch full title</span>
+          </div>
+        </div>
+        <div style="position:absolute;left:16px;right:16px;bottom:82px;height:3px;border-radius:2px;background:rgba(233,233,237,0.18)"><div style="width:46%;height:100%;border-radius:2px;background:#d9629f"></div></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;display:flex;padding:10px 16px 26px;gap:6px;background:rgba(18,20,31,0.92);box-shadow:inset 0 1px 0 rgba(233,233,237,0.08)">
+          <sc-for list="{{ shortsTabs }}" as="t" hint-placeholder-count="4">
+            <span style="{{ t.style }}"><i class="{{ t.icon }}" style="font-size:19px"></i><span style="font-size:10px">{{ t.label }}</span></span>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="M2" style="display:flex;gap:32px">
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">C5 · Login</div>
+      <div style="width:390px;height:844px;position:relative;display:flex;flex-direction:column;border-radius:32px;overflow:hidden;background:#12141f;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+        <div style="position:absolute;inset:0;background:radial-gradient(70% 45% at 30% 12%, rgba(217,98,159,0.18), transparent 70%)"></div>
+        <div style="position:relative;flex:none;display:flex;align-items:center;padding:12px 22px 4px;font-size:12px;color:#b2b6ca"><span>21:04</span><span style="margin-left:auto;display:flex;gap:6px"><i class="ph ph-wifi-high"></i><i class="ph ph-battery-high"></i></span></div>
+        <div style="position:relative;flex:1;display:flex;flex-direction:column;gap:22px;padding:40px 24px 26px">
+          <img src="assets/logo-text.png" alt="Pornarr" style="height:30px;width:auto;align-self:flex-start">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:24px;font-weight:500;letter-spacing:-0.02em">Kai's server</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:#75798c"><i class="ph ph-wifi-high" style="color:#d9629f"></i>Found on this network · 192.168.1.24</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c">Who's watching</div>
+            <sc-for list="{{ profiles }}" as="p" hint-placeholder-count="4">
+              <div style="{{ p.style }}">
+                <span style="width:36px;height:36px;flex:none;border-radius:50%;background:#3f424d;display:grid;place-items:center;font-size:13px;color:#cfd3e5">{{ p.initial }}</span>
+                <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:15px">{{ p.name }}</span><span style="font-size:11px;color:#75798c">{{ p.role }}</span></span>
+                <i class="{{ p.icon }}" style="margin-left:auto;color:{{ p.iconColor }};font-size:18px"></i>
+              </div>
+            </sc-for>
+          </div>
+          <div class="field"><label>Passphrase — only if Kai set one</label>
+            <div class="input" style="display:flex;align-items:center;gap:8px;min-height:44px;color:#75798c;font-size:14px;letter-spacing:0.3em">••••••<i class="ph ph-eye" style="margin-left:auto;letter-spacing:0"></i></div>
+          </div>
+          <div style="margin-top:auto;display:flex;flex-direction:column;gap:11.2px">
+            <button class="btn btn-primary btn-block" style="height:48px">Enter as Jonas<i class="ph ph-arrow-right"></i></button>
+            <div style="display:flex;align-items:center;justify-content:center;gap:7px;font-size:11px;color:#5f6373"><i class="ph ph-shield-check"></i>Stays on the house network — no account, no cloud</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">C6 · First setup (admin)</div>
+      <div style="width:390px;height:844px;display:flex;flex-direction:column;border-radius:32px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+        <div style="flex:none;display:flex;align-items:center;padding:12px 22px 4px;font-size:12px;color:#b2b6ca"><span>21:04</span><span style="margin-left:auto;display:flex;gap:6px"><i class="ph ph-wifi-high"></i><i class="ph ph-battery-high"></i></span></div>
+        <div style="flex:none;display:flex;align-items:center;gap:10px;padding:10px 16px">
+          <i class="ph ph-caret-left" style="font-size:18px;color:#b2b6ca"></i>
+          <div style="font-size:18px;font-weight:500">Set up your server</div>
+          <span class="tag tag-outline" style="margin-left:auto">2 / 4</span>
+        </div>
+        <div style="flex:none;display:flex;gap:5px;padding:0 16px 14px">
+          <span style="flex:1;height:3px;border-radius:2px;background:#d9629f"></span>
+          <span style="flex:1;height:3px;border-radius:2px;background:#d9629f"></span>
+          <span style="flex:1;height:3px;border-radius:2px;background:#3f424d"></span>
+          <span style="flex:1;height:3px;border-radius:2px;background:#3f424d"></span>
+        </div>
+        <div style="flex:1;padding:0 16px 16px;display:flex;flex-direction:column;gap:16px;overflow:hidden">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:20px;font-weight:500;letter-spacing:-0.02em">Where is your video?</div>
+            <div style="font-size:13px;color:#9397ab;text-wrap:pretty">Point Pornarr at the folders it should watch. Files are never moved unless you turn that on.</div>
+          </div>
+          <sc-for list="{{ setupFolders }}" as="f" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:10px;padding:11px;border-radius:8px;background:#1c1e2c">
+              <i class="{{ f.icon }}" style="color:{{ f.color }};font-size:18px"></i>
+              <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.path }}</span><span style="font-size:11px;color:#75798c">{{ f.meta }}</span></span>
+              <i class="ph ph-x" style="margin-left:auto;color:#5f6373"></i>
+            </div>
+          </sc-for>
+          <button class="btn btn-secondary btn-block" style="height:44px"><i class="ph ph-folder-plus"></i>Add a folder</button>
+          <div class="field"><label>Interface language</label>
+            <div class="input" style="display:flex;align-items:center;gap:8px;min-height:44px;font-size:14px"><i class="ph ph-translate" style="color:#d9629f"></i>Deutsch<i class="ph ph-caret-down" style="margin-left:auto;color:#75798c;font-size:12px"></i></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:11px;border-radius:8px;background:#1c1e2c">
+            <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:13px">Cut shorts from markers</span><span style="font-size:11px;color:#75798c">Clips under a minute, made on scan</span></span>
+            <span style="margin-left:auto;flex:none;width:36px;height:20px;border-radius:10px;padding:2px;display:flex;justify-content:flex-end;background:#d9629f"><span style="width:16px;height:16px;border-radius:50%;background:#161826"></span></span>
+          </div>
+          <div style="margin-top:auto;display:flex;gap:8px">
+            <button class="btn btn-secondary" style="height:48px;flex:none;width:96px">Skip</button>
+            <button class="btn btn-primary" style="height:48px;flex:1">Scan 2 folders<i class="ph ph-arrow-right"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">C7 · Admin dashboard</div>
+      <div style="width:390px;height:844px;display:flex;flex-direction:column;border-radius:32px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+        <div style="flex:none;display:flex;align-items:center;padding:12px 22px 4px;font-size:12px;color:#b2b6ca"><span>21:04</span><span style="margin-left:auto;display:flex;gap:6px"><i class="ph ph-wifi-high"></i><i class="ph ph-battery-high"></i></span></div>
+        <div style="flex:none;display:flex;align-items:center;gap:8px;padding:8px 16px">
+          <img src="assets/logo.png" alt="" style="width:22px;height:22px">
+          <div style="font-size:19px;font-weight:500;letter-spacing:-0.02em">Server</div>
+          <span class="tag tag-accent" style="margin-left:6px">Admin</span>
+          <button class="btn btn-icon btn-secondary" style="margin-left:auto"><i class="ph ph-bell-simple"></i></button>
+        </div>
+        <div style="flex:1;padding:0 16px 8px;display:flex;flex-direction:column;gap:14px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px">
+            <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+              <div class="card elev-sm" style="gap:2px;padding:11px">
+                <div style="display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c"><i class="{{ s.icon }}"></i>{{ s.label }}</div>
+                <div style="font-size:22px;font-weight:500;font-variant-numeric:tabular-nums">{{ s.value }}</div>
+                <div style="font-size:10px;color:#d9629f">{{ s.delta }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div class="card elev-sm" style="gap:8px;padding:11px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:500">Scanning /media/vault-b</span><span style="margin-left:auto;font-size:11px;color:#75798c">70%</span></div>
+            <div style="height:4px;border-radius:2px;background:#292b31;overflow:hidden"><div style="width:70%;height:100%;background:#d9629f"></div></div>
+            <div style="display:flex;gap:6px"><button class="btn btn-secondary" style="font-size:12px;height:36px;flex:1"><i class="ph ph-pause"></i>Pause</button><button class="btn btn-secondary" style="font-size:12px;height:36px;flex:1"><i class="ph ph-eye"></i>Review 12</button></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c">Activity</div>
+            <sc-for list="{{ activity }}" as="a" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;background:#1c1e2c;font-size:12px;color:#b2b6ca">
+                <i class="{{ a.icon }}" style="color:#d9629f;font-size:15px"></i>
+                <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.text }}</span>
+                <span style="margin-left:auto;flex:none;font-size:10px;color:#5f6373">{{ a.time }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="flex:none;display:flex;padding:10px 16px 26px;gap:6px;background:#12141f;box-shadow:inset 0 1px 0 rgba(233,233,237,0.08)">
+          <sc-for list="{{ adminTabs }}" as="t" hint-placeholder-count="4">
+            <span style="{{ t.style }}"><i class="{{ t.icon }}" style="font-size:19px"></i><span style="font-size:10px">{{ t.label }}</span></span>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">C8 · Queue &amp; review (admin)</div>
+      <div style="width:390px;height:844px;display:flex;flex-direction:column;border-radius:32px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+        <div style="flex:none;display:flex;align-items:center;padding:12px 22px 4px;font-size:12px;color:#b2b6ca"><span>21:04</span><span style="margin-left:auto;display:flex;gap:6px"><i class="ph ph-wifi-high"></i><i class="ph ph-battery-high"></i></span></div>
+        <div style="flex:none;display:flex;align-items:center;gap:10px;padding:8px 16px">
+          <div style="font-size:19px;font-weight:500;letter-spacing:-0.02em">Queue</div>
+          <span style="font-size:12px;color:#75798c">4 active · 18.4 MB/s</span>
+          <button class="btn btn-icon btn-secondary" style="margin-left:auto"><i class="ph ph-pause"></i></button>
+        </div>
+        <div style="flex:none;display:flex;gap:6px;padding:0 16px 12px;overflow:hidden;mask-image:linear-gradient(to right,#000 90%,transparent)">
+          <span class="tag tag-accent" style="white-space:nowrap">Active 4</span>
+          <span class="tag tag-neutral" style="white-space:nowrap">Queued 11</span>
+          <span class="tag tag-outline" style="white-space:nowrap">Failed 2</span>
+        </div>
+        <div style="flex:1;padding:0 16px 8px;display:flex;flex-direction:column;gap:8px;overflow:hidden;mask-image:linear-gradient(to bottom,#000 92%,transparent)">
+          <sc-for list="{{ queueRows }}" as="q" hint-placeholder-count="6">
+            <div style="display:flex;flex-direction:column;gap:7px;padding:11px;border-radius:8px;background:#1c1e2c">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ q.title }}</span><span style="font-size:11px;color:#75798c">{{ q.sub }}</span></span>
+                <span class="{{ q.cls }}" style="margin-left:auto;flex:none">{{ q.stage }}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="flex:1;height:4px;border-radius:2px;background:#292b31;overflow:hidden"><div style="height:100%;width:{{ q.pct }};background:{{ q.color }}"></div></div>
+                <span style="font-size:11px;color:#75798c;font-variant-numeric:tabular-nums">{{ q.eta }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="flex:none;display:flex;padding:10px 16px 26px;gap:6px;background:#12141f;box-shadow:inset 0 1px 0 rgba(233,233,237,0.08)">
+          <sc-for list="{{ adminTabsQueue }}" as="t" hint-placeholder-count="4">
+            <span style="{{ t.style }}"><i class="{{ t.icon }}" style="font-size:19px"></i><span style="font-size:10px">{{ t.label }}</span></span>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">C9 · Feed</div>
+      <div style="width:390px;height:844px;display:flex;flex-direction:column;border-radius:32px;overflow:hidden;background:#161826;box-shadow:0 0 0 1px #595d6c, 0 16px 40px rgba(0,0,0,0.65)">
+        <div style="flex:none;display:flex;align-items:center;padding:12px 22px 4px;font-size:12px;color:#b2b6ca"><span>21:04</span><span style="margin-left:auto;display:flex;gap:6px"><i class="ph ph-wifi-high"></i><i class="ph ph-battery-high"></i></span></div>
+        <div style="flex:none;display:flex;align-items:center;gap:8px;padding:8px 16px">
+          <div style="font-size:19px;font-weight:500;letter-spacing:-0.02em">For you</div>
+          <button class="btn btn-icon btn-secondary" style="margin-left:auto" onClick="{{ toggleBlur }}"><i class="{{ eyeIcon }}"></i></button>
+          <button class="btn btn-icon btn-secondary"><i class="ph ph-sliders-horizontal"></i></button>
+        </div>
+        <div style="flex:none;padding:0 16px 10px;font-size:11px;color:#75798c">From 41 h of watching · updated 20 min ago</div>
+        <div style="flex:none;display:flex;gap:6px;padding:0 16px 12px;overflow:hidden;mask-image:linear-gradient(to right,#000 92%,transparent)">
+          <span class="tag tag-accent" style="white-space:nowrap">For you</span>
+          <span class="tag tag-neutral" style="white-space:nowrap">From friends</span>
+          <span class="tag tag-outline" style="white-space:nowrap">New to you</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:12px;padding:0 16px;mask-image:linear-gradient(to bottom,#000 94%,transparent)">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c">Picked for you</div>
+              <sc-for list="{{ forYouMobile }}" as="r" hint-placeholder-count="3">
+                <dc-import name="PonarrRelatedRow" item="{{ r.item }}" reason="{{ r.match }}" why="{{ r.why }}" ratio="{{ r.ratio }}" thumb-width="{{ 96 }}" blur="{{ blurred }}" compact="{{ true }}" hint-size="100%,78px"></dc-import>
+              </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#75798c">Sent to you</div>
+            <sc-for list="{{ sentToYouMobile }}" as="p" hint-placeholder-count="1">
+              <div style="display:flex;flex-direction:column;gap:8px;padding:11px;border-radius:8px;background:#1c1e2c">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <span style="width:24px;height:24px;flex:none;border-radius:50%;background:#3f424d;display:grid;place-items:center;font-size:10px;color:#cfd3e5">{{ p.initial }}</span>
+                  <span style="font-size:12px">{{ p.who }}</span><span style="font-size:12px;color:#75798c">sent you this</span>
+                  <span style="margin-left:auto;font-size:10px;color:#5f6373">{{ p.time }}</span>
+                </div>
+                <div style="font-size:12px;color:#b2b6ca;text-wrap:pretty">“{{ p.note }}”</div>
+                <dc-import name="PonarrRelatedRow" item="{{ p.item }}" reason="{{ p.match }}" blur="{{ blurred }}" thumb-width="{{ 96 }}" compact="{{ true }}" hint-size="100%,78px"></dc-import>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="flex:none;display:flex;padding:10px 16px 26px;gap:6px;background:#12141f;box-shadow:inset 0 1px 0 rgba(233,233,237,0.08)">
+          <sc-for list="{{ feedTabBar }}" as="t" hint-placeholder-count="4">
+            <span style="{{ t.style }}"><i class="{{ t.icon }}" style="font-size:19px"></i><span style="font-size:10px">{{ t.label }}</span></span>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:11.2px;padding-top:8px">
+    <div style="font-family:Inter,sans-serif;font-weight:500;font-size:24px;letter-spacing:-0.02em">D · iOS app</div>
+    <span class="tag tag-neutral">402 × 874 · native chrome, large titles, glass tab bar</span>
+    <div style="flex:1;height:1px;background:linear-gradient(to right, rgba(233,233,237,0.16), transparent)"></div>
+  </div>
+
+  <div id="IOS" style="display:flex;gap:32px;flex-wrap:wrap">
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">D1 · Library</div>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" title="Library" hint-size="402px,874px">
+        <div style="height:100%;background:#161826;display:flex;flex-direction:column;gap:14px;padding:4px 0 0;font-family:-apple-system,'SF Pro',system-ui"><div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:14px;mask-image:linear-gradient(to bottom,#000 94%,transparent)">
+          <div style="padding:0 16px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:9px;min-height:38px;padding:0 12px;border-radius:19px;background:#232532;color:#75798c;font-size:15px"><i class="ph ph-magnifying-glass"></i>Search Kai's library</div>
+            <div style="display:flex;gap:6px;overflow:hidden;mask-image:linear-gradient(to right,#000 90%,transparent)">
+              <sc-for list="{{ mobileChips }}" as="c" hint-placeholder-count="3">
+                <span class="{{ c.cls }}" style="white-space:nowrap">{{ c.label }}</span>
+              </sc-for>
+            </div>
+          </div>
+          <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;color:#9397ab">Continue watching</span><span style="margin-left:auto;font-size:13px;color:#e79ac0">See all</span></div>
+            <div style="display:flex;gap:10px;overflow:hidden;mask-image:linear-gradient(to right,#000 88%,transparent)">
+              <sc-for list="{{ mobileRelated }}" as="r" hint-placeholder-count="3">
+                <div style="width:168px;flex:none"><dc-import name="PonarrThumb" item="{{ r.item }}" blur="{{ blurred }}" hint-size="168px,180px"></dc-import></div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;color:#9397ab">Recently added</span><span style="margin-left:auto;font-size:13px;color:#e79ac0">Sort</span></div>
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px">
+              <sc-for list="{{ appGrid }}" as="it" hint-placeholder-count="4">
+                <dc-import name="PonarrThumb" item="{{ it }}" blur="{{ blurred }}" hint-size="100%,180px"></dc-import>
+              </sc-for>
+            </div>
+          </div>
+          </div>
+          <div style="flex:none;margin:8px 16px 42px;display:flex;padding:7px;border-radius:26px;background:rgba(35,37,50,0.82);box-shadow:0 0 0 1px rgba(233,233,237,0.1), 0 10px 30px rgba(0,0,0,0.5)">
+            <sc-for list="{{ iosTabs }}" as="t" hint-placeholder-count="4">
+              <span style="{{ t.style }}"><i class="{{ t.icon }}" style="font-size:20px"></i><span style="font-size:10px">{{ t.label }}</span></span>
+            </sc-for>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">D2 · Shorts</div>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="402px,874px">
+        <div style="position:relative;height:874px;overflow:hidden;background:#101220;font-family:-apple-system,'SF Pro',system-ui">
+          <div style="position:absolute;inset:-6%;background:{{ heroArt }};filter:{{ heroBlur }}"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(14,15,24,0.92), rgba(14,15,24,0) 42%, rgba(14,15,24,0.5))"></div>
+          <div style="position:absolute;top:58px;left:0;right:0;display:flex;justify-content:center;gap:18px;font-size:16px;color:rgba(233,233,237,0.55)">
+            <span>Following</span><span style="color:#e9e9ed;font-weight:600">Shorts</span><span>Newest</span>
+          </div>
+          <div style="position:absolute;inset:0;display:grid;place-items:center"><div style="width:58px;height:58px;border-radius:50%;border:1px solid #d9629f;display:grid;place-items:center;color:#f2c9de;font-size:24px;background:rgba(22,24,38,0.5)"><i class="ph ph-play"></i></div></div>
+          <div style="position:absolute;right:12px;bottom:190px;display:flex;flex-direction:column;gap:20px;align-items:center">
+            <sc-for list="{{ shortsRail }}" as="r" hint-placeholder-count="4">
+              <span style="display:flex;flex-direction:column;align-items:center;gap:4px;color:{{ r.color }}"><i class="{{ r.icon }}" style="font-size:25px"></i><span style="font-size:11px;color:#cfd3e5">{{ r.label }}</span></span>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:16px;right:76px;bottom:140px;display:flex;flex-direction:column;gap:7px">
+            <div style="font-size:17px;font-weight:600;letter-spacing:-0.01em">Clip 214 — the good bit</div>
+            <div style="font-size:13px;color:#9397ab">from <span style="color:#f2c9de">Aurora 214</span> · 0:42 · 2160p</div>
+            <div style="display:flex;gap:5px"><span class="tag tag-neutral">low-light</span><span class="tag tag-outline">Watch full title</span></div>
+          </div>
+          <div style="position:absolute;left:16px;right:16px;bottom:120px;height:3px;border-radius:2px;background:rgba(233,233,237,0.2)"><div style="width:46%;height:100%;border-radius:2px;background:#d9629f"></div></div>
+          <div style="position:absolute;left:16px;right:16px;bottom:44px;display:flex;padding:7px;border-radius:26px;background:rgba(35,37,50,0.82);box-shadow:0 0 0 1px rgba(233,233,237,0.1)">
+            <sc-for list="{{ iosTabsShorts }}" as="t" hint-placeholder-count="4">
+              <span style="{{ t.style }}"><i class="{{ t.icon }}" style="font-size:20px"></i><span style="font-size:10px">{{ t.label }}</span></span>
+            </sc-for>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">D3 · Now playing</div>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="402px,874px">
+        <div style="min-height:100%;background:#161826;display:flex;flex-direction:column;font-family:-apple-system,'SF Pro',system-ui">
+          <div style="position:relative;flex:none;height:226px;overflow:hidden;background:#101220">
+            <div style="position:absolute;inset:-10%;background:{{ heroArt }};filter:{{ heroBlur }}"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(14,15,24,0.95), rgba(14,15,24,0.1) 60%)"></div>
+            <div style="position:absolute;top:56px;left:14px;right:14px;display:flex;align-items:center;gap:10px;color:#e9e9ed;font-size:17px"><i class="ph ph-caret-left"></i><span style="margin-left:auto;display:flex;gap:14px"><i class="ph ph-airplay"></i><i class="{{ eyeIcon }}"></i></span></div>
+            <div style="position:absolute;inset:0;display:grid;place-items:center"><div style="width:52px;height:52px;border-radius:50%;border:1px solid #d9629f;display:grid;place-items:center;color:#f2c9de;font-size:22px;background:rgba(22,24,38,0.5)"><i class="ph ph-play"></i></div></div>
+            <div style="position:absolute;left:16px;right:16px;bottom:12px;display:flex;flex-direction:column;gap:6px">
+              <div style="height:4px;border-radius:2px;background:rgba(233,233,237,0.2)"><div style="width:34%;height:100%;border-radius:2px;background:#d9629f"></div></div>
+              <div style="display:flex;font-size:11px;color:#9397ab;font-variant-numeric:tabular-nums"><span>08:12</span><span style="margin-left:auto">−15:53</span></div>
+            </div>
+          </div>
+          <div style="flex:1;padding:14px 16px 40px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <div style="font-size:22px;font-weight:600;letter-spacing:-0.02em">Aurora 214 — Night Sessions</div>
+              <div style="font-size:13px;color:#75798c">Aurora Studios · 24:05 · 2160p · Deutsch</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="display:flex;gap:3px">
+                <sc-for list="{{ myStars }}" as="s" hint-placeholder-count="5">
+                  <i class="{{ s.icon }}" style="{{ s.style }}" onClick="{{ s.setRating }}"></i>
+                </sc-for>
+              </span>
+              <span style="font-size:12px;color:#75798c">4.5 · 128 ratings</span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary" style="flex:1;height:46px;border-radius:23px"><i class="ph ph-play"></i>Resume</button>
+              <button class="btn btn-secondary" style="width:46px;height:46px;padding:0;border-radius:23px"><i class="ph ph-bookmark-simple"></i></button>
+              <button class="btn btn-secondary" style="width:46px;height:46px;padding:0;border-radius:23px"><i class="ph ph-subtitles"></i></button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:13px;color:#9397ab">Comments · 12</div>
+              <sc-for list="{{ mobileComments }}" as="c" hint-placeholder-count="1">
+                <div style="display:flex;gap:9px;align-items:flex-start;padding:11px;border-radius:14px;background:#1c1e2c">
+                  <span style="width:26px;height:26px;flex:none;border-radius:50%;background:#3f424d;display:grid;place-items:center;font-size:11px;color:#cfd3e5">{{ c.initial }}</span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                    <div style="display:flex;align-items:center;gap:6px"><span style="font-size:13px">{{ c.name }}</span><span style="margin-left:auto;font-size:11px;color:#5f6373">{{ c.time }}</span></div>
+                    <div style="font-size:13px;color:#b2b6ca;text-wrap:pretty">{{ c.text }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:13px;color:#9397ab">Related</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ mobileRelated }}" as="r" hint-placeholder-count="3">
+                  <dc-import name="PonarrRelatedRow" item="{{ r.item }}" reason="{{ r.reason }}" blur="{{ blurred }}" thumb-width="{{ 108 }}" compact="{{ true }}" hint-size="100%,82px"></dc-import>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">D4 · Server (admin)</div>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" title="Server" hint-size="402px,874px">
+        <div style="height:100%;background:#161826;display:flex;flex-direction:column;gap:16px;padding:4px 0 0;font-family:-apple-system,'SF Pro',system-ui"><div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:16px;mask-image:linear-gradient(to bottom,#000 94%,transparent)">
+          <div style="padding:0 16px;display:flex;align-items:center;gap:8px">
+            <span class="tag tag-accent">Admin</span>
+            <span style="font-size:13px;color:#75798c">kai · owner</span>
+            <span style="margin-left:auto;font-size:13px;color:#e79ac0">Switch to guest</span>
+          </div>
+          <div style="padding:0 16px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px">
+            <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;gap:2px;padding:13px;border-radius:18px;background:#232532">
+                <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#75798c"><i class="{{ s.icon }}"></i>{{ s.label }}</div>
+                <div style="font-size:24px;font-weight:600;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">{{ s.value }}</div>
+                <div style="font-size:11px;color:#e79ac0">{{ s.delta }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin:0 16px;padding:14px;border-radius:18px;background:#232532;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-size:15px;font-weight:500">Scanning vault-b</span><span style="margin-left:auto;font-size:13px;color:#75798c">70%</span></div>
+            <div style="height:5px;border-radius:3px;background:#292b31;overflow:hidden"><div style="width:70%;height:100%;background:#d9629f"></div></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-secondary" style="flex:1;height:40px;border-radius:20px;font-size:14px"><i class="ph ph-pause"></i>Pause</button>
+              <button class="btn btn-primary" style="flex:1;height:40px;border-radius:20px;font-size:14px"><i class="ph ph-eye"></i>Review 12</button>
+            </div>
+          </div>
+          <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:13px;color:#9397ab">Activity</div>
+            <sc-for list="{{ activity }}" as="a" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:16px;background:#1c1e2c;font-size:13px;color:#b2b6ca">
+                <i class="{{ a.icon }}" style="color:#d9629f;font-size:17px"></i>
+                <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.text }}</span>
+                <span style="margin-left:auto;flex:none;font-size:11px;color:#5f6373">{{ a.time }}</span>
+              </div>
+            </sc-for>
+          </div>
+          </div>
+          <div style="flex:none;margin:8px 16px 42px;display:flex;padding:7px;border-radius:26px;background:rgba(35,37,50,0.82);box-shadow:0 0 0 1px rgba(233,233,237,0.1)">
+            <sc-for list="{{ iosAdminTabs }}" as="t" hint-placeholder-count="4">
+              <span style="{{ t.style }}"><i class="{{ t.icon }}" style="font-size:20px"></i><span style="font-size:10px">{{ t.label }}</span></span>
+            </sc-for>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">D5 · Settings — language</div>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" title="Settings" hint-size="402px,874px">
+        <div style="min-height:100%;background:#161826;padding:4px 0 40px;display:flex;flex-direction:column;gap:22px;font-family:-apple-system,'SF Pro',system-ui">
+          <sc-for list="{{ iosSettings }}" as="g" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div style="padding:0 32px;font-size:12px;letter-spacing:0.04em;text-transform:uppercase;color:#75798c">{{ g.header }}</div>
+              <div style="margin:0 16px;border-radius:18px;overflow:hidden;background:#232532">
+                <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:50px;padding:0 14px;box-shadow:inset 0 -0.5px 0 rgba(233,233,237,0.09)">
+                    <i class="{{ r.icon }}" style="font-size:18px;color:#d9629f"></i>
+                    <span style="font-size:16px">{{ r.label }}</span>
+                    <span style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:15px;color:#9397ab">{{ r.value }}<i class="{{ r.trail }}" style="font-size:14px;color:#5f6373"></i></span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="padding:0 32px;font-size:12px;color:#5f6373;text-wrap:pretty">{{ g.note }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">D6 · Feed</div>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" title="For you" hint-size="402px,874px">
+        <div style="height:100%;background:#161826;display:flex;flex-direction:column;gap:14px;padding:4px 0 0;font-family:-apple-system,'SF Pro',system-ui">
+          <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:14px;mask-image:linear-gradient(to bottom,#000 94%,transparent)">
+            <div style="padding:0 16px;display:flex;align-items:center;gap:8px">
+              <span style="font-size:13px;color:#75798c">From 41 h of watching</span>
+              <span style="margin-left:auto;font-size:13px;color:#e79ac0">Tune</span>
+            </div>
+            <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:13px;color:#9397ab">Picked for you</div>
+              <sc-for list="{{ appPicks }}" as="r" hint-placeholder-count="2">
+                <dc-import name="PonarrRelatedRow" item="{{ r.item }}" reason="{{ r.match }}" why="{{ r.why }}" ratio="{{ r.ratio }}" thumb-width="{{ 104 }}" blur="{{ blurred }}" compact="{{ true }}" hint-size="100%,80px"></dc-import>
+              </sc-for>
+            </div>
+            <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:13px;color:#9397ab">Sent to you</div>
+              <sc-for list="{{ sentToYouMobile }}" as="p" hint-placeholder-count="1">
+                <div style="display:flex;flex-direction:column;gap:9px;padding:12px;border-radius:18px;background:#232532">
+                  <div style="display:flex;align-items:center;gap:9px">
+                    <span style="width:26px;height:26px;flex:none;border-radius:50%;background:#3f424d;display:grid;place-items:center;font-size:11px;color:#cfd3e5">{{ p.initial }}</span>
+                    <span style="font-size:14px">{{ p.who }}</span><span style="font-size:14px;color:#75798c">sent you this</span>
+                    <span style="margin-left:auto;font-size:11px;color:#5f6373">{{ p.time }}</span>
+                  </div>
+                  <div style="font-size:13px;color:#b2b6ca;text-wrap:pretty">“{{ p.note }}”</div>
+                  <dc-import name="PonarrRelatedRow" item="{{ p.item }}" reason="{{ p.match }}" blur="{{ blurred }}" thumb-width="{{ 88 }}" compact="{{ true }}" hint-size="100%,72px"></dc-import>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="flex:none;margin:8px 16px 42px;display:flex;padding:7px;border-radius:26px;background:rgba(35,37,50,0.82);box-shadow:0 0 0 1px rgba(233,233,237,0.1), 0 10px 30px rgba(0,0,0,0.5)">
+            <sc-for list="{{ iosTabsFeed }}" as="t" hint-placeholder-count="4">
+              <span style="{{ t.style }}"><i class="{{ t.icon }}" style="font-size:20px"></i><span style="font-size:10px">{{ t.label }}</span></span>
+            </sc-for>
+          </div>
+        </div>
+      </x-import>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:11.2px;padding-top:8px">
+    <div style="font-family:Inter,sans-serif;font-weight:500;font-size:24px;letter-spacing:-0.02em">E · Android app</div>
+    <span class="tag tag-neutral">412 × 892 · same screens as iOS, rebuilt on Material 3</span>
+    <div style="flex:1;height:1px;background:linear-gradient(to right, rgba(233,233,237,0.16), transparent)"></div>
+  </div>
+
+  <div id="AND" style="display:flex;gap:32px;flex-wrap:wrap">
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">E1 · Library</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./android-frame.jsx" dark="{{ true }}" hint-size="412px,892px">
+        <div style="height:100%;background:#161826;display:flex;flex-direction:column;font-family:Roboto,'Noto Sans',system-ui">
+          <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:20px;mask-image:linear-gradient(to bottom,#000 95%,transparent)">
+            <div style="flex:none;padding:8px 16px 0">
+              <div style="display:flex;align-items:center;gap:16px;height:56px;padding:0 16px;border-radius:28px;background:#232532;color:#9397ab">
+                <i class="ph ph-list" style="font-size:24px;color:#cfd3e5"></i>
+                <span style="font-size:16px">Search library</span>
+                <span style="margin-left:auto;display:flex;align-items:center;gap:16px;font-size:24px;color:#cfd3e5"><i class="{{ eyeIcon }}" onClick="{{ toggleBlur }}"></i><span style="width:32px;height:32px;border-radius:16px;background:#62304a;color:#f9e2ee;display:grid;place-items:center;font-size:13px">J</span></span>
+              </div>
+            </div>
+            <div style="flex:none;display:flex;gap:8px;padding:0 16px;overflow:hidden;mask-image:linear-gradient(to right,#000 90%,transparent)">
+              <sc-for list="{{ androidChips }}" as="c" hint-placeholder-count="4">
+                <span style="{{ c.style }}"><i class="{{ c.icon }}" style="{{ c.iconStyle }}"></i>{{ c.label }}</span>
+              </sc-for>
+            </div>
+            <div style="padding:0 16px;display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px;font-weight:500">Continue watching</span><span style="margin-left:auto;font-size:14px;font-weight:500;color:#e79ac0">See all</span></div>
+              <div style="display:flex;gap:12px;overflow:hidden;mask-image:linear-gradient(to right,#000 88%,transparent)">
+                <sc-for list="{{ mobileRelated }}" as="r" hint-placeholder-count="3">
+                  <div style="width:176px;flex:none"><dc-import name="PonarrThumb" item="{{ r.item }}" blur="{{ blurred }}" hint-size="176px,188px"></dc-import></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="padding:0 16px;display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px;font-weight:500">Recently added</span><span style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:500;color:#e79ac0">Newest<i class="ph ph-caret-down" style="font-size:14px"></i></span></div>
+              <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px">
+                <sc-for list="{{ appGrid }}" as="it" hint-placeholder-count="4">
+                  <dc-import name="PonarrThumb" item="{{ it }}" blur="{{ blurred }}" hint-size="100%,180px"></dc-import>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="flex:none;align-self:flex-end;margin:0 16px 12px;display:flex;align-items:center;gap:12px;height:56px;padding:0 20px;border-radius:16px;background:#62304a;color:#f9e2ee;box-shadow:0 4px 12px rgba(0,0,0,0.45)"><i class="ph ph-shuffle" style="font-size:24px"></i><span style="font-size:15px;font-weight:500;letter-spacing:0.01em">Shuffle</span></div>
+          <div style="flex:none;display:flex;padding:12px 8px 16px;background:#1e2030">
+            <sc-for list="{{ androidTabs }}" as="t" hint-placeholder-count="4">
+              <span style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                <span style="{{ t.pill }}"><i class="{{ t.icon }}" style="font-size:24px"></i></span>
+                <span style="{{ t.labelStyle }}">{{ t.label }}</span>
+              </span>
+            </sc-for>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">E2 · Shorts</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./android-frame.jsx" dark="{{ true }}" hint-size="412px,892px">
+        <div style="height:100%;position:relative;overflow:hidden;background:#101220;font-family:Roboto,'Noto Sans',system-ui">
+          <div style="position:absolute;inset:-6%;background:{{ heroArt }};filter:{{ heroBlur }}"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(14,15,24,0.92), rgba(14,15,24,0) 42%, rgba(14,15,24,0.55))"></div>
+          <div style="position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:24px;height:64px;padding:0 16px;color:#e9e9ed">
+            <span style="font-size:22px;font-weight:400">Shorts</span>
+            <span style="margin-left:auto;display:flex;gap:24px;font-size:24px"><i class="ph ph-magnifying-glass"></i><i class="{{ eyeIcon }}" onClick="{{ toggleBlur }}"></i></span>
+          </div>
+          <div style="position:absolute;inset:0;display:grid;place-items:center"><div style="width:64px;height:64px;border-radius:32px;background:rgba(98,48,74,0.9);display:grid;place-items:center;color:#f9e2ee;font-size:28px"><i class="ph ph-play"></i></div></div>
+          <div style="position:absolute;right:12px;bottom:206px;display:flex;flex-direction:column;gap:24px;align-items:center">
+            <sc-for list="{{ shortsRail }}" as="r" hint-placeholder-count="4">
+              <span style="display:flex;flex-direction:column;align-items:center;gap:4px;color:{{ r.color }}"><i class="{{ r.icon }}" style="font-size:26px"></i><span style="font-size:12px;color:#cfd3e5">{{ r.label }}</span></span>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:16px;right:80px;bottom:158px;display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:18px;font-weight:500">Clip 214 — the good bit</div>
+            <div style="font-size:14px;color:#9397ab">from <span style="color:#f2c9de">Aurora 214</span> · 0:42 · 2160p</div>
+            <div style="display:flex;gap:8px;margin-top:2px">
+              <span style="font-size:13px;padding:6px 14px;border-radius:8px;color:#b2b6ca;box-shadow:inset 0 0 0 1px rgba(233,233,237,0.2)">low-light</span>
+              <span style="font-size:13px;padding:6px 14px;border-radius:8px;color:#f9e2ee;background:#62304a">Full title</span>
+            </div>
+          </div>
+          <div style="position:absolute;left:16px;right:16px;bottom:136px;height:4px;border-radius:2px;background:rgba(233,233,237,0.2)"><div style="width:46%;height:100%;border-radius:2px;background:#d9629f"></div></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:rgba(30,32,48,0.95)">
+          <div style="flex:none;display:flex;padding:12px 8px 16px;background:#1e2030">
+            <sc-for list="{{ androidTabsShorts }}" as="t" hint-placeholder-count="4">
+              <span style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                <span style="{{ t.pill }}"><i class="{{ t.icon }}" style="font-size:24px"></i></span>
+                <span style="{{ t.labelStyle }}">{{ t.label }}</span>
+              </span>
+            </sc-for>
+          </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">E3 · Now playing</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./android-frame.jsx" dark="{{ true }}" hint-size="412px,892px">
+        <div style="height:100%;background:#161826;display:flex;flex-direction:column;font-family:Roboto,'Noto Sans',system-ui">
+          <div style="position:relative;flex:none;height:236px;overflow:hidden;background:#101220">
+            <div style="position:absolute;inset:-10%;background:{{ heroArt }};filter:{{ heroBlur }}"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(14,15,24,0.95), rgba(14,15,24,0.1) 60%)"></div>
+            <div style="position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:24px;height:64px;padding:0 16px;color:#e9e9ed;font-size:24px"><i class="ph ph-arrow-left"></i><span style="margin-left:auto;display:flex;gap:24px"><i class="ph ph-cast-screen"></i><i class="ph ph-dots-three-vertical"></i></span></div>
+            <div style="position:absolute;inset:0;display:grid;place-items:center"><div style="width:60px;height:60px;border-radius:30px;background:rgba(98,48,74,0.9);display:grid;place-items:center;color:#f9e2ee;font-size:26px"><i class="ph ph-play"></i></div></div>
+            <div style="position:absolute;left:16px;right:16px;bottom:12px;display:flex;flex-direction:column;gap:6px">
+              <div style="height:4px;border-radius:2px;background:rgba(233,233,237,0.2)"><div style="width:34%;height:100%;border-radius:2px;background:#d9629f"></div></div>
+              <div style="display:flex;font-size:12px;color:#9397ab;font-variant-numeric:tabular-nums"><span>08:12</span><span style="margin-left:auto">24:05</span></div>
+            </div>
+          </div>
+          <div style="flex:1;min-height:0;overflow:hidden;padding:16px 16px 20px;display:flex;flex-direction:column;gap:20px;mask-image:linear-gradient(to bottom,#000 94%,transparent)">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="font-size:24px;font-weight:400;letter-spacing:0">Aurora 214 — Night Sessions</div>
+              <div style="font-size:14px;color:#75798c">Aurora Studios · 24:05 · 2160p · Deutsch</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="display:flex;gap:4px">
+                <sc-for list="{{ myStars }}" as="s" hint-placeholder-count="5">
+                  <i class="{{ s.icon }}" style="{{ s.style }}" onClick="{{ s.setRating }}"></i>
+                </sc-for>
+              </span>
+              <span style="font-size:13px;color:#75798c">4.5 · 128</span>
+              <span style="margin-left:auto;display:flex;align-items:center;gap:8px;height:40px;padding:0 24px;border-radius:20px;background:#62304a;color:#f9e2ee;font-size:14px;font-weight:500"><i class="ph ph-play" style="font-size:18px"></i>Resume</span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <sc-for list="{{ androidPlayerChips }}" as="c" hint-placeholder-count="3">
+                <span style="{{ c.style }}">{{ c.label }}</span>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="font-size:16px;font-weight:500">Comments · 12</div>
+              <sc-for list="{{ mobileComments }}" as="c" hint-placeholder-count="1">
+                <div style="display:flex;gap:16px;align-items:flex-start">
+                  <span style="width:40px;height:40px;flex:none;border-radius:20px;background:#3f424d;display:grid;place-items:center;font-size:15px;color:#cfd3e5">{{ c.initial }}</span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                    <div style="display:flex;align-items:center;gap:8px"><span style="font-size:15px">{{ c.name }}</span><span style="margin-left:auto;font-size:12px;color:#5f6373">{{ c.time }}</span></div>
+                    <div style="font-size:14px;color:#b2b6ca;text-wrap:pretty">{{ c.text }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="font-size:16px;font-weight:500">Related</div>
+              <sc-for list="{{ mobileRelated }}" as="r" hint-placeholder-count="3">
+                <dc-import name="PonarrRelatedRow" item="{{ r.item }}" reason="{{ r.reason }}" blur="{{ blurred }}" thumb-width="{{ 110 }}" compact="{{ true }}" hint-size="100%,82px"></dc-import>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">E4 · Server (admin)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./android-frame.jsx" dark="{{ true }}" hint-size="412px,892px">
+        <div style="height:100%;background:#161826;display:flex;flex-direction:column;font-family:Roboto,'Noto Sans',system-ui">
+          <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:20px;mask-image:linear-gradient(to bottom,#000 95%,transparent)">
+          <div style="flex:none;display:flex;align-items:center;gap:24px;height:64px;padding:0 16px 0 16px;color:#e9e9ed">
+            <i class="ph ph-list" style="font-size:24px"></i>
+            <span style="font-size:22px;font-weight:400;letter-spacing:0">Server</span>
+            <span style="margin-left:auto;display:flex;gap:24px;font-size:24px"><span class="tag tag-accent" style="align-self:center">Admin</span><i class="ph ph-dots-three-vertical"></i></span>
+          </div>
+            <div style="padding:0 16px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px">
+              <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+                <div style="display:flex;flex-direction:column;gap:2px;padding:16px;border-radius:12px;background:#232532">
+                  <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#75798c"><i class="{{ s.icon }}" style="font-size:16px"></i>{{ s.label }}</div>
+                  <div style="font-size:26px;font-weight:400;font-variant-numeric:tabular-nums">{{ s.value }}</div>
+                  <div style="font-size:12px;color:#e79ac0">{{ s.delta }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin:0 16px;padding:16px;border-radius:12px;background:#232532;display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px;font-weight:500">Scanning vault-b</span><span style="margin-left:auto;font-size:13px;color:#75798c">70%</span></div>
+              <div style="height:4px;border-radius:2px;background:#292b31;overflow:hidden"><div style="width:70%;height:100%;background:#d9629f"></div></div>
+              <div style="display:flex;gap:8px">
+                <span style="flex:1;display:grid;place-items:center;height:40px;border-radius:20px;font-size:14px;font-weight:500;color:#b2b6ca;box-shadow:inset 0 0 0 1px rgba(233,233,237,0.2)">Pause</span>
+                <span style="flex:1;display:grid;place-items:center;height:40px;border-radius:20px;font-size:14px;font-weight:500;color:#f9e2ee;background:#62304a">Review 12</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div style="padding:0 16px;font-size:14px;font-weight:500;color:#e79ac0">Queue</div>
+              <sc-for list="{{ androidQueue }}" as="q" hint-placeholder-count="4">
+                <div style="display:flex;flex-direction:column;gap:10px;padding:14px 16px">
+                  <div style="display:flex;align-items:center;gap:12px">
+                    <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ q.title }}</span><span style="font-size:13px;color:#75798c">{{ q.sub }}</span></span>
+                    <span class="{{ q.cls }}" style="margin-left:auto;flex:none">{{ q.stage }}</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:12px">
+                    <div style="flex:1;height:4px;border-radius:2px;background:#292b31;overflow:hidden"><div style="height:100%;width:{{ q.pct }};background:{{ q.color }}"></div></div>
+                    <span style="font-size:12px;color:#75798c;font-variant-numeric:tabular-nums">{{ q.eta }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="flex:none;align-self:flex-end;margin:0 16px 12px;display:flex;align-items:center;gap:12px;height:56px;padding:0 20px;border-radius:16px;background:#62304a;color:#f9e2ee;box-shadow:0 4px 12px rgba(0,0,0,0.45)"><i class="ph ph-magnifying-glass" style="font-size:24px"></i><span style="font-size:15px;font-weight:500">Scan now</span></div>
+          <div style="flex:none;display:flex;padding:12px 8px 16px;background:#1e2030">
+            <sc-for list="{{ androidAdminTabs }}" as="t" hint-placeholder-count="4">
+              <span style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                <span style="{{ t.pill }}"><i class="{{ t.icon }}" style="font-size:24px"></i></span>
+                <span style="{{ t.labelStyle }}">{{ t.label }}</span>
+              </span>
+            </sc-for>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">E5 · Settings — language</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./android-frame.jsx" dark="{{ true }}" hint-size="412px,892px">
+        <div style="height:100%;background:#161826;display:flex;flex-direction:column;font-family:Roboto,'Noto Sans',system-ui">
+          <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:16px;mask-image:linear-gradient(to bottom,#000 96%,transparent)">
+            <div style="flex:none;display:flex;align-items:center;gap:24px;height:64px;padding:0 16px;color:#e9e9ed"><i class="ph ph-arrow-left" style="font-size:24px"></i><span style="font-size:22px;font-weight:400">Settings</span></div>
+            <sc-for list="{{ iosSettings }}" as="g" hint-placeholder-count="3">
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <div style="padding:4px 16px 8px;font-size:14px;font-weight:500;color:#e79ac0">{{ g.header }}</div>
+                <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:16px;min-height:64px;padding:8px 16px">
+                    <i class="{{ r.icon }}" style="font-size:24px;color:#9397ab"></i>
+                    <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:16px">{{ r.label }}</span><span style="font-size:14px;color:#75798c">{{ r.value }}</span></span>
+                    <i class="{{ r.trail }}" style="margin-left:auto;font-size:18px;color:#5f6373"></i>
+                  </div>
+                </sc-for>
+                <div style="height:1px;margin:8px 16px 0;background:rgba(233,233,237,0.09)"></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11.2px">
+      <div style="font-size:13px;color:#cfd3e5">E6 · Feed</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./android-frame.jsx" dark="{{ true }}" hint-size="412px,892px">
+        <div style="height:100%;background:#161826;display:flex;flex-direction:column;font-family:Roboto,'Noto Sans',system-ui">
+          <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:18px;mask-image:linear-gradient(to bottom,#000 95%,transparent)">
+          <div style="flex:none;display:flex;align-items:center;gap:24px;height:64px;padding:0 16px 0 16px;color:#e9e9ed">
+            <i class="ph ph-list" style="font-size:24px"></i>
+            <span style="font-size:22px;font-weight:400;letter-spacing:0">For you</span>
+            <span style="margin-left:auto;display:flex;gap:24px;font-size:24px"><i class="{{ eyeIcon }}" onClick="{{ toggleBlur }}"></i><i class="ph ph-sliders-horizontal"></i></span>
+          </div>
+            <div style="flex:none;padding:0 16px;font-size:13px;color:#75798c;margin-top:-12px">From 41 h of watching · updated 20 min ago</div>
+            <div style="flex:none;display:flex;gap:8px;padding:0 16px;overflow:hidden;mask-image:linear-gradient(to right,#000 92%,transparent)">
+              <sc-for list="{{ androidFeedChips }}" as="c" hint-placeholder-count="3">
+                <span style="{{ c.style }}">{{ c.label }}</span>
+              </sc-for>
+            </div>
+            <div style="padding:0 16px;display:flex;flex-direction:column;gap:10px">
+              <div style="font-size:16px;font-weight:500">Picked for you</div>
+              <sc-for list="{{ appPicks }}" as="r" hint-placeholder-count="2">
+                <dc-import name="PonarrRelatedRow" item="{{ r.item }}" reason="{{ r.match }}" why="{{ r.why }}" ratio="{{ r.ratio }}" thumb-width="{{ 106 }}" blur="{{ blurred }}" compact="{{ true }}" hint-size="100%,80px"></dc-import>
+              </sc-for>
+            </div>
+            <div style="padding:0 16px;display:flex;flex-direction:column;gap:10px">
+              <div style="font-size:16px;font-weight:500">Sent to you</div>
+              <sc-for list="{{ sentToYouMobile }}" as="p" hint-placeholder-count="1">
+                <div style="display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:12px;background:#232532">
+                  <div style="display:flex;align-items:center;gap:12px">
+                    <span style="width:32px;height:32px;flex:none;border-radius:16px;background:#62304a;display:grid;place-items:center;font-size:13px;color:#f9e2ee">{{ p.initial }}</span>
+                    <span style="font-size:15px">{{ p.who }}</span><span style="font-size:15px;color:#75798c">sent you this</span>
+                    <span style="margin-left:auto;font-size:12px;color:#5f6373">{{ p.time }}</span>
+                  </div>
+                  <div style="font-size:14px;color:#b2b6ca;text-wrap:pretty">“{{ p.note }}”</div>
+                  <dc-import name="PonarrRelatedRow" item="{{ p.item }}" reason="{{ p.match }}" blur="{{ blurred }}" thumb-width="{{ 90 }}" compact="{{ true }}" hint-size="100%,72px"></dc-import>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="flex:none;display:flex;padding:12px 8px 16px;background:#1e2030">
+            <sc-for list="{{ androidTabsFeed }}" as="t" hint-placeholder-count="4">
+              <span style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                <span style="{{ t.pill }}"><i class="{{ t.icon }}" style="font-size:24px"></i></span>
+                <span style="{{ t.labelStyle }}">{{ t.label }}</span>
+              </span>
+            </sc-for>
+          </div>
+        </div>
+      </x-import>
+    </div>
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;revealArt&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Board&quot;}}">
+const T = (title, meta, dur, res, tags, hue, progress, rating, comments) =>
+  ({ title, meta, dur, res, tags, hue, progress: progress || '0%', rating, comments });
+const STARS = (rating, size) => [1, 2, 3, 4, 5].map(n => ({
+  icon: rating >= n - 0.5 ? 'ph-fill ph-star' : 'ph ph-star',
+  style: 'font-size:' + size + 'px;color:' + (rating >= n - 0.5 ? '#d9629f' : '#4a4d5c')
+}));
+const art = (h) => 'radial-gradient(58% 66% at 32% 34%, hsl(' + h + ' 34% 54%), transparent 72%),' +
+  'radial-gradient(52% 62% at 74% 64%, hsl(' + ((h + 42) % 360) + ' 32% 44%), transparent 74%),' +
+  'linear-gradient(155deg,#2b2e46,#14161f)';
+const box = (on) => ({ box: on ? '#d9629f' : '#595d6c', fill: on ? '#d9629f' : 'transparent' });
+
+class Component extends DCLogic {
+  state = { blurred: true, myRating: 4, quality: '2160p' };
+
+  renderVals() {
+    const blurred = this.props.revealArt === true ? false : this.state.blurred;
+    const navStyle = (on) => 'display:flex;align-items:center;gap:8px;padding:6px 8.4px;border-radius:8px;font-size:13px;' +
+      (on ? 'color:#f2c9de;background:rgba(217,98,159,0.14);' : 'color:#b2b6ca;');
+
+    const titles = [
+      ['Aurora 214 — Night Sessions', 'Aurora Studios', '24:05', '2160p', 9, 268, '34%', 4.5, 12],
+      ['Blue Hour, Part 2', 'Meridian', '18:42', '1080p', 6, 214, '0%', 3.5, 4],
+      ['Static Garden', 'Independent', '41:10', '1080p', 12, 300, '78%', 5, 21],
+      ['Low Tide', 'Aurora Studios', '12:36', '2160p', 4, 190, '0%', 3, 2],
+      ['Room 9', 'Nightfall', '32:18', '1080p', 8, 330, '12%', 4, 8],
+      ['Paper Lantern', 'Meridian', '27:54', '1080p', 7, 250, '0%', 4.5, 6],
+      ['Harbour Lights', 'Independent', '15:03', '720p', 3, 205, '0%', 2.5, 1],
+      ['The Long Way', 'Nightfall', '48:22', '2160p', 11, 285, '55%', 4, 15],
+      ['Salt & Smoke', 'Aurora Studios', '22:47', '1080p', 5, 230, '0%', 3.5, 3],
+      ['Quiet Signal', 'Meridian', '36:09', '1080p', 9, 315, '0%', 4.5, 9],
+      ['Copper Field', 'Independent', '19:28', '1080p', 6, 24, '0%', 3, 0],
+      ['Nightcall 04', 'Nightfall', '29:41', '2160p', 10, 275, '90%', 5, 18],
+      ['Overcast', 'Aurora Studios', '25:16', '1080p', 8, 200, '0%', 4, 5],
+      ['Second Floor', 'Meridian', '31:52', '1080p', 7, 340, '0%', 3.5, 2],
+      ['Winter Reel', 'Independent', '17:05', '720p', 2, 180, '0%', 2, 0]
+    ].map(a => T.apply(null, a));
+    const reasonFor = (it) => {
+      if (it.meta === 'Aurora Studios') return { reason: 'Same studio', why: 'Aurora Studios, like this one' };
+      if (it.res === '2160p') return { reason: 'Also 2160p', why: 'Same resolution and bitrate class' };
+      if (it.rating >= 4.5) return { reason: 'Rated 4★+ by you', why: 'Matches titles you gave four stars or more' };
+      return { reason: 'Shares 6 tags', why: 'low-light, interior, handheld, 16mm, hdr, two-person' };
+    };
+    const shortsList = [
+      ['Clip 214 — the good bit', 'from Aurora 214', '0:42', 268, 4.5, 6],
+      ['Blue Hour, cut', 'from Blue Hour, Part 2', '0:18', 214, 4, 2],
+      ['Static Garden, opener', 'from Static Garden', '0:55', 300, 5, 11],
+      ['Low Tide, 2160', 'from Low Tide', '0:29', 190, 3.5, 1],
+      ['Room 9, hallway', 'from Room 9', '0:37', 330, 4, 4],
+      ['Paper Lantern, close', 'from Paper Lantern', '0:24', 250, 4.5, 3],
+      ['Harbour, wide', 'from Harbour Lights', '0:51', 205, 3, 0],
+      ['The Long Way, 16mm', 'from The Long Way', '0:33', 285, 4.5, 7],
+      ['Salt & Smoke, intro', 'from Salt & Smoke', '0:21', 230, 3.5, 2],
+      ['Quiet Signal, loop', 'from Quiet Signal', '0:15', 315, 4, 5],
+      ['Copper Field, dusk', 'from Copper Field', '0:47', 24, 3, 0],
+      ['Nightcall, drop', 'from Nightcall 04', '0:26', 275, 5, 9],
+      ['Overcast, rooftop', 'from Overcast', '0:58', 200, 4, 3],
+      ['Winter Reel, snow', 'from Winter Reel', '0:19', 180, 2.5, 1]
+    ].map(([title, meta, dur, hue, rating, comments]) =>
+      ({ title, meta, dur, res: '', tags: 3, hue, progress: '0%', rating, comments }));
+
+    return {
+      blurred,
+      toggleBlur: () => this.setState(s => ({ blurred: !s.blurred })),
+
+      stats: [
+        { icon: 'ph ph-film-strip', label: 'Titles', value: '3,482', delta: '+37 this week' },
+        { icon: 'ph ph-database', label: 'Storage', value: '6.1 TB', delta: '68% of 9.0 TB' },
+        { icon: 'ph ph-tag', label: 'Untagged', value: '214', delta: '−48 since Monday' },
+        { icon: 'ph ph-users-three', label: 'Guests', value: '4', delta: '2 watching now' }
+      ],
+      recent: titles.slice(0, 5),
+      library: titles,
+      health: [
+        { label: 'Metadata matched', value: '94%', pct: '94%', color: '#d9629f' },
+        { label: 'Artwork present', value: '81%', pct: '81%', color: '#b34f83' },
+        { label: 'Tagged', value: '73%', pct: '73%', color: '#8b3e66' },
+        { label: 'Duplicates flagged', value: '18 files', pct: '9%', color: '#75798c' }
+      ],
+      activity: [
+        { icon: 'ph ph-folder-plus', text: '12 new files found in /media/vault-b', time: '14m' },
+        { icon: 'ph ph-play-circle', text: 'jonas started “Room 9”', time: '22m' },
+        { icon: 'ph ph-device-mobile', text: '412 shorts auto-cut from scene markers', time: '40m' },
+        { icon: 'ph ph-arrows-merge', text: 'Merged tag “night” into “low-light”', time: '1h' },
+        { icon: 'ph ph-check-circle', text: 'Transcode finished — Nightcall 04', time: '2h' },
+        { icon: 'ph ph-user-plus', text: 'Guest “mira” joined via invite link', time: '5h' },
+        { icon: 'ph ph-warning', text: '2 files failed to match', time: 'Yesterday' }
+      ],
+
+      folders: [
+        { path: '/media/vault-a', meta: '2,310 files · hourly', state: 'Idle', cls: 'tag tag-neutral' },
+        { path: '/media/vault-b', meta: '3,010 files · scanning', state: 'Scanning', cls: 'tag tag-accent' },
+        { path: '/media/inbox', meta: '12 new · watched', state: 'Watched', cls: 'tag tag-outline' }
+      ],
+      log: [
+        'scan  /media/vault-b/2025-03 …',
+        'match aurora-214-night.mkv → Aurora 214 (0.97)',
+        'probe 3840×2160 · h265 · 4.2 GB',
+        'thumb generated 9 sprites',
+        'match blue_hour_pt2.mp4 → Blue Hour, Part 2 (0.88)',
+        'warn  no match for IMG_4471.mov',
+        'move  inbox → vault-b/2025-03',
+        'ok    2104 of 3010 scanned'
+      ].map(t => ({ text: t, style: t.indexOf('warn') === 0 ? 'color:#e79ac0' : '' })),
+      importRows: [
+        ['aurora-214-night-sessions.2160p.mkv', 'Aurora 214 — Night Sessions', '97%', '4.2 GB', true],
+        ['blue_hour_pt2_final.mp4', 'Blue Hour, Part 2', '88%', '1.9 GB', true],
+        ['static-garden.1080p.mkv', 'Static Garden', '92%', '2.7 GB', true],
+        ['lowtide_2160.mov', 'Low Tide', '76%', '3.1 GB', false],
+        ['room9-rip.mkv', 'Room 9', '81%', '2.2 GB', false],
+        ['IMG_4471.mov', 'No match — needs review', '—', '640 MB', false],
+        ['paper.lantern.web.mp4', 'Paper Lantern', '69%', '1.4 GB', false],
+        ['harbour_lights_720.avi', 'Harbour Lights', '58%', '480 MB', false],
+        ['the-long-way.2160p.mkv', 'The Long Way', '95%', '6.8 GB', false]
+      ].map(([file, match, conf, size, on]) => {
+        const n = parseInt(conf, 10);
+        return Object.assign({ file, match, conf, size }, box(on), {
+          cls: isNaN(n) ? 'tag tag-outline' : (n >= 85 ? 'tag tag-accent' : 'tag tag-neutral')
+        });
+      }),
+
+      queueStats: [
+        { label: 'Active', value: '4' }, { label: 'Queued', value: '11' },
+        { label: 'Speed', value: '18.4 MB/s' }, { label: 'Failed', value: '2' }
+      ],
+      queueRows: [
+        ['The Long Way', 'vault-b · 2160p → 1080p', '72%', 'Transcoding', '—', '04:12', '#d9629f'],
+        ['Nightcall 04', 'inbox · fetching', '38%', 'Downloading', '18.4 MB/s', '11:40', '#d9629f'],
+        ['Static Garden', 'vault-a · sprites', '91%', 'Thumbnails', '—', '00:36', '#b34f83'],
+        ['Quiet Signal', 'inbox · moving', '12%', 'Moving', '96 MB/s', '02:05', '#b34f83'],
+        ['Copper Field', 'queued', '0%', 'Queued', '—', '—', '#3f424d'],
+        ['Overcast', 'queued', '0%', 'Queued', '—', '—', '#3f424d'],
+        ['Second Floor', 'queued', '0%', 'Queued', '—', '—', '#3f424d'],
+        ['IMG_4471.mov', 'no metadata match', '0%', 'Failed', '—', '—', '#595d6c']
+      ].map(([title, sub, pct, stage, speed, eta, color]) => ({
+        title, sub, pct, stage, speed, eta, color,
+        cls: stage === 'Failed' ? 'tag tag-neutral' : (stage === 'Queued' ? 'tag tag-outline' : 'tag tag-accent')
+      })),
+
+      tagGroups: ['All tags', 'Setting', 'Mood', 'Camera', 'Studio', 'Technical', 'Retired']
+        .map((label, i) => ({ label, count: [214, 38, 26, 19, 24, 31, 12][i], style: navStyle(i === 0) })),
+      tagRows: [
+        ['low-light', 'Mood', 412, true, '2 days ago', true],
+        ['handheld', 'Camera', 288, true, 'Today', false],
+        ['interior', 'Setting', 651, true, 'Today', true],
+        ['aurora-studios', 'Studio', 340, true, 'Yesterday', false],
+        ['16mm', 'Camera', 74, true, '1 week ago', false],
+        ['night', 'Mood', 0, false, 'merged', true],
+        ['hdr', 'Technical', 196, true, 'Today', false],
+        ['two-person', 'Setting', 508, false, '3 days ago', false],
+        ['upscaled', 'Technical', 41, true, '2 weeks ago', false],
+        ['meridian', 'Studio', 219, true, 'Yesterday', false],
+        ['archive', 'Retired', 63, false, '3 months ago', false]
+      ].map(([name, group, count, vis, used, on]) => Object.assign({
+        name, group, count, used,
+        cls: on ? 'tag tag-accent' : 'tag tag-neutral',
+        visIcon: vis ? 'ph ph-eye' : 'ph ph-eye-slash',
+        visColor: vis ? '#d9629f' : '#5f6373'
+      }, box(on))),
+
+      settingsNav: ['General', 'Library paths', 'Metadata & scrapers', 'Playback', 'Language & subtitles', 'Users & access', 'Appearance', 'Backups', 'About']
+        .map(label => ({ label, style: navStyle(label === 'Users & access') })),
+      languages: ['Deutsch', 'English', 'Español', 'Français', 'Italiano', 'Nederlands', 'Polski', 'Português'],
+      languageRows: [
+        { label: 'Interface', value: 'Deutsch', note: 'per guest — each person picks their own' },
+        { label: 'Audio track', value: 'Original, then Deutsch', note: 'falls back to the file’s first track' },
+        { label: 'Subtitles', value: 'Deutsch (forced only)', note: 'auto-loads sidecar .srt files' },
+        { label: 'Metadata language', value: 'Deutsch, fallback English', note: 'used when scraping titles' }
+      ],
+      users: [
+        ['Kai', 'Owner', 'Everything', 'Desktop · Firefox', 'Now'],
+        ['Jonas', 'Guest', 'Library minus hidden tags', 'iPhone · Safari', 'Watching now'],
+        ['Mira', 'Guest', 'Collections only', 'iPad · Safari', '2 h ago'],
+        ['Tobi', 'Guest', 'Library minus hidden tags', 'Living-room TV', 'Yesterday'],
+        ['Lea', 'Invited', 'Pending — link not used', '—', '—']
+      ].map(([name, role, scope, device, seen]) => ({
+        name, role, scope, device, seen, initial: name[0],
+        roleCls: role === 'Owner' ? 'tag tag-accent' : (role === 'Invited' ? 'tag tag-outline' : 'tag tag-neutral')
+      })),
+      guestToggles: [
+        ['Guests can see tags', 'Hidden tags stay hidden', true],
+        ['Guests can build playlists', 'Private to each guest', true],
+        ['Guests can see file paths', 'Off keeps the disk private', false],
+        ['Show watch history to owner', 'Guests are told in the UI', false],
+        ['Artwork blurred by default', 'Each guest can flip it', true]
+      ].map(([label, note, on]) => ({
+        label, note,
+        trackStyle: 'margin-left:auto;flex:none;width:36px;height:20px;border-radius:10px;padding:2px;display:flex;background:' +
+          (on ? '#d9629f' : '#3f424d') + ';justify-content:' + (on ? 'flex-end' : 'flex-start'),
+        knobStyle: 'width:16px;height:16px;border-radius:50%;background:' + (on ? '#161826' : '#9397ab')
+      })),
+
+      heroBlurSm: blurred ? 'blur(9px) saturate(1.2)' : 'blur(2px)',
+      heroBlur: blurred ? 'blur(38px) saturate(1.25)' : 'blur(4px)',
+      heroArt: art(268),
+      markers: [
+        { at: '8%', time: '01:54', label: 'Opening' },
+        { at: '24%', time: '05:48', label: 'Scene 2' },
+        { at: '41%', time: '09:52', label: 'Scene 3' },
+        { at: '63%', time: '15:11', label: 'Scene 4' },
+        { at: '86%', time: '20:43', label: 'Close' }
+      ],
+      detailTags: ['low-light', 'interior', 'handheld', '16mm', 'hdr', 'aurora-studios', 'two-person', 'night-sessions'],
+      performers: [
+        { name: 'A. Lindqvist', count: 41, art: art(268) },
+        { name: 'R. Mbeki', count: 27, art: art(210) },
+        { name: 'S. Ferreira', count: 12, art: art(320) }
+      ],
+      fileRows: [
+        { k: 'Path', v: '/media/vault-b/2025-03/aurora-214.mkv' },
+        { k: 'Container', v: 'Matroska · h265' },
+        { k: 'Resolution', v: '3840 × 2160 · 59.94 fps' },
+        { k: 'Bitrate', v: '23.4 Mb/s' },
+        { k: 'Size', v: '4.2 GB' },
+        { k: 'Added', v: '12 Mar 2025, 21:14' },
+        { k: 'Hash', v: 'b7f3…9ac1' }
+      ],
+      related: titles.slice(5, 9),
+
+      chips: [
+        { label: '2160p', cls: 'tag tag-accent' },
+        { label: 'Aurora Studios', cls: 'tag tag-neutral' },
+        { label: 'Added this month', cls: 'tag tag-neutral' },
+        { label: 'Unwatched', cls: 'tag tag-outline' },
+        { label: '4★ and up', cls: 'tag tag-accent' }
+      ],
+      facets: [
+        { title: 'Studio', rows: [['Aurora Studios', 340, true], ['Meridian', 219, false], ['Nightfall', 176, false], ['Independent', 92, false]] },
+        { title: 'Resolution', rows: [['2160p', 612, true], ['1080p', 2104, false], ['720p', 486, false]] },
+        { title: 'Duration', rows: [['Under 10 min', 214, false], ['10–20 min', 780, false], ['20–40 min', 1520, true], ['Over 40 min', 411, false]] },
+        { title: 'Rating', rows: [['5 stars', 186, false], ['4 stars and up', 942, true], ['3 stars and up', 1806, false], ['Not yet rated', 1104, false]] },
+        { title: 'Tags', rows: [['low-light', 412, true], ['interior', 651, false], ['handheld', 288, false], ['16mm', 74, false]] }
+      ].map(f => ({
+        title: f.title,
+        rows: f.rows.map(([label, count, on]) => Object.assign({ label, count, textStyle: on ? 'color:#f2c9de' : '' }, box(on)))
+      })),
+      activeFilters: ['Aurora Studios', '2160p', '20–40 min', 'low-light'],
+      results: titles.slice(0, 12),
+
+      eyeIcon: blurred ? 'ph ph-eye-closed' : 'ph ph-eye',
+
+      avgStars: STARS(4.5, 15),
+      avgScore: '4.5',
+      ratingCount: '128 ratings from 4 people',
+      myStars: STARS(this.state.myRating, 17).map((s, i) => Object.assign({}, s, {
+        setRating: () => this.setState({ myRating: i + 1 })
+      })),
+      myRatingLabel: this.state.myRating + ' of 5',
+      ratingBars: [[5, 62], [4, 38], [3, 17], [2, 8], [1, 3]].map(([n, count]) => ({
+        n: n + '★', count,
+        pct: Math.round(count / 62 * 100) + '%'
+      })),
+      quality: this.state.quality,
+      qualityOptions: [
+        ['Auto', 'follows your connection', false],
+        ['2160p', 'original file · 23.4 Mb/s', true],
+        ['1080p', 'transcoded on the server', false],
+        ['720p', 'lightest · good on mobile data', false]
+      ].map(([label, note, isOriginal]) => {
+        const on = label === this.state.quality;
+        return {
+          label, note, isOriginal,
+          setQuality: () => this.setState({ quality: label }),
+          style: 'display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;cursor:pointer;color:' +
+            (on ? '#f2c9de' : '#b2b6ca') + (on ? ';background:rgba(217,98,159,0.16)' : ''),
+          check: on ? 'ph-fill ph-check-circle' : 'ph ph-circle',
+          checkColor: on ? '#d9629f' : '#4a4d5c'
+        };
+      }),
+      comments: [
+        { name: 'Jonas', initial: 'J', time: '2 h ago', stars: STARS(5, 11), text: 'Sound mix is the best of the whole Aurora run. Marker at 15:11 is the bit I meant.', likes: 3, own: true },
+        { name: 'Mira', initial: 'M', time: 'Yesterday', stars: STARS(4, 11), text: 'Looks great on the TV. Second half drags a little.', likes: 1, own: false },
+        { name: 'Kai', initial: 'K', time: '3 days ago', stars: STARS(4.5, 11), text: 'Re-encoded from the original — grain is intact now. Delete the old copy if you have it cached.', likes: 4, own: false },
+        { name: 'Tobi', initial: 'T', time: '4 days ago', stars: STARS(5, 11), text: 'Added to Late shift.', likes: 0, own: false }
+      ],
+      mobileComments: [
+        { name: 'Jonas', initial: 'J', time: '2 h', stars: STARS(5, 10), text: 'Sound mix is the best of the whole Aurora run.' },
+      ],
+      relatedWide: titles.slice(1, 6).map(it => Object.assign({ item: it }, reasonFor(it))),
+      moderationRows: [
+        ['Mira', 'Blue Hour, Part 2', 'Wrong performer tagged here I think.', 'Reported by Tobi', 4, 'tag tag-accent'],
+        ['Tobi', 'Room 9', 'Playback stutters around 12:00 on the TV.', 'Open', 4, 'tag tag-outline'],
+        ['Jonas', 'Static Garden', 'Best in the library, no notes.', 'Open', 5, 'tag tag-outline'],
+        ['Mira', 'The Long Way', 'Can we get the 2160p version of this one?', 'Answered', 4, 'tag tag-neutral'],
+        ['Lea', 'Winter Reel', 'Audio is out of sync from the start.', 'Reported by Mira', 2, 'tag tag-accent'],
+        ['Tobi', 'Nightcall 04', 'Marker labels are off by one scene.', 'Answered', 5, 'tag tag-neutral']
+      ].map(([name, title, text, state, rating, cls]) => ({
+        name, title, text, state, cls, initial: name[0], stars: STARS(rating, 11)
+      })),
+      ratingLeaders: titles.slice(0).sort((a, b) => b.rating - a.rating).slice(0, 5).map(it => ({
+        title: it.title, stars: STARS(it.rating, 11), score: it.rating.toFixed(1), comments: it.comments
+      })),
+      continueRow: [titles[0], titles[2], titles[4], titles[7], titles[11]],
+      guestGrid: titles.slice(0, 10),
+      mobileGrid: titles.slice(0, 6),
+      appGrid: titles.slice(0, 4),
+      mobileChips: [
+        { label: '4★ and up', cls: 'tag tag-accent' },
+        { label: '2160p', cls: 'tag tag-neutral' },
+        { label: 'Unwatched', cls: 'tag tag-outline' }
+      ],
+      shorts: shortsList,
+      upNext: [
+        ['Blue Hour, cut', 'from Blue Hour, Part 2', '0:18', 214, 4, 2],
+        ['Room 9, hallway', 'from Room 9', '0:37', 330, 4, 4],
+        ['The Long Way, 16mm', 'from The Long Way', '0:33', 285, 4.5, 7],
+        ['Nightcall, drop', 'from Nightcall 04', '0:26', 275, 5, 9]
+      ].map(([title, meta, dur, hue, rating, comments]) =>
+        ({ title, meta, dur, res: '', tags: 3, hue, progress: '0%', rating, comments })),
+      shortsRail: [
+        { icon: 'ph-fill ph-star', label: '4.5', color: '#d9629f' },
+        { icon: 'ph ph-chat-circle', label: '12', color: '#e9e9ed' },
+        { icon: 'ph ph-bookmark-simple', label: 'Save', color: '#e9e9ed' },
+        { icon: 'ph ph-squares-four', label: 'Full', color: '#e9e9ed' }
+      ],
+      mobileRelated: [3, 2, 5].map(i => Object.assign({ item: titles[i] }, reasonFor(titles[i]))),
+      sheetBackdrop: titles.slice(0, 4),
+      mobileTabs: [
+        ['Feed', 'ph ph-broadcast', false],
+        ['Library', 'ph ph-squares-four', true],
+        ['Shorts', 'ph ph-device-mobile', false],
+        ['Watchlist', 'ph ph-bookmark-simple', false]
+      ].map(([label, icon, on]) => ({
+        label, icon,
+        style: 'flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:8px;color:' +
+          (on ? '#f2c9de' : '#75798c') + (on ? ';background:rgba(217,98,159,0.12)' : '')
+      })),
+      iosTabs: [
+        ['Library', 'ph ph-squares-four', true],
+        ['Shorts', 'ph ph-device-mobile', false],
+        ['Feed', 'ph ph-broadcast', false],
+        ['You', 'ph ph-user', false]
+      ].map(([label, icon, on]) => ({
+        label, icon,
+        style: 'flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 0;border-radius:20px;color:' +
+          (on ? '#f2c9de' : '#75798c') + (on ? ';background:rgba(217,98,159,0.16)' : '')
+      })),
+      iosTabsShorts: [
+        ['Library', 'ph ph-squares-four', false],
+        ['Shorts', 'ph ph-device-mobile', true],
+        ['Feed', 'ph ph-broadcast', false],
+        ['You', 'ph ph-user', false]
+      ].map(([label, icon, on]) => ({
+        label, icon,
+        style: 'flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 0;border-radius:20px;color:' +
+          (on ? '#f2c9de' : '#75798c') + (on ? ';background:rgba(217,98,159,0.16)' : '')
+      })),
+      forYou: [
+        { item: titles[7], match: '94% match', why: 'You finished three Nightfall titles this week', ratio: '16/10', thumb: 144 },
+        { item: titles[2], match: '91% match', why: 'Rated 5.0 by everyone on the server, and you like long cuts', ratio: '16/10', thumb: 144 },
+        { item: titles[9], match: '88% match', why: 'low-light and handheld — your two most-watched tags', ratio: '16/10', thumb: 144 },
+        { item: titles[12], match: '85% match', why: 'Aurora Studios, and you finish 80% of what they make', ratio: '16/10', thumb: 144 },
+        { item: shortsList[2], match: '82% match', why: 'You mostly watch shorts around 21:00', ratio: '9/16', thumb: 54 }
+      ],
+      sentToYou: [
+        {
+          who: 'Mira', initial: 'M', time: '2 days ago', note: 'Watch this before we talk about it — the hallway bit especially.',
+          item: titles[4], match: 'From Mira', why: 'She rated it 4★'
+        },
+        {
+          who: 'Kai', initial: 'K', time: 'Last week', note: 'Re-encoded from the original, worth a second look now.',
+          item: titles[11], match: 'From Kai', why: 'New 2160p file, replaces the old copy'
+        }
+      ],
+      signals: [
+        ['low-light', '82% of what you watch', '82%'],
+        ['handheld', '64%', '64%'],
+        ['Aurora Studios', '58%', '58%'],
+        ['20–40 minutes', '47%', '47%'],
+        ['Evenings, 21:00–00:00', '39%', '39%']
+      ].map(([label, value, pct]) => ({ label, value, pct })),
+      feedTuning: [
+        ['Use my ratings', 'Titles you gave 4★ or more weigh most', true],
+        ['Friends’ picks in the feed', 'What Mira, Kai and Tobi send you', true],
+        ['Hide what I finished', 'Unless it is a new file', true],
+        ['Shorts in the feed', 'Clips under a minute', true]
+      ].map(([label, note, on]) => ({
+        label, note,
+        trackStyle: 'margin-left:auto;flex:none;width:36px;height:20px;border-radius:10px;padding:2px;display:flex;background:' +
+          (on ? '#d9629f' : '#3f424d') + ';justify-content:' + (on ? 'flex-end' : 'flex-start'),
+        knobStyle: 'width:16px;height:16px;border-radius:50%;background:' + (on ? '#161826' : '#9397ab')
+      })),
+      feedPeople: ['Mira', 'Kai', 'Tobi', 'Lea'].map(name => ({ name })),
+      appPicks: [
+        { item: titles[7], match: '94% match', why: 'Three Nightfall titles this week', ratio: '16/10', thumb: 96 },
+        { item: shortsList[2], match: '82% match', why: 'You watch shorts around 21:00', ratio: '9/16', thumb: 44 }
+      ],
+      forYouMobile: [
+        { item: titles[7], match: '94% match', why: 'Three Nightfall titles this week', ratio: '16/10', thumb: 96 },
+        { item: titles[9], match: '88% match', why: 'low-light and handheld', ratio: '16/10', thumb: 96 },
+        { item: shortsList[2], match: '82% match', why: 'You watch shorts around 21:00', ratio: '9/16', thumb: 44 }
+      ],
+      sentToYouMobile: [
+        {
+          who: 'Mira', initial: 'M', time: '2 d', note: 'Watch this before we talk about it.',
+          item: titles[4], match: 'From Mira'
+        }
+      ],
+      androidFeedChips: [
+        ['For you', true], ['From friends', false], ['New to you', false]
+      ].map(([label, on]) => ({
+        label,
+        style: 'display:flex;align-items:center;white-space:nowrap;font-size:14px;font-weight:500;height:32px;padding:0 16px;border-radius:8px;' + (on
+          ? 'color:#f9e2ee;background:#62304a'
+          : 'color:#b2b6ca;box-shadow:inset 0 0 0 1px rgba(233,233,237,0.2)')
+      })),
+      feedTabBar: [
+        ['Feed', 'ph ph-broadcast', true],
+        ['Library', 'ph ph-squares-four', false],
+        ['Shorts', 'ph ph-device-mobile', false],
+        ['Watchlist', 'ph ph-bookmark-simple', false]
+      ].map(([label, icon, on]) => ({
+        label, icon,
+        style: 'flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:8px;color:' +
+          (on ? '#f2c9de' : '#75798c') + (on ? ';background:rgba(217,98,159,0.14)' : '')
+      })),
+      iosTabsFeed: [
+        ['Feed', 'ph ph-broadcast', true],
+        ['Library', 'ph ph-squares-four', false],
+        ['Shorts', 'ph ph-device-mobile', false],
+        ['You', 'ph ph-user', false]
+      ].map(([label, icon, on]) => ({
+        label, icon,
+        style: 'flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 0;border-radius:20px;color:' +
+          (on ? '#f2c9de' : '#75798c') + (on ? ';background:rgba(217,98,159,0.16)' : '')
+      })),
+      androidTabsFeed: [
+        ['Feed', 'ph ph-broadcast', true],
+        ['Library', 'ph ph-squares-four', false],
+        ['Shorts', 'ph ph-device-mobile', false],
+        ['You', 'ph ph-user', false]
+      ].map(([label, icon, on]) => ({
+        label, icon,
+        pill: 'display:grid;place-items:center;width:64px;height:32px;border-radius:16px;color:' +
+          (on ? '#f9e2ee' : '#9397ab') + (on ? ';background:#62304a' : ''),
+        labelStyle: 'font-size:12px;color:' + (on ? '#f2c9de' : '#9397ab')
+      })),
+      androidQueue: [
+        ['The Long Way', '2160p → 1080p', '72%', 'Transcoding', '04:12', '#d9629f', 'tag tag-accent'],
+        ['Nightcall 04', 'fetching', '38%', 'Downloading', '11:40', '#d9629f', 'tag tag-accent'],
+        ['Static Garden', 'sprites', '91%', 'Thumbnails', '00:36', '#b34f83', 'tag tag-accent'],
+        ['IMG_4471.mov', 'no metadata match', '0%', 'Failed', '—', '#595d6c', 'tag tag-neutral']
+      ].map(([title, sub, pct, stage, eta, color, cls]) => ({ title, sub, pct, stage, eta, color, cls })),
+      iosAdminTabs: [
+        ['Server', 'ph ph-gauge', true],
+        ['Library', 'ph ph-squares-four', false],
+        ['Queue', 'ph ph-arrow-circle-down', false],
+        ['Settings', 'ph ph-gear-six', false]
+      ].map(([label, icon, on]) => ({
+        label, icon,
+        style: 'flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 0;border-radius:20px;color:' +
+          (on ? '#f2c9de' : '#75798c') + (on ? ';background:rgba(217,98,159,0.16)' : '')
+      })),
+      androidAdminTabs: [
+        ['Server', 'ph ph-gauge', true],
+        ['Library', 'ph ph-squares-four', false],
+        ['Queue', 'ph ph-arrow-circle-down', false],
+        ['Settings', 'ph ph-gear-six', false]
+      ].map(([label, icon, on]) => ({
+        label, icon,
+        pill: 'display:grid;place-items:center;width:64px;height:32px;border-radius:16px;color:' +
+          (on ? '#f9e2ee' : '#9397ab') + (on ? ';background:#62304a' : ''),
+        labelStyle: 'font-size:12px;color:' + (on ? '#f2c9de' : '#9397ab')
+      })),
+      iosSettings: [
+        {
+          header: 'Language', note: 'Each person on the server picks their own — this does not change what Kai sees.',
+          rows: [
+            { icon: 'ph ph-translate', label: 'Interface', value: 'Deutsch', trail: 'ph ph-caret-right' },
+            { icon: 'ph ph-speaker-high', label: 'Audio track', value: 'Original', trail: 'ph ph-caret-right' },
+            { icon: 'ph ph-subtitles', label: 'Subtitles', value: 'Deutsch', trail: 'ph ph-caret-right' }
+          ]
+        },
+        {
+          header: 'Playback', note: 'Original plays untouched; lower settings ask the server to transcode.',
+          rows: [
+            { icon: 'ph ph-monitor-play', label: 'Quality on Wi-Fi', value: '2160p', trail: 'ph ph-caret-right' },
+            { icon: 'ph ph-device-mobile', label: 'Quality on data', value: '720p', trail: 'ph ph-caret-right' },
+            { icon: 'ph ph-download-simple', label: 'Downloads', value: 'Wi-Fi only', trail: 'ph ph-caret-right' }
+          ]
+        },
+        {
+          header: 'Privacy', note: 'Nothing leaves the house network. Ratings and comments are visible to everyone on the server.',
+          rows: [
+            { icon: 'ph ph-eye-closed', label: 'Blur artwork', value: 'On', trail: 'ph ph-toggle-right' },
+            { icon: 'ph ph-clock-counter-clockwise', label: 'Keep history', value: 'This device', trail: 'ph ph-caret-right' },
+            { icon: 'ph ph-sign-out', label: 'Leave this server', value: '', trail: 'ph ph-caret-right' }
+          ]
+        }
+      ],
+      androidChips: [
+        ['4★ and up', true], ['2160p', false], ['Unwatched', false], ['Shorts', false]
+      ].map(([label, on]) => ({
+        label,
+        icon: on ? 'ph ph-check' : '',
+        iconStyle: on ? 'font-size:17px' : 'display:none',
+        style: 'display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:14px;font-weight:500;height:32px;padding:0 16px;border-radius:8px;' + (on
+          ? 'color:#f9e2ee;background:#62304a;padding-left:12px'
+          : 'color:#b2b6ca;box-shadow:inset 0 0 0 1px rgba(233,233,237,0.2)')
+      })),
+      androidPlayerChips: [
+        ['Audio Deutsch', true], ['Subtitles EN', false], ['2160p', false]
+      ].map(([label, on]) => ({
+        label,
+        style: 'display:flex;align-items:center;white-space:nowrap;font-size:14px;font-weight:500;height:32px;padding:0 16px;border-radius:8px;' + (on
+          ? 'color:#f9e2ee;background:#62304a'
+          : 'color:#b2b6ca;box-shadow:inset 0 0 0 1px rgba(233,233,237,0.2)')
+      })),
+      androidTabs: [
+        ['Library', 'ph ph-squares-four', true],
+        ['Shorts', 'ph ph-device-mobile', false],
+        ['Feed', 'ph ph-broadcast', false],
+        ['You', 'ph ph-user', false]
+      ].map(([label, icon, on]) => ({
+        label, icon,
+        pill: 'display:grid;place-items:center;width:64px;height:32px;border-radius:16px;color:' +
+          (on ? '#f9e2ee' : '#9397ab') + (on ? ';background:#62304a' : ''),
+        labelStyle: 'font-size:12px;color:' + (on ? '#f2c9de' : '#9397ab')
+      })),
+      androidTabsShorts: [
+        ['Library', 'ph ph-squares-four', false],
+        ['Shorts', 'ph ph-device-mobile', true],
+        ['Feed', 'ph ph-broadcast', false],
+        ['You', 'ph ph-user', false]
+      ].map(([label, icon, on]) => ({
+        label, icon,
+        pill: 'display:grid;place-items:center;width:64px;height:32px;border-radius:16px;color:' +
+          (on ? '#f9e2ee' : '#9397ab') + (on ? ';background:#62304a' : ''),
+        labelStyle: 'font-size:12px;color:' + (on ? '#f2c9de' : '#9397ab')
+      })),
+      profiles: [
+        ['Jonas', 'Guest · this device', true],
+        ['Mira', 'Guest', false],
+        ['Tobi', 'Guest', false],
+        ['Kai', 'Owner — passphrase required', false]
+      ].map(([name, role, on]) => ({
+        name, role, initial: name[0],
+        icon: on ? 'ph-fill ph-check-circle' : 'ph ph-caret-right',
+        iconColor: on ? '#d9629f' : '#5f6373',
+        style: 'display:flex;align-items:center;gap:11px;padding:11px;border-radius:8px;background:' +
+          (on ? 'rgba(217,98,159,0.14)' : '#1c1e2c') + (on ? ';box-shadow:inset 0 0 0 1px rgba(217,98,159,0.45)' : '')
+      })),
+      setupFolders: [
+        { path: '/media/vault-a', meta: '2,310 files found', icon: 'ph-fill ph-check-circle', color: '#d9629f' },
+        { path: '/media/inbox', meta: 'watched for new files', icon: 'ph ph-folder', color: '#9397ab' },
+        { path: '/media/vault-b', meta: 'not scanned yet', icon: 'ph ph-folder', color: '#9397ab' }
+      ],
+      adminTabs: [
+        ['Server', 'ph ph-gauge', true],
+        ['Library', 'ph ph-squares-four', false],
+        ['Queue', 'ph ph-arrow-circle-down', false],
+        ['Settings', 'ph ph-gear-six', false]
+      ].map(([label, icon, on]) => ({
+        label, icon,
+        style: 'flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:8px;color:' +
+          (on ? '#f2c9de' : '#75798c') + (on ? ';background:rgba(217,98,159,0.14)' : '')
+      })),
+      adminTabsQueue: [
+        ['Server', 'ph ph-gauge', false],
+        ['Library', 'ph ph-squares-four', false],
+        ['Queue', 'ph ph-arrow-circle-down', true],
+        ['Settings', 'ph ph-gear-six', false]
+      ].map(([label, icon, on]) => ({
+        label, icon,
+        style: 'flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:8px;color:' +
+          (on ? '#f2c9de' : '#75798c') + (on ? ';background:rgba(217,98,159,0.14)' : '')
+      })),
+      shortsTabs: [
+        ['Feed', 'ph ph-broadcast', false],
+        ['Library', 'ph ph-squares-four', false],
+        ['Shorts', 'ph ph-device-mobile', true],
+        ['Watchlist', 'ph ph-bookmark-simple', false]
+      ].map(([label, icon, on]) => ({
+        label, icon,
+        style: 'flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:8px;color:' +
+          (on ? '#f2c9de' : '#75798c') + (on ? ';background:rgba(217,98,159,0.14)' : '')
+      })),
+      sheetFacets: [
+        { title: 'Studio', rows: [['Aurora Studios', true], ['Meridian', false], ['Nightfall', false], ['Independent', false]] },
+        { title: 'Resolution', rows: [['2160p', true], ['1080p', false], ['720p', false]] },
+        { title: 'Duration', rows: [['Under 10 min', false], ['10–20 min', false], ['20–40 min', true], ['Over 40 min', false]] },
+        { title: 'Rating', rows: [['5 stars', false], ['4 stars and up', true], ['3 stars and up', false], ['Not yet rated', false]] },
+        { title: 'Tags', rows: [['low-light', true], ['interior', false], ['handheld', false], ['16mm', false], ['hdr', false]] }
+      ].map(f => ({
+        title: f.title,
+        rows: f.rows.map(([label, on]) => ({
+          label,
+          chipStyle: 'font-size:12px;padding:7px 12px;border-radius:8px;' + (on
+            ? 'color:#f2c9de;background:rgba(217,98,159,0.16);box-shadow:inset 0 0 0 1px #d9629f'
+            : 'color:#b2b6ca;background:#1c1e2c')
+        }))
+      })),
+      guestFacts: [
+        { k: 'Studio', v: 'Aurora Studios' },
+        { k: 'Released', v: '12 Mar 2025' },
+        { k: 'Runtime', v: '24:05' },
+        { k: 'Quality', v: '2160p · HDR' },
+        { k: 'Added', v: '3 days ago' }
+      ],
+      joinFacts: [
+        { icon: 'ph ph-wifi-x', text: 'LAN only — the server never reaches the internet' },
+        { icon: 'ph ph-eye-slash', text: 'Kai has hidden some tags; those titles won\u2019t appear' },
+        { icon: 'ph ph-clock-counter-clockwise', text: 'Your watch history stays on this device' }
+      ],
+
+      people: [
+        ['A. Lindqvist', 41, 268], ['R. Mbeki', 27, 210], ['S. Ferreira', 12, 320], ['N. Adeyemi', 33, 190],
+        ['J. Kowalska', 19, 300], ['M. Rossi', 24, 340], ['T. Okada', 8, 230], ['E. Novak', 15, 250],
+        ['C. Duarte', 30, 280], ['L. Haugen', 11, 200], ['V. Petrova', 22, 310], ['D. Silva', 17, 175],
+        ['K. Ammar', 9, 290], ['P. Lund', 26, 240], ['B. Traoré', 14, 205], ['H. Sato', 21, 330]
+      ].map(([name, count, h]) => ({ name, count, art: art(h) })),
+      playlists: [
+        { kicker: 'Playlist', title: 'Late shift', count: 24, dur: '9 h 12 m' },
+        { kicker: 'Playlist', title: 'Shot on film', count: 41, dur: '14 h 03 m' },
+        { kicker: 'Smart list', title: '2160p, unwatched', count: 86, dur: '31 h 40 m' },
+        { kicker: 'Smart list', title: 'Added this month', count: 37, dur: '12 h 55 m' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>
