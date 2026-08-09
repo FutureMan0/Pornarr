@@ -230,6 +230,7 @@ async def test_controls_and_history_phases_keep_repair_and_import_distinct() -> 
     await adapter.resume(**connection, client_job_id=NZO_ID)
     await adapter.delete(**connection, client_job_id=NZO_ID, delete_files=False)
     await adapter.delete(**connection, client_job_id=NZO_ID, delete_files=True)
+    await adapter.cancel(**connection, client_job_id=NZO_ID)
 
     repair = parse_history_slot(
         {
@@ -278,6 +279,14 @@ async def test_controls_and_history_phases_keep_repair_and_import_distinct() -> 
             "name": "delete",
             "value": NZO_ID,
             "del_files": "0",
+        },
+        {
+            "output": "json",
+            "apikey": API_KEY,
+            "mode": "queue",
+            "name": "delete",
+            "value": NZO_ID,
+            "del_files": "1",
         },
         {
             "output": "json",

@@ -31,6 +31,7 @@ from pornarr_api.routers.events import router as events_router
 from pornarr_api.routers.health import router as health_router
 from pornarr_api.routers.playback import progress_router as playback_progress_router
 from pornarr_api.routers.playback import router as playback_router
+from pornarr_api.routers.requests import router as requests_router
 from pornarr_api.routers.search import router as search_router
 from pornarr_api.routers.setup import router as setup_router
 from pornarr_api.routers.stream import router as stream_router
@@ -72,6 +73,7 @@ api_router.include_router(events_router)
 api_router.include_router(health_router)
 api_router.include_router(playback_router)
 api_router.include_router(playback_progress_router)
+api_router.include_router(requests_router)
 api_router.include_router(search_router)
 api_router.include_router(setup_router)
 api_router.include_router(stream_router)
