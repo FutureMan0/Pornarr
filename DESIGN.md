@@ -32,6 +32,7 @@ primary actions, current selection and state — never decoration.
   --surface-3:     oklch(0.21 0.000 0);    /* hover on surface-2 */
   --border:        oklch(0.24 0.000 0);
   --border-strong: oklch(0.34 0.000 0);    /* focused inputs, active tabs */
+  --border-control:oklch(0.52 0.000 0);    /* resting edge of a control */
 
   /* Ink */
   --ink:           oklch(0.97 0.000 0);    /* body, headings */
@@ -62,6 +63,16 @@ never for readable content.
 
 Text on `--primary` uses `--primary-ink`. White on a rose of this lightness does not
 reach 4.5:1; dark ink does. This is why primary buttons carry dark labels.
+
+`--border` and `--border-strong` separate and decorate. Neither reaches 3:1
+against any surface — they measure 1.22:1 and 1.71:1 on `--surface` — so neither
+may be the only thing identifying an interactive control. A control's resting
+edge is `--border-control`, the one neutral that clears 3:1 against all four
+surfaces and therefore satisfies WCAG 1.4.11.
+
+Text on a `-weak` background is `--ink`, never the matching hue: `--danger` on
+`--danger-weak` reaches only 3.72:1. The hue is not what carries the meaning
+anyway, per the rule below.
 
 Never signal state by colour alone. Every status carries an icon or a text label
 beside its colour, for colour-vision deficiency and for scanning at speed.
