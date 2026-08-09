@@ -1,0 +1,112 @@
+/**
+ * Tokens only. Sizing comes off the spacing scale rather than a literal box
+ * size, so the control tracks the type scale like everything else.
+ */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+/* The boundary is a box-shadow rather than a border: setting `border` on a
+   native checkbox drops its platform appearance in Chromium, and the whole
+   point of this component is that the control is the real one. --border-control
+   is the only line token that clears 3:1 on all four surfaces.
+
+   Once checked, the --primary fill is the boundary — it is verified at 3:1 on
+   every surface — so the extra ring would only muddy it. */
+.checkbox {
+  width: var(--space-4);
+  height: var(--space-4);
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+  transition: box-shadow var(--duration-fast) var(--ease), accent-color var(--duration-fast)
+    var(--ease);
+}
+
+.checkbox:not(:checked) {
+  box-shadow: 0 0 0 1px var(--border-control);
+}
+
+.checkbox:hover:not(:disabled) {
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.checkbox:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Pressed brightens the fill rather than thickening the ring, so active and
+   hover never render the same. */
+.checkbox:active:not(:disabled) {
+  accent-color: var(--primary-hover);
+}
+
+/* --border is legal here only because 1.4.11 exempts disabled controls. */
+.checkbox:disabled {
+  accent-color: var(--surface-3);
+  box-shadow: 0 0 0 1px var(--border);
+  cursor: not-allowed;
+}
+
+/* Follows :disabled so it wins the tie — loading disables the control too. */
+.checkbox.loading {
+  cursor: progress;
+}
+
+.checkbox.error:not(:disabled) {
+  box-shadow: 0 0 0 1px var(--danger);
+}
+
+.checkbox.error:hover:not(:disabled) {
+  box-shadow: 0 0 0 1px var(--danger);
+}
+
+.label {
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+}
+
+/* The label follows the control's state. :has() keeps that in CSS instead of
+   duplicating the disabled flag onto the wrapper in JSX. */
+.control:has(.checkbox:disabled) {
+  cursor: not-allowed;
+}
+
+.control:has(.checkbox:disabled) .label {
+  color: var(--ink-faint);
+}
+
+.control:has(.checkbox.loading) {
+  cursor: progress;
+}
+
+.control:has(.checkbox.loading) .label {
+  color: var(--ink-muted);
+}
+
+/* --ink on a --danger-weak tint, never --danger as text: --danger only reaches
+   3:1 on a surface, which is an icon threshold, not a text one. */
+.message {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background-color: var(--danger-weak);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}

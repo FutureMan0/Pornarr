@@ -1,0 +1,160 @@
+/**
+ * Menu button. The trigger is a control with a border; the surface it opens is
+ * a floating layer with a shadow and no border — DESIGN.md never puts both on
+ * one element.
+ *
+ * Every value is a token. The only literal lengths are the 1px control border
+ * and the 2px focus ring.
+ */
+
+.root {
+  position: relative;
+  display: inline-flex;
+}
+
+/* --- trigger: all seven states ------------------------------------------- */
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-weight: var(--text-sm-weight);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease), border-color var(--duration-fast)
+    var(--ease), color var(--duration-fast) var(--ease);
+}
+
+.trigger:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.trigger:active:not(:disabled) {
+  background: var(--surface-3);
+}
+
+.trigger:disabled {
+  color: var(--ink-faint);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+
+/* --- surface -------------------------------------------------------------- */
+
+.menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  z-index: var(--z-dropdown);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  /* Wider than the scale names, so derived from it rather than invented. */
+  min-width: calc(var(--space-16) * 3);
+  padding: var(--space-1);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-floating);
+  opacity: 1;
+  transition: opacity var(--duration-fast) var(--ease);
+}
+
+@starting-style {
+  .menu {
+    opacity: 0;
+  }
+}
+
+.menu:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* --- item: all seven states ----------------------------------------------- */
+
+.item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-weight: var(--text-sm-weight);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease), color var(--duration-fast)
+    var(--ease);
+}
+
+.item:hover:not(.disabled) {
+  background: var(--surface-3);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.item:active:not(.disabled) {
+  background: var(--primary-weak);
+}
+
+/* aria-disabled, not the disabled attribute: the item stays focusable so it
+   stays discoverable. The cursor and the ink are what say it is unavailable. */
+.item.disabled {
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+/* --- loading and error ---------------------------------------------------- */
+
+/* Static skeleton rows shaped like the items they replace. Not animated: the
+   duration tokens collapse to 1ms under reduced motion, which turns a pulse
+   into a strobe. */
+.loading {
+  cursor: progress;
+}
+
+.skeletonItem {
+  display: block;
+  height: var(--space-8);
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+}
+
+/* The alert sits flush against the top of the surface, so the surface gives up
+   the padding it would otherwise put above the first item. */
+.error {
+  padding-top: 0;
+}
+
+.errorMessage {
+  margin: 0 0 var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--danger-weak);
+  color: var(--ink);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  white-space: normal;
+}

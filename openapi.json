@@ -51,6 +51,203 @@
         "title": "CurrentUserResponse",
         "type": "object"
       },
+      "DirectPlayReason": {
+        "enum": [
+          "container_unknown",
+          "container_unsupported",
+          "video_codec_unknown",
+          "video_codec_unsupported",
+          "audio_codec_unsupported",
+          "video_profile_unknown",
+          "video_profile_unsupported",
+          "video_level_unknown",
+          "video_level_unsupported"
+        ],
+        "title": "DirectPlayReason",
+        "type": "string"
+      },
+      "DownloadClientResponse": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "health": {
+            "title": "Health",
+            "type": "string"
+          },
+          "host": {
+            "title": "Host",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "implementation": {
+            "title": "Implementation",
+            "type": "string"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "last_tested_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tested At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "port": {
+            "title": "Port",
+            "type": "integer"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "integer"
+          },
+          "protocol": {
+            "title": "Protocol",
+            "type": "string"
+          },
+          "remove_completed": {
+            "title": "Remove Completed",
+            "type": "boolean"
+          },
+          "url_base": {
+            "title": "Url Base",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "protocol",
+          "implementation",
+          "host",
+          "port",
+          "url_base",
+          "category",
+          "priority",
+          "remove_completed",
+          "enabled",
+          "health",
+          "last_error",
+          "last_tested_at"
+        ],
+        "title": "DownloadClientResponse",
+        "type": "object"
+      },
+      "DownloadClientWrite": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "credentials": {
+            "format": "password",
+            "title": "Credentials",
+            "type": "string",
+            "writeOnly": true
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "host": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Host",
+            "type": "string"
+          },
+          "implementation": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Implementation",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "port": {
+            "maximum": 65535.0,
+            "minimum": 1.0,
+            "title": "Port",
+            "type": "integer"
+          },
+          "priority": {
+            "default": 0,
+            "title": "Priority",
+            "type": "integer"
+          },
+          "protocol": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Protocol",
+            "type": "string"
+          },
+          "remove_completed": {
+            "default": false,
+            "title": "Remove Completed",
+            "type": "boolean"
+          },
+          "url_base": {
+            "default": "",
+            "title": "Url Base",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "protocol",
+          "implementation",
+          "host",
+          "port",
+          "credentials"
+        ],
+        "title": "DownloadClientWrite",
+        "type": "object"
+      },
       "ErrorResponse": {
         "description": "The contract shape for every machine-readable API error.",
         "properties": {
@@ -123,6 +320,183 @@
         "title": "HealthReport",
         "type": "object"
       },
+      "IndexerResponse": {
+        "properties": {
+          "base_url": {
+            "title": "Base Url",
+            "type": "string"
+          },
+          "categories": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "health": {
+            "title": "Health",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "implementation": {
+            "title": "Implementation",
+            "type": "string"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "last_tested_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tested At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "integer"
+          },
+          "protocol": {
+            "title": "Protocol",
+            "type": "string"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/IndexerStatsResponse"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "protocol",
+          "implementation",
+          "base_url",
+          "categories",
+          "priority",
+          "enabled",
+          "health",
+          "last_error",
+          "last_tested_at",
+          "stats"
+        ],
+        "title": "IndexerResponse",
+        "type": "object"
+      },
+      "IndexerStatsResponse": {
+        "properties": {
+          "average_latency_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Latency Ms"
+          },
+          "failures": {
+            "title": "Failures",
+            "type": "integer"
+          },
+          "grabs": {
+            "title": "Grabs",
+            "type": "integer"
+          },
+          "queries": {
+            "title": "Queries",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "queries",
+          "failures",
+          "average_latency_ms",
+          "grabs"
+        ],
+        "title": "IndexerStatsResponse",
+        "type": "object"
+      },
+      "IndexerWrite": {
+        "properties": {
+          "api_key": {
+            "format": "password",
+            "title": "Api Key",
+            "type": "string",
+            "writeOnly": true
+          },
+          "base_url": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Base Url",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "implementation": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Implementation",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "priority": {
+            "default": 0,
+            "title": "Priority",
+            "type": "integer"
+          },
+          "protocol": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Protocol",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "protocol",
+          "implementation",
+          "base_url",
+          "api_key"
+        ],
+        "title": "IndexerWrite",
+        "type": "object"
+      },
       "LoginRequest": {
         "properties": {
           "password": {
@@ -143,6 +517,27 @@
           "password"
         ],
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "PlaybackInfoResponse": {
+        "properties": {
+          "direct_play": {
+            "title": "Direct Play",
+            "type": "boolean"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/DirectPlayReason"
+            },
+            "title": "Reasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "direct_play",
+          "reasons"
+        ],
+        "title": "PlaybackInfoResponse",
         "type": "object"
       },
       "ProviderResponse": {
@@ -341,6 +736,292 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/admin/download-clients": {
+      "get": {
+        "operationId": "admin_list_download_clients",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DownloadClientResponse"
+                  },
+                  "title": "Response Admin List Download Clients",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Download Clients",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "admin_create_download_client",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DownloadClientWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadClientResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Download Client",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/download-clients/{client_id}": {
+      "delete": {
+        "operationId": "admin_delete_download_client",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Download Client",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/download-clients/{client_id}/test": {
+      "post": {
+        "operationId": "admin_test_download_client",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadClientResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Test Download Client",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/indexers": {
+      "get": {
+        "operationId": "admin_list_indexers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/IndexerResponse"
+                  },
+                  "title": "Response Admin List Indexers",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Indexers",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "admin_create_indexer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IndexerWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Indexer",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/indexers/{indexer_id}": {
+      "delete": {
+        "operationId": "admin_delete_indexer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "indexer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Indexer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Indexer",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/indexers/{indexer_id}/test": {
+      "post": {
+        "operationId": "admin_test_indexer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "indexer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Indexer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Test Indexer",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/admin/oidc": {
       "get": {
         "operationId": "admin_list_providers",
@@ -757,6 +1438,233 @@
         "summary": "Dependency Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/media/{media_id}/playback-info": {
+      "get": {
+        "operationId": "playback_playback_info",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "containers",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Containers"
+            }
+          },
+          {
+            "in": "query",
+            "name": "video_codecs",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Video Codecs"
+            }
+          },
+          {
+            "in": "query",
+            "name": "audio_codecs",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Audio Codecs"
+            }
+          },
+          {
+            "in": "query",
+            "name": "video_profiles",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Video Profiles"
+            }
+          },
+          {
+            "in": "query",
+            "name": "maximum_video_level",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Maximum Video Level"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackInfoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Playback Info",
+        "tags": [
+          "playback"
+        ]
+      }
+    },
+    "/api/media/{media_id}/stream": {
+      "get": {
+        "operationId": "playback_stream",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "416": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Range Not Satisfiable"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stream",
+        "tags": [
+          "playback"
         ]
       }
     },
