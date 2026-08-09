@@ -1,0 +1,125 @@
+/**
+ * Every colour, radius, spacing and duration below is a token from tokens.css.
+ * The only literal lengths are the 1px border and the 2px focus ring, which are
+ * the two widths DESIGN.md fixes by name.
+ *
+ * Durations are always var(--duration-*): the reduced-motion override collapses
+ * those tokens, so naming a duration here would silently opt this component out
+ * of a supported path.
+ */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--space-8);
+  padding: var(--space-2) var(--space-4);
+  /* `transparent` rather than a surface token: a ghost button sits on whatever
+     surface it is dropped onto and must not paint an edge of its own. */
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--text-md-weight);
+  line-height: var(--text-sm-leading);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease), border-color var(--duration-fast)
+    var(--ease), color var(--duration-fast) var(--ease);
+}
+
+/* Never removed and never replaced by a colour change alone. */
+.button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Primary — the label is --primary-ink, never white: white on a rose of this
+   lightness does not reach 4.5:1. contrast.test.ts holds that line. */
+.primary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-ink);
+}
+
+.primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+/* Pressed reads as the fill snapping back from the lighter hover tint with a
+   dark rim, so hover and active are never the same picture. */
+.primary:active:not(:disabled) {
+  background-color: var(--primary);
+  border-color: var(--primary-ink);
+}
+
+/* Secondary — the only variant carrying a resting boundary, so that boundary is
+   --border-control. --border and --border-strong sit under 3:1 and cannot
+   legally identify a control (WCAG 1.4.11). */
+.secondary {
+  background-color: var(--surface-2);
+  border-color: var(--border-control);
+  color: var(--ink);
+}
+
+.secondary:hover:not(:disabled) {
+  background-color: var(--surface-3);
+}
+
+.secondary:active:not(:disabled) {
+  background-color: var(--surface-3);
+  border-color: var(--primary);
+}
+
+/* Ghost — no boundary at rest by design. Its label identifies it, so 1.4.11
+   does not apply; the hover surface is what confirms it is hittable. */
+.ghost {
+  background-color: transparent;
+  color: var(--ink);
+}
+
+.ghost:hover:not(:disabled) {
+  background-color: var(--surface-2);
+}
+
+.ghost:active:not(:disabled) {
+  background-color: var(--surface-3);
+}
+
+/* Disabled is the one place --border is allowed: 1.4.11 exempts controls that
+   cannot be operated, and --ink-faint exists for exactly this. */
+.button:disabled {
+  background-color: var(--surface-2);
+  border-color: var(--border);
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+/* Loading. No spinner and no pulse: DESIGN.md rejects spinners, and an
+   animation whose duration is a token collapses to a strobe under
+   prefers-reduced-motion. The cursor plus aria-busy carry it instead. Placed
+   after :disabled so it wins the tie at equal specificity. */
+.button.loading {
+  color: var(--ink-muted);
+  cursor: progress;
+}
+
+/* Error. The tint carries the meaning and --ink carries the text: --danger
+   itself only reaches 3:1 on a surface, which is an icon threshold, not a text
+   one. Specificity is raised past the variant hover rules deliberately. */
+.button.error:not(:disabled) {
+  background-color: var(--danger-weak);
+  border-color: var(--danger);
+  color: var(--ink);
+}
+
+.button.error:hover:not(:disabled) {
+  background-color: var(--danger-weak);
+  border-color: var(--danger);
+}
+
+.button.error:active:not(:disabled) {
+  background-color: var(--danger-weak);
+  border-color: var(--ink);
+}

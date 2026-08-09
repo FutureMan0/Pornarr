@@ -102,6 +102,26 @@ def test_filter_migration_seeds_one_disabled_global_profile(clean_database: None
     }
 
 
+def test_quality_migration_seeds_one_usable_default_profile(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        profile = connection.execute(
+            "SELECT id, minimum_custom_format_score FROM quality_profiles WHERE is_default"
+        ).fetchone()
+        definitions = connection.execute(
+            "SELECT name FROM quality_definitions ORDER BY weight"
+        ).fetchall()
+        items = connection.execute(
+            "SELECT position FROM quality_profile_items ORDER BY position"
+        ).fetchall()
+
+    assert profile is not None
+    assert profile[1] == 0
+    assert definitions == [("WEB 720p",), ("WEB 1080p",), ("WEB 2160p",)]
+    assert items == [(0,), (1,), (2,)]
+
+
 def test_deleting_a_user_removes_its_filter_profile(clean_database: None) -> None:
     assert _alembic("upgrade", "head").returncode == 0
 

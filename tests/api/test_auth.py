@@ -133,8 +133,10 @@ async def test_login_sets_http_only_session_and_survives_a_reload(
     assert f"{SESSION_COOKIE}=" in session_cookie
     assert "HttpOnly" in session_cookie
     assert "SameSite=lax" in session_cookie
+    assert "Path=/api" in session_cookie
     assert f"{CSRF_COOKIE}=" in csrf_cookie
     assert "HttpOnly" not in csrf_cookie
+    assert "Path=/" in csrf_cookie
 
     current_user = await client.get("/api/auth/me")
     assert current_user.status_code == 200
@@ -150,6 +152,9 @@ async def test_logout_revokes_the_server_side_session(app: FastAPI, client: Asyn
     response = await client.post("/api/auth/logout", headers=csrf_headers(client))
 
     assert response.status_code == 204
+    session_cookie, csrf_cookie = response.headers.get_list("set-cookie")
+    assert "Path=/api" in session_cookie
+    assert "Path=/" in csrf_cookie
     client.cookies.set(SESSION_COOKIE, session_token, path="/api")
     assert (await client.get("/api/auth/me")).status_code == 401
 

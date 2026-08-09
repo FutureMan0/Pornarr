@@ -1,0 +1,62 @@
+/**
+ * DESIGN.md: "Same shape, same size, same position in every context." There is
+ * deliberately no size or shape variant here — a status badge looks identical in
+ * a table cell, on a card and in a detail header.
+ *
+ * The tint is a --<role>-weak background and the text is --ink. Never the
+ * matching hue: --danger on --danger-weak measures 3.72:1 and fails AA. Every
+ * pair below is verified in contrast.test.ts.
+ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-2);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  line-height: var(--text-2xs-leading);
+  font-weight: var(--text-2xs-weight);
+  white-space: nowrap;
+}
+
+/* In flight, nothing downloaded yet. */
+.searching {
+  background-color: var(--info-weak);
+}
+
+/* Inert: waiting on something else. Neutral, because nothing is happening. */
+.queued {
+  background-color: var(--surface-2);
+}
+
+/* The one live state, so it takes the accent — DESIGN.md gives --primary to
+   actions, selection and state. */
+.downloading {
+  background-color: var(--primary-weak);
+}
+
+.importing {
+  background-color: var(--info-weak);
+}
+
+.available {
+  background-color: var(--success-weak);
+}
+
+.quarantined {
+  background-color: var(--warning-weak);
+}
+
+.failed {
+  background-color: var(--danger-weak);
+}
+
+/* Terminal but harmless. --ink-muted on --surface-2 is 4.5:1 (contrast.test.ts)
+   and de-emphasises a row nobody needs to act on. */
+.cancelled {
+  background-color: var(--surface-2);
+  color: var(--ink-muted);
+}

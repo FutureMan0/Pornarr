@@ -38,6 +38,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
     ]
     assert all(worker.job_completion_wait == JOB_COMPLETION_WAIT_SECONDS for worker in worker_types)
     assert settings.WorkerSettings.functions[0].name == "heartbeat"
+    assert settings.TranscodeWorkerSettings.functions[0].name == "generate_preview_sprite_job"
     required_arq_options = {
         "functions",
         "queue_name",

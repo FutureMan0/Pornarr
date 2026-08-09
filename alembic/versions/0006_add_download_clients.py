@@ -1,8 +1,16 @@
 """Add configured download clients.
 
-Revision ID: 0006
-Revises: 0005
+Revision ID: 0012
+Revises: 0011
 Create Date: 2026-08-08
+
+Renumbered from 0006, which by now three separate branches had claimed: this
+one, add_indexers and add_media_entities. Each numbered from its own base and
+none could see the others. The download-client tables reference nothing in the
+chain ahead of them, so appending is the resolution that changes no schema.
+
+Depends on the renumbering in #229 landing first, which is what makes 0011 the
+predecessor. The filename still says 0006; alembic reads the identifier below.
 """
 
 from __future__ import annotations
@@ -12,8 +20,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0006"
-down_revision: str | None = "0005"
+revision: str = "0012"
+down_revision: str | None = "0011"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -14,7 +14,8 @@
       "playwright-report",
       "test-results",
       "graphify-out",
-      ".codegraph"
+      ".codegraph",
+      "docs/design/mockups"
     ]
   },
   "formatter": {

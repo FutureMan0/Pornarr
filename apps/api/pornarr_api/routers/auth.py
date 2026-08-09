@@ -68,7 +68,7 @@ def set_auth_cookies(response: Response, request: Request, session: str, csrf: s
         CSRF_COOKIE,
         csrf,
         max_age=SESSION_TTL_SECONDS,
-        path="/api",
+        path="/",
         secure=secure,
         httponly=False,
         samesite="lax",
@@ -79,9 +79,7 @@ def clear_auth_cookies(response: Response, request: Request) -> None:
     response.delete_cookie(
         SESSION_COOKIE, path="/api", secure=_cookie_is_secure(request), samesite="lax"
     )
-    response.delete_cookie(
-        CSRF_COOKIE, path="/api", secure=_cookie_is_secure(request), samesite="lax"
-    )
+    response.delete_cookie(CSRF_COOKIE, path="/", secure=_cookie_is_secure(request), samesite="lax")
 
 
 @router.post(
