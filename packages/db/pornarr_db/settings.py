@@ -120,7 +120,9 @@ class RuntimeSettingsWrite(BaseModel):
 
 async def get_runtime_settings(session: AsyncSession, defaults: Settings) -> RuntimeSettings:
     rows = await session.scalars(select(Setting))
-    return RuntimeSettings.from_defaults(defaults, {row.key: row.value for row in rows})
+    return RuntimeSettings.from_defaults(
+        defaults, {row.key: row.value for row in rows if row.key in _RUNTIME_SETTING_FIELDS}
+    )
 
 
 async def update_runtime_settings(
