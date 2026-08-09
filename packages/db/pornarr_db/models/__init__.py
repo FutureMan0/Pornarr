@@ -14,6 +14,7 @@ from pornarr_db.models.custom_formats import (
     CustomFormatField,
     CustomFormatOperator,
 )
+from pornarr_db.models.download_client import DownloadClient
 from pornarr_db.models.entities import MediaPerformer, MediaTag, Performer, Studio, Tag
 from pornarr_db.models.filters import (
     ContentFilterProfile,
@@ -35,6 +36,7 @@ __all__ = [
     "CustomFormatCondition",
     "CustomFormatField",
     "CustomFormatOperator",
+    "DownloadClient",
     "FilterAction",
     "FilterProfileScope",
     "FilterRuleKind",

@@ -66,6 +66,188 @@
         "title": "DirectPlayReason",
         "type": "string"
       },
+      "DownloadClientResponse": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "health": {
+            "title": "Health",
+            "type": "string"
+          },
+          "host": {
+            "title": "Host",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "implementation": {
+            "title": "Implementation",
+            "type": "string"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "last_tested_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tested At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "port": {
+            "title": "Port",
+            "type": "integer"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "integer"
+          },
+          "protocol": {
+            "title": "Protocol",
+            "type": "string"
+          },
+          "remove_completed": {
+            "title": "Remove Completed",
+            "type": "boolean"
+          },
+          "url_base": {
+            "title": "Url Base",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "protocol",
+          "implementation",
+          "host",
+          "port",
+          "url_base",
+          "category",
+          "priority",
+          "remove_completed",
+          "enabled",
+          "health",
+          "last_error",
+          "last_tested_at"
+        ],
+        "title": "DownloadClientResponse",
+        "type": "object"
+      },
+      "DownloadClientWrite": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "credentials": {
+            "format": "password",
+            "title": "Credentials",
+            "type": "string",
+            "writeOnly": true
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "host": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Host",
+            "type": "string"
+          },
+          "implementation": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Implementation",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "port": {
+            "maximum": 65535.0,
+            "minimum": 1.0,
+            "title": "Port",
+            "type": "integer"
+          },
+          "priority": {
+            "default": 0,
+            "title": "Priority",
+            "type": "integer"
+          },
+          "protocol": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Protocol",
+            "type": "string"
+          },
+          "remove_completed": {
+            "default": false,
+            "title": "Remove Completed",
+            "type": "boolean"
+          },
+          "url_base": {
+            "default": "",
+            "title": "Url Base",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "protocol",
+          "implementation",
+          "host",
+          "port",
+          "credentials"
+        ],
+        "title": "DownloadClientWrite",
+        "type": "object"
+      },
       "ErrorResponse": {
         "description": "The contract shape for every machine-readable API error.",
         "properties": {
@@ -517,6 +699,149 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/admin/download-clients": {
+      "get": {
+        "operationId": "admin_list_download_clients",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DownloadClientResponse"
+                  },
+                  "title": "Response Admin List Download Clients",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Download Clients",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "admin_create_download_client",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DownloadClientWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadClientResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Download Client",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/download-clients/{client_id}": {
+      "delete": {
+        "operationId": "admin_delete_download_client",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Download Client",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/download-clients/{client_id}/test": {
+      "post": {
+        "operationId": "admin_test_download_client",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadClientResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Test Download Client",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/admin/indexers": {
       "get": {
         "operationId": "admin_list_indexers",

@@ -16,6 +16,7 @@ from pornarr_api.auth import enforce_csrf
 from pornarr_api.errors import register_error_handlers
 from pornarr_api.lifespan import lifespan
 from pornarr_api.middleware import RequestIdMiddleware
+from pornarr_api.routers.admin_download_clients import router as admin_download_clients_router
 from pornarr_api.routers.admin_indexers import router as admin_indexers_router
 from pornarr_api.routers.admin_oidc import router as admin_oidc_router
 from pornarr_api.routers.auth import router as auth_router
@@ -42,6 +43,7 @@ def stable_operation_id(route: APIRoute) -> str:
 
 api_router = APIRouter(prefix=API_PREFIX, dependencies=[Depends(enforce_csrf)])
 api_router.include_router(auth_router)
+api_router.include_router(admin_download_clients_router)
 api_router.include_router(admin_oidc_router)
 api_router.include_router(admin_indexers_router)
 api_router.include_router(events_router)
