@@ -8,6 +8,13 @@ explicit rather than a directory scan.
 
 from __future__ import annotations
 
+from pornarr_db.models.custom_formats import (
+    CustomFormat,
+    CustomFormatCondition,
+    CustomFormatField,
+    CustomFormatOperator,
+)
+from pornarr_db.models.entities import MediaPerformer, MediaTag, Performer, Studio, Tag
 from pornarr_db.models.filters import (
     ContentFilterProfile,
     ContentFilterRule,
@@ -17,18 +24,31 @@ from pornarr_db.models.filters import (
 )
 from pornarr_db.models.media import Media, MediaFile, MediaFileHistory
 from pornarr_db.models.oidc import OidcProvider
+from pornarr_db.models.quality import QualityDefinition, QualityProfile, QualityProfileItem
 from pornarr_db.models.user import User, UserRole
 
 __all__ = [
     "ContentFilterProfile",
     "ContentFilterRule",
+    "CustomFormat",
+    "CustomFormatCondition",
+    "CustomFormatField",
+    "CustomFormatOperator",
     "FilterAction",
     "FilterProfileScope",
     "FilterRuleKind",
     "Media",
     "MediaFile",
     "MediaFileHistory",
+    "MediaPerformer",
+    "MediaTag",
     "OidcProvider",
+    "Performer",
+    "QualityDefinition",
+    "QualityProfile",
+    "QualityProfileItem",
+    "Studio",
+    "Tag",
     "User",
     "UserRole",
 ]
