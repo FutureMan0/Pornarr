@@ -51,6 +51,21 @@
         "title": "CurrentUserResponse",
         "type": "object"
       },
+      "DirectPlayReason": {
+        "enum": [
+          "container_unknown",
+          "container_unsupported",
+          "video_codec_unknown",
+          "video_codec_unsupported",
+          "audio_codec_unsupported",
+          "video_profile_unknown",
+          "video_profile_unsupported",
+          "video_level_unknown",
+          "video_level_unsupported"
+        ],
+        "title": "DirectPlayReason",
+        "type": "string"
+      },
       "ErrorResponse": {
         "description": "The contract shape for every machine-readable API error.",
         "properties": {
@@ -143,6 +158,27 @@
           "password"
         ],
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "PlaybackInfoResponse": {
+        "properties": {
+          "direct_play": {
+            "title": "Direct Play",
+            "type": "boolean"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/DirectPlayReason"
+            },
+            "title": "Reasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "direct_play",
+          "reasons"
+        ],
+        "title": "PlaybackInfoResponse",
         "type": "object"
       },
       "ProviderResponse": {
@@ -649,6 +685,162 @@
         "summary": "Dependency Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/media/{media_id}/playback-info": {
+      "get": {
+        "operationId": "playback_playback_info",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "containers",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Containers"
+            }
+          },
+          {
+            "in": "query",
+            "name": "video_codecs",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Video Codecs"
+            }
+          },
+          {
+            "in": "query",
+            "name": "audio_codecs",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Audio Codecs"
+            }
+          },
+          {
+            "in": "query",
+            "name": "video_profiles",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Video Profiles"
+            }
+          },
+          {
+            "in": "query",
+            "name": "maximum_video_level",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Maximum Video Level"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackInfoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Playback Info",
+        "tags": [
+          "playback"
         ]
       }
     }

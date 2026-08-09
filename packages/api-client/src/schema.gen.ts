@@ -158,6 +158,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/media/{media_id}/playback-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Playback Info */
+        get: operations["playback_playback_info"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -180,6 +197,11 @@ export interface components {
             /** Username */
             username: string;
         };
+        /**
+         * DirectPlayReason
+         * @enum {string}
+         */
+        DirectPlayReason: "container_unknown" | "container_unsupported" | "video_codec_unknown" | "video_codec_unsupported" | "audio_codec_unsupported" | "video_profile_unknown" | "video_profile_unsupported" | "video_level_unknown" | "video_level_unsupported";
         /**
          * ErrorResponse
          * @description The contract shape for every machine-readable API error.
@@ -220,6 +242,13 @@ export interface components {
             password: string;
             /** Username */
             username: string;
+        };
+        /** PlaybackInfoResponse */
+        PlaybackInfoResponse: {
+            /** Direct Play */
+            direct_play: boolean;
+            /** Reasons */
+            reasons: components["schemas"]["DirectPlayReason"][];
         };
         /** ProviderResponse */
         ProviderResponse: {
@@ -597,6 +626,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthReport"];
+                };
+            };
+        };
+    };
+    playback_playback_info: {
+        parameters: {
+            query?: {
+                containers?: string[] | null;
+                video_codecs?: string[] | null;
+                audio_codecs?: string[] | null;
+                video_profiles?: string[] | null;
+                maximum_video_level?: number | null;
+            };
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaybackInfoResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
