@@ -4,10 +4,16 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
+from pydantic import SecretStr
+
+from pornarr_media.capabilities import HardwareCapabilities
 from pornarr_media.transcode import HlsPaths
+from pornarr_shared.config import Settings
 
 
 class RecordingRedis:
@@ -156,3 +162,44 @@ async def test_termination_removes_the_session_and_its_hls_files(tmp_path: Path)
     assert transcode.stopped is True
     assert await registry.active_sessions() == []
     assert not directory.exists()
+
+
+def test_hardware_saturation_falls_back_to_software_and_then_names_the_limit() -> None:
+    from pornarr_media.sessions import (
+        TranscodeLimitReachedError,
+        TranscodeLimits,
+        TranscodeMode,
+        TranscodeSession,
+        choose_transcode_mode,
+    )
+
+    user_id = uuid4()
+    limits = TranscodeLimits(hardware=1, software=1, per_user=3)
+    hardware_session = TranscodeSession(
+        uuid4(), uuid4(), uuid4(), "hls", True, 1, datetime.now(UTC)
+    )
+    software_session = TranscodeSession(
+        uuid4(), uuid4(), uuid4(), "hls", False, 2, datetime.now(UTC)
+    )
+
+    assert choose_transcode_mode([hardware_session], user_id, limits) == TranscodeMode.SOFTWARE
+    user_session = TranscodeSession(uuid4(), user_id, uuid4(), "hls", True, 3, datetime.now(UTC))
+    with pytest.raises(TranscodeLimitReachedError) as per_user_error:
+        choose_transcode_mode([user_session], user_id, TranscodeLimits(2, 2, 1))
+    assert per_user_error.value.as_dict()["context"] == {"limit": "per_user"}
+    with pytest.raises(TranscodeLimitReachedError) as error:
+        choose_transcode_mode([hardware_session, software_session], user_id, limits)
+    assert error.value.as_dict()["context"] == {"limit": "software"}
+
+
+def test_detection_and_settings_produce_conservative_session_limits() -> None:
+    from pornarr_media.sessions import TranscodeLimits
+
+    settings = Settings(
+        app_secret=SecretStr("a" * 32),
+        database_url="postgresql+psycopg://example",
+        redis_url="redis://example",
+    )
+    capabilities = HardwareCapabilities(methods=(), rejections=(), nvidia_gpus=())
+
+    assert TranscodeLimits.from_settings(settings, capabilities) == TranscodeLimits(0, 1, 2)

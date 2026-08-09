@@ -7,6 +7,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from pornarr_db.models.user import UserRole
+from pornarr_media.capabilities import HardwareCapabilities
 from pornarr_media.transcode import HlsPaths
 from tests.api.test_auth import create_user, csrf_headers, login
 
@@ -84,3 +85,22 @@ async def test_only_the_session_owner_can_heartbeat(app, client, tmp_path: Path)
     )
 
     assert heartbeat.status_code == 403
+
+
+async def test_admin_can_see_current_transcode_limits(app, client) -> None:
+    admin = await create_user(app, username="admin", role=UserRole.ADMIN)
+    app.state.hardware_capabilities = HardwareCapabilities(
+        methods=(), rejections=(), nvidia_gpus=()
+    )
+    await login(client, admin.username, "correct horse battery staple")
+
+    limits = await client.get("/api/admin/transcode/limits")
+
+    assert limits.status_code == 200
+    assert limits.json() == {
+        "hardware": 0,
+        "software": 1,
+        "per_user": 2,
+        "hardware_in_use": 0,
+        "software_in_use": 0,
+    }

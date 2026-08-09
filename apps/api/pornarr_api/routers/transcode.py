@@ -12,7 +12,8 @@ from pydantic import BaseModel
 from pornarr_api.auth import ForbiddenError, get_current_user, require_role
 from pornarr_api.errors import ErrorResponse
 from pornarr_db.models.user import User, UserRole
-from pornarr_media.sessions import TranscodeSession, TranscodeSessionRegistry
+from pornarr_media.capabilities import HardwareCapabilities
+from pornarr_media.sessions import TranscodeLimits, TranscodeSession, TranscodeSessionRegistry
 
 router = APIRouter(prefix="/transcode", tags=["transcode"])
 admin_router = APIRouter(prefix="/admin/transcode", tags=["admin"])
@@ -25,6 +26,14 @@ class TranscodeSessionResponse(BaseModel):
     media_id: UUID
     mode: str
     created_at: datetime
+
+
+class TranscodeLimitResponse(BaseModel):
+    hardware: int
+    software: int
+    per_user: int
+    hardware_in_use: int
+    software_in_use: int
 
 
 def get_registry(request: Request) -> TranscodeSessionRegistry:
@@ -68,6 +77,24 @@ async def heartbeat(
 @admin_router.get("/sessions", response_model=list[TranscodeSessionResponse])
 async def list_sessions(request: Request, _: Admin) -> list[TranscodeSessionResponse]:
     return [session_response(session) for session in await get_registry(request).active_sessions()]
+
+
+@admin_router.get("/limits", response_model=TranscodeLimitResponse)
+async def limit_state(request: Request, _: Admin) -> TranscodeLimitResponse:
+    sessions = await get_registry(request).active_sessions()
+    capabilities = getattr(
+        request.app.state,
+        "hardware_capabilities",
+        HardwareCapabilities(methods=(), rejections=(), nvidia_gpus=()),
+    )
+    limits = TranscodeLimits.from_settings(request.app.state.settings, capabilities)
+    return TranscodeLimitResponse(
+        hardware=limits.hardware,
+        software=limits.software,
+        per_user=limits.per_user,
+        hardware_in_use=sum(session.hardware for session in sessions),
+        software_in_use=sum(not session.hardware for session in sessions),
+    )
 
 
 @admin_router.delete(

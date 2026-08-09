@@ -160,6 +160,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/transcode/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Limit State */
+        get: operations["admin_limit_state"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/transcode/sessions": {
         parameters: {
             query?: never;
@@ -605,6 +622,19 @@ export interface components {
             /** Scopes */
             scopes?: string[];
         };
+        /** TranscodeLimitResponse */
+        TranscodeLimitResponse: {
+            /** Hardware */
+            hardware: number;
+            /** Hardware In Use */
+            hardware_in_use: number;
+            /** Per User */
+            per_user: number;
+            /** Software */
+            software: number;
+            /** Software In Use */
+            software_in_use: number;
+        };
         /** TranscodeSessionResponse */
         TranscodeSessionResponse: {
             /**
@@ -992,6 +1022,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_limit_state: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscodeLimitResponse"];
                 };
             };
         };
