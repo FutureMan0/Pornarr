@@ -22,6 +22,7 @@ from pornarr_db.models.filters import (
     FilterProfileScope,
     FilterRuleKind,
 )
+from pornarr_db.models.indexer import Indexer, IndexerStats
 from pornarr_db.models.media import Media, MediaFile, MediaFileHistory
 from pornarr_db.models.oidc import OidcProvider
 from pornarr_db.models.quality import QualityDefinition, QualityProfile, QualityProfileItem
@@ -37,6 +38,8 @@ __all__ = [
     "FilterAction",
     "FilterProfileScope",
     "FilterRuleKind",
+    "Indexer",
+    "IndexerStats",
     "Media",
     "MediaFile",
     "MediaFileHistory",
