@@ -6,13 +6,13 @@ from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel, Field, SecretStr
+from fastapi import APIRouter, Depends, Request
+from pydantic import BaseModel, Field, SecretStr, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import database_session, require_role
-from pornarr_api.oidc import discover
+from pornarr_api.oidc import OidcDiscoveryError, discover, normalise_issuer
 from pornarr_db.models.oidc import OidcProvider
 from pornarr_db.models.user import User, UserRole
 
@@ -28,6 +28,14 @@ class ProviderWrite(BaseModel):
     client_secret: SecretStr
     scopes: list[str] = Field(default_factory=lambda: ["openid", "profile", "email"])
     enabled: bool = True
+
+    @field_validator("issuer")
+    @classmethod
+    def _issuer_is_safe(cls, value: str) -> str:
+        try:
+            return normalise_issuer(value)
+        except OidcDiscoveryError as exc:
+            raise ValueError(exc.message) from exc
 
 
 class ProviderResponse(BaseModel):
@@ -70,7 +78,7 @@ async def list_providers(_: Admin, session: Session) -> list[ProviderResponse]:
 async def create_provider(payload: ProviderWrite, _: Admin, session: Session) -> ProviderResponse:
     provider = OidcProvider(
         name=payload.name,
-        issuer=payload.issuer.rstrip("/"),
+        issuer=payload.issuer,
         client_id=payload.client_id,
         client_secret=payload.client_secret.get_secret_value(),
         scopes=payload.scopes,
@@ -87,8 +95,13 @@ async def delete_provider(provider_id: UUID, _: Admin, session: Session) -> None
 
 
 @router.post("/{provider_id}/test", response_model=ProviderResponse)
-async def test_provider(provider_id: UUID, _: Admin, session: Session) -> ProviderResponse:
+async def test_provider(
+    provider_id: UUID, request: Request, _: Admin, session: Session
+) -> ProviderResponse:
     provider = await provider_or_404(session, provider_id)
-    provider.discovery_document = await discover(provider.issuer)
+    provider.discovery_document = await discover(
+        provider.issuer,
+        allow_private_issuers=request.app.state.settings.oidc_allow_private_issuers,
+    )
     provider.discovery_fetched_at = datetime.now(UTC)
     return provider_response(provider)

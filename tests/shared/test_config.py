@@ -60,6 +60,15 @@ def test_valid_environment_produces_settings(monkeypatch: pytest.MonkeyPatch) ->
     assert settings.app_env == "development"
     assert settings.default_auto_downloads_enabled is False
     assert settings.min_free_disk_percent == 15
+    assert settings.oidc_allow_private_issuers is False
+
+
+def test_private_oidc_issuers_require_an_explicit_opt_in(monkeypatch: pytest.MonkeyPatch) -> None:
+    for key, value in VALID_ENVIRONMENT.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setenv("OIDC_ALLOW_PRIVATE_ISSUERS", "true")
+
+    assert load_settings().oidc_allow_private_issuers is True
 
 
 @pytest.mark.parametrize("given", ["pornarr", "/pornarr", "/pornarr/", "  /pornarr  "])
