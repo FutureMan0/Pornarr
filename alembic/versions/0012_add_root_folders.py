@@ -1,7 +1,7 @@
 """Add scanner root-folder configuration.
 
-Revision ID: 0012
-Revises: 0011
+Revision ID: 0015
+Revises: 0014
 """
 
 from __future__ import annotations
@@ -11,8 +11,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0012"
-down_revision: str | None = "0011"
+revision: str = "0015"
+down_revision: str | None = "0014"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
