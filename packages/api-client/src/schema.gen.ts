@@ -4,25 +4,41 @@
  */
 
 export interface paths {
+<<<<<<< HEAD
     "/api/admin/download-clients": {
+=======
+    "/api/admin/library/root-folders": {
+>>>>>>> 322de02 (feat(library): add root folder configuration)
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
+<<<<<<< HEAD
         /** List Download Clients */
         get: operations["admin_list_download_clients"];
         put?: never;
         /** Create Download Client */
         post: operations["admin_create_download_client"];
+=======
+        /** List Root Folders */
+        get: operations["admin_list_root_folders"];
+        put?: never;
+        /** Create Root Folder */
+        post: operations["admin_create_root_folder"];
+>>>>>>> 322de02 (feat(library): add root folder configuration)
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
+<<<<<<< HEAD
     "/api/admin/download-clients/{client_id}": {
+=======
+    "/api/admin/library/root-folders/{folder_id}": {
+>>>>>>> 322de02 (feat(library): add root folder configuration)
         parameters: {
             query?: never;
             header?: never;
@@ -32,6 +48,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
+<<<<<<< HEAD
         /** Delete Download Client */
         delete: operations["admin_delete_download_client"];
         options?: never;
@@ -103,6 +120,10 @@ export interface paths {
         /** Test Indexer */
         post: operations["admin_test_indexer"];
         delete?: never;
+=======
+        /** Delete Root Folder */
+        delete: operations["admin_delete_root_folder"];
+>>>>>>> 322de02 (feat(library): add root folder configuration)
         options?: never;
         head?: never;
         patch?: never;
@@ -686,6 +707,7 @@ export interface components {
             /** Scopes */
             scopes?: string[];
         };
+<<<<<<< HEAD
         /** TranscodeFailureResponse */
         TranscodeFailureResponse: {
             /**
@@ -751,11 +773,20 @@ export interface components {
             elapsed_seconds: number;
             /** Hardware */
             hardware: boolean;
+=======
+        /** RootFolderResponse */
+        RootFolderResponse: {
+            /** Enabled */
+            enabled: boolean;
+            /** Free Space Bytes */
+            free_space_bytes: number;
+>>>>>>> 322de02 (feat(library): add root folder configuration)
             /**
              * Id
              * Format: uuid
              */
             id: string;
+<<<<<<< HEAD
             /**
              * Media Id
              * Format: uuid
@@ -772,6 +803,26 @@ export interface components {
             user_id: string;
             /** Username */
             username: string | null;
+=======
+            /** Last Scanned At */
+            last_scanned_at: string | null;
+            /** Path */
+            path: string;
+            /** Same Filesystem As Downloads */
+            same_filesystem_as_downloads: boolean;
+            /** Warning */
+            warning: string | null;
+        };
+        /** RootFolderWrite */
+        RootFolderWrite: {
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Path */
+            path: string;
+>>>>>>> 322de02 (feat(library): add root folder configuration)
         };
         /**
          * UserRole
@@ -800,7 +851,11 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+<<<<<<< HEAD
     admin_list_download_clients: {
+=======
+    admin_list_root_folders: {
+>>>>>>> 322de02 (feat(library): add root folder configuration)
         parameters: {
             query?: never;
             header?: never;
@@ -815,12 +870,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+<<<<<<< HEAD
                     "application/json": components["schemas"]["DownloadClientResponse"][];
+=======
+                    "application/json": components["schemas"]["RootFolderResponse"][];
+>>>>>>> 322de02 (feat(library): add root folder configuration)
                 };
             };
         };
     };
+<<<<<<< HEAD
     admin_create_download_client: {
+=======
+    admin_create_root_folder: {
+>>>>>>> 322de02 (feat(library): add root folder configuration)
         parameters: {
             query?: never;
             header?: never;
@@ -829,7 +892,11 @@ export interface operations {
         };
         requestBody: {
             content: {
+<<<<<<< HEAD
                 "application/json": components["schemas"]["DownloadClientWrite"];
+=======
+                "application/json": components["schemas"]["RootFolderWrite"];
+>>>>>>> 322de02 (feat(library): add root folder configuration)
             };
         };
         responses: {
@@ -839,7 +906,11 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+<<<<<<< HEAD
                     "application/json": components["schemas"]["DownloadClientResponse"];
+=======
+                    "application/json": components["schemas"]["RootFolderResponse"];
+>>>>>>> 322de02 (feat(library): add root folder configuration)
                 };
             };
             /** @description Validation Error */
@@ -853,12 +924,20 @@ export interface operations {
             };
         };
     };
+<<<<<<< HEAD
     admin_delete_download_client: {
+=======
+    admin_delete_root_folder: {
+>>>>>>> 322de02 (feat(library): add root folder configuration)
         parameters: {
             query?: never;
             header?: never;
             path: {
+<<<<<<< HEAD
                 client_id: string;
+=======
+                folder_id: string;
+>>>>>>> 322de02 (feat(library): add root folder configuration)
             };
             cookie?: never;
         };
@@ -882,6 +961,7 @@ export interface operations {
             };
         };
     };
+<<<<<<< HEAD
     admin_test_download_client: {
         parameters: {
             query?: never;
@@ -1026,6 +1106,8 @@ export interface operations {
             };
         };
     };
+=======
+>>>>>>> 322de02 (feat(library): add root folder configuration)
     admin_list_providers: {
         parameters: {
             query?: never;
