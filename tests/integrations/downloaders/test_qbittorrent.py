@@ -106,6 +106,33 @@ async def test_session_expiry_reauthenticates_before_returning_a_failure() -> No
     ]
 
 
+async def test_reads_all_jobs_in_one_queue_request() -> None:
+    recorded = json.loads((FIXTURES / "qbittorrent-torrents-info.json").read_text())
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path.endswith("/auth/login"):
+            return response(request, 204)
+        return json_response(request, recorded)
+
+    adapter = QbittorrentAdapter(transport=httpx.MockTransport(handler))
+
+    jobs = await adapter.list_jobs(
+        host="qbittorrent.example",
+        port=8080,
+        url_base="",
+        credentials=CREDENTIALS,
+    )
+
+    assert [job.client_job_id for job in jobs] == [TORRENT_HASH]
+    assert jobs[0].estimated_seconds is None
+    assert [request.url.path for request in requests] == [
+        "/api/v2/auth/login",
+        "/api/v2/torrents/info",
+    ]
+
+
 async def test_adds_magnet_and_torrent_file_with_category_and_paused_start() -> None:
     requests: list[httpx.Request] = []
 

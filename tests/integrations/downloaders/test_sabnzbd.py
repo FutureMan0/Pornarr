@@ -184,6 +184,38 @@ async def test_reads_queue_and_history() -> None:
     assert [request.url.params["mode"] for request in requests] == ["queue", "history"]
 
 
+async def test_reads_one_batched_poll_for_queue_and_history() -> None:
+    recorded_queue = json.loads((FIXTURES / "sabnzbd-queue.json").read_text())
+    history_slot = {
+        "nzo_id": "history-job",
+        "name": "release",
+        "category": "pornarr",
+        "status": "Completed",
+        "postproc_time": 19,
+        "fail_message": "",
+    }
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.params["mode"] == "queue":
+            return response(request, recorded_queue)
+        return response(request, {"history": {"slots": [history_slot]}})
+
+    adapter = SabnzbdAdapter(transport=httpx.MockTransport(handler))
+
+    jobs = await adapter.list_jobs(
+        host="sabnzbd.example",
+        port=8080,
+        url_base="",
+        credentials=API_KEY,
+    )
+
+    assert [job.client_job_id for job in jobs] == [NZO_ID, "history-job"]
+    assert jobs[1].state is DownloadState.COMPLETED
+    assert [request.url.params["mode"] for request in requests] == ["queue", "history"]
+
+
 async def test_controls_and_history_phases_keep_repair_and_import_distinct() -> None:
     requests: list[httpx.Request] = []
 
