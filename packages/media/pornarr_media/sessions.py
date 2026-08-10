@@ -254,22 +254,21 @@ class TranscodeSessionRegistry:
         if watcher is not None and watcher is not asyncio.current_task():
             watcher.cancel()
         transcode = self._processes.pop(session_id, None)
-        if transcode is not None:
-            await transcode.stop()
-        else:
-            session = await self._record(session_id)
-            if session is not None:
-                await asyncio.to_thread(
-                    _stop_orphaned_transcode,
-                    session.process_id,
-                    self._transcode_path / str(session_id),
-                )
-        await asyncio.to_thread(
-            shutil.rmtree, self._transcode_path / str(session_id), ignore_errors=True
-        )
+        session = await self._record(session_id) if transcode is None else None
         await self._redis.delete(session_key(session_id))
         await self._redis.delete(heartbeat_key(session_id))
         await self._redis.srem(SESSION_INDEX_KEY, str(session_id))
+        if transcode is not None:
+            await transcode.stop()
+        elif session is not None:
+            await asyncio.to_thread(
+                _stop_orphaned_transcode,
+                session.process_id,
+                self._transcode_path / str(session_id),
+            )
+        await asyncio.to_thread(
+            shutil.rmtree, self._transcode_path / str(session_id), ignore_errors=True
+        )
 
     async def _watch_process(self, session: TranscodeSession, process: Any) -> None:
         try:

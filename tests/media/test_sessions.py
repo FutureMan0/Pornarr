@@ -209,12 +209,7 @@ async def test_failed_ffmpeg_is_recorded_without_its_command_or_log(tmp_path: Pa
     assert failures[0].session_id == session_id
     assert failures[0].exit_code == 23
 
-    async def session_removed() -> bool:
-        while await registry.active_sessions():
-            await asyncio.sleep(0)
-        return True
-
-    assert await asyncio.wait_for(session_removed(), timeout=1)
+    assert await registry.active_sessions() == []
 
 
 def test_hardware_saturation_falls_back_to_software_and_then_names_the_limit() -> None:
