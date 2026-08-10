@@ -1,7 +1,7 @@
 """Add filesystem scanner state to media files.
 
-Revision ID: 0013
-Revises: 0012
+Revision ID: 0016
+Revises: 0015
 """
 
 from __future__ import annotations
@@ -11,8 +11,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0013"
-down_revision: str | None = "0012"
+revision: str = "0016"
+down_revision: str | None = "0015"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
