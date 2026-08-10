@@ -160,6 +160,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/transcode/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Capabilities */
+        get: operations["admin_capabilities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/transcode/failures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recent Failures */
+        get: operations["admin_recent_failures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/transcode/limits": {
         parameters: {
             query?: never;
@@ -368,6 +402,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** CodecCapabilityResponse */
+        CodecCapabilityResponse: {
+            /** Codec */
+            codec: string;
+            /** Maximum Tested Resolution */
+            maximum_tested_resolution: string;
+        };
         /** ComponentHealth */
         ComponentHealth: {
             /** Detail */
@@ -483,6 +524,29 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HardwareCapabilitiesResponse */
+        HardwareCapabilitiesResponse: {
+            /** Methods */
+            methods: components["schemas"]["HardwareCapabilityResponse"][];
+            /** Nvidia Gpus */
+            nvidia_gpus: string[];
+            /** Rejections */
+            rejections: components["schemas"]["HardwareRejectionResponse"][];
+        };
+        /** HardwareCapabilityResponse */
+        HardwareCapabilityResponse: {
+            /** Acceleration */
+            acceleration: string;
+            /** Codecs */
+            codecs: components["schemas"]["CodecCapabilityResponse"][];
+        };
+        /** HardwareRejectionResponse */
+        HardwareRejectionResponse: {
+            /** Acceleration */
+            acceleration: string | null;
+            /** Reason */
+            reason: string;
         };
         /** HealthReport */
         HealthReport: {
@@ -622,8 +686,49 @@ export interface components {
             /** Scopes */
             scopes?: string[];
         };
+        /** TranscodeFailureResponse */
+        TranscodeFailureResponse: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Exit Code */
+            exit_code: number;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Mode */
+            mode: string;
+            /** Reason */
+            reason: string;
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
         /** TranscodeLimitResponse */
         TranscodeLimitResponse: {
+            /** Configured Hardware */
+            configured_hardware: number | null;
+            /** Configured Per User */
+            configured_per_user: number;
+            /** Configured Software */
+            configured_software: number | null;
+            /** Effective Hardware */
+            effective_hardware: number;
+            /** Effective Per User */
+            effective_per_user: number;
+            /** Effective Software */
+            effective_software: number;
             /** Hardware */
             hardware: number;
             /** Hardware In Use */
@@ -642,6 +747,10 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Elapsed Seconds */
+            elapsed_seconds: number;
+            /** Hardware */
+            hardware: boolean;
             /**
              * Id
              * Format: uuid
@@ -652,6 +761,8 @@ export interface components {
              * Format: uuid
              */
             media_id: string;
+            /** Media Title */
+            media_title: string | null;
             /** Mode */
             mode: string;
             /**
@@ -659,6 +770,8 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+            /** Username */
+            username: string | null;
         };
         /**
          * UserRole
@@ -1022,6 +1135,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_capabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HardwareCapabilitiesResponse"];
+                };
+            };
+        };
+    };
+    admin_recent_failures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscodeFailureResponse"][];
                 };
             };
         };

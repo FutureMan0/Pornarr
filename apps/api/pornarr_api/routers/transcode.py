@@ -2,30 +2,43 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from pornarr_api.auth import ForbiddenError, get_current_user, require_role
+from pornarr_api.auth import ForbiddenError, database_session, get_current_user, require_role
 from pornarr_api.errors import ErrorResponse
+from pornarr_db.models.media import Media
 from pornarr_db.models.user import User, UserRole
 from pornarr_media.capabilities import HardwareCapabilities
-from pornarr_media.sessions import TranscodeLimits, TranscodeSession, TranscodeSessionRegistry
+from pornarr_media.sessions import (
+    TranscodeFailure,
+    TranscodeLimits,
+    TranscodeSession,
+    TranscodeSessionRegistry,
+)
 
 router = APIRouter(prefix="/transcode", tags=["transcode"])
 admin_router = APIRouter(prefix="/admin/transcode", tags=["admin"])
 Admin = Annotated[User, Depends(require_role(UserRole.ADMIN))]
+Session = Annotated[AsyncSession, Depends(database_session)]
 
 
 class TranscodeSessionResponse(BaseModel):
     id: UUID
     user_id: UUID
     media_id: UUID
+    username: str | None
+    media_title: str | None
     mode: str
+    hardware: bool
     created_at: datetime
+    elapsed_seconds: int
 
 
 class TranscodeLimitResponse(BaseModel):
@@ -34,6 +47,43 @@ class TranscodeLimitResponse(BaseModel):
     per_user: int
     hardware_in_use: int
     software_in_use: int
+    configured_hardware: int | None
+    configured_software: int | None
+    configured_per_user: int
+    effective_hardware: int
+    effective_software: int
+    effective_per_user: int
+
+
+class CodecCapabilityResponse(BaseModel):
+    codec: str
+    maximum_tested_resolution: str
+
+
+class HardwareCapabilityResponse(BaseModel):
+    acceleration: str
+    codecs: list[CodecCapabilityResponse]
+
+
+class HardwareRejectionResponse(BaseModel):
+    acceleration: str | None
+    reason: str
+
+
+class HardwareCapabilitiesResponse(BaseModel):
+    methods: list[HardwareCapabilityResponse]
+    rejections: list[HardwareRejectionResponse]
+    nvidia_gpus: list[str]
+
+
+class TranscodeFailureResponse(BaseModel):
+    session_id: UUID
+    user_id: UUID
+    media_id: UUID
+    mode: str
+    exit_code: int
+    reason: str
+    created_at: datetime
 
 
 def get_registry(request: Request) -> TranscodeSessionRegistry:
@@ -46,13 +96,57 @@ def get_registry(request: Request) -> TranscodeSessionRegistry:
     return registry
 
 
-def session_response(session: TranscodeSession) -> TranscodeSessionResponse:
+def session_response(
+    session: TranscodeSession, usernames: dict[UUID, str], media_titles: dict[UUID, str]
+) -> TranscodeSessionResponse:
     return TranscodeSessionResponse(
         id=session.id,
         user_id=session.user_id,
         media_id=session.media_id,
+        username=usernames.get(session.user_id),
+        media_title=media_titles.get(session.media_id),
         mode=session.mode,
+        hardware=session.hardware,
         created_at=session.created_at,
+        elapsed_seconds=max(0, int((datetime.now(UTC) - session.created_at).total_seconds())),
+    )
+
+
+def capabilities_response(capabilities: HardwareCapabilities) -> HardwareCapabilitiesResponse:
+    return HardwareCapabilitiesResponse(
+        methods=[
+            HardwareCapabilityResponse(
+                acceleration=method.acceleration,
+                codecs=[
+                    CodecCapabilityResponse(
+                        codec=codec.codec,
+                        maximum_tested_resolution=codec.maximum_tested_resolution,
+                    )
+                    for codec in method.codecs
+                ],
+            )
+            for method in capabilities.methods
+        ],
+        rejections=[
+            HardwareRejectionResponse(
+                acceleration=rejection.acceleration,
+                reason=rejection.reason,
+            )
+            for rejection in capabilities.rejections
+        ],
+        nvidia_gpus=list(capabilities.nvidia_gpus),
+    )
+
+
+def failure_response(failure: TranscodeFailure) -> TranscodeFailureResponse:
+    return TranscodeFailureResponse(
+        session_id=failure.session_id,
+        user_id=failure.user_id,
+        media_id=failure.media_id,
+        mode=failure.mode,
+        exit_code=failure.exit_code,
+        reason=failure.reason,
+        created_at=failure.created_at,
     )
 
 
@@ -75,8 +169,23 @@ async def heartbeat(
 
 
 @admin_router.get("/sessions", response_model=list[TranscodeSessionResponse])
-async def list_sessions(request: Request, _: Admin) -> list[TranscodeSessionResponse]:
-    return [session_response(session) for session in await get_registry(request).active_sessions()]
+async def list_sessions(
+    request: Request, _: Admin, session: Session
+) -> list[TranscodeSessionResponse]:
+    sessions = await get_registry(request).active_sessions()
+    user_ids = {active_session.user_id for active_session in sessions}
+    media_ids = {active_session.media_id for active_session in sessions}
+    usernames = {
+        user.id: user.username
+        for user in await session.scalars(select(User).where(User.id.in_(user_ids)))
+    }
+    media_titles = {
+        media.id: media.title
+        for media in await session.scalars(select(Media).where(Media.id.in_(media_ids)))
+    }
+    return [
+        session_response(active_session, usernames, media_titles) for active_session in sessions
+    ]
 
 
 @admin_router.get("/limits", response_model=TranscodeLimitResponse)
@@ -94,7 +203,29 @@ async def limit_state(request: Request, _: Admin) -> TranscodeLimitResponse:
         per_user=limits.per_user,
         hardware_in_use=sum(session.hardware for session in sessions),
         software_in_use=sum(not session.hardware for session in sessions),
+        configured_hardware=request.app.state.settings.transcode_max_hw_sessions,
+        configured_software=request.app.state.settings.transcode_max_sw_sessions,
+        configured_per_user=request.app.state.settings.transcode_max_per_user,
+        effective_hardware=limits.hardware,
+        effective_software=limits.software,
+        effective_per_user=limits.per_user,
     )
+
+
+@admin_router.get("/capabilities", response_model=HardwareCapabilitiesResponse)
+async def capabilities(request: Request, _: Admin) -> HardwareCapabilitiesResponse:
+    return capabilities_response(
+        getattr(
+            request.app.state,
+            "hardware_capabilities",
+            HardwareCapabilities(methods=(), rejections=(), nvidia_gpus=()),
+        )
+    )
+
+
+@admin_router.get("/failures", response_model=list[TranscodeFailureResponse])
+async def recent_failures(request: Request, _: Admin) -> list[TranscodeFailureResponse]:
+    return [failure_response(failure) for failure in await get_registry(request).recent_failures()]
 
 
 @admin_router.delete(

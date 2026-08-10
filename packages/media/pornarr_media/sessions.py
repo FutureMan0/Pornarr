@@ -27,6 +27,9 @@ from pornarr_shared.errors import PornarrError
 SESSION_TTL_SECONDS = 60
 SESSION_RECORD_TTL_SECONDS = SESSION_TTL_SECONDS * 2
 SESSION_INDEX_KEY = "pornarr:transcode:sessions"
+FAILURE_RECORD_TTL_SECONDS = 7 * 24 * 60 * 60
+FAILURE_INDEX_KEY = "pornarr:transcode:failures"
+MAX_FAILURE_RECORDS = 20
 
 
 class RunningTranscode(Protocol):
@@ -52,6 +55,22 @@ class TranscodeSession:
     hardware: bool
     process_id: int
     created_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class TranscodeFailure:
+    session_id: UUID
+    user_id: UUID
+    media_id: UUID
+    mode: str
+    exit_code: int
+    created_at: datetime
+
+    @property
+    def reason(self) -> str:
+        if self.exit_code < 0:
+            return f"FFmpeg was terminated by signal {-self.exit_code}"
+        return f"FFmpeg exited with status {self.exit_code}"
 
 
 def session_key(session_id: UUID) -> str:
@@ -115,6 +134,7 @@ class TranscodeSessionRegistry:
         self._redis = redis
         self._transcode_path = transcode_path
         self._processes: dict[UUID, RunningTranscode] = {}
+        self._watchers: dict[UUID, asyncio.Task[None]] = {}
 
     async def register(
         self,
@@ -143,6 +163,10 @@ class TranscodeSessionRegistry:
         await self._redis.set(heartbeat_key(session_id), "1", ex=SESSION_TTL_SECONDS)
         await self._redis.sadd(SESSION_INDEX_KEY, str(session_id))
         self._processes[session_id] = transcode
+        if callable(getattr(transcode.process, "wait", None)):
+            self._watchers[session_id] = asyncio.create_task(
+                self._watch_process(session, transcode.process)
+            )
         return session
 
     async def get(self, session_id: UUID) -> TranscodeSession | None:
@@ -199,6 +223,25 @@ class TranscodeSessionRegistry:
                 expired += 1
         return expired
 
+    async def record_failure(self, session: TranscodeSession, *, exit_code: int) -> None:
+        failure = TranscodeFailure(
+            session_id=session.id,
+            user_id=session.user_id,
+            media_id=session.media_id,
+            mode=session.mode,
+            exit_code=exit_code,
+            created_at=datetime.now(UTC),
+        )
+        failures = [failure, *await self.recent_failures()]
+        await self._redis.set(
+            FAILURE_INDEX_KEY,
+            _serialize_failures(failures[:MAX_FAILURE_RECORDS]),
+            ex=FAILURE_RECORD_TTL_SECONDS,
+        )
+
+    async def recent_failures(self) -> list[TranscodeFailure]:
+        return _deserialize_failures(await self._redis.get(FAILURE_INDEX_KEY))
+
     async def _session_ids(self) -> AsyncIterator[UUID]:
         async for raw_session_id in self._redis.sscan_iter(SESSION_INDEX_KEY):
             try:
@@ -207,23 +250,36 @@ class TranscodeSessionRegistry:
                 await self._redis.srem(SESSION_INDEX_KEY, raw_session_id)
 
     async def _cleanup(self, session_id: UUID) -> None:
+        watcher = self._watchers.pop(session_id, None)
+        if watcher is not None and watcher is not asyncio.current_task():
+            watcher.cancel()
         transcode = self._processes.pop(session_id, None)
-        if transcode is not None:
-            await transcode.stop()
-        else:
-            session = await self._record(session_id)
-            if session is not None:
-                await asyncio.to_thread(
-                    _stop_orphaned_transcode,
-                    session.process_id,
-                    self._transcode_path / str(session_id),
-                )
-        await asyncio.to_thread(
-            shutil.rmtree, self._transcode_path / str(session_id), ignore_errors=True
-        )
+        session = await self._record(session_id) if transcode is None else None
         await self._redis.delete(session_key(session_id))
         await self._redis.delete(heartbeat_key(session_id))
         await self._redis.srem(SESSION_INDEX_KEY, str(session_id))
+        if transcode is not None:
+            await transcode.stop()
+        elif session is not None:
+            await asyncio.to_thread(
+                _stop_orphaned_transcode,
+                session.process_id,
+                self._transcode_path / str(session_id),
+            )
+        await asyncio.to_thread(
+            shutil.rmtree, self._transcode_path / str(session_id), ignore_errors=True
+        )
+
+    async def _watch_process(self, session: TranscodeSession, process: Any) -> None:
+        try:
+            exit_code = await process.wait()
+            if not isinstance(exit_code, int) or exit_code == 0:
+                return
+            await self.record_failure(session, exit_code=exit_code)
+            await self._cleanup(session.id)
+        finally:
+            if self._watchers.get(session.id) is asyncio.current_task():
+                self._watchers.pop(session.id, None)
 
 
 def _serialize(session: TranscodeSession) -> str:
@@ -266,6 +322,55 @@ def _deserialize(stored: str | None) -> TranscodeSession | None:
         )
     except (KeyError, TypeError, ValueError, json.JSONDecodeError):
         return None
+
+
+def _serialize_failures(failures: list[TranscodeFailure]) -> str:
+    return json.dumps(
+        [
+            {
+                "session_id": str(failure.session_id),
+                "user_id": str(failure.user_id),
+                "media_id": str(failure.media_id),
+                "mode": failure.mode,
+                "exit_code": failure.exit_code,
+                "created_at": failure.created_at.isoformat(),
+            }
+            for failure in failures
+        ]
+    )
+
+
+def _deserialize_failures(stored: str | None) -> list[TranscodeFailure]:
+    if stored is None:
+        return []
+    try:
+        data = json.loads(stored)
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(data, list):
+        return []
+    failures: list[TranscodeFailure] = []
+    for item in data:
+        try:
+            if not isinstance(item, dict):
+                continue
+            mode = item["mode"]
+            exit_code = item["exit_code"]
+            if not isinstance(mode, str) or not isinstance(exit_code, int):
+                continue
+            failures.append(
+                TranscodeFailure(
+                    session_id=UUID(item["session_id"]),
+                    user_id=UUID(item["user_id"]),
+                    media_id=UUID(item["media_id"]),
+                    mode=mode,
+                    exit_code=exit_code,
+                    created_at=datetime.fromisoformat(item["created_at"]),
+                )
+            )
+        except (KeyError, TypeError, ValueError):
+            continue
+    return failures
 
 
 def _stop_orphaned_transcode(process_id: int, directory: Path) -> None:
