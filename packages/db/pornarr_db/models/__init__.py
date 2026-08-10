@@ -36,6 +36,7 @@ from pornarr_db.models.release import ReleaseCache
 from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.models.settings import Setting
 from pornarr_db.models.statistics import PerformanceMeasurement, PerformanceMetric
+from pornarr_db.models.storage import DailyStorageUsage
 from pornarr_db.models.user import User, UserRole
 
 __all__ = [
@@ -48,6 +49,7 @@ __all__ = [
     "CustomFormatCondition",
     "CustomFormatField",
     "CustomFormatOperator",
+    "DailyStorageUsage",
     "DownloadClient",
     "DownloadHistory",
     "DownloadJob",

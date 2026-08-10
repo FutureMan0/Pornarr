@@ -18,6 +18,7 @@ from pornarr_api.lifespan import lifespan
 from pornarr_api.middleware import RequestIdMiddleware
 from pornarr_api.routers.account import oidc_router as account_oidc_router
 from pornarr_api.routers.account import router as account_router
+from pornarr_api.routers.account_storage import router as account_storage_router
 from pornarr_api.routers.admin_audit import router as admin_audit_router
 from pornarr_api.routers.admin_download_clients import router as admin_download_clients_router
 from pornarr_api.routers.admin_indexers import router as admin_indexers_router
@@ -61,6 +62,7 @@ api_router.include_router(auth_oidc_router)
 api_router.include_router(account_router)
 api_router.include_router(account_oidc_router)
 api_router.include_router(admin_download_clients_router)
+api_router.include_router(account_storage_router)
 api_router.include_router(admin_oidc_router)
 api_router.include_router(admin_audit_router)
 api_router.include_router(admin_indexers_router)
