@@ -60,6 +60,8 @@ class Settings(BaseSettings):
     default_max_auto_jobs: int = Field(default=2, ge=0)
     default_auto_downloads_enabled: bool = False
 
+    oidc_allow_private_issuers: bool = False
+
     log_level: Literal["debug", "info", "warning", "error"] = "info"
 
     @field_validator("app_secret")

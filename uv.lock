@@ -503,6 +503,7 @@ source = { editable = "apps/api" }
 dependencies = [
     { name = "argon2-cffi" },
     { name = "fastapi" },
+    { name = "httpcore" },
     { name = "httpx" },
     { name = "pornarr-core" },
     { name = "pornarr-db" },
@@ -517,6 +518,7 @@ dependencies = [
 requires-dist = [
     { name = "argon2-cffi", specifier = ">=23.1" },
     { name = "fastapi", specifier = ">=0.115" },
+    { name = "httpcore", specifier = ">=1.0" },
     { name = "httpx", specifier = ">=0.28" },
     { name = "pornarr-core", editable = "packages/core" },
     { name = "pornarr-db", editable = "packages/db" },

@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
+from typing import cast
 from uuid import UUID
 
+import httpcore
 import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import hash_password
-from pornarr_api.oidc import OidcDiscoveryError, discover
+from pornarr_api.oidc import GuardedNetworkBackend, OidcDiscoveryError, discover, normalise_issuer
 from pornarr_db.models.oidc import OidcProvider
 from pornarr_db.models.user import User, UserRole
 from pornarr_db.types import set_cipher
@@ -19,6 +22,23 @@ from tests.api.test_app import SECRET
 from tests.api.test_auth import csrf_headers, login
 
 pytest_plugins = ("tests.api.test_auth",)
+
+
+class RecordingNetworkBackend(httpcore.AsyncNetworkBackend):
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+        self.stream = cast(httpcore.AsyncNetworkStream, object())
+
+    async def connect_tcp(self, host: str, *_: object, **__: object) -> httpcore.AsyncNetworkStream:
+        self.calls.append(host)
+        return self.stream
+
+    async def connect_unix_socket(self, *_: object, **__: object) -> httpcore.AsyncNetworkStream:
+        raise AssertionError("OIDC discovery must not use a Unix socket")
+
+    async def sleep(self, seconds: float) -> None:
+        _ = seconds
+        raise AssertionError("OIDC discovery does not retry connections")
 
 
 @pytest.fixture(autouse=True)
@@ -82,6 +102,25 @@ async def test_regular_users_cannot_manage_providers(app, client) -> None:
     assert response.status_code == 403
 
 
+@pytest.mark.parametrize("issuer", ["http://issuer.example", "https://issuer.example?next=bad"])
+async def test_admin_cannot_store_an_unsafe_issuer(app, client, issuer: str) -> None:
+    admin = await create_admin(app)
+    await login(client, admin.username, "correct horse battery staple")
+
+    response = await client.post(
+        "/api/admin/oidc",
+        json={
+            "name": "unsafe",
+            "issuer": issuer,
+            "client_id": "client-id",
+            "client_secret": "secret-value",
+        },
+        headers=csrf_headers(client),
+    )
+
+    assert response.status_code == 422
+
+
 async def test_connection_test_caches_the_discovery_document(app, client, monkeypatch) -> None:
     admin = await create_admin(app)
     await login(client, admin.username, "correct horse battery staple")
@@ -96,7 +135,7 @@ async def test_connection_test_caches_the_discovery_document(app, client, monkey
         headers=csrf_headers(client),
     )
 
-    async def fake_discover(_: str) -> dict[str, str]:
+    async def fake_discover(_: str, **__: object) -> dict[str, str]:
         return {
             "issuer": "https://issuer.example",
             "authorization_endpoint": "https://issuer.example/authorize",
@@ -126,51 +165,119 @@ async def test_discovery_validates_the_document(monkeypatch) -> None:
         "jwks_uri": "https://issuer.example/jwks",
     }
 
-    class Response:
-        def raise_for_status(self) -> None:
-            return None
-
-        def json(self) -> dict[str, str]:
-            return document
-
-    class Client:
-        async def __aenter__(self) -> Client:
+    class Pool:
+        async def __aenter__(self) -> Pool:
             return self
 
         async def __aexit__(self, *_: object) -> None:
             return None
 
-        async def get(self, url: str) -> Response:
+        async def request(self, _: str, url: str, **__: object) -> object:
             assert url == "https://issuer.example/.well-known/openid-configuration"
-            return Response()
+            return type("Response", (), {"status": 200, "content": json.dumps(document).encode()})()
 
-    monkeypatch.setattr("pornarr_api.oidc.httpx.AsyncClient", lambda **_: Client())
+    monkeypatch.setattr("pornarr_api.oidc.httpcore.AsyncConnectionPool", lambda **_: Pool())
 
     assert await discover("https://issuer.example/") == document
 
 
 async def test_discovery_rejects_an_invalid_document(monkeypatch) -> None:
-    class Response:
-        def raise_for_status(self) -> None:
-            return None
-
-        def json(self) -> dict[str, str]:
-            return {"issuer": "https://wrong.example"}
-
-    class Client:
-        async def __aenter__(self) -> Client:
+    class Pool:
+        async def __aenter__(self) -> Pool:
             return self
 
         async def __aexit__(self, *_: object) -> None:
             return None
 
-        async def get(self, _: str) -> Response:
-            return Response()
+        async def request(self, *_: object, **__: object) -> object:
+            return type(
+                "Response", (), {"status": 200, "content": b'{"issuer": "https://wrong.example"}'}
+            )()
 
-    monkeypatch.setattr("pornarr_api.oidc.httpx.AsyncClient", lambda **_: Client())
+    monkeypatch.setattr("pornarr_api.oidc.httpcore.AsyncConnectionPool", lambda **_: Pool())
 
     with pytest.raises(OidcDiscoveryError):
         await discover("https://issuer.example")
+
+
+@pytest.mark.parametrize(
+    "issuer",
+    [
+        "http://issuer.example",
+        "https://user:password@issuer.example",
+        "https://issuer.example?",
+        "https://issuer.example?next=https://other.example",
+        "https://issuer.example#",
+        "https://issuer.example#fragment",
+    ],
+)
+def test_discovery_rejects_unsafe_issuer_urls(issuer: str) -> None:
+    with pytest.raises(OidcDiscoveryError):
+        normalise_issuer(issuer)
+
+
+async def test_discovery_network_backend_blocks_private_ip_literals() -> None:
+    delegate = RecordingNetworkBackend()
+
+    backend = GuardedNetworkBackend(
+        allow_private_issuers=False,
+        resolver=lambda host, port: (host,),
+        backend=delegate,
+    )
+
+    with pytest.raises(httpcore.ConnectError):
+        await backend.connect_tcp("127.0.0.1", 443)
+
+    assert delegate.calls == []
+
+
+async def test_discovery_network_backend_connects_to_a_validated_public_dns_result() -> None:
+    delegate = RecordingNetworkBackend()
+
+    backend = GuardedNetworkBackend(
+        allow_private_issuers=False,
+        resolver=lambda _host, _port: ("127.0.0.1", "93.184.216.34"),
+        backend=delegate,
+    )
+
+    assert await backend.connect_tcp("issuer.example", 443) is delegate.stream
+    assert delegate.calls == ["93.184.216.34"]
+
+
+async def test_discovery_network_backend_allows_private_ips_only_when_opted_in() -> None:
+    delegate = RecordingNetworkBackend()
+
+    backend = GuardedNetworkBackend(
+        allow_private_issuers=True,
+        resolver=lambda _host, _port: ("127.0.0.1",),
+        backend=delegate,
+    )
+
+    await backend.connect_tcp("issuer.example", 443)
+
+    assert delegate.calls == ["127.0.0.1"]
+
+
+async def test_discovery_rejects_redirects_without_following_them(monkeypatch) -> None:
+    requests: list[str] = []
+
+    class Pool:
+        async def __aenter__(self) -> Pool:
+            return self
+
+        async def __aexit__(self, *_: object) -> None:
+            return None
+
+        async def request(self, _: str, url: str, **__: object) -> object:
+            requests.append(url)
+            return type("Response", (), {"status": 302, "content": b""})()
+
+    monkeypatch.setattr("pornarr_api.oidc.httpcore.AsyncConnectionPool", lambda **_: Pool())
+
+    with pytest.raises(OidcDiscoveryError):
+        await discover("https://issuer.example")
+
+    assert requests == ["https://issuer.example/.well-known/openid-configuration"]
 
 
 async def test_missing_provider_returns_not_found(app, client) -> None:
