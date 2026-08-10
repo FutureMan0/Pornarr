@@ -209,6 +209,88 @@ def test_trigram_similarity_uses_the_media_title_index(clean_database: None) -> 
     assert "ix_media_normalized_title_trgm" in "\n".join(row[0] for row in plan)
 
 
+def test_download_queue_uses_the_status_priority_index(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        connection.execute("SET enable_seqscan = off")
+        plan = connection.execute(
+            "EXPLAIN (COSTS OFF) "
+            "SELECT id FROM download_jobs WHERE status = 'queued' ORDER BY priority"
+        ).fetchall()
+
+    assert "ix_download_jobs_queue" in "\n".join(row[0] for row in plan)
+
+
+def test_removing_download_client_and_job_preserves_history(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        client_id = "c342b6a0-c750-403d-8dbb-9c57483354a3"
+        job_id = "2780a5c0-a99d-4b3c-952f-7252651ac801"
+        history_id = "4bd4916e-466b-4e2d-b77b-3714c386e09d"
+        connection.execute(
+            "INSERT INTO download_clients "
+            "(id, name, protocol, implementation, host, port, url_base, credentials, health) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (
+                client_id,
+                "Primary",
+                "usenet",
+                "sabnzbd",
+                "sab.example",
+                8080,
+                "",
+                "ciphertext",
+                "healthy",
+            ),
+        )
+        connection.execute(
+            "INSERT INTO download_jobs "
+            "(id, download_client_id, client_name, protocol, release_guid, client_job_id, status) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (job_id, client_id, "Primary", "usenet", "release-guid", "SABnzbd_nzo", "failed"),
+        )
+        connection.execute(
+            "INSERT INTO download_history "
+            "(id, download_job_id, client_name, client_job_id, protocol, release_guid, status, error) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+            (
+                history_id,
+                job_id,
+                "Primary",
+                "SABnzbd_nzo",
+                "usenet",
+                "release-guid",
+                "failed",
+                "download failed",
+            ),
+        )
+        connection.execute("DELETE FROM download_clients WHERE id = %s", (client_id,))
+        job = connection.execute(
+            "SELECT download_client_id, client_name, release_guid FROM download_jobs WHERE id = %s",
+            (job_id,),
+        ).fetchone()
+        connection.execute("DELETE FROM download_jobs WHERE id = %s", (job_id,))
+        history = connection.execute(
+            "SELECT download_job_id, client_name, client_job_id, protocol, release_guid, status, error "
+            "FROM download_history WHERE id = %s",
+            (history_id,),
+        ).fetchone()
+        connection.commit()
+
+    assert job == (None, "Primary", "release-guid")
+    assert history == (
+        None,
+        "Primary",
+        "SABnzbd_nzo",
+        "usenet",
+        "release-guid",
+        "failed",
+        "download failed",
+    )
+
+
 def test_autogenerate_reports_no_drift(clean_database: None) -> None:
     """The models and the migration history must agree. When they do not, someone
     changed a model without writing a migration and the next deployment fails."""
