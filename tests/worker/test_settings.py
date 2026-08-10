@@ -37,7 +37,10 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         INDEXER_QUEUE,
     ]
     assert all(worker.job_completion_wait == JOB_COMPLETION_WAIT_SECONDS for worker in worker_types)
-    assert settings.WorkerSettings.functions[0].name == "heartbeat"
+    assert [function.name for function in settings.WorkerSettings.functions] == [
+        "heartbeat",
+        "cleanup_transcodes",
+    ]
     assert settings.TranscodeWorkerSettings.functions[0].name == "generate_preview_sprite_job"
     required_arq_options = {
         "functions",
@@ -49,4 +52,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "job_completion_wait",
     }
     assert all(required_arq_options <= worker.__dict__.keys() for worker in worker_types)
-    assert settings.SchedulerSettings.cron_jobs[0].name == "heartbeat"
+    assert [cron_job.name for cron_job in settings.SchedulerSettings.cron_jobs] == [
+        "heartbeat",
+        "cleanup_transcodes",
+    ]

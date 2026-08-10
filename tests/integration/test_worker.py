@@ -5,6 +5,9 @@ from __future__ import annotations
 import asyncio
 import os
 import signal
+import time
+from dataclasses import dataclass
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -13,9 +16,24 @@ from arq.connections import RedisSettings, create_pool
 from arq.worker import func
 
 import pornarr_shared.jobs as jobs
+from pornarr_media.sessions import TranscodeSessionRegistry
+from pornarr_shared.config import Settings
 from pornarr_shared.jobs import enqueue_once, job
 
 pytestmark = pytest.mark.integration
+
+
+@dataclass
+class _FakeProcess:
+    pid: int = 1
+
+
+@dataclass
+class _FakeTranscode:
+    process: _FakeProcess
+
+    async def stop(self) -> None:
+        return None
 
 
 @pytest.fixture
@@ -116,3 +134,37 @@ async def test_sigterm_waits_for_an_in_flight_job(redis_pool) -> None:
 
     assert worker.allow_pick_jobs is False
     assert completed.is_set()
+
+
+async def test_transcode_cleanup_job_reads_live_sessions_from_redis(
+    redis_pool, monkeypatch, tmp_path: Path
+) -> None:
+    import pornarr_worker.cleanup as cleanup
+
+    settings = Settings(
+        app_secret="a" * 32,
+        database_url="postgresql+asyncpg://pornarr:pornarr@localhost/pornarr",
+        redis_url="redis://localhost:6379/7",
+        data_path=tmp_path,
+        transcode_cleanup_min_age_seconds=300,
+        transcode_cache_max_gb=1,
+    )
+    monkeypatch.setattr(cleanup, "get_settings", lambda: settings)
+    registry = TranscodeSessionRegistry(redis_pool, settings.transcode_path)
+    active_id = uuid4()
+    active_path = settings.transcode_path / str(active_id)
+    active_path.mkdir(parents=True)
+    await registry.register(active_id, uuid4(), uuid4(), "hls", _FakeTranscode(_FakeProcess()))
+    orphan_path = settings.transcode_path / str(uuid4())
+    orphan_path.mkdir()
+    (orphan_path / "segment_00000.ts").write_bytes(b"orphan")
+    old = time.time() - 600
+    os.utime(orphan_path, (old, old))
+
+    try:
+        result = await cleanup.cleanup_transcodes({"redis": redis_pool})
+        assert active_path.exists()
+        assert not orphan_path.exists()
+        assert result["removed_directories"] == 1
+    finally:
+        await registry.terminate(active_id)

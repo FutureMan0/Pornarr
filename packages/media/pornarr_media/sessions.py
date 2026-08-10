@@ -172,6 +172,16 @@ class TranscodeSessionRegistry:
                 sessions.append(session)
         return sorted(sessions, key=lambda session: session.created_at)
 
+    async def live_sessions(self) -> list[TranscodeSession]:
+        """Return heartbeat-backed sessions without changing their lifecycle."""
+
+        sessions: list[TranscodeSession] = []
+        async for session_id in self._session_ids():
+            session = await self.get(session_id)
+            if session is not None:
+                sessions.append(session)
+        return sorted(sessions, key=lambda session: session.created_at)
+
     async def select_mode(self, user_id: UUID, limits: TranscodeLimits) -> TranscodeMode:
         return choose_transcode_mode(await self.active_sessions(), user_id, limits)
 

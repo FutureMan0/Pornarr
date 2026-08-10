@@ -52,6 +52,8 @@ class Settings(BaseSettings):
     transcode_max_hw_sessions: int | None = None
     transcode_max_sw_sessions: int | None = None
     transcode_max_per_user: int = Field(default=2, ge=1)
+    transcode_cleanup_min_age_seconds: int = Field(default=300, ge=1)
+    transcode_cache_max_gb: int = Field(default=10, ge=1)
 
     min_free_disk_percent: int = Field(default=15, ge=0, le=99)
     default_daily_download_limit_gb: int = Field(default=10, ge=0)
@@ -107,6 +109,10 @@ class Settings(BaseSettings):
     @property
     def transcode_path(self) -> Path:
         return self.data_path / "transcodes"
+
+    @property
+    def transcode_cache_max_bytes(self) -> int:
+        return self.transcode_cache_max_gb * 1024**3
 
 
 def load_settings() -> Settings:
