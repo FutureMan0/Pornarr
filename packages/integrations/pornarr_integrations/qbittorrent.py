@@ -6,27 +6,11 @@ import json
 from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from enum import StrEnum
 from typing import Final
 
 import httpx
 
-
-class DownloadState(StrEnum):
-    """Internal download states qBittorrent can report."""
-
-    CHECKING = "checking"
-    COMPLETED = "completed"
-    DOWNLOADING = "downloading"
-    FAILED = "failed"
-    METADATA = "metadata"
-    MOVING = "moving"
-    PAUSED = "paused"
-    QUEUED = "queued"
-    SEEDING = "seeding"
-    STALLED = "stalled"
-    UNKNOWN = "unknown"
-
+from pornarr_integrations.downloaders import DownloadState
 
 QBITTORRENT_STATE_MAP: Final[dict[str, DownloadState]] = {
     "error": DownloadState.FAILED,
