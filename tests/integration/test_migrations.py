@@ -10,7 +10,9 @@ from __future__ import annotations
 import os
 import subprocess
 from collections.abc import Iterator
+from json import dumps
 from pathlib import Path
+from uuid import uuid4
 
 import psycopg
 import pytest
@@ -82,6 +84,43 @@ def test_pg_trgm_is_available_after_upgrade(clean_database: None) -> None:
     assert installed is not None
     assert similarity is not None
     assert 0.0 <= similarity[0] <= 1.0
+
+
+def test_local_search_uses_its_trigram_index_within_200ms(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+    media_rows = [
+        (uuid4(), f"Other Scene {number}", f"other scene {number}") for number in range(10_000)
+    ]
+    file_rows = [
+        (uuid4(), media_id, f"/library/{media_id}.mp4", 1_000_000) for media_id, _, _ in media_rows
+    ]
+    media_rows.append((uuid4(), "Summer Nites", "summer nites"))
+    file_rows.append((uuid4(), media_rows[-1][0], "/library/summer-nites.mp4", 1_000_000))
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        with connection.cursor() as cursor:
+            cursor.executemany(
+                "INSERT INTO media (id, title, normalized_title) VALUES (%s, %s, %s)", media_rows
+            )
+            cursor.executemany(
+                "INSERT INTO media_files (id, media_id, path, size) VALUES (%s, %s, %s, %s)",
+                file_rows,
+            )
+        connection.execute("ANALYZE media")
+        connection.execute("SELECT set_config('pg_trgm.similarity_threshold', '0.2', true)")
+        plan_row = connection.execute(
+            """EXPLAIN (ANALYZE, FORMAT JSON)
+            SELECT media.id
+            FROM media
+            WHERE media.normalized_title % 'summer nites'
+            ORDER BY media.normalized_title <-> 'summer nites', media.id
+            LIMIT 50"""
+        ).fetchone()
+
+    assert plan_row is not None
+    plan = plan_row[0][0]
+    assert "ix_media_normalized_title_trgm_knn" in dumps(plan)
+    assert plan["Execution Time"] < 200
 
 
 def test_filter_migration_seeds_one_disabled_global_profile(clean_database: None) -> None:

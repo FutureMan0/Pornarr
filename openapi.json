@@ -1,3 +1,12 @@
+   [36m[1mBuilding[0m[39m pornarr-api[2m @ file:///E:/Projects/Pornarr/apps/api[0m
+   [36m[1mBuilding[0m[39m pornarr-integrations[2m @ file:///E:/Projects/Pornarr/packages/integrations[0m
+      [32m[1mBuilt[0m[39m pornarr-integrations[2m @ file:///E:/Projects/Pornarr/packages/integrations[0m
+      [32m[1mBuilt[0m[39m pornarr-api[2m @ file:///E:/Projects/Pornarr/apps/api[0m
+[2mUninstalled [1m2 packages[0m [2min 33ms[0m[0m
+[1m[33mwarning[39m[0m[1m:[0m [1mFailed to hardlink files; falling back to full copy. This may lead to degraded performance.
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.[0m
+[2mInstalled [1m2 packages[0m [2min 25ms[0m[0m
 {
   "components": {
     "schemas": {
@@ -593,6 +602,140 @@
         "title": "IndexerWrite",
         "type": "object"
       },
+      "LocalSearchItem": {
+        "properties": {
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "performers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Performers",
+            "type": "array"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality"
+          },
+          "release_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Date"
+          },
+          "relevance": {
+            "title": "Relevance",
+            "type": "number"
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          },
+          "studio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Studio"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "studio",
+          "release_date",
+          "quality",
+          "resolution",
+          "size",
+          "duration_seconds",
+          "performers",
+          "tags",
+          "relevance"
+        ],
+        "title": "LocalSearchItem",
+        "type": "object"
+      },
+      "LocalSearchResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LocalSearchItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "LocalSearchResponse",
+        "type": "object"
+      },
       "LoginRequest": {
         "properties": {
           "password": {
@@ -614,6 +757,17 @@
         ],
         "title": "LoginRequest",
         "type": "object"
+      },
+      "MediaSort": {
+        "enum": [
+          "relevance",
+          "date_added",
+          "title",
+          "size",
+          "duration"
+        ],
+        "title": "MediaSort",
+        "type": "string"
       },
       "PlaybackInfoResponse": {
         "properties": {
@@ -1986,6 +2140,203 @@
         "summary": "Stream",
         "tags": [
           "playback"
+        ]
+      }
+    },
+    "/api/search/local": {
+      "get": {
+        "operationId": "search_local_search",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "maxLength": 512,
+              "minLength": 1,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "quality",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Quality"
+            }
+          },
+          {
+            "in": "query",
+            "name": "year",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 9999,
+                  "minimum": 1900,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "in": "query",
+            "name": "studio",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Studio"
+            }
+          },
+          {
+            "in": "query",
+            "name": "performer",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Performer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag"
+            }
+          },
+          {
+            "in": "query",
+            "name": "minimum_duration_seconds",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Minimum Duration Seconds"
+            }
+          },
+          {
+            "in": "query",
+            "name": "maximum_duration_seconds",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Maximum Duration Seconds"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/MediaSort",
+              "default": "relevance"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalSearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Local Search",
+        "tags": [
+          "search"
         ]
       }
     },
