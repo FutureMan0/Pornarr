@@ -73,8 +73,11 @@ class MediaFile(TimestampMixin, Base):
     media_id: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("media.id", ondelete="CASCADE"), nullable=False
     )
-    path: Mapped[str] = mapped_column(String(1024), nullable=False)
+    path: Mapped[str] = mapped_column(String(1024), unique=True, nullable=False)
     size: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    modified_at_ns: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, default=0, server_default="0"
+    )
     codecs: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
     resolution: Mapped[str | None] = mapped_column(String(32), nullable=True)
     duration_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -88,6 +91,9 @@ class MediaFile(TimestampMixin, Base):
     oshash: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
+    )
+    is_missing: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
     )
     media: Mapped[Media] = relationship(back_populates="files")
 
