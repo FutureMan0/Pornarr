@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import json
+from contextlib import asynccontextmanager
+from uuid import UUID, uuid4
 
+from pornarr_db.models.indexer import Indexer, IndexerStats
 from pornarr_integrations.indexers import IndexerCategory, Release
 from pornarr_worker import search
 from pornarr_worker.search import SearchTarget, read_search_state, run_search
@@ -17,6 +20,22 @@ class Redis:
 
     async def get(self, key: str) -> str | None:
         return self.values.get(key)
+
+    async def delete(self, *keys: str) -> int:
+        deleted = 0
+        for key in keys:
+            if key in self.values:
+                del self.values[key]
+                deleted += 1
+        return deleted
+
+    async def incr(self, key: str) -> int:
+        value = int(self.values.get(key, "0")) + 1
+        self.values[key] = str(value)
+        return value
+
+    async def expire(self, _: str, seconds: int) -> bool:
+        return seconds > 0
 
     async def set(self, key: str, value: str, *, ex: int) -> bool:
         self.values[key] = value
@@ -79,7 +98,7 @@ async def test_cancelling_a_search_job_stops_pending_requests(monkeypatch) -> No
     adapter = Adapter(10)
     targets = [SearchTarget("slow", "https://slow", "key", adapter)]
 
-    async def configured_targets() -> list[SearchTarget]:
+    async def configured_targets(_: Redis) -> list[SearchTarget]:
         return targets
 
     monkeypatch.setattr(search, "configured_targets", configured_targets)
@@ -101,3 +120,76 @@ async def test_cancelling_a_search_job_stops_pending_requests(monkeypatch) -> No
     assert state.statuses == {"slow": "cancelled"}
     assert adapter.cancelled is True
     assert redis.events[-1] == ("indexer.search.cancelled", {"search_id": "search-2"})
+
+
+async def test_unhealthy_indexers_are_reported_without_a_request() -> None:
+    redis = Redis()
+
+    state = await run_search(
+        redis,
+        search_id="search-3",
+        user_id="user-1",
+        query="example",
+        targets=[SearchTarget("unhealthy", "https://down", "key", None, "unhealthy")],
+    )
+
+    assert state.statuses == {"unhealthy": "unhealthy"}
+    assert redis.events == [
+        (
+            "indexer.search.completed",
+            {
+                "search_id": "search-3",
+                "indexer_id": "unhealthy",
+                "status": "unhealthy",
+                "results": [],
+            },
+        )
+    ]
+
+
+async def test_worker_outcomes_persist_failure_health_and_redacted_error(monkeypatch) -> None:
+    indexer_id = uuid4()
+    indexer = Indexer(
+        id=indexer_id,
+        name="example",
+        protocol="torznab",
+        implementation="torznab",
+        base_url="https://indexer.example",
+        api_key="secret-key",
+        health="healthy",
+    )
+    stats = IndexerStats(indexer_id=indexer_id, queries=0, failures=0, grabs=0)
+
+    class Session:
+        async def get(self, model: type[object], value: UUID) -> Indexer | IndexerStats | None:
+            if value != indexer_id:
+                return None
+            return indexer if model is Indexer else stats if model is IndexerStats else None
+
+    @asynccontextmanager
+    async def session_scope():
+        yield Session()
+
+    monkeypatch.setattr(search, "session_scope", session_scope)
+    redis = Redis()
+    for _ in range(3):
+        await search.record_search_outcome(
+            redis,
+            str(indexer_id),
+            "timed_out",
+            TimeoutError("secret-key timed out"),
+        )
+
+    assert stats.queries == 3
+    assert stats.failures == 3
+    assert indexer.health == "unhealthy"
+    assert indexer.health_reason == "timeout"
+    assert indexer.last_error == "[redacted] timed out"
+
+    await search.record_search_outcome(redis, str(indexer_id), "completed", None)
+
+    assert stats.queries == 4
+    assert stats.failures == 3
+    assert indexer.health == "healthy"
+    assert indexer.health_reason is None
+    assert indexer.last_error is None

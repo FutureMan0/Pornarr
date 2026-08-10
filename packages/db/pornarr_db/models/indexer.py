@@ -27,6 +27,7 @@ class Indexer(TimestampMixin, Base):
         Boolean, nullable=False, default=True, server_default="true"
     )
     health: Mapped[str] = mapped_column(String(32), nullable=False, default="unknown")
+    health_reason: Mapped[str | None] = mapped_column(String(32), nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     last_tested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

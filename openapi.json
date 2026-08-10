@@ -440,6 +440,17 @@
             "title": "Health",
             "type": "string"
           },
+          "health_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Reason"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -498,6 +509,7 @@
           "priority",
           "enabled",
           "health",
+          "health_reason",
           "last_error",
           "last_tested_at",
           "stats"
@@ -1501,6 +1513,49 @@
           }
         },
         "summary": "Delete Indexer",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/indexers/{indexer_id}/reset": {
+      "post": {
+        "operationId": "admin_reset_indexer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "indexer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Indexer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset Indexer",
         "tags": [
           "admin"
         ]

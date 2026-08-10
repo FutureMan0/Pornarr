@@ -91,6 +91,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/indexers/{indexer_id}/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset Indexer */
+        post: operations["admin_reset_indexer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/indexers/{indexer_id}/test": {
         parameters: {
             query?: never;
@@ -659,6 +676,8 @@ export interface components {
             enabled: boolean;
             /** Health */
             health: string;
+            /** Health Reason */
+            health_reason: string | null;
             /**
              * Id
              * Format: uuid
@@ -1161,6 +1180,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_reset_indexer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                indexer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndexerResponse"];
+                };
             };
             /** @description Validation Error */
             422: {

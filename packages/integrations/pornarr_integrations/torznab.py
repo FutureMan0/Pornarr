@@ -8,6 +8,7 @@ from xml.etree import ElementTree
 
 import httpx
 
+from pornarr_integrations.health import IndexerFailure
 from pornarr_integrations.indexers import IndexerCategory, Release
 from pornarr_shared.errors import PornarrError
 
@@ -17,6 +18,12 @@ REQUEST_TIMEOUT_SECONDS = 10
 class TorznabResponseError(PornarrError):
     code = "TORZNAB_RESPONSE_INVALID"
     status = 502
+
+    def __init__(
+        self, message: str, *, failure: IndexerFailure = IndexerFailure.MALFORMED_RESPONSE
+    ) -> None:
+        super().__init__(message)
+        self.failure = failure
 
 
 class TorznabAdapter:
@@ -34,8 +41,26 @@ class TorznabAdapter:
                 )
                 response.raise_for_status()
                 return response.text
+        except httpx.HTTPStatusError as error:
+            failure = (
+                IndexerFailure.AUTHENTICATION
+                if error.response.status_code in (401, 403)
+                else IndexerFailure.TRANSIENT
+            )
+            message = (
+                "The Torznab authentication failed."
+                if failure is IndexerFailure.AUTHENTICATION
+                else "The Torznab request failed."
+            )
+            raise TorznabResponseError(message, failure=failure) from error
+        except httpx.TimeoutException as error:
+            raise TorznabResponseError(
+                "The Torznab request timed out.", failure=IndexerFailure.TIMEOUT
+            ) from error
         except httpx.HTTPError as error:
-            raise TorznabResponseError("The Torznab request failed.") from error
+            raise TorznabResponseError(
+                "The Torznab request failed.", failure=IndexerFailure.TRANSIENT
+            ) from error
 
 
 def parse_capabilities(document: str) -> list[IndexerCategory]:

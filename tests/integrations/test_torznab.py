@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+import httpx
 import pytest
 
-from pornarr_integrations.torznab import TorznabResponseError, parse_capabilities, parse_results
+from pornarr_integrations.health import IndexerFailure
+from pornarr_integrations.torznab import (
+    TorznabAdapter,
+    TorznabResponseError,
+    parse_capabilities,
+    parse_results,
+)
 
 
 def test_capabilities_and_torrent_attributes_parse_without_defaulting_missing_values() -> None:
@@ -46,3 +53,24 @@ def test_malformed_or_incomplete_results_raise_structured_errors() -> None:
 
     assert malformed.value.code == "TORZNAB_RESPONSE_INVALID"
     assert incomplete.value.code == "TORZNAB_RESPONSE_INVALID"
+    assert malformed.value.failure is IndexerFailure.MALFORMED_RESPONSE
+
+
+async def test_authentication_response_is_not_classified_as_transient(monkeypatch) -> None:
+    class Client:
+        async def __aenter__(self) -> Client:
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            return None
+
+        async def get(self, *args: object, **kwargs: object) -> httpx.Response:
+            return httpx.Response(401, request=httpx.Request("GET", "https://indexer.example"))
+
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **_: Client())
+
+    with pytest.raises(TorznabResponseError) as error:
+        await TorznabAdapter()._request("https://indexer.example", "key", {"t": "caps"})
+
+    assert error.value.failure is IndexerFailure.AUTHENTICATION
+    assert str(error.value) == "The Torznab authentication failed."

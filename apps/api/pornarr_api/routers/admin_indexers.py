@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pornarr_api.auth import database_session, require_role
 from pornarr_db.models.indexer import Indexer, IndexerStats
 from pornarr_db.models.user import User, UserRole
+from pornarr_integrations.health import CircuitBreaker, failure_for
 from pornarr_integrations.indexers import IndexerAdapter
 from pornarr_shared.errors import PornarrError
 
@@ -54,6 +55,7 @@ class IndexerResponse(BaseModel):
     priority: int
     enabled: bool
     health: str
+    health_reason: str | None
     last_error: str | None
     last_tested_at: datetime | None
     stats: IndexerStatsResponse
@@ -70,6 +72,7 @@ def indexer_response(indexer: Indexer, stats: IndexerStats) -> IndexerResponse:
         priority=indexer.priority,
         enabled=indexer.enabled,
         health=indexer.health,
+        health_reason=indexer.health_reason,
         last_error=indexer.last_error,
         last_tested_at=indexer.last_tested_at,
         stats=IndexerStatsResponse(
@@ -155,14 +158,27 @@ async def test_indexer(
     except Exception as error:
         reason = safe_reason(error, indexer.api_key)
         indexer.health = "unhealthy"
+        indexer.health_reason = failure_for(error).value
         indexer.last_error = reason
         indexer.last_tested_at = datetime.now(UTC)
         await session.commit()
         raise IndexerConnectionError("The indexer connection failed.", reason=reason) from error
     indexer.categories = [{"id": category.id, "name": category.name} for category in categories]
     indexer.health = "healthy"
+    indexer.health_reason = None
     indexer.last_error = None
     indexer.last_tested_at = datetime.now(UTC)
+    return indexer_response(indexer, await stats_for(session, indexer.id))
+
+
+@router.post("/{indexer_id}/reset", response_model=IndexerResponse)
+async def reset_indexer(
+    indexer_id: UUID, request: Request, _: Admin, session: Session
+) -> IndexerResponse:
+    indexer = await indexer_or_404(session, indexer_id)
+    indexer.health = (await CircuitBreaker(request.app.state.redis).reset(str(indexer.id))).value
+    indexer.health_reason = None
+    indexer.last_error = None
     return indexer_response(indexer, await stats_for(session, indexer.id))
 
 
