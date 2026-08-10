@@ -1,7 +1,7 @@
 """Persist the reason an indexer's circuit breaker opened.
 
-Revision ID: 0007
-Revises: 0006
+Revision ID: 0018
+Revises: 0017
 Create Date: 2026-08-08
 """
 
@@ -12,8 +12,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0007"
-down_revision: str | None = "0006"
+revision: str = "0018"
+down_revision: str | None = "0017"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
