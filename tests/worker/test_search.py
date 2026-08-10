@@ -101,7 +101,11 @@ async def test_cancelling_a_search_job_stops_pending_requests(monkeypatch) -> No
     async def configured_targets(_: Redis) -> list[SearchTarget]:
         return targets
 
+    async def cached_targets(_: str) -> list[SearchTarget]:
+        return []
+
     monkeypatch.setattr(search, "configured_targets", configured_targets)
+    monkeypatch.setattr(search, "cached_targets", cached_targets)
     task = asyncio.create_task(
         search.SEARCH_INDEXERS_JOB.coroutine(
             {"redis": redis},
@@ -147,6 +151,23 @@ async def test_unhealthy_indexers_are_reported_without_a_request() -> None:
     ]
 
 
+async def test_cached_releases_are_published_without_an_adapter_request() -> None:
+    redis = Redis()
+    cached = Release("one", "Cached Example", None, None, None, None, ())
+
+    state = await run_search(
+        redis,
+        search_id="search-4",
+        user_id="user-1",
+        query="example",
+        targets=[SearchTarget("indexer-1", "", "", None, cached_releases=[cached])],
+    )
+
+    assert state.statuses == {"indexer-1": "cached"}
+    assert state.results["indexer-1"][0]["title"] == "Cached Example"
+    assert redis.events[0][1]["status"] == "cached"
+
+
 async def test_worker_outcomes_persist_failure_health_and_redacted_error(monkeypatch) -> None:
     indexer_id = uuid4()
     indexer = Indexer(
@@ -177,6 +198,7 @@ async def test_worker_outcomes_persist_failure_health_and_redacted_error(monkeyp
             redis,
             str(indexer_id),
             "timed_out",
+            None,
             TimeoutError("secret-key timed out"),
         )
 
@@ -186,7 +208,7 @@ async def test_worker_outcomes_persist_failure_health_and_redacted_error(monkeyp
     assert indexer.health_reason == "timeout"
     assert indexer.last_error == "[redacted] timed out"
 
-    await search.record_search_outcome(redis, str(indexer_id), "completed", None)
+    await search.record_search_outcome(redis, str(indexer_id), "completed", [], None)
 
     assert stats.queries == 4
     assert stats.failures == 3

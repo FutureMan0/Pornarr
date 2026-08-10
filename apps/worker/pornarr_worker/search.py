@@ -6,13 +6,15 @@ import asyncio
 import json
 from collections.abc import Awaitable, Callable
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 from uuid import UUID
 
 from sqlalchemy import select
 
 from pornarr_db.models.indexer import Indexer, IndexerStats
+from pornarr_db.models.release import ReleaseCache
+from pornarr_db.release_cache import ReleaseCacheRepository, normalize_release_title
 from pornarr_db.session import session_scope
 from pornarr_integrations.health import (
     CircuitBreaker,
@@ -27,6 +29,7 @@ from pornarr_shared.events import publish_event
 from pornarr_shared.jobs import job
 
 INDEXER_SEARCH_TIMEOUT_SECONDS = 10
+RELEASE_CACHE_TTL = timedelta(hours=24)
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,6 +39,7 @@ class SearchTarget:
     api_key: str
     adapter: SearchIndexerAdapter | None
     skip_status: str | None = None
+    cached_releases: list[Release] | None = None
 
 
 @dataclass(slots=True)
@@ -48,7 +52,7 @@ class SearchState:
     cancelled: bool = False
 
 
-SearchResultCallback = Callable[[str, str, Exception | None], Awaitable[None]]
+SearchResultCallback = Callable[[str, str, list[Release] | None, Exception | None], Awaitable[None]]
 
 
 def search_state_key(search_id: str) -> str:
@@ -89,7 +93,7 @@ async def run_search(
             if releases is not None:
                 state.results[target_id] = [_release_data(release) for release in releases]
             if on_result is not None:
-                await on_result(target_id, status, error)
+                await on_result(target_id, status, releases, error)
             await _store(redis, state)
             await publish_event(
                 redis,
@@ -177,9 +181,9 @@ async def search_indexers(
             search_id=search_id,
             user_id=user_id,
             query=query,
-            targets=await configured_targets(redis),
-            on_result=lambda target_id, status, error: record_search_outcome(
-                redis, target_id, status, error
+            targets=(await cached_targets(query)) or await configured_targets(redis),
+            on_result=lambda target_id, status, releases, error: record_search_outcome(
+                redis, target_id, status, releases, error
             ),
         )
     except asyncio.CancelledError:
@@ -194,11 +198,24 @@ async def search_indexers(
 SEARCH_INDEXERS_JOB = job(search_indexers)
 
 
+async def cleanup_release_cache(_: dict[str, Any]) -> int:
+    """Delete cache rows that can no longer answer a search."""
+    async with session_scope() as session:
+        return await ReleaseCacheRepository(session).expire()
+
+
+RELEASE_CACHE_CLEANUP_JOB = job(cleanup_release_cache)
+
+
 async def record_search_outcome(
-    redis: Any, indexer_id: str, status: str, error: Exception | None
+    redis: Any,
+    indexer_id: str,
+    status: str,
+    releases: list[Release] | None,
+    error: Exception | None,
 ) -> None:
     """Persist one actual query's health and aggregate statistics."""
-    if status in {IndexerHealth.UNHEALTHY.value, "unavailable"}:
+    if status in {IndexerHealth.UNHEALTHY.value, "unavailable", "cached"}:
         return
     async with session_scope() as session:
         indexer = await session.get(Indexer, UUID(indexer_id))
@@ -207,6 +224,8 @@ async def record_search_outcome(
             return
         stats.queries += 1
         if status == "completed":
+            if releases is not None:
+                await cache_releases(session, indexer.id, releases)
             indexer.health = (await CircuitBreaker(redis).record_success(indexer_id)).value
             indexer.health_reason = None
             indexer.last_error = None
@@ -227,6 +246,8 @@ async def record_search_outcome(
 async def _search(
     target: SearchTarget, query: str, timeout: float
 ) -> tuple[str, str, list[Release] | None, Exception | None]:
+    if target.cached_releases is not None:
+        return target.id, "cached", target.cached_releases, None
     if target.skip_status is not None:
         return target.id, target.skip_status, None, None
     if target.adapter is None:
@@ -289,3 +310,62 @@ def _health_reason(value: str | None) -> IndexerFailure | None:
 
 def _safe_error(error: Exception | None, api_key: str, failure: IndexerFailure) -> str:
     return (str(error).replace(api_key, "[redacted]") if error is not None else "") or failure.value
+
+
+async def cache_releases(session: Any, indexer_id: UUID, releases: list[Release]) -> None:
+    repository = ReleaseCacheRepository(session)
+    expires_at = datetime.now(UTC) + RELEASE_CACHE_TTL
+    for release in releases:
+        await repository.upsert(
+            ReleaseCache(
+                indexer_id=indexer_id,
+                guid=release.guid,
+                title=release.title,
+                normalized_title=normalize_release_title(release.title),
+                details_url=release.details_url,
+                download_url=release.download_url,
+                published_at=release.published_at,
+                size=release.size,
+                categories=list(release.categories),
+                seeders=release.seeders,
+                peers=release.peers,
+                info_hash=release.info_hash,
+                magnet_url=release.magnet_url,
+                groups=list(release.groups),
+                poster=release.poster,
+                parts=release.parts,
+                password_protected=release.password_protected,
+                raw_payload=_release_data(release),
+                expires_at=expires_at,
+            )
+        )
+
+
+async def cached_targets(query: str) -> list[SearchTarget]:
+    async with session_scope() as session:
+        cached = await ReleaseCacheRepository(session).search(query)
+    grouped: dict[str, list[Release]] = {}
+    for release in cached:
+        grouped.setdefault(str(release.indexer_id), []).append(
+            Release(
+                guid=release.guid,
+                title=release.title,
+                details_url=release.details_url,
+                download_url=release.download_url,
+                published_at=release.published_at,
+                size=release.size,
+                categories=tuple(release.categories),
+                seeders=release.seeders,
+                peers=release.peers,
+                info_hash=release.info_hash,
+                magnet_url=release.magnet_url,
+                groups=tuple(release.groups),
+                poster=release.poster,
+                parts=release.parts,
+                password_protected=release.password_protected,
+            )
+        )
+    return [
+        SearchTarget(indexer_id, "", "", None, cached_releases=releases)
+        for indexer_id, releases in grouped.items()
+    ]

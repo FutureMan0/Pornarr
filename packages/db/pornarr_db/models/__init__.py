@@ -30,6 +30,7 @@ from pornarr_db.models.media import Media, MediaFile, MediaFileHistory
 from pornarr_db.models.oidc import OidcProvider
 from pornarr_db.models.playback import PlaybackProgress, UserEvent
 from pornarr_db.models.quality import QualityDefinition, QualityProfile, QualityProfileItem
+from pornarr_db.models.release import ReleaseCache
 from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.models.user import User, UserRole
 
@@ -61,6 +62,7 @@ __all__ = [
     "QualityDefinition",
     "QualityProfile",
     "QualityProfileItem",
+    "ReleaseCache",
     "RootFolder",
     "Studio",
     "Tag",
