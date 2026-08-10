@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import database_session, require_role
+from pornarr_db.audit import write_audit
 from pornarr_db.models.media import MediaFile
 from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.models.user import User, UserRole
@@ -62,7 +63,7 @@ async def list_root_folders(
 
 @router.post("/root-folders", response_model=RootFolderResponse, status_code=201)
 async def create_root_folder(
-    payload: RootFolderWrite, request: Request, _: Admin, session: Session
+    payload: RootFolderWrite, request: Request, user: Admin, session: Session
 ) -> RootFolderResponse:
     path, free_space_bytes, same_filesystem = _validate_root_folder(
         payload.path, request.app.state.settings.torrents_path
@@ -79,11 +80,12 @@ async def create_root_folder(
     )
     session.add(folder)
     await session.flush()
+    write_audit(session, actor_id=user.id, action="root_folder.created", target=str(folder.id))
     return _folder_response(folder, request.app.state.settings.torrents_path, same_filesystem)
 
 
 @router.delete("/root-folders/{folder_id}", status_code=204)
-async def delete_root_folder(folder_id: UUID, _: Admin, session: Session) -> None:
+async def delete_root_folder(folder_id: UUID, user: Admin, session: Session) -> None:
     folder = await session.get(RootFolder, folder_id)
     if folder is None:
         raise HTTPException(status_code=404)
@@ -95,6 +97,7 @@ async def delete_root_folder(folder_id: UUID, _: Admin, session: Session) -> Non
     if media_file is not None:
         raise RootFolderInUseError("The root folder still contains media.")
     await session.delete(folder)
+    write_audit(session, actor_id=user.id, action="root_folder.deleted", target=str(folder_id))
 
 
 def _validate_root_folder(path_value: str, downloads_path: Path) -> tuple[Path, int, bool]:

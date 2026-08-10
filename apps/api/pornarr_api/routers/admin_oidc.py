@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import database_session, require_role
 from pornarr_api.oidc import OidcDiscoveryError, discover, normalise_issuer
+from pornarr_db.audit import write_audit
 from pornarr_db.models.oidc import OidcProvider
 from pornarr_db.models.user import User, UserRole
 
@@ -75,7 +76,9 @@ async def list_providers(_: Admin, session: Session) -> list[ProviderResponse]:
 
 
 @router.post("", response_model=ProviderResponse, status_code=201)
-async def create_provider(payload: ProviderWrite, _: Admin, session: Session) -> ProviderResponse:
+async def create_provider(
+    payload: ProviderWrite, user: Admin, session: Session
+) -> ProviderResponse:
     provider = OidcProvider(
         name=payload.name,
         issuer=payload.issuer,
@@ -86,17 +89,19 @@ async def create_provider(payload: ProviderWrite, _: Admin, session: Session) ->
     )
     session.add(provider)
     await session.flush()
+    write_audit(session, actor_id=user.id, action="oidc_provider.created", target=str(provider.id))
     return provider_response(provider)
 
 
 @router.delete("/{provider_id}", status_code=204)
-async def delete_provider(provider_id: UUID, _: Admin, session: Session) -> None:
+async def delete_provider(provider_id: UUID, user: Admin, session: Session) -> None:
     await session.delete(await provider_or_404(session, provider_id))
+    write_audit(session, actor_id=user.id, action="oidc_provider.deleted", target=str(provider_id))
 
 
 @router.post("/{provider_id}/test", response_model=ProviderResponse)
 async def test_provider(
-    provider_id: UUID, request: Request, _: Admin, session: Session
+    provider_id: UUID, request: Request, user: Admin, session: Session
 ) -> ProviderResponse:
     provider = await provider_or_404(session, provider_id)
     provider.discovery_document = await discover(
@@ -104,4 +109,5 @@ async def test_provider(
         allow_private_issuers=request.app.state.settings.oidc_allow_private_issuers,
     )
     provider.discovery_fetched_at = datetime.now(UTC)
+    write_audit(session, actor_id=user.id, action="oidc_provider.tested", target=str(provider.id))
     return provider_response(provider)
