@@ -8,6 +8,7 @@ explicit rather than a directory scan.
 
 from __future__ import annotations
 
+from pornarr_db.models.api_keys import UserApiKey
 from pornarr_db.models.audit import AuditLog
 from pornarr_db.models.custom_formats import (
     CustomFormat,
@@ -67,6 +68,7 @@ __all__ = [
     "Studio",
     "Tag",
     "User",
+    "UserApiKey",
     "UserEvent",
     "UserRole",
 ]

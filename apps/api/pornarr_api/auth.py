@@ -8,6 +8,7 @@ import json
 import secrets
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -17,13 +18,17 @@ from fastapi import Depends, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pornarr_db.audit import write_audit
+from pornarr_db.models.api_keys import UserApiKey
 from pornarr_db.models.user import User, UserRole
+from pornarr_shared.audit import AuditSource
 from pornarr_shared.errors import PornarrError
 
 SESSION_COOKIE = "pornarr_session"
 CSRF_COOKIE = "pornarr_csrf"
 CSRF_HEADER = "X-CSRF-Token"
 SESSION_TTL_SECONDS = 7 * 24 * 60 * 60
+API_KEY_PREFIX_LENGTH = 12
 LOGIN_ATTEMPT_LIMIT = 6
 LOGIN_ATTEMPT_WINDOW_SECONDS = 15 * 60
 
@@ -185,6 +190,12 @@ async def get_current_user(
     request: Request,
     session: Annotated[AsyncSession, Depends(database_session)],
 ) -> User:
+    api_key = request.headers.get("X-Api-Key")
+    if api_key and not request.url.path.startswith("/api/auth"):
+        user = await authenticate_api_key(session, api_key)
+        if user is not None:
+            request.state.auth_source = AuditSource.API_KEY
+            return user
     record = await session_record(request)
     if record is None:
         raise NotAuthenticatedError("A valid session is required.")
@@ -198,10 +209,41 @@ async def get_current_user(
     return user
 
 
+def generate_api_key() -> str:
+    return f"pnr_{secrets.token_urlsafe(32)}"
+
+
+async def authenticate_api_key(session: AsyncSession, value: str) -> User | None:
+    if not value.startswith("pnr_") or len(value) < API_KEY_PREFIX_LENGTH:
+        return None
+    key = await session.scalar(
+        select(UserApiKey).where(UserApiKey.prefix == value[:API_KEY_PREFIX_LENGTH])
+    )
+    if key is None or not verify_password(key.key_hash, value):
+        return None
+    user = await session.get(User, key.user_id)
+    if user is None or not user.is_active:
+        return None
+    key.last_used_at = datetime.now(UTC)
+    write_audit(
+        session,
+        actor_id=user.id,
+        source=AuditSource.API_KEY,
+        action="apikey.used",
+        target=str(key.id),
+    )
+    return user
+
+
 def require_role(role: UserRole) -> Callable[..., object]:
     async def dependency(
+        request: Request,
         user: Annotated[User, Depends(get_current_user)],
     ) -> User:
+        if getattr(
+            request.state, "auth_source", None
+        ) is AuditSource.API_KEY and request.url.path.startswith("/api/admin/oidc"):
+            raise ForbiddenError("API keys cannot manage authentication settings.")
         if user.role != role:
             raise ForbiddenError("This role is not permitted for the route.")
         return user
@@ -211,7 +253,11 @@ def require_role(role: UserRole) -> Callable[..., object]:
 
 async def enforce_csrf(request: Request) -> None:
     """Require a session-bound double-submit token on every unsafe API request."""
-    if request.method not in _UNSAFE_METHODS or request.url.path == "/api/auth/login":
+    if (
+        request.method not in _UNSAFE_METHODS
+        or request.url.path == "/api/auth/login"
+        or request.headers.get("X-Api-Key")
+    ):
         return
 
     record = await session_record(request)
