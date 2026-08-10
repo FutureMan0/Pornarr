@@ -100,6 +100,10 @@ filterwarnings = ["error"]
 [tool.coverage.run]
 source = ["apps", "packages"]
 omit = ["*/tests/*", "*/__main__.py"]
+# SQLAlchemy runs async database work inside a greenlet, so without this a
+# request handler is measured only up to its first `await` and everything after
+# it is reported as unexecuted even though the tests drive it.
+concurrency = ["greenlet", "thread"]
 
 [tool.coverage.report]
 exclude_also = [

@@ -55,6 +55,8 @@ class Settings(BaseSettings):
     transcode_cleanup_min_age_seconds: int = Field(default=300, ge=1)
     transcode_cache_max_gb: int = Field(default=10, ge=1)
 
+    playback_completion_threshold_percent: int = Field(default=90, ge=1, le=100)
+
     min_free_disk_percent: int = Field(default=15, ge=0, le=99)
     default_daily_download_limit_gb: int = Field(default=10, ge=0)
     default_max_auto_jobs: int = Field(default=2, ge=0)

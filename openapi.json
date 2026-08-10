@@ -1,12 +1,3 @@
-   [36m[1mBuilding[0m[39m pornarr-api[2m @ file:///E:/Projects/Pornarr/apps/api[0m
-   [36m[1mBuilding[0m[39m pornarr-integrations[2m @ file:///E:/Projects/Pornarr/packages/integrations[0m
-      [32m[1mBuilt[0m[39m pornarr-api[2m @ file:///E:/Projects/Pornarr/apps/api[0m
-      [32m[1mBuilt[0m[39m pornarr-integrations[2m @ file:///E:/Projects/Pornarr/packages/integrations[0m
-[2mUninstalled [1m2 packages[0m [2min 3ms[0m[0m
-[1m[33mwarning[39m[0m[1m:[0m [1mFailed to hardlink files; falling back to full copy. This may lead to degraded performance.
-         If the cache and target directories are on different filesystems, hardlinking may not be supported.
-         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.[0m
-[2mInstalled [1m2 packages[0m [2min 27ms[0m[0m
 {
   "components": {
     "schemas": {
@@ -788,6 +779,55 @@
           "reasons"
         ],
         "title": "PlaybackInfoResponse",
+        "type": "object"
+      },
+      "PlaybackProgressResponse": {
+        "properties": {
+          "completed": {
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "duration_seconds": {
+            "title": "Duration Seconds",
+            "type": "number"
+          },
+          "media_id": {
+            "format": "uuid",
+            "title": "Media Id",
+            "type": "string"
+          },
+          "position_seconds": {
+            "title": "Position Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "media_id",
+          "position_seconds",
+          "duration_seconds",
+          "completed"
+        ],
+        "title": "PlaybackProgressResponse",
+        "type": "object"
+      },
+      "PlaybackProgressWrite": {
+        "properties": {
+          "duration_seconds": {
+            "exclusiveMinimum": 0.0,
+            "title": "Duration Seconds",
+            "type": "number"
+          },
+          "position_seconds": {
+            "minimum": 0.0,
+            "title": "Position Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "position_seconds",
+          "duration_seconds"
+        ],
+        "title": "PlaybackProgressWrite",
         "type": "object"
       },
       "ProviderResponse": {
@@ -2317,6 +2357,125 @@
           }
         },
         "summary": "Stream",
+        "tags": [
+          "playback"
+        ]
+      }
+    },
+    "/api/playback/continue-watching": {
+      "get": {
+        "operationId": "playback_continue_watching",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlaybackProgressResponse"
+                  },
+                  "title": "Response Playback Continue Watching",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Continue Watching",
+        "tags": [
+          "playback"
+        ]
+      }
+    },
+    "/api/playback/{media_id}/progress": {
+      "get": {
+        "operationId": "playback_playback_progress",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackProgressResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Playback Progress",
+        "tags": [
+          "playback"
+        ]
+      },
+      "post": {
+        "operationId": "playback_report_progress",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaybackProgressWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackProgressResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Report Progress",
         "tags": [
           "playback"
         ]
