@@ -1,0 +1,33 @@
+"""Guard an unconfigured instance so only setup endpoints are reachable."""
+
+from __future__ import annotations
+
+from fastapi import Request
+from fastapi.responses import JSONResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
+
+from pornarr_db.models.user import User
+
+_ALLOWED = frozenset({"/health", "/api/setup/status", "/api/setup/complete", "/api/openapi.json"})
+
+
+class SetupMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app: ASGIApp) -> None:
+        super().__init__(app)
+
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path in _ALLOWED:
+            return await call_next(request)
+        engine = getattr(request.app.state, "engine", None)
+        if not isinstance(engine, AsyncEngine):
+            return await call_next(request)
+        async with AsyncSession(engine) as session:
+            configured = await session.scalar(select(User.id).limit(1)) is not None
+        if not configured:
+            return JSONResponse(
+                status_code=503, content={"code": "SETUP_REQUIRED", "status": 503, "context": {}}
+            )
+        return await call_next(request)

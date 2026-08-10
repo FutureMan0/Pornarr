@@ -1191,6 +1191,65 @@
         "title": "RootFolderWrite",
         "type": "object"
       },
+      "SetupCompleteResponse": {
+        "properties": {
+          "same_filesystem_as_downloads": {
+            "title": "Same Filesystem As Downloads",
+            "type": "boolean"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warning"
+          }
+        },
+        "required": [
+          "username",
+          "same_filesystem_as_downloads",
+          "warning"
+        ],
+        "title": "SetupCompleteResponse",
+        "type": "object"
+      },
+      "SetupWrite": {
+        "properties": {
+          "library_path": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Library Path",
+            "type": "string"
+          },
+          "password": {
+            "format": "password",
+            "title": "Password",
+            "type": "string",
+            "writeOnly": true
+          },
+          "username": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password",
+          "library_path"
+        ],
+        "title": "SetupWrite",
+        "type": "object"
+      },
       "TranscodeFailureResponse": {
         "properties": {
           "created_at": {
@@ -3101,6 +3160,82 @@
         "summary": "Local Search",
         "tags": [
           "search"
+        ]
+      }
+    },
+    "/api/setup/complete": {
+      "post": {
+        "operationId": "setup_complete_setup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetupWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupCompleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Complete Setup",
+        "tags": [
+          "setup"
+        ]
+      }
+    },
+    "/api/setup/status": {
+      "get": {
+        "operationId": "setup_setup_status",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Setup Setup Status",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Setup Status",
+        "tags": [
+          "setup"
         ]
       }
     },
