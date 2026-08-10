@@ -11,6 +11,10 @@ priority, remove_completed, enabled, health_status
 
 A grab is routed by protocol first, then priority, then health.
 
+qBittorrent credentials are entered as an encrypted JSON object with `username` and
+`password` fields. The adapter keeps the WebUI session cookie internal and renews it
+once when qBittorrent reports an expired session.
+
 ## Status mapping
 
 The most error-prone part of the integration. Each client has its own vocabulary, and
