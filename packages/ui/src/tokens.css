@@ -96,6 +96,11 @@
   --space-12: 3rem;
   --space-16: 4rem;
 
+  /* Shell geometry. Application code names these but never owns their values. */
+  --layout-sidebar-width: 15rem;
+  --layout-sidebar-rail-width: 3.5rem;
+  --layout-content-max-width: 100rem;
+
   /* Radius. Cards top out at 12px; nothing here is rounder. */
   --radius-sm: 4px;
   --radius-md: 8px;

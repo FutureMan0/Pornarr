@@ -38,6 +38,7 @@
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
+  --spacing: var(--space-1);
 
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
@@ -99,20 +100,6 @@
   font-size: var(--text-xl);
   line-height: var(--text-xl-leading);
   font-weight: var(--text-xl-weight);
-}
-
-/**
- * The app shell reads these three widths in more than one place — the sidebar
- * itself, the content offset, and the media queries that switch between them —
- * so they are named once here rather than repeated as literals.
- *
- * DESIGN.md: 240px fixed sidebar, a 56px icon rail below 1280px, an overlay
- * drawer below 768px, content capped at 1600px and centred.
- */
-:root {
-  --sidebar-width: 240px;
-  --sidebar-rail-width: 56px;
-  --content-max-width: 1600px;
 }
 
 html,

@@ -17,8 +17,8 @@ import { Sidebar, useSidebarLayout } from "./sidebar";
 import { TopBar } from "./top-bar";
 
 const CONTENT_OFFSET = {
-  full: "pl-[var(--sidebar-width)]",
-  rail: "pl-[var(--sidebar-rail-width)]",
+  full: "pl-[var(--layout-sidebar-width)]",
+  rail: "pl-[var(--layout-sidebar-rail-width)]",
   drawer: "pl-0",
 } as const;
 
@@ -62,7 +62,7 @@ export function AppShell(): JSX.Element {
           triggerRef={triggerRef}
         />
 
-        <main id="main" className="mx-auto w-full max-w-[var(--content-max-width)] p-6">
+        <main id="main" className="mx-auto w-full max-w-[var(--layout-content-max-width)] p-6">
           <Outlet />
         </main>
       </div>

@@ -115,7 +115,9 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
       data-layout={layout}
       className={cx(
         "flex h-full flex-col gap-1 p-2",
-        layout === "rail" ? "w-[var(--sidebar-rail-width)]" : "w-[var(--sidebar-width)]",
+        layout === "rail"
+          ? "w-[var(--layout-sidebar-rail-width)]"
+          : "w-[var(--layout-sidebar-width)]",
         // DESIGN.md: a floating layer takes the shadow, a docked one takes the
         // rule. Never both on one element.
         isDrawer ? "shadow-[var(--shadow-floating)]" : "border-r border-border",

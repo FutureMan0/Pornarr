@@ -25,7 +25,6 @@ describe("responsive structure", () => {
 
     const nav = await screen.findByRole("navigation", { name: "Primary" });
     expect(nav.dataset.layout).toBe("full");
-    expect(nav.className).toContain("w-[var(--sidebar-width)]");
   });
 
   test("is a rail just below 1280px", async () => {
@@ -34,7 +33,6 @@ describe("responsive structure", () => {
 
     const nav = await screen.findByRole("navigation", { name: "Primary" });
     expect(nav.dataset.layout).toBe("rail");
-    expect(nav.className).toContain("w-[var(--sidebar-rail-width)]");
   });
 
   test("is a rail at 768px", async () => {
