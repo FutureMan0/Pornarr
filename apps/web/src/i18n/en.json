@@ -46,7 +46,16 @@
   "screen": {
     "notBuilt": "This screen is not built yet.",
     "notFoundTitle": "Not found",
-    "notFoundBody": "There is nothing at this address. Pick a destination from the navigation."
+    "notFoundBody": "There is nothing at this address. Pick a destination from the navigation.",
+    "forbiddenTitle": "Not allowed",
+    "forbiddenBody": "Your account is not allowed to open this. An administrator can change that.",
+    "backToLibrary": "Go to the library"
+  },
+  "connection": {
+    "offlineTitle": "Offline",
+    "offlineBody": "This device has no network connection. The screen updates itself when it comes back.",
+    "reconnectingTitle": "Reconnecting",
+    "reconnectingBody": "The live connection to the server dropped. It is being re-established; nothing needs doing."
   },
   "events": {
     "downloadCompleted": "A download finished.",
@@ -79,6 +88,33 @@
     "SERVICE_UNAVAILABLE": "The server is not ready yet. Try again shortly.",
     "NETWORK_UNREACHABLE": "The server could not be reached. Check that it is running.",
     "unknown": "Something went wrong ({{code}}).",
-    "generic": "Something went wrong. Try again."
+    "generic": "Something went wrong. Try again.",
+    "brokenTitle": "This screen could not be displayed.",
+    "brokenStep": "Try it again. If it keeps happening, reload the page and report the address you were on.",
+    "retry": "Try again"
+  },
+  "errorSteps": {
+    "INVALID_CREDENTIALS": "Check the username and password, then sign in again.",
+    "NOT_AUTHENTICATED": "Sign in again to carry on where you left off.",
+    "FORBIDDEN": "Ask an administrator for access, or go back to the library.",
+    "CSRF_FAILED": "Reload the page, then repeat the action.",
+    "LOGIN_RATE_LIMITED": "Wait a minute, then try again.",
+    "OIDC_DISCOVERY_FAILED": "Check the issuer address in settings, then try again.",
+    "WEB_ASSETS_MISSING": "Rebuild or reinstall the application image.",
+    "NOT_IMPLEMENTED": "Pick another destination from the navigation.",
+    "CONFIGURATION_INVALID": "Correct the settings named in the server log, then restart the server.",
+    "DECRYPTION_FAILED": "Restore the original application secret, or enter the credential again.",
+    "BAD_REQUEST": "Change what was sent and try once more.",
+    "NOT_FOUND": "Pick a destination from the navigation.",
+    "METHOD_NOT_ALLOWED": "Go back and choose a different action.",
+    "CONFLICT": "Open what already exists, or choose a different name.",
+    "PAYLOAD_TOO_LARGE": "Send something smaller.",
+    "VALIDATION_FAILED": "Correct the highlighted fields, then submit again.",
+    "RATE_LIMITED": "Wait a moment, then try again.",
+    "INTERNAL_ERROR": "Try again. If it keeps happening, check the server log.",
+    "SERVICE_UNAVAILABLE": "Wait for the server to finish starting, then try again.",
+    "NETWORK_UNREACHABLE": "Check that the server is running and reachable, then try again.",
+    "unknown": "Try again, and quote this code if it keeps happening.",
+    "generic": "Try again. If it keeps happening, reload the page."
   }
 }

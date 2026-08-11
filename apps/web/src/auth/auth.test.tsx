@@ -57,8 +57,11 @@ describe("session restore", () => {
     server.use(http.get("/api/auth/me", () => HttpResponse.error()));
     renderApp("/library");
 
-    const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toBe(messageForError(new TypeError("offline")));
+    expect(
+      await screen.findByRole("heading", {
+        name: messageForError(new TypeError("offline")),
+      }),
+    ).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Sign in" })).toBeNull();
     expect(screen.queryByRole("navigation", { name: "Primary" })).toBeNull();
   });

@@ -6,11 +6,12 @@
  * emptying the session query is enough to move the whole application to the
  * login screen, with no imperative navigation and no `window.location`.
  */
-import { Button, SkeletonRegion, SkeletonText } from "@pornarr/ui";
+import { SkeletonRegion, SkeletonText } from "@pornarr/ui";
 import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { messageForError } from "../lib/api-error";
+import { ErrorScreen } from "../errors/error-screen";
+import { isRetryableError, messageForError, nextStepForError } from "../lib/api-error";
 import { useSession } from "./session";
 
 /** Where `login-route` reads the destination to return to after signing in. */
@@ -36,20 +37,26 @@ export function RequireAuth(): JSX.Element {
     );
   }
 
-  // An unavailable API is not evidence that the user signed out. Keep the
-  // authenticated boundary closed, explain the failure, and let the visitor
-  // retry without throwing away the route they were trying to reach.
+  // A 401 resolves to null rather than rejecting (see `session.ts`), so an error
+  // here is never "signed out" — it is an API that could not answer. Sending
+  // that to the login screen would tell the user to sign in again, which is a
+  // lie about the cause and a next step that cannot work. State the cause and,
+  // when repeating the request could help, offer to repeat it.
   if (session.isError) {
     return (
-      <main className="mx-auto flex max-w-[calc(var(--space-16)*6)] flex-col gap-6 p-6">
-        <h1 className="text-lg text-ink">{t("session.unavailableTitle")}</h1>
-        <p role="alert" className="text-sm text-ink-muted">
-          {messageForError(session.error)}
-        </p>
-        <div>
-          <Button onClick={() => void session.refetch()}>{t("session.retry")}</Button>
-        </div>
-      </main>
+      <div className="p-6">
+        <ErrorScreen
+          title={messageForError(session.error)}
+          nextStep={nextStepForError(session.error)}
+          onRetry={
+            isRetryableError(session.error)
+              ? () => {
+                  void session.refetch();
+                }
+              : undefined
+          }
+        />
+      </div>
     );
   }
 

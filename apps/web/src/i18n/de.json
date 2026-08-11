@@ -46,7 +46,16 @@
   "screen": {
     "notBuilt": "Diese Seite ist noch nicht gebaut.",
     "notFoundTitle": "Nicht gefunden",
-    "notFoundBody": "Unter dieser Adresse gibt es nichts. Wähle ein Ziel aus der Navigation."
+    "notFoundBody": "Unter dieser Adresse gibt es nichts. Wähle ein Ziel aus der Navigation.",
+    "forbiddenTitle": "Nicht erlaubt",
+    "forbiddenBody": "Dein Konto darf das nicht öffnen. Die Administration dieser Instanz kann das ändern.",
+    "backToLibrary": "Zur Bibliothek"
+  },
+  "connection": {
+    "offlineTitle": "Offline",
+    "offlineBody": "Dieses Gerät hat keine Netzwerkverbindung. Die Seite aktualisiert sich selbst, sobald sie zurück ist.",
+    "reconnectingTitle": "Verbindung wird wiederhergestellt",
+    "reconnectingBody": "Die Live-Verbindung zum Server ist abgerissen. Sie wird neu aufgebaut; du musst nichts tun."
   },
   "events": {
     "downloadCompleted": "Ein Download ist fertig.",
@@ -79,6 +88,33 @@
     "SERVICE_UNAVAILABLE": "Der Server ist noch nicht bereit. Versuche es gleich noch einmal.",
     "NETWORK_UNREACHABLE": "Der Server war nicht erreichbar. Prüfe, ob er läuft.",
     "unknown": "Etwas ist schiefgelaufen ({{code}}).",
-    "generic": "Etwas ist schiefgelaufen. Versuche es erneut."
+    "generic": "Etwas ist schiefgelaufen. Versuche es erneut.",
+    "brokenTitle": "Diese Seite konnte nicht dargestellt werden.",
+    "brokenStep": "Versuche es noch einmal. Wenn es weiter passiert, lade die Seite neu und nenne die Adresse, auf der du warst.",
+    "retry": "Erneut versuchen"
+  },
+  "errorSteps": {
+    "INVALID_CREDENTIALS": "Prüfe Benutzername und Passwort und melde dich erneut an.",
+    "NOT_AUTHENTICATED": "Melde dich erneut an, um dort weiterzumachen, wo du aufgehört hast.",
+    "FORBIDDEN": "Frage die Administration dieser Instanz nach Zugriff oder kehre zur Bibliothek zurück.",
+    "CSRF_FAILED": "Lade die Seite neu und wiederhole die Aktion.",
+    "LOGIN_RATE_LIMITED": "Warte eine Minute und versuche es erneut.",
+    "OIDC_DISCOVERY_FAILED": "Prüfe die Adresse des Anbieters in den Einstellungen und versuche es erneut.",
+    "WEB_ASSETS_MISSING": "Baue oder installiere das Anwendungs-Image neu.",
+    "NOT_IMPLEMENTED": "Wähle ein anderes Ziel aus der Navigation.",
+    "CONFIGURATION_INVALID": "Korrigiere die im Server-Log genannten Einstellungen und starte den Server neu.",
+    "DECRYPTION_FAILED": "Stelle das ursprüngliche Anwendungsgeheimnis wieder her oder gib die Zugangsdaten erneut ein.",
+    "BAD_REQUEST": "Ändere das Gesendete und versuche es noch einmal.",
+    "NOT_FOUND": "Wähle ein Ziel aus der Navigation.",
+    "METHOD_NOT_ALLOWED": "Gehe zurück und wähle eine andere Aktion.",
+    "CONFLICT": "Öffne das, was bereits existiert, oder wähle einen anderen Namen.",
+    "PAYLOAD_TOO_LARGE": "Sende etwas Kleineres.",
+    "VALIDATION_FAILED": "Korrigiere die markierten Felder und sende erneut.",
+    "RATE_LIMITED": "Warte einen Moment und versuche es erneut.",
+    "INTERNAL_ERROR": "Versuche es erneut. Wenn es weiter passiert, sieh im Server-Log nach.",
+    "SERVICE_UNAVAILABLE": "Warte, bis der Server hochgefahren ist, und versuche es erneut.",
+    "NETWORK_UNREACHABLE": "Prüfe, ob der Server läuft und erreichbar ist, und versuche es erneut.",
+    "unknown": "Versuche es erneut und nenne diesen Code, wenn es weiter passiert.",
+    "generic": "Versuche es erneut. Wenn es weiter passiert, lade die Seite neu."
   }
 }

@@ -9,7 +9,12 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, describe, expect, test } from "vitest";
-import { ERROR_CODES, messageForError, messageForErrorCode } from "../lib/api-error";
+import {
+  ERROR_CODES,
+  RETRYABLE_ERROR_CODES,
+  messageForError,
+  messageForErrorCode,
+} from "../lib/api-error";
 import {
   TEST_USER,
   renderApp,
@@ -103,14 +108,27 @@ describe("switching locale", () => {
 });
 
 describe("error codes", () => {
-  test("every code the API defines has a message in every locale", () => {
+  test("every code the API defines has a message and a next step in every locale", () => {
     const resources: Record<(typeof LOCALES)[number], typeof en> = { en, de };
 
     for (const locale of LOCALES) {
       const messages = resources[locale].errors as unknown as Readonly<Record<string, string>>;
+      // DESIGN.md: "an error states the cause and the next step". The cause
+      // alone passes no review, so the walk that guards the map guards both —
+      // adding a code to ERROR_CODES with no way out of it fails CI.
+      const steps = resources[locale].errorSteps as unknown as Readonly<Record<string, string>>;
       for (const code of ERROR_CODES) {
         expect(messages[code], `${locale}.json is missing errors.${code}`).toBeTruthy();
+        expect(steps[code], `${locale}.json is missing errorSteps.${code}`).toBeTruthy();
       }
+    }
+  });
+
+  test("a code is retryable only if it is a code", () => {
+    // The retry list is a subset of the map, so a rename cannot leave a button
+    // pointing at a code that no longer exists.
+    for (const code of RETRYABLE_ERROR_CODES) {
+      expect(ERROR_CODES).toContain(code);
     }
   });
 

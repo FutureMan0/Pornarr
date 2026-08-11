@@ -58,6 +58,29 @@ export type ErrorCode = (typeof ERROR_CODES)[number];
 /** Code used when a request fails without the API answering at all. */
 export const NETWORK_ERROR_CODE = "NETWORK_UNREACHABLE" satisfies ErrorCode;
 
+/**
+ * The codes whose next step is "do the same thing again".
+ *
+ * Membership is a claim about the *server*, not about the user: a transport
+ * failure, a server that has not finished starting, a limit that expires. Every
+ * other code needs the request to change first — a different password, a
+ * corrected field, a smaller file — and a retry button beside one of those is an
+ * invitation to press the same wall twice.
+ *
+ * `CSRF_FAILED` is deliberately absent even though it is transient: its next
+ * step is a reload, which a retry of the same request does not perform.
+ */
+export const RETRYABLE_ERROR_CODES = [
+  "LOGIN_RATE_LIMITED",
+  "OIDC_DISCOVERY_FAILED",
+  "RATE_LIMITED",
+  "INTERNAL_ERROR",
+  "SERVICE_UNAVAILABLE",
+  "NETWORK_UNREACHABLE",
+] as const satisfies readonly ErrorCode[];
+
+const RETRYABLE: ReadonlySet<string> = new Set(RETRYABLE_ERROR_CODES);
+
 export function isKnownErrorCode(code: string): code is ErrorCode {
   return (ERROR_CODES as readonly string[]).includes(code);
 }
@@ -118,4 +141,45 @@ export function messageForErrorCode(code: string): string {
 export function messageForError(value: unknown): string {
   const code = errorCodeOf(value);
   return code === null ? i18n.t("errors.generic") : messageForErrorCode(code);
+}
+
+/**
+ * What to do about it.
+ *
+ * DESIGN.md: "an error states the cause and the next step". `messageForErrorCode`
+ * is the cause; this is the other half, and it is a separate string rather than a
+ * longer message because the two are rendered differently — the cause is the
+ * heading a reader scans, the step is the sentence they act on — and because a
+ * translator needs to move them independently.
+ *
+ * Every code in `ERROR_CODES` has one, enforced by the walk in `i18n.test.tsx`,
+ * so a new backend code cannot be added with a cause and no way out.
+ */
+export function nextStepForErrorCode(code: string): string {
+  if (isKnownErrorCode(code)) return i18n.t(`errorSteps.${code}`);
+  return i18n.t("errorSteps.unknown");
+}
+
+/** The next step for any thrown value at all. */
+export function nextStepForError(value: unknown): string {
+  const code = errorCodeOf(value);
+  return code === null ? i18n.t("errorSteps.generic") : nextStepForErrorCode(code);
+}
+
+export function isRetryableErrorCode(code: string): boolean {
+  return RETRYABLE.has(code);
+}
+
+/**
+ * Whether to offer a retry for a thrown value.
+ *
+ * A code this build has never heard of falls back to the same rule
+ * `query-client.ts` retries by: a 4xx is an answer and repeating it changes
+ * nothing, anything else might still succeed. One rule, so a button that appears
+ * and an automatic retry that fires cannot disagree about what is worth redoing.
+ */
+export function isRetryableError(value: unknown): boolean {
+  const code = errorCodeOf(value);
+  if (code !== null && isKnownErrorCode(code)) return isRetryableErrorCode(code);
+  return !isClientError(value);
 }

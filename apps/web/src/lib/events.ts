@@ -129,21 +129,36 @@ export function applyEvent(queryClient: QueryClient, event: PornarrEvent): void 
   }
 }
 
+/**
+ * Where the stream is, from the UI's point of view.
+ *
+ * `connecting` is the first attempt and is deliberately silent: every cold load
+ * passes through it, and a banner that flashes on every load is noise rather
+ * than information. `reconnecting` is every attempt after a connection that was
+ * once open dropped, or a first attempt that failed — both are a real connection
+ * problem and both are worth showing.
+ */
+export type EventStreamStatus = "connecting" | "open" | "reconnecting";
+
 export interface EventStreamState {
   /** Latest polite announcement, or "" when nothing has happened yet. */
   readonly announcement: string;
+  readonly status: EventStreamStatus;
 }
 
 /**
  * Subscribe for as long as the component lives.
  *
- * EventSource reconnects on its own, so there is no retry loop here and no
- * connection state to report. The hook is a no-op where EventSource does not
- * exist (jsdom), which keeps every other test in this app from needing a stub.
+ * EventSource reconnects on its own — the browser owns the backoff and the
+ * `Last-Event-ID` replay — so this hook *reports* the retry rather than
+ * implementing one. Reimplementing it would mean closing the stream the browser
+ * is already re-opening. The hook is a no-op where EventSource does not exist
+ * (jsdom), which keeps every other test in this app from needing a stub.
  */
 export function useEventStream(): EventStreamState {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const [status, setStatus] = useState<EventStreamStatus>("connecting");
   const [announced, setAnnounced] = useState<{
     readonly key: AnnouncementKey;
     readonly nonce: number;
@@ -153,6 +168,16 @@ export function useEventStream(): EventStreamState {
     if (typeof EventSource === "undefined") return undefined;
 
     const source = new EventSource(EVENTS_URL);
+
+    const onOpen = (): void => setStatus("open");
+    // Fired for a dropped connection and for a failed attempt alike. The browser
+    // is already retrying unless it closed the stream outright, which it only
+    // does for an answer it cannot recover from — a 401, which the API client's
+    // own middleware has by then already turned into a trip to the login screen.
+    const onError = (): void => setStatus("reconnecting");
+    source.addEventListener("open", onOpen);
+    source.addEventListener("error", onError);
+
     const unsubscribes = EVENT_TYPES.map((type) => {
       const listener = (event: Event): void => {
         if (!(event instanceof MessageEvent)) return;
@@ -173,13 +198,18 @@ export function useEventStream(): EventStreamState {
 
     return () => {
       for (const unsubscribe of unsubscribes) unsubscribe();
+      source.removeEventListener("open", onOpen);
+      source.removeEventListener("error", onError);
       source.close();
     };
   }, [queryClient]);
 
-  if (announced === null) return { announcement: "" };
+  if (announced === null) return { announcement: "", status };
   // A live region handed the same string twice says it once. Alternating a
   // trailing space makes every announcement a different string from the last.
   const sentence = t(announced.key);
-  return { announcement: announced.nonce % 2 === 0 ? `${sentence} ` : sentence };
+  return {
+    announcement: announced.nonce % 2 === 0 ? `${sentence} ` : sentence,
+    status,
+  };
 }

@@ -16,6 +16,7 @@ import type { RouteObject } from "react-router-dom";
 import { Navigate, createBrowserRouter } from "react-router-dom";
 import { LoginRoute } from "./auth/login-route";
 import { RequireAuth } from "./auth/require-auth";
+import { ForbiddenRoute, NotFoundRoute } from "./errors/route-errors";
 import { AppShell } from "./shell/app-shell";
 import { NAV_ITEMS, type NavId } from "./shell/sidebar";
 
@@ -30,15 +31,12 @@ function Placeholder({ navId }: { readonly navId: NavId }): JSX.Element {
   );
 }
 
-function NotFound(): JSX.Element {
-  const { t } = useTranslation();
-  return (
-    <section className="flex flex-col gap-2">
-      <h1 className={"text-lg text-ink"}>{t("screen.notFoundTitle")}</h1>
-      <p className={"text-sm text-ink-muted"}>{t("screen.notFoundBody")}</p>
-    </section>
-  );
-}
+/**
+ * `/forbidden` is a real address rather than a component a screen renders in
+ * place, because "you may not see this" has to survive a reload and be something
+ * a link can point at — a state held only in a component's memory is neither.
+ */
+export const FORBIDDEN_PATH = "/forbidden";
 
 export const appRoutes: RouteObject[] = [
   { path: "/login", element: <LoginRoute /> },
@@ -54,7 +52,8 @@ export const appRoutes: RouteObject[] = [
             path: item.path.slice(1),
             element: <Placeholder navId={item.id} />,
           })),
-          { path: "*", element: <NotFound /> },
+          { path: FORBIDDEN_PATH.slice(1), element: <ForbiddenRoute /> },
+          { path: "*", element: <NotFoundRoute /> },
         ],
       },
     ],

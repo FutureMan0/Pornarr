@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 import { I18nextProvider } from "react-i18next";
 import { RouterProvider } from "react-router-dom";
 import { SESSION_QUERY_KEY } from "./auth/session";
+import { ErrorBoundary } from "./errors/error-boundary";
 import i18n from "./i18n";
 import { setUnauthorizedHandler } from "./lib/api";
 import { createQueryClient } from "./lib/query-client";
@@ -39,9 +40,14 @@ export function AppProviders({ queryClient, router }: AppProvidersProps): JSX.El
 
   return (
     <I18nextProvider i18n={i18n}>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
+      {/* Below i18n so the fallback has words, above the router and the cache so
+          that a crash in either still produces a page with a way out of it. The
+          shell holds a second, narrower boundary for the common case. */}
+      <ErrorBoundary className="m-6">
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </ErrorBoundary>
     </I18nextProvider>
   );
 }
