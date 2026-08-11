@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:newznab="http://www.newznab.com/DTD/2010/feeds/attributes/">
+  <channel>
+    <title>DrunkenSlug</title>
+    <item>
+      <title>One Day At A Time S03E15 Ann's Secretary</title>
+      <guid>https://drunkenslug.com/details/46d1fdc5320353d8fc416978bde957c254c2849e</guid>
+      <link>https://drunkenslug.com/getnzb/46d1fdc5320353d8fc416978bde957c254c2849e.nzb&amp;i=59172&amp;r=redacted</link>
+      <pubDate>Thu, 09 Jun 2016 08:54:31 +0100</pubDate>
+      <enclosure url="https://drunkenslug.com/getnzb/46d1fdc5320353d8fc416978bde957c254c2849e.nzb&amp;i=59172&amp;r=redacted" length="366547647" type="application/x-nzb" />
+      <newznab:attr name="category" value="5030" />
+      <newznab:attr name="size" value="366547647" />
+      <newznab:attr name="files" value="29" />
+      <newznab:attr name="poster" value="grizz &lt;grizz@not.home&gt;" />
+      <newznab:attr name="password" value="0" />
+      <newznab:attr name="group" value="alt.binaries.classic.tv.shows" />
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="1.0" xmlns:torznab="http://torznab.com/schemas/2015/feed">
+  <channel>
+    <title>HDAccess</title>
+    <item>
+      <title>Better Call Saul S01E05 Alpine Shepherd 1080p NF WEBRip DD5.1 x264</title>
+      <guid>https://hdaccess.net/details.php?id=11515</guid>
+      <link>https://hdaccess.net/details.php?id=11515</link>
+      <pubDate>Sat, 14 Mar 2015 17:10:42 -0400</pubDate>
+      <enclosure url="https://hdaccess.net/download.php?torrent=11515&amp;passkey=redacted" length="2538463390" type="application/x-bittorrent" />
+      <torznab:attr name="category" value="5000" />
+      <torznab:attr name="category" value="5040" />
+      <torznab:attr name="seeders" value="7" />
+      <torznab:attr name="peers" value="7" />
+      <torznab:attr name="infohash" value="63e07ff523710ca268567dad344ce1e0e6b7e8a3" />
+    </item>
+  </channel>
+</rss>
