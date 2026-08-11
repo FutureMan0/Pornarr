@@ -18,6 +18,7 @@ from pornarr_db.settings import (
     update_runtime_settings,
 )
 from pornarr_shared.events import publish_event
+from pornarr_shared.logging import configure_logging
 
 router = APIRouter(prefix="/admin/settings", tags=["admin"])
 Admin = Annotated[User, Depends(require_role(UserRole.ADMIN))]
@@ -34,6 +35,8 @@ async def write_settings(
     payload: RuntimeSettingsWrite, request: Request, user: Admin, session: Session
 ) -> RuntimeSettings:
     settings = await update_runtime_settings(session, request.app.state.settings, payload)
+    if "log_level" in payload.model_fields_set:
+        configure_logging(settings.log_level)
     changed_keys = sorted(payload.model_fields_set)
     write_audit(session, actor_id=user.id, action="settings.updated", target=",".join(changed_keys))
     await publish_event(request.app.state.redis, "settings.changed", {"keys": changed_keys})

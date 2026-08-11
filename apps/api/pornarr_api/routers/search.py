@@ -36,6 +36,7 @@ from pornarr_db.models.filters import (
     FilterProfileScope,
 )
 from pornarr_db.models.user import User
+from pornarr_shared.metrics import measure
 
 router = APIRouter(prefix="/search", tags=["search"])
 CurrentUser = Annotated[User, Depends(get_current_user)]
@@ -77,42 +78,43 @@ async def local_search(
     cursor: str | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
 ) -> LocalSearchResponse:
-    try:
-        search = MediaSearch(
-            query=q,
-            quality=quality,
-            year=year,
-            studio=studio,
-            performer=performer,
-            tag=tag,
-            minimum_duration_seconds=minimum_duration_seconds,
-            maximum_duration_seconds=maximum_duration_seconds,
-            sort=sort,
-            cursor=cursor,
-            limit=limit + 1,
-        )
-        results = await search_media(session, search)
-    except ValueError as error:
-        raise HTTPException(status_code=422, detail=str(error)) from error
-
-    page = results[:limit]
-    metadata = await search_metadata(session, [result.media.id for result in page])
-    rules = await _rules_for_user(session, user.id)
-    items = []
-    for result in page:
-        decision = _filter_decision(result, metadata[result.media.id], rules)
-        if decision.action is CoreFilterAction.ALLOW:
-            items.append(_search_item(result, metadata[result.media.id]))
-        elif decision.action is CoreFilterAction.REJECT and decision.rule is not None:
-            write_audit(
-                session,
-                actor_id=user.id,
-                action="filter.rejected",
-                target=str(result.media.id),
-                context={"rule_id": decision.rule.id},
+    with measure("search"):
+        try:
+            search = MediaSearch(
+                query=q,
+                quality=quality,
+                year=year,
+                studio=studio,
+                performer=performer,
+                tag=tag,
+                minimum_duration_seconds=minimum_duration_seconds,
+                maximum_duration_seconds=maximum_duration_seconds,
+                sort=sort,
+                cursor=cursor,
+                limit=limit + 1,
             )
-    next_cursor = _next_cursor(results, limit, sort, q)
-    return LocalSearchResponse(items=items, next_cursor=next_cursor)
+            results = await search_media(session, search)
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+
+        page = results[:limit]
+        metadata = await search_metadata(session, [result.media.id for result in page])
+        rules = await _rules_for_user(session, user.id)
+        items = []
+        for result in page:
+            decision = _filter_decision(result, metadata[result.media.id], rules)
+            if decision.action is CoreFilterAction.ALLOW:
+                items.append(_search_item(result, metadata[result.media.id]))
+            elif decision.action is CoreFilterAction.REJECT and decision.rule is not None:
+                write_audit(
+                    session,
+                    actor_id=user.id,
+                    action="filter.rejected",
+                    target=str(result.media.id),
+                    context={"rule_id": decision.rule.id},
+                )
+        next_cursor = _next_cursor(results, limit, sort, q)
+        return LocalSearchResponse(items=items, next_cursor=next_cursor)
 
 
 async def _rules_for_user(session: AsyncSession, user_id: UUID) -> tuple[CoreFilterRule, ...]:

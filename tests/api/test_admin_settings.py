@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -94,3 +95,18 @@ async def test_runtime_settings_are_administrator_only(app, client) -> None:
     await login(client, user.username, "correct horse battery staple")
 
     assert (await client.get("/api/admin/settings")).status_code == 403
+
+
+async def test_runtime_log_level_applies_without_restarting(app, client) -> None:
+    admin = await create_user(app, role=UserRole.ADMIN)
+    await login(client, admin.username, "correct horse battery staple")
+    previous_level = logging.getLogger().level
+    try:
+        response = await client.patch(
+            "/api/admin/settings", json={"log_level": "debug"}, headers=csrf_headers(client)
+        )
+        assert response.status_code == 200
+        assert response.json()["log_level"] == "debug"
+        assert logging.getLogger().level == logging.DEBUG
+    finally:
+        logging.getLogger().setLevel(previous_level)

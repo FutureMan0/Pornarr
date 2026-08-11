@@ -21,7 +21,7 @@ from pornarr_db.session import dispose_engine, get_engine
 from pornarr_media.capabilities import detect_hardware_capabilities
 from pornarr_media.sessions import TranscodeSessionRegistry
 from pornarr_shared.config import Settings
-from pornarr_shared.logging import install_redaction, register_secret
+from pornarr_shared.logging import configure_logging, install_redaction, register_secret
 
 logger = logging.getLogger(__name__)
 TRANSCODE_REAP_INTERVAL_SECONDS = 1
@@ -40,6 +40,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Registered before anything else can log: the secret must never reach a log
     # line, and the first thing that could leak it is a connection error.
     register_secret(settings.app_secret.get_secret_value())
+    configure_logging(settings.log_level)
     install_redaction()
 
     app.state.engine = get_engine(settings)

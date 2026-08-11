@@ -1427,6 +1427,14 @@
             "title": "Default Max Auto Jobs",
             "type": "integer"
           },
+          "log_level": {
+            "title": "Log Level",
+            "type": "string"
+          },
+          "metrics_enabled": {
+            "title": "Metrics Enabled",
+            "type": "boolean"
+          },
           "min_free_disk_percent": {
             "title": "Min Free Disk Percent",
             "type": "integer"
@@ -1480,7 +1488,9 @@
           "auto_download_recency_weight",
           "auto_download_size_weight",
           "auto_download_duplicate_risk_weight",
-          "auto_download_expected_download_time_weight"
+          "auto_download_expected_download_time_weight",
+          "log_level",
+          "metrics_enabled"
         ],
         "title": "RuntimeSettings",
         "type": "object"
@@ -1643,6 +1653,29 @@
               }
             ],
             "title": "Default Max Auto Jobs"
+          },
+          "log_level": {
+            "anyOf": [
+              {
+                "pattern": "^(debug|info|warning|error)$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log Level"
+          },
+          "metrics_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metrics Enabled"
           },
           "min_free_disk_percent": {
             "anyOf": [

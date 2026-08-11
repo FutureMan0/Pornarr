@@ -31,6 +31,8 @@ _RUNTIME_SETTING_FIELDS = frozenset(
         "auto_download_size_weight",
         "auto_download_duplicate_risk_weight",
         "auto_download_expected_download_time_weight",
+        "log_level",
+        "metrics_enabled",
     }
 )
 
@@ -56,6 +58,8 @@ class RuntimeSettings(BaseModel):
     auto_download_size_weight: float
     auto_download_duplicate_risk_weight: float
     auto_download_expected_download_time_weight: float
+    log_level: str
+    metrics_enabled: bool
 
     @classmethod
     def from_defaults(cls, defaults: Settings, overrides: dict[str, Any]) -> Self:
@@ -87,6 +91,8 @@ class RuntimeSettingsWrite(BaseModel):
     auto_download_size_weight: float | None = Field(default=None, ge=0)
     auto_download_duplicate_risk_weight: float | None = Field(default=None, ge=0)
     auto_download_expected_download_time_weight: float | None = Field(default=None, ge=0)
+    log_level: str | None = Field(default=None, pattern="^(debug|info|warning|error)$")
+    metrics_enabled: bool | None = None
 
     @field_validator(
         "transcode_max_per_user",
@@ -104,9 +110,13 @@ class RuntimeSettingsWrite(BaseModel):
         "auto_download_size_weight",
         "auto_download_duplicate_risk_weight",
         "auto_download_expected_download_time_weight",
+        "log_level",
+        "metrics_enabled",
     )
     @classmethod
-    def value_cannot_be_null(cls, value: int | float | bool | None) -> int | float | bool:
+    def value_cannot_be_null(
+        cls, value: int | float | bool | str | None
+    ) -> int | float | bool | str:
         if value is None:
             raise ValueError("setting cannot be null")
         return value

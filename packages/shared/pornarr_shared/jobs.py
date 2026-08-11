@@ -11,6 +11,8 @@ from typing import Any
 
 from arq.worker import Function, Retry, func
 
+from pornarr_shared.logging import reset_job_id, set_job_id
+
 DEFAULT_QUEUE = "pornarr:default"
 IMPORT_QUEUE = "pornarr:import"
 TRANSCODE_QUEUE = "pornarr:transcode"
@@ -79,6 +81,8 @@ def job(
 
     @wraps(coroutine)
     async def retrying_coroutine(context: dict[str, Any], *args: object, **kwargs: object) -> Any:
+        job_id = context.get("job_id")
+        token = set_job_id(job_id) if isinstance(job_id, str) else None
         try:
             return await coroutine(context, *args, **kwargs)
         except asyncio.CancelledError:
@@ -89,5 +93,8 @@ def job(
             raise
         except Exception:
             raise Retry(defer=retry_delay_seconds(int(context["job_try"]))) from None
+        finally:
+            if token is not None:
+                reset_job_id(token)
 
     return func(retrying_coroutine, timeout=timeout, max_tries=max_tries)

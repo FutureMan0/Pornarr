@@ -1,15 +1,22 @@
 from __future__ import annotations
 
+import json
 import logging
 
 import pytest
 
 from pornarr_shared.logging import (
     REDACTED,
+    JsonFormatter,
     RedactingFilter,
+    current_job_id,
     install_redaction,
     redact,
     register_secret,
+    reset_job_id,
+    reset_request_id,
+    set_job_id,
+    set_request_id,
 )
 
 
@@ -78,3 +85,25 @@ def test_non_string_messages_pass_through_untouched() -> None:
     record = logging.LogRecord("t", logging.INFO, __file__, 1, {"a": 1}, None, None)
     assert RedactingFilter().filter(record) is True
     assert record.msg == {"a": 1}
+
+
+def test_preferences_are_redacted_as_a_whole() -> None:
+    assert redact("preferences={'tags': ['private']}") == REDACTED
+
+
+def test_json_formatter_includes_request_context_and_redacts_message() -> None:
+    token = set_request_id("request-123")
+    job_token = set_job_id("job-456")
+    try:
+        record = logging.LogRecord(
+            "pornarr.test", logging.INFO, __file__, 1, "token=leaky", None, None
+        )
+        rendered = json.loads(JsonFormatter().format(record))
+    finally:
+        reset_job_id(job_token)
+        reset_request_id(token)
+
+    assert rendered["request_id"] == "request-123"
+    assert rendered["job_id"] == "job-456"
+    assert rendered["message"] == "token=***"
+    assert current_job_id() is None
