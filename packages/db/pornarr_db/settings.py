@@ -32,6 +32,12 @@ _RUNTIME_SETTING_FIELDS = frozenset(
         "auto_download_size_weight",
         "auto_download_duplicate_risk_weight",
         "auto_download_expected_download_time_weight",
+        "recommendation_tag_weight",
+        "recommendation_performer_weight",
+        "recommendation_studio_weight",
+        "recommendation_quality_weight",
+        "recommendation_recency_weight",
+        "recommendation_popularity_weight",
         "log_level",
         "metrics_enabled",
     }
@@ -60,6 +66,12 @@ class RuntimeSettings(BaseModel):
     auto_download_size_weight: float
     auto_download_duplicate_risk_weight: float
     auto_download_expected_download_time_weight: float
+    recommendation_tag_weight: float
+    recommendation_performer_weight: float
+    recommendation_studio_weight: float
+    recommendation_quality_weight: float
+    recommendation_recency_weight: float
+    recommendation_popularity_weight: float
     log_level: str
     metrics_enabled: bool
 
@@ -94,6 +106,12 @@ class RuntimeSettingsWrite(BaseModel):
     auto_download_size_weight: float | None = Field(default=None, ge=0)
     auto_download_duplicate_risk_weight: float | None = Field(default=None, ge=0)
     auto_download_expected_download_time_weight: float | None = Field(default=None, ge=0)
+    recommendation_tag_weight: float | None = Field(default=None, ge=0)
+    recommendation_performer_weight: float | None = Field(default=None, ge=0)
+    recommendation_studio_weight: float | None = Field(default=None, ge=0)
+    recommendation_quality_weight: float | None = Field(default=None, ge=0)
+    recommendation_recency_weight: float | None = Field(default=None, ge=0)
+    recommendation_popularity_weight: float | None = Field(default=None, ge=0)
     log_level: str | None = Field(default=None, pattern="^(debug|info|warning|error)$")
     metrics_enabled: bool | None = None
 
@@ -113,6 +131,12 @@ class RuntimeSettingsWrite(BaseModel):
         "auto_download_size_weight",
         "auto_download_duplicate_risk_weight",
         "auto_download_expected_download_time_weight",
+        "recommendation_tag_weight",
+        "recommendation_performer_weight",
+        "recommendation_studio_weight",
+        "recommendation_quality_weight",
+        "recommendation_recency_weight",
+        "recommendation_popularity_weight",
         "log_level",
         "metrics_enabled",
     )
