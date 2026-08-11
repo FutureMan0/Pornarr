@@ -1678,6 +1678,30 @@
             "title": "Playback Completion Threshold Percent",
             "type": "integer"
           },
+          "recommendation_performer_weight": {
+            "title": "Recommendation Performer Weight",
+            "type": "number"
+          },
+          "recommendation_popularity_weight": {
+            "title": "Recommendation Popularity Weight",
+            "type": "number"
+          },
+          "recommendation_quality_weight": {
+            "title": "Recommendation Quality Weight",
+            "type": "number"
+          },
+          "recommendation_recency_weight": {
+            "title": "Recommendation Recency Weight",
+            "type": "number"
+          },
+          "recommendation_studio_weight": {
+            "title": "Recommendation Studio Weight",
+            "type": "number"
+          },
+          "recommendation_tag_weight": {
+            "title": "Recommendation Tag Weight",
+            "type": "number"
+          },
           "transcode_max_hw_sessions": {
             "anyOf": [
               {
@@ -1736,6 +1760,12 @@
           "auto_download_size_weight",
           "auto_download_duplicate_risk_weight",
           "auto_download_expected_download_time_weight",
+          "recommendation_tag_weight",
+          "recommendation_performer_weight",
+          "recommendation_studio_weight",
+          "recommendation_quality_weight",
+          "recommendation_recency_weight",
+          "recommendation_popularity_weight",
           "log_level",
           "metrics_enabled"
         ],
@@ -1949,6 +1979,78 @@
               }
             ],
             "title": "Playback Completion Threshold Percent"
+          },
+          "recommendation_performer_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Performer Weight"
+          },
+          "recommendation_popularity_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Popularity Weight"
+          },
+          "recommendation_quality_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Quality Weight"
+          },
+          "recommendation_recency_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Recency Weight"
+          },
+          "recommendation_studio_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Studio Weight"
+          },
+          "recommendation_tag_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Tag Weight"
           },
           "transcode_max_hw_sessions": {
             "anyOf": [

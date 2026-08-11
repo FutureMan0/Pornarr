@@ -1524,6 +1524,18 @@ export interface components {
             min_free_disk_percent: number;
             /** Playback Completion Threshold Percent */
             playback_completion_threshold_percent: number;
+            /** Recommendation Performer Weight */
+            recommendation_performer_weight: number;
+            /** Recommendation Popularity Weight */
+            recommendation_popularity_weight: number;
+            /** Recommendation Quality Weight */
+            recommendation_quality_weight: number;
+            /** Recommendation Recency Weight */
+            recommendation_recency_weight: number;
+            /** Recommendation Studio Weight */
+            recommendation_studio_weight: number;
+            /** Recommendation Tag Weight */
+            recommendation_tag_weight: number;
             /** Transcode Max Hw Sessions */
             transcode_max_hw_sessions: number | null;
             /** Transcode Max Per User */
@@ -1572,6 +1584,18 @@ export interface components {
             min_free_disk_percent?: number | null;
             /** Playback Completion Threshold Percent */
             playback_completion_threshold_percent?: number | null;
+            /** Recommendation Performer Weight */
+            recommendation_performer_weight?: number | null;
+            /** Recommendation Popularity Weight */
+            recommendation_popularity_weight?: number | null;
+            /** Recommendation Quality Weight */
+            recommendation_quality_weight?: number | null;
+            /** Recommendation Recency Weight */
+            recommendation_recency_weight?: number | null;
+            /** Recommendation Studio Weight */
+            recommendation_studio_weight?: number | null;
+            /** Recommendation Tag Weight */
+            recommendation_tag_weight?: number | null;
             /** Transcode Max Hw Sessions */
             transcode_max_hw_sessions?: number | null;
             /** Transcode Max Per User */
