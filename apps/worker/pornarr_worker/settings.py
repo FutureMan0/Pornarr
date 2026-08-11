@@ -23,6 +23,7 @@ from pornarr_worker.cleanup import cleanup_transcodes
 from pornarr_worker.jobs.automation import AUTOMATION_EXECUTION_JOB
 from pornarr_worker.jobs.download_poll import DOWNLOAD_POLL_JOB
 from pornarr_worker.jobs.events import PRUNE_USER_EVENTS_JOB
+from pornarr_worker.jobs.profile import REFRESH_INTEREST_PROFILES_JOB
 from pornarr_worker.jobs.scan import SCAN_JOB
 from pornarr_worker.jobs.storage import REFRESH_STORAGE_JOB
 from pornarr_worker.search import RELEASE_CACHE_CLEANUP_JOB, SEARCH_INDEXERS_JOB
@@ -51,6 +52,7 @@ class WorkerSettings:
         AUTOMATION_EXECUTION_JOB,
         REFRESH_STORAGE_JOB,
         PRUNE_USER_EVENTS_JOB,
+        REFRESH_INTEREST_PROFILES_JOB,
     ]
     queue_name: ClassVar = DEFAULT_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
@@ -144,6 +146,13 @@ class SchedulerSettings:
             PRUNE_USER_EVENTS_JOB.coroutine,
             name=PRUNE_USER_EVENTS_JOB.name,
             hour=3,
+            minute=30,
+            max_tries=JOB_MAX_TRIES,
+        ),
+        cron(
+            REFRESH_INTEREST_PROFILES_JOB.coroutine,
+            name=REFRESH_INTEREST_PROFILES_JOB.name,
+            hour=2,
             minute=30,
             max_tries=JOB_MAX_TRIES,
         ),

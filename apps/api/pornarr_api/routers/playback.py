@@ -211,7 +211,7 @@ async def report_progress(
         user.id,
         UserEventType.PROGRESS,
         media_id=media_id,
-        value=payload.position_seconds,
+        value=payload.position_seconds * 100 / payload.duration_seconds,
     )
     if reached_threshold and not was_completed:
         await record_user_event(session, user.id, UserEventType.COMPLETED, media_id=media_id)

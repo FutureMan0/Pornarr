@@ -230,6 +230,35 @@ def test_user_event_upgrade_preserves_completion_and_cascades_with_its_user(
     assert remaining == (0,)
 
 
+def test_user_preferences_are_indexed_and_removed_with_their_user(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+    user_id = "e20bc013-7619-45d9-8dfa-f1a6b75debd0"
+    with psycopg.connect(_psycopg_url()) as connection:
+        connection.execute(
+            "INSERT INTO users (id, username, password_hash) VALUES (%s, %s, %s)",
+            (user_id, "preference-owner", "not-a-real-password"),
+        )
+        connection.execute(
+            """INSERT INTO user_preferences (user_id, axis, subject, raw_score, score)
+            VALUES (%s, %s, %s, %s, %s)""",
+            (user_id, "tag", "example-tag", 8, 1),
+        )
+        connection.execute("INSERT INTO user_preference_states (user_id) VALUES (%s)", (user_id,))
+        indexes = connection.execute(
+            "SELECT indexname FROM pg_indexes WHERE tablename = 'user_preferences'"
+        ).fetchall()
+        connection.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        remaining = connection.execute(
+            """SELECT
+                (SELECT count(*) FROM user_preferences),
+                (SELECT count(*) FROM user_preference_states)"""
+        ).fetchone()
+        connection.commit()
+
+    assert "ix_user_preferences_user_id_axis_score" in {name for (name,) in indexes}
+    assert remaining == (0, 0)
+
+
 def test_media_files_reject_two_active_rows_for_one_medium(clean_database: None) -> None:
     assert _alembic("upgrade", "head").returncode == 0
 
