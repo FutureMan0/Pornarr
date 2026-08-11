@@ -73,6 +73,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/account/storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Daily Storage Usage */
+        get: operations["account_read_daily_storage_usage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/audit": {
         parameters: {
             query?: never;
@@ -790,6 +807,18 @@ export interface components {
             /** Username */
             username: string;
         };
+        /** DailyStorageUsageResponse */
+        DailyStorageUsageResponse: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Download Count */
+            download_count: number;
+            /** Downloaded Bytes */
+            downloaded_bytes: number;
+        };
         /**
          * DirectPlayReason
          * @enum {string}
@@ -1174,6 +1203,10 @@ export interface components {
             id: string;
             /** Last Scanned At */
             last_scanned_at: string | null;
+            /** Last Space Checked At */
+            last_space_checked_at: string | null;
+            /** Low Space Warning Sent */
+            low_space_warning_sent: boolean;
             /** Path */
             path: string;
             /** Same Filesystem As Downloads */
@@ -1546,6 +1579,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    account_read_daily_storage_usage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyStorageUsageResponse"];
                 };
             };
         };

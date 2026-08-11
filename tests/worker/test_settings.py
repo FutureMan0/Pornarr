@@ -22,14 +22,12 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
     get_settings.cache_clear()
     sys.modules.pop("pornarr_worker.settings", None)
     settings = importlib.import_module("pornarr_worker.settings")
-
     worker_types = (
         settings.WorkerSettings,
         settings.ImportWorkerSettings,
         settings.TranscodeWorkerSettings,
         settings.IndexerWorkerSettings,
     )
-
     assert [worker.queue_name for worker in worker_types] == [
         DEFAULT_QUEUE,
         IMPORT_QUEUE,
@@ -41,18 +39,22 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "heartbeat",
         "cleanup_transcodes",
         "download_poll",
+        "refresh_storage",
     ]
     assert [job.name for job in settings.TranscodeWorkerSettings.functions] == [
         "generate_preview_sprite_job",
         "generate_artwork_job",
         "regenerate_library_artwork_job",
     ]
-    assert settings.IndexerWorkerSettings.functions[0].name == "search_indexers"
-    assert settings.IndexerWorkerSettings.functions[1].name == "cleanup_release_cache"
+    assert [job.name for job in settings.IndexerWorkerSettings.functions] == [
+        "search_indexers",
+        "cleanup_release_cache",
+    ]
     assert [function.name for function in settings.ImportWorkerSettings.functions] == [
         "heartbeat",
         "cleanup_transcodes",
         "download_poll",
+        "refresh_storage",
         "scan",
     ]
     required_arq_options = {
@@ -66,5 +68,10 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
     }
     assert all(required_arq_options <= worker.__dict__.keys() for worker in worker_types)
     cron_jobs = {cron_job.name: cron_job for cron_job in settings.SchedulerSettings.cron_jobs}
-    assert list(cron_jobs) == ["heartbeat", "cleanup_transcodes", "download_poll"]
+    assert list(cron_jobs) == [
+        "heartbeat",
+        "cleanup_transcodes",
+        "download_poll",
+        "refresh_storage",
+    ]
     assert cron_jobs["download_poll"].second == set(range(0, 60, 5))

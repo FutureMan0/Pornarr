@@ -236,6 +236,30 @@
         "title": "CurrentUserResponse",
         "type": "object"
       },
+      "DailyStorageUsageResponse": {
+        "properties": {
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "download_count": {
+            "title": "Download Count",
+            "type": "integer"
+          },
+          "downloaded_bytes": {
+            "title": "Downloaded Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "day",
+          "downloaded_bytes",
+          "download_count"
+        ],
+        "title": "DailyStorageUsageResponse",
+        "type": "object"
+      },
       "DirectPlayReason": {
         "enum": [
           "container_unknown",
@@ -1271,6 +1295,22 @@
             ],
             "title": "Last Scanned At"
           },
+          "last_space_checked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Space Checked At"
+          },
+          "low_space_warning_sent": {
+            "title": "Low Space Warning Sent",
+            "type": "boolean"
+          },
           "path": {
             "title": "Path",
             "type": "string"
@@ -1297,6 +1337,8 @@
           "enabled",
           "free_space_bytes",
           "last_scanned_at",
+          "last_space_checked_at",
+          "low_space_warning_sent",
           "same_filesystem_as_downloads",
           "warning"
         ],
@@ -2144,6 +2186,27 @@
           }
         },
         "summary": "Unlink Oidc Identity",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/api/account/storage": {
+      "get": {
+        "operationId": "account_read_daily_storage_usage",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyStorageUsageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Daily Storage Usage",
         "tags": [
           "account"
         ]
