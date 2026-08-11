@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from datetime import UTC, datetime, timedelta
 from typing import cast
 
@@ -9,10 +10,13 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from pornarr_db.base import Base
+from pornarr_db.events import record_user_event
 from pornarr_db.models.entities import MediaPerformer, MediaTag, Performer, Tag
 from pornarr_db.models.media import Media, MediaFile
+from pornarr_db.models.playback import UserEventType
 from pornarr_db.models.preferences import PreferenceAxis, UserPreference
 from pornarr_db.models.user import User
+from pornarr_db.preferences import refresh_user_interest_profile
 from pornarr_db.recommendations import generate_recommendations
 
 
@@ -28,11 +32,18 @@ async def session():
         await engine.dispose()
 
 
-async def _media(session: AsyncSession, number: int, tag: Tag, performer: Performer) -> Media:
+async def _media(
+    session: AsyncSession,
+    number: int,
+    tag: Tag,
+    performer: Performer,
+    *,
+    studio: str | None = None,
+) -> Media:
     media = Media(
         title=f"Example {number}",
         normalized_title=f"example {number}",
-        studio=f"Studio {number % 4}",
+        studio=studio or f"Studio {number % 4}",
     )
     session.add(media)
     await session.flush()
@@ -90,4 +101,130 @@ async def test_generation_stores_explainable_diverse_candidates(session: AsyncSe
     assert all(
         candidate.model_version == "v1" and candidate.expires_at == now + timedelta(days=1)
         for candidate in candidates
+    )
+
+
+async def test_distinct_event_histories_produce_isolated_candidate_scores(
+    session: AsyncSession,
+) -> None:
+    alice = User(username="alice", password_hash="hash")
+    bob = User(username="bob", password_hash="hash")
+    alice_tag = Tag(name="Alice", normalized_name="alice")
+    bob_tag = Tag(name="Bob", normalized_name="bob")
+    alice_performer = Performer(name="Alice performer", normalized_name="alice performer")
+    bob_performer = Performer(name="Bob performer", normalized_name="bob performer")
+    session.add_all((alice, bob, alice_tag, bob_tag, alice_performer, bob_performer))
+    await session.flush()
+    alice_signal = await _media(session, 1, alice_tag, alice_performer)
+    alice_candidate = await _media(session, 2, alice_tag, alice_performer)
+    bob_signal = await _media(session, 3, bob_tag, bob_performer)
+    bob_candidate = await _media(session, 4, bob_tag, bob_performer)
+    now = datetime(2026, 8, 11, tzinfo=UTC)
+    for user, signal in ((alice, alice_signal), (bob, bob_signal)):
+        event = await record_user_event(
+            session, user.id, UserEventType.FAVOURITE, media_id=signal.id
+        )
+        event.created_at = now
+    await session.flush()
+
+    await refresh_user_interest_profile(session, alice.id, now=now)
+    await refresh_user_interest_profile(session, bob.id, now=now)
+    alice_scores = {
+        candidate.media_id: candidate.score
+        for candidate in await generate_recommendations(session, alice.id, now=now)
+    }
+    bob_scores = {
+        candidate.media_id: candidate.score
+        for candidate in await generate_recommendations(session, bob.id, now=now)
+    }
+
+    assert alice_scores[alice_candidate.id] > alice_scores[bob_candidate.id]
+    assert bob_scores[bob_candidate.id] > bob_scores[alice_candidate.id]
+
+
+async def test_generation_enforces_performer_and_studio_limits(session: AsyncSession) -> None:
+    user = User(username="alice", password_hash="hash")
+    tag = Tag(name="Liked", normalized_name="liked")
+    shared_performer = Performer(name="Shared", normalized_name="shared")
+    session.add_all((user, tag, shared_performer))
+    await session.flush()
+    media = [
+        await _media(session, number, tag, shared_performer, studio=f"Studio {number}")
+        for number in range(5)
+    ]
+    for number in range(5, 26):
+        performer = Performer(name=f"Performer {number}", normalized_name=f"performer {number}")
+        session.add(performer)
+        media.append(
+            await _media(
+                session,
+                number,
+                tag,
+                performer,
+                studio="Popular Studio" if number < 10 else f"Studio {number}",
+            )
+        )
+    now = datetime(2026, 8, 11, tzinfo=UTC)
+    session.add(
+        UserPreference(
+            user_id=user.id,
+            axis=PreferenceAxis.TAG.value,
+            subject=str(tag.id),
+            raw_score=8,
+            score=1,
+            computed_at=now,
+        )
+    )
+    await session.flush()
+
+    candidates = await generate_recommendations(session, user.id, now=now)
+    performers = {
+        item.id: str(shared_performer.id) if item in media[:5] else str(item.id) for item in media
+    }
+    studios = {item.id: item.studio for item in media}
+
+    assert len(candidates) == 20
+    assert max(Counter(performers[candidate.media_id] for candidate in candidates).values()) <= 2
+    assert max(Counter(studios[candidate.media_id] for candidate in candidates).values()) <= 3
+
+
+async def test_generation_never_stores_hard_blocked_metadata(session: AsyncSession) -> None:
+    user = User(username="alice", password_hash="hash")
+    allowed_tag = Tag(name="Allowed", normalized_name="allowed")
+    blocked_tag = Tag(name="Blocked", normalized_name="blocked")
+    allowed_performer = Performer(name="Allowed", normalized_name="allowed")
+    blocked_performer = Performer(name="Blocked", normalized_name="blocked")
+    session.add_all((user, allowed_tag, blocked_tag, allowed_performer, blocked_performer))
+    await session.flush()
+    allowed = await _media(session, 1, allowed_tag, allowed_performer)
+    tag_blocked = await _media(session, 2, blocked_tag, allowed_performer)
+    performer_blocked = await _media(session, 3, allowed_tag, blocked_performer)
+    now = datetime(2026, 8, 11, tzinfo=UTC)
+    session.add_all(
+        (
+            UserPreference(
+                user_id=user.id,
+                axis=PreferenceAxis.TAG.value,
+                subject=str(blocked_tag.id),
+                raw_score=-100,
+                score=0,
+                computed_at=now,
+            ),
+            UserPreference(
+                user_id=user.id,
+                axis=PreferenceAxis.PERFORMER.value,
+                subject=str(blocked_performer.id),
+                raw_score=-100,
+                score=0,
+                computed_at=now,
+            ),
+        )
+    )
+    await session.flush()
+
+    candidates = await generate_recommendations(session, user.id, now=now)
+
+    assert {candidate.media_id for candidate in candidates} == {allowed.id}
+    assert {tag_blocked.id, performer_blocked.id}.isdisjoint(
+        {candidate.media_id for candidate in candidates}
     )

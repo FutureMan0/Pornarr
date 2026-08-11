@@ -82,6 +82,32 @@ async def test_favourite_updates_every_media_axis_with_ninety_day_decay(
     }
 
 
+async def test_identical_events_decay_more_when_they_are_older(session: AsyncSession) -> None:
+    older_user = User(username="older", password_hash="hash")
+    newer_user = User(username="newer", password_hash="hash")
+    session.add_all((older_user, newer_user))
+    media, tag, _ = await _media_with_metadata(session)
+    now = datetime(2026, 8, 11, tzinfo=UTC)
+    older = await record_user_event(
+        session, older_user.id, UserEventType.FAVOURITE, media_id=media.id
+    )
+    newer = await record_user_event(
+        session, newer_user.id, UserEventType.FAVOURITE, media_id=media.id
+    )
+    older.created_at = now - timedelta(days=90)
+    newer.created_at = now - timedelta(days=45)
+    await session.flush()
+
+    older_preferences = await refresh_user_interest_profile(session, older_user.id, now=now)
+    newer_preferences = await refresh_user_interest_profile(session, newer_user.id, now=now)
+
+    older_score = _preference_values(older_preferences)[(PreferenceAxis.TAG.value, str(tag.id))][0]
+    newer_score = _preference_values(newer_preferences)[(PreferenceAxis.TAG.value, str(tag.id))][0]
+    assert older_score == pytest.approx(4)
+    assert newer_score == pytest.approx(8 / 2**0.5)
+    assert older_score < newer_score
+
+
 async def test_incremental_profile_matches_a_full_rebuild(session: AsyncSession) -> None:
     user = User(username="alice", password_hash="hash")
     session.add(user)
