@@ -43,6 +43,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "refresh_storage",
         "prune_user_events_job",
         "refresh_interest_profiles_job",
+        "refresh_recommendations_job",
     ]
     assert [job.name for job in settings.TranscodeWorkerSettings.functions] == [
         "generate_preview_sprite_job",
@@ -61,6 +62,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "refresh_storage",
         "prune_user_events_job",
         "refresh_interest_profiles_job",
+        "refresh_recommendations_job",
         "scan",
     ]
     required_arq_options = {
@@ -81,5 +83,6 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "refresh_storage",
         "prune_user_events_job",
         "refresh_interest_profiles_job",
+        "refresh_recommendations_job",
     ]
     assert cron_jobs["download_poll"].second == set(range(0, 60, 5))

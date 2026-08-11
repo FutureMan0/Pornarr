@@ -34,6 +34,7 @@ from pornarr_db.models.oidc import OidcIdentity, OidcProvider
 from pornarr_db.models.playback import PlaybackProgress, UserEvent, UserEventType
 from pornarr_db.models.preferences import PreferenceAxis, UserPreference, UserPreferenceState
 from pornarr_db.models.quality import QualityDefinition, QualityProfile, QualityProfileItem
+from pornarr_db.models.recommendation import RecommendationCandidate
 from pornarr_db.models.release import ReleaseCache
 from pornarr_db.models.request import Request, RequestHistory, RequestStatus
 from pornarr_db.models.root_folders import RootFolder
@@ -79,6 +80,7 @@ __all__ = [
     "QualityDefinition",
     "QualityProfile",
     "QualityProfileItem",
+    "RecommendationCandidate",
     "ReleaseCache",
     "Request",
     "RequestHistory",
