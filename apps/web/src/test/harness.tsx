@@ -1,3 +1,5 @@
+import { transferableAbortController } from "node:util";
+
 /**
  * The test harness: a mock API, a query client that does not shout, and one
  * way to mount the real application.
@@ -45,6 +47,26 @@ export const defaultHandlers = [
 
 export const server = setupServer(...defaultHandlers);
 
+/**
+ * React Router passes navigation signals to Node's fetch implementation. In
+ * jsdom its controller comes from a different realm, which Undici rejects.
+ * Use Node's transferable controller only in the test environment so routed
+ * requests exercise their normal path.
+ */
+class NodeAbortController {
+  readonly signal: AbortSignal;
+
+  #controller = transferableAbortController();
+
+  constructor() {
+    this.signal = this.#controller.signal;
+  }
+
+  abort(reason?: unknown): void {
+    this.#controller.abort(reason);
+  }
+}
+
 /** Signed in: `/api/auth/me` returns the test user. */
 export function signedIn(): void {
   server.use(http.get("/api/auth/me", () => HttpResponse.json(TEST_USER)));
@@ -52,7 +74,14 @@ export function signedIn(): void {
 
 /** Registers the msw lifecycle. Call once at the top level of a test file. */
 export function useMockApi(): void {
-  beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
+  beforeAll(() => {
+    Object.defineProperty(globalThis, "AbortController", {
+      configurable: true,
+      writable: true,
+      value: NodeAbortController,
+    });
+    server.listen({ onUnhandledRequest: "error" });
+  });
   afterEach(() => server.resetHandlers());
   afterAll(() => server.close());
 }

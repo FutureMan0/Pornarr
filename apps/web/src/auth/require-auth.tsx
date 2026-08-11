@@ -8,6 +8,7 @@
  */
 import { Button, SkeletonRegion, SkeletonText } from "@pornarr/ui";
 import type { JSX } from "react";
+import { useTranslation } from "react-i18next";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { messageForError } from "../lib/api-error";
 import { useSession } from "./session";
@@ -18,6 +19,7 @@ export interface FromLocationState {
 }
 
 export function RequireAuth(): JSX.Element {
+  const { t } = useTranslation();
   const session = useSession();
   const location = useLocation();
 
@@ -27,7 +29,7 @@ export function RequireAuth(): JSX.Element {
   if (session.isPending) {
     return (
       <div className="p-6">
-        <SkeletonRegion label="Checking your session">
+        <SkeletonRegion label={t("session.checking")}>
           <SkeletonText lines={3} />
         </SkeletonRegion>
       </div>
@@ -40,12 +42,12 @@ export function RequireAuth(): JSX.Element {
   if (session.isError) {
     return (
       <main className="mx-auto flex max-w-[calc(var(--space-16)*6)] flex-col gap-6 p-6">
-        <h1 className="text-lg text-ink">Could not check your session</h1>
+        <h1 className="text-lg text-ink">{t("session.unavailableTitle")}</h1>
         <p role="alert" className="text-sm text-ink-muted">
           {messageForError(session.error)}
         </p>
         <div>
-          <Button onClick={() => void session.refetch()}>Try again</Button>
+          <Button onClick={() => void session.refetch()}>{t("session.retry")}</Button>
         </div>
       </main>
     );

@@ -6,13 +6,19 @@
  * query, `RequireAuth` sees null on the next render, and the application lands
  * on the login route through the router rather than through `window.location`.
  * Losing the SPA and the cache to a full page load is not error handling.
+ *
+ * `I18nextProvider` is above the router rather than inside a screen: a language
+ * change has to reach the sidebar, the top bar and the live region at once, and
+ * anything mounted outside it would keep rendering the previous language.
  */
 import { QueryClientProvider } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import type { JSX } from "react";
 import { useEffect, useState } from "react";
+import { I18nextProvider } from "react-i18next";
 import { RouterProvider } from "react-router-dom";
 import { SESSION_QUERY_KEY } from "./auth/session";
+import i18n from "./i18n";
 import { setUnauthorizedHandler } from "./lib/api";
 import { createQueryClient } from "./lib/query-client";
 import { createAppRouter } from "./routes";
@@ -32,9 +38,11 @@ export function AppProviders({ queryClient, router }: AppProvidersProps): JSX.El
   }, [queryClient]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <I18nextProvider i18n={i18n}>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </I18nextProvider>
   );
 }
 

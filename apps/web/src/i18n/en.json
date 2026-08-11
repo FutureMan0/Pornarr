@@ -1,0 +1,84 @@
+{
+  "app": {
+    "name": "Pornarr"
+  },
+  "login": {
+    "subtitle": "Sign in to continue.",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Sign in"
+  },
+  "session": {
+    "checking": "Checking your session",
+    "unavailableTitle": "Could not check your session",
+    "retry": "Try again"
+  },
+  "shell": {
+    "skipToContent": "Skip to content"
+  },
+  "nav": {
+    "primary": "Primary",
+    "navigation": "Navigation",
+    "close": "Close",
+    "closeNavigation": "Close navigation",
+    "library": "Library",
+    "requests": "Requests",
+    "downloads": "Downloads",
+    "settings": "Settings"
+  },
+  "search": {
+    "label": "Search",
+    "placeholder": "Search"
+  },
+  "account": {
+    "menu": "Account",
+    "signOut": "Sign out",
+    "signOutEverywhere": "Sign out everywhere"
+  },
+  "activity": {
+    "title": "Activity",
+    "idle": "Nothing is transferring right now.",
+    "hint": "Downloads, imports and their speeds appear here as they start."
+  },
+  "locale": {
+    "label": "Language"
+  },
+  "screen": {
+    "notBuilt": "This screen is not built yet.",
+    "notFoundTitle": "Not found",
+    "notFoundBody": "There is nothing at this address. Pick a destination from the navigation."
+  },
+  "events": {
+    "downloadCompleted": "A download finished.",
+    "downloadFailed": "A download failed.",
+    "importCompleted": "An import finished.",
+    "mediaAvailable": "New media is available."
+  },
+  "format": {
+    "unknown": "Unknown"
+  },
+  "errors": {
+    "INVALID_CREDENTIALS": "That username and password do not match.",
+    "NOT_AUTHENTICATED": "Your session has ended. Sign in again.",
+    "FORBIDDEN": "Your account is not allowed to do that.",
+    "CSRF_FAILED": "This request could not be verified. Reload the page and try again.",
+    "LOGIN_RATE_LIMITED": "Too many sign-in attempts. Wait a minute and try again.",
+    "OIDC_DISCOVERY_FAILED": "That identity provider could not be reached or answered with something unusable.",
+    "WEB_ASSETS_MISSING": "The interface files are missing from this installation.",
+    "NOT_IMPLEMENTED": "That is not built yet.",
+    "CONFIGURATION_INVALID": "This instance is misconfigured. Check the server log.",
+    "DECRYPTION_FAILED": "A stored credential could not be read. The application secret does not match the one it was saved with.",
+    "BAD_REQUEST": "That request was not something the server could use.",
+    "NOT_FOUND": "That does not exist, or no longer does.",
+    "METHOD_NOT_ALLOWED": "That action is not available on this address.",
+    "CONFLICT": "That clashes with something that already exists.",
+    "PAYLOAD_TOO_LARGE": "That is too large to send.",
+    "VALIDATION_FAILED": "Some of what was entered is not valid. Check the highlighted fields.",
+    "RATE_LIMITED": "Too many requests. Wait a moment and try again.",
+    "INTERNAL_ERROR": "The server ran into a problem. Check the server log.",
+    "SERVICE_UNAVAILABLE": "The server is not ready yet. Try again shortly.",
+    "NETWORK_UNREACHABLE": "The server could not be reached. Check that it is running.",
+    "unknown": "Something went wrong ({{code}}).",
+    "generic": "Something went wrong. Try again."
+  }
+}
