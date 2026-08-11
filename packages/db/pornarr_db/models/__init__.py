@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from pornarr_db.models.api_keys import UserApiKey
 from pornarr_db.models.audit import AuditLog
+from pornarr_db.models.automation import AutomationRule
 from pornarr_db.models.custom_formats import (
     CustomFormat,
     CustomFormatCondition,
@@ -35,10 +36,12 @@ from pornarr_db.models.release import ReleaseCache
 from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.models.settings import Setting
 from pornarr_db.models.statistics import PerformanceMeasurement, PerformanceMetric
+from pornarr_db.models.storage import DailyStorageUsage
 from pornarr_db.models.user import User, UserRole
 
 __all__ = [
     "AuditLog",
+    "AutomationRule",
     "BlockedRelease",
     "ContentFilterProfile",
     "ContentFilterRule",
@@ -46,6 +49,7 @@ __all__ = [
     "CustomFormatCondition",
     "CustomFormatField",
     "CustomFormatOperator",
+    "DailyStorageUsage",
     "DownloadClient",
     "DownloadHistory",
     "DownloadJob",

@@ -22,6 +22,7 @@ from pornarr_worker.artwork import ARTWORK_JOB, LIBRARY_ARTWORK_JOB
 from pornarr_worker.cleanup import cleanup_transcodes
 from pornarr_worker.jobs.download_poll import DOWNLOAD_POLL_JOB
 from pornarr_worker.jobs.scan import SCAN_JOB
+from pornarr_worker.jobs.storage import REFRESH_STORAGE_JOB
 from pornarr_worker.search import RELEASE_CACHE_CLEANUP_JOB, SEARCH_INDEXERS_JOB
 from pornarr_worker.sprites import SPRITE_JOB
 
@@ -41,7 +42,12 @@ CLEANUP_TRANSCODES_JOB = job(cleanup_transcodes)
 class WorkerSettings:
     """Default queue worker; ARQ settings are deliberately class attributes."""
 
-    functions: ClassVar = [HEARTBEAT_JOB, CLEANUP_TRANSCODES_JOB, DOWNLOAD_POLL_JOB]
+    functions: ClassVar = [
+        HEARTBEAT_JOB,
+        CLEANUP_TRANSCODES_JOB,
+        DOWNLOAD_POLL_JOB,
+        REFRESH_STORAGE_JOB,
+    ]
     queue_name: ClassVar = DEFAULT_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
     job_timeout: ClassVar = JOB_TIMEOUT_SECONDS
@@ -120,6 +126,13 @@ class SchedulerSettings:
             DOWNLOAD_POLL_JOB.coroutine,
             name=DOWNLOAD_POLL_JOB.name,
             second=set(range(0, 60, 5)),
+            run_at_startup=True,
+            max_tries=JOB_MAX_TRIES,
+        ),
+        cron(
+            REFRESH_STORAGE_JOB.coroutine,
+            name=REFRESH_STORAGE_JOB.name,
+            minute={0},
             run_at_startup=True,
             max_tries=JOB_MAX_TRIES,
         ),

@@ -236,6 +236,30 @@
         "title": "CurrentUserResponse",
         "type": "object"
       },
+      "DailyStorageUsageResponse": {
+        "properties": {
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "download_count": {
+            "title": "Download Count",
+            "type": "integer"
+          },
+          "downloaded_bytes": {
+            "title": "Downloaded Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "day",
+          "downloaded_bytes",
+          "download_count"
+        ],
+        "title": "DailyStorageUsageResponse",
+        "type": "object"
+      },
       "DirectPlayReason": {
         "enum": [
           "container_unknown",
@@ -551,6 +575,16 @@
       },
       "HealthReport": {
         "properties": {
+          "backup": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComponentHealth"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "database": {
             "$ref": "#/components/schemas/ComponentHealth"
           },
@@ -1261,6 +1295,22 @@
             ],
             "title": "Last Scanned At"
           },
+          "last_space_checked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Space Checked At"
+          },
+          "low_space_warning_sent": {
+            "title": "Low Space Warning Sent",
+            "type": "boolean"
+          },
           "path": {
             "title": "Path",
             "type": "string"
@@ -1287,6 +1337,8 @@
           "enabled",
           "free_space_bytes",
           "last_scanned_at",
+          "last_space_checked_at",
+          "low_space_warning_sent",
           "same_filesystem_as_downloads",
           "warning"
         ],
@@ -1327,12 +1379,48 @@
             ],
             "title": "Audit Retention Days"
           },
+          "auto_download_duplicate_risk_weight": {
+            "title": "Auto Download Duplicate Risk Weight",
+            "type": "number"
+          },
+          "auto_download_expected_download_time_weight": {
+            "title": "Auto Download Expected Download Time Weight",
+            "type": "number"
+          },
+          "auto_download_indexer_reliability_weight": {
+            "title": "Auto Download Indexer Reliability Weight",
+            "type": "number"
+          },
+          "auto_download_metadata_weight": {
+            "title": "Auto Download Metadata Weight",
+            "type": "number"
+          },
+          "auto_download_recency_weight": {
+            "title": "Auto Download Recency Weight",
+            "type": "number"
+          },
+          "auto_download_recommendation_weight": {
+            "title": "Auto Download Recommendation Weight",
+            "type": "number"
+          },
+          "auto_download_release_weight": {
+            "title": "Auto Download Release Weight",
+            "type": "number"
+          },
+          "auto_download_size_weight": {
+            "title": "Auto Download Size Weight",
+            "type": "number"
+          },
           "default_auto_downloads_enabled": {
             "title": "Default Auto Downloads Enabled",
             "type": "boolean"
           },
           "default_daily_download_limit_gb": {
             "title": "Default Daily Download Limit Gb",
+            "type": "integer"
+          },
+          "default_max_auto_downloads_per_day": {
+            "title": "Default Max Auto Downloads Per Day",
             "type": "integer"
           },
           "default_max_auto_jobs": {
@@ -1383,7 +1471,16 @@
           "min_free_disk_percent",
           "default_daily_download_limit_gb",
           "default_max_auto_jobs",
-          "default_auto_downloads_enabled"
+          "default_max_auto_downloads_per_day",
+          "default_auto_downloads_enabled",
+          "auto_download_recommendation_weight",
+          "auto_download_metadata_weight",
+          "auto_download_release_weight",
+          "auto_download_indexer_reliability_weight",
+          "auto_download_recency_weight",
+          "auto_download_size_weight",
+          "auto_download_duplicate_risk_weight",
+          "auto_download_expected_download_time_weight"
         ],
         "title": "RuntimeSettings",
         "type": "object"
@@ -1403,6 +1500,102 @@
               }
             ],
             "title": "Audit Retention Days"
+          },
+          "auto_download_duplicate_risk_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Duplicate Risk Weight"
+          },
+          "auto_download_expected_download_time_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Expected Download Time Weight"
+          },
+          "auto_download_indexer_reliability_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Indexer Reliability Weight"
+          },
+          "auto_download_metadata_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Metadata Weight"
+          },
+          "auto_download_recency_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Recency Weight"
+          },
+          "auto_download_recommendation_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Recommendation Weight"
+          },
+          "auto_download_release_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Release Weight"
+          },
+          "auto_download_size_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Size Weight"
           },
           "default_auto_downloads_enabled": {
             "anyOf": [
@@ -1426,6 +1619,18 @@
               }
             ],
             "title": "Default Daily Download Limit Gb"
+          },
+          "default_max_auto_downloads_per_day": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Max Auto Downloads Per Day"
           },
           "default_max_auto_jobs": {
             "anyOf": [
@@ -1981,6 +2186,27 @@
           }
         },
         "summary": "Unlink Oidc Identity",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/api/account/storage": {
+      "get": {
+        "operationId": "account_read_daily_storage_usage",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyStorageUsageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Daily Storage Usage",
         "tags": [
           "account"
         ]

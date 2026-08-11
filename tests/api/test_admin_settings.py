@@ -29,18 +29,24 @@ async def test_admin_changes_a_runtime_limit_without_restarting(app, client) -> 
 
     assert defaults.status_code == 200
     assert defaults.json()["playback_completion_threshold_percent"] == 90
+    assert defaults.json()["default_max_auto_downloads_per_day"] == 3
+    assert defaults.json()["auto_download_recommendation_weight"] == 0.3
 
     updated = await client.patch(
         "/api/admin/settings",
-        json={"playback_completion_threshold_percent": 75},
+        json={
+            "playback_completion_threshold_percent": 75,
+            "auto_download_recommendation_weight": 0.5,
+        },
         headers=csrf_headers(client),
     )
 
     assert updated.status_code == 200
     assert updated.json()["playback_completion_threshold_percent"] == 75
+    assert updated.json()["auto_download_recommendation_weight"] == 0.5
     assert app.state.redis.events[-1]["type"] == "settings.changed"
     assert json.loads(app.state.redis.events[-1]["data"]) == {
-        "keys": ["playback_completion_threshold_percent"]
+        "keys": ["auto_download_recommendation_weight", "playback_completion_threshold_percent"]
     }
 
     media = await _media(app)

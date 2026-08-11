@@ -346,6 +346,29 @@ def test_performance_measurements_use_the_expected_metric_vocabulary(clean_datab
     ]
 
 
+def test_automation_migration_backfills_disabled_rules(clean_database: None) -> None:
+    assert _alembic("upgrade", "0017").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        user_id = "07262e37-b9e9-48b4-9a51-b1f81a0b0131"
+        connection.execute(
+            "INSERT INTO users (id, username, password_hash) VALUES (%s, %s, %s)",
+            (user_id, "automation-owner", "not-a-real-password"),
+        )
+        connection.commit()
+
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        rule = connection.execute(
+            """SELECT enabled, daily_download_limit_gb, max_concurrent_jobs, max_downloads_per_day
+            FROM automation_rules WHERE user_id = %s""",
+            (user_id,),
+        ).fetchone()
+
+    assert rule == (False, 10, 2, 3)
+
+
 def test_autogenerate_reports_no_drift(clean_database: None) -> None:
     """The models and the migration history must agree. When they do not, someone
     changed a model without writing a migration and the next deployment fails."""

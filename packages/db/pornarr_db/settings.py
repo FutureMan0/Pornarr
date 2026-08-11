@@ -21,7 +21,16 @@ _RUNTIME_SETTING_FIELDS = frozenset(
         "min_free_disk_percent",
         "default_daily_download_limit_gb",
         "default_max_auto_jobs",
+        "default_max_auto_downloads_per_day",
         "default_auto_downloads_enabled",
+        "auto_download_recommendation_weight",
+        "auto_download_metadata_weight",
+        "auto_download_release_weight",
+        "auto_download_indexer_reliability_weight",
+        "auto_download_recency_weight",
+        "auto_download_size_weight",
+        "auto_download_duplicate_risk_weight",
+        "auto_download_expected_download_time_weight",
     }
 )
 
@@ -37,7 +46,16 @@ class RuntimeSettings(BaseModel):
     min_free_disk_percent: int
     default_daily_download_limit_gb: int
     default_max_auto_jobs: int
+    default_max_auto_downloads_per_day: int
     default_auto_downloads_enabled: bool
+    auto_download_recommendation_weight: float
+    auto_download_metadata_weight: float
+    auto_download_release_weight: float
+    auto_download_indexer_reliability_weight: float
+    auto_download_recency_weight: float
+    auto_download_size_weight: float
+    auto_download_duplicate_risk_weight: float
+    auto_download_expected_download_time_weight: float
 
     @classmethod
     def from_defaults(cls, defaults: Settings, overrides: dict[str, Any]) -> Self:
@@ -59,7 +77,16 @@ class RuntimeSettingsWrite(BaseModel):
     min_free_disk_percent: int | None = Field(default=None, ge=0, le=99)
     default_daily_download_limit_gb: int | None = Field(default=None, ge=0)
     default_max_auto_jobs: int | None = Field(default=None, ge=0)
+    default_max_auto_downloads_per_day: int | None = Field(default=None, ge=0)
     default_auto_downloads_enabled: bool | None = None
+    auto_download_recommendation_weight: float | None = Field(default=None, ge=0)
+    auto_download_metadata_weight: float | None = Field(default=None, ge=0)
+    auto_download_release_weight: float | None = Field(default=None, ge=0)
+    auto_download_indexer_reliability_weight: float | None = Field(default=None, ge=0)
+    auto_download_recency_weight: float | None = Field(default=None, ge=0)
+    auto_download_size_weight: float | None = Field(default=None, ge=0)
+    auto_download_duplicate_risk_weight: float | None = Field(default=None, ge=0)
+    auto_download_expected_download_time_weight: float | None = Field(default=None, ge=0)
 
     @field_validator(
         "transcode_max_per_user",
@@ -67,10 +94,19 @@ class RuntimeSettingsWrite(BaseModel):
         "min_free_disk_percent",
         "default_daily_download_limit_gb",
         "default_max_auto_jobs",
+        "default_max_auto_downloads_per_day",
         "default_auto_downloads_enabled",
+        "auto_download_recommendation_weight",
+        "auto_download_metadata_weight",
+        "auto_download_release_weight",
+        "auto_download_indexer_reliability_weight",
+        "auto_download_recency_weight",
+        "auto_download_size_weight",
+        "auto_download_duplicate_risk_weight",
+        "auto_download_expected_download_time_weight",
     )
     @classmethod
-    def value_cannot_be_null(cls, value: int | bool | None) -> int | bool:
+    def value_cannot_be_null(cls, value: int | float | bool | None) -> int | float | bool:
         if value is None:
             raise ValueError("setting cannot be null")
         return value
@@ -84,7 +120,9 @@ class RuntimeSettingsWrite(BaseModel):
 
 async def get_runtime_settings(session: AsyncSession, defaults: Settings) -> RuntimeSettings:
     rows = await session.scalars(select(Setting))
-    return RuntimeSettings.from_defaults(defaults, {row.key: row.value for row in rows})
+    return RuntimeSettings.from_defaults(
+        defaults, {row.key: row.value for row in rows if row.key in _RUNTIME_SETTING_FIELDS}
+    )
 
 
 async def update_runtime_settings(

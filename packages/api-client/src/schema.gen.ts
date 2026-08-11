@@ -73,6 +73,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/account/storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Daily Storage Usage */
+        get: operations["account_read_daily_storage_usage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/audit": {
         parameters: {
             query?: never;
@@ -790,6 +807,18 @@ export interface components {
             /** Username */
             username: string;
         };
+        /** DailyStorageUsageResponse */
+        DailyStorageUsageResponse: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Download Count */
+            download_count: number;
+            /** Downloaded Bytes */
+            downloaded_bytes: number;
+        };
         /**
          * DirectPlayReason
          * @enum {string}
@@ -913,6 +942,7 @@ export interface components {
         };
         /** HealthReport */
         HealthReport: {
+            backup?: components["schemas"]["ComponentHealth"] | null;
             database: components["schemas"]["ComponentHealth"];
             filesystem: components["schemas"]["ComponentHealth"];
             redis: components["schemas"]["ComponentHealth"];
@@ -1173,6 +1203,10 @@ export interface components {
             id: string;
             /** Last Scanned At */
             last_scanned_at: string | null;
+            /** Last Space Checked At */
+            last_space_checked_at: string | null;
+            /** Low Space Warning Sent */
+            low_space_warning_sent: boolean;
             /** Path */
             path: string;
             /** Same Filesystem As Downloads */
@@ -1197,10 +1231,28 @@ export interface components {
         RuntimeSettings: {
             /** Audit Retention Days */
             audit_retention_days: number | null;
+            /** Auto Download Duplicate Risk Weight */
+            auto_download_duplicate_risk_weight: number;
+            /** Auto Download Expected Download Time Weight */
+            auto_download_expected_download_time_weight: number;
+            /** Auto Download Indexer Reliability Weight */
+            auto_download_indexer_reliability_weight: number;
+            /** Auto Download Metadata Weight */
+            auto_download_metadata_weight: number;
+            /** Auto Download Recency Weight */
+            auto_download_recency_weight: number;
+            /** Auto Download Recommendation Weight */
+            auto_download_recommendation_weight: number;
+            /** Auto Download Release Weight */
+            auto_download_release_weight: number;
+            /** Auto Download Size Weight */
+            auto_download_size_weight: number;
             /** Default Auto Downloads Enabled */
             default_auto_downloads_enabled: boolean;
             /** Default Daily Download Limit Gb */
             default_daily_download_limit_gb: number;
+            /** Default Max Auto Downloads Per Day */
+            default_max_auto_downloads_per_day: number;
             /** Default Max Auto Jobs */
             default_max_auto_jobs: number;
             /** Min Free Disk Percent */
@@ -1221,10 +1273,28 @@ export interface components {
         RuntimeSettingsWrite: {
             /** Audit Retention Days */
             audit_retention_days?: number | null;
+            /** Auto Download Duplicate Risk Weight */
+            auto_download_duplicate_risk_weight?: number | null;
+            /** Auto Download Expected Download Time Weight */
+            auto_download_expected_download_time_weight?: number | null;
+            /** Auto Download Indexer Reliability Weight */
+            auto_download_indexer_reliability_weight?: number | null;
+            /** Auto Download Metadata Weight */
+            auto_download_metadata_weight?: number | null;
+            /** Auto Download Recency Weight */
+            auto_download_recency_weight?: number | null;
+            /** Auto Download Recommendation Weight */
+            auto_download_recommendation_weight?: number | null;
+            /** Auto Download Release Weight */
+            auto_download_release_weight?: number | null;
+            /** Auto Download Size Weight */
+            auto_download_size_weight?: number | null;
             /** Default Auto Downloads Enabled */
             default_auto_downloads_enabled?: boolean | null;
             /** Default Daily Download Limit Gb */
             default_daily_download_limit_gb?: number | null;
+            /** Default Max Auto Downloads Per Day */
+            default_max_auto_downloads_per_day?: number | null;
             /** Default Max Auto Jobs */
             default_max_auto_jobs?: number | null;
             /** Min Free Disk Percent */
@@ -1509,6 +1579,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    account_read_daily_storage_usage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyStorageUsageResponse"];
                 };
             };
         };

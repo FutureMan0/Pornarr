@@ -7,6 +7,7 @@ from types import SimpleNamespace
 
 from sqlalchemy import func, select
 
+from pornarr_db.models.automation import AutomationRule
 from pornarr_db.models.filters import ContentFilterProfile, ContentFilterRule, FilterProfileScope
 from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.models.user import User
@@ -39,6 +40,7 @@ async def test_fresh_instance_serves_only_setup_then_unlocks(app, client, tmp_pa
     assert completed.json()["warning"] is None
     async with app.state.engine.connect() as connection:
         assert await connection.scalar(select(User.id)) is not None
+        assert await connection.scalar(select(AutomationRule.user_id)) is not None
         assert await connection.scalar(select(RootFolder.id)) is not None
         profile_id = await connection.scalar(
             select(ContentFilterProfile.id).where(
