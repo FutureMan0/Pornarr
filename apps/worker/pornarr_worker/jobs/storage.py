@@ -45,6 +45,7 @@ async def refresh_root_folder_space(
         free_percent = usage.free * 100 // usage.total
         warning = free_percent <= warning_threshold
         folder.free_space_bytes = usage.free
+        folder.total_space_bytes = usage.total
         folder.last_space_checked_at = utcnow()
         result["checked"] += 1
 

@@ -20,6 +20,7 @@ from pornarr_shared.jobs import (
 )
 from pornarr_worker.artwork import ARTWORK_JOB, LIBRARY_ARTWORK_JOB
 from pornarr_worker.cleanup import cleanup_transcodes
+from pornarr_worker.jobs.automation import AUTOMATION_EXECUTION_JOB
 from pornarr_worker.jobs.download_poll import DOWNLOAD_POLL_JOB
 from pornarr_worker.jobs.scan import SCAN_JOB
 from pornarr_worker.jobs.storage import REFRESH_STORAGE_JOB
@@ -46,6 +47,7 @@ class WorkerSettings:
         HEARTBEAT_JOB,
         CLEANUP_TRANSCODES_JOB,
         DOWNLOAD_POLL_JOB,
+        AUTOMATION_EXECUTION_JOB,
         REFRESH_STORAGE_JOB,
     ]
     queue_name: ClassVar = DEFAULT_QUEUE

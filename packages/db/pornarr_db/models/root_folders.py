@@ -20,6 +20,7 @@ class RootFolder(TimestampMixin, Base):
         Boolean, nullable=False, default=True, server_default="true"
     )
     free_space_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    total_space_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     last_scanned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_space_checked_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

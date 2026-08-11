@@ -23,3 +23,5 @@ async def test_account_storage_reports_the_authenticated_users_daily_usage(app, 
     assert response.status_code == 200
     assert response.json()["downloaded_bytes"] == 1234
     assert response.json()["download_count"] == 1
+    assert response.json()["reserved_bytes"] == 0
+    assert response.json()["reserved_download_count"] == 0

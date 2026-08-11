@@ -36,6 +36,7 @@ class RootFolderResponse(BaseModel):
     path: str
     enabled: bool
     free_space_bytes: int
+    total_space_bytes: int | None
     last_scanned_at: datetime | None
     last_space_checked_at: datetime | None
     low_space_warning_sent: bool
@@ -143,6 +144,7 @@ def _folder_response(
         path=folder.path,
         enabled=folder.enabled,
         free_space_bytes=folder.free_space_bytes,
+        total_space_bytes=folder.total_space_bytes,
         last_scanned_at=folder.last_scanned_at,
         last_space_checked_at=folder.last_space_checked_at,
         low_space_warning_sent=folder.low_space_warning_sent,

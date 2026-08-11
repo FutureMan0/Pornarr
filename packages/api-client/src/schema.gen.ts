@@ -972,6 +972,10 @@ export interface components {
             download_count: number;
             /** Downloaded Bytes */
             downloaded_bytes: number;
+            /** Reserved Bytes */
+            reserved_bytes: number;
+            /** Reserved Download Count */
+            reserved_download_count: number;
         };
         /**
          * DirectPlayReason
@@ -1449,6 +1453,8 @@ export interface components {
             path: string;
             /** Same Filesystem As Downloads */
             same_filesystem_as_downloads: boolean;
+            /** Total Space Bytes */
+            total_space_bytes: number | null;
             /** Warning */
             warning: string | null;
         };

@@ -39,6 +39,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "heartbeat",
         "cleanup_transcodes",
         "download_poll",
+        "automation_execute",
         "refresh_storage",
     ]
     assert [job.name for job in settings.TranscodeWorkerSettings.functions] == [
@@ -54,6 +55,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "heartbeat",
         "cleanup_transcodes",
         "download_poll",
+        "automation_execute",
         "refresh_storage",
         "scan",
     ]

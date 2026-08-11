@@ -250,12 +250,22 @@
           "downloaded_bytes": {
             "title": "Downloaded Bytes",
             "type": "integer"
+          },
+          "reserved_bytes": {
+            "title": "Reserved Bytes",
+            "type": "integer"
+          },
+          "reserved_download_count": {
+            "title": "Reserved Download Count",
+            "type": "integer"
           }
         },
         "required": [
           "day",
           "downloaded_bytes",
-          "download_count"
+          "download_count",
+          "reserved_bytes",
+          "reserved_download_count"
         ],
         "title": "DailyStorageUsageResponse",
         "type": "object"
@@ -1532,6 +1542,17 @@
             "title": "Same Filesystem As Downloads",
             "type": "boolean"
           },
+          "total_space_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Space Bytes"
+          },
           "warning": {
             "anyOf": [
               {
@@ -1549,6 +1570,7 @@
           "path",
           "enabled",
           "free_space_bytes",
+          "total_space_bytes",
           "last_scanned_at",
           "last_space_checked_at",
           "low_space_warning_sent",
