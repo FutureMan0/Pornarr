@@ -34,6 +34,7 @@ from pornarr_api.routers.metrics import router as metrics_router
 from pornarr_api.routers.notifications import router as notifications_router
 from pornarr_api.routers.playback import progress_router as playback_progress_router
 from pornarr_api.routers.playback import router as playback_router
+from pornarr_api.routers.recommendations import router as recommendations_router
 from pornarr_api.routers.requests import router as requests_router
 from pornarr_api.routers.search import router as search_router
 from pornarr_api.routers.setup import router as setup_router
@@ -80,6 +81,7 @@ api_router.include_router(notifications_router)
 api_router.include_router(playback_router)
 api_router.include_router(playback_progress_router)
 api_router.include_router(requests_router)
+api_router.include_router(recommendations_router)
 api_router.include_router(search_router)
 api_router.include_router(setup_router)
 api_router.include_router(stream_router)

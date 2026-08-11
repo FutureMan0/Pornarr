@@ -66,7 +66,8 @@ async def refresh_user_interest_profile(
     )
     by_key = {(preference.axis, preference.subject): preference for preference in preferences}
     for preference in preferences:
-        preference.raw_score *= _decay_factor(preference.computed_at, computed_at)
+        if preference.raw_score > -100:
+            preference.raw_score *= _decay_factor(preference.computed_at, computed_at)
         preference.computed_at = computed_at
 
     events = await _unseen_events(session, user_id, state)
@@ -88,7 +89,13 @@ async def refresh_user_interest_profile(
                     session.add(preference)
                     preferences.append(preference)
                     by_key[key] = preference
-                preference.raw_score += weight * _decay_factor(event.created_at, computed_at)
+                if event.event_type in {
+                    UserEventType.HIDE_TAG.value,
+                    UserEventType.HIDE_PERFORMER.value,
+                }:
+                    preference.raw_score = -100
+                elif preference.raw_score > -100:
+                    preference.raw_score += weight * _decay_factor(event.created_at, computed_at)
         state.last_event_created_at = event.created_at
         state.last_event_id = event.id
 

@@ -150,12 +150,20 @@ async def test_hide_signals_are_hard_negative_preferences_and_empty_profiles_are
     await session.flush()
     tag_id = uuid4()
     performer_id = uuid4()
-    await record_user_event(session, user.id, UserEventType.HIDE_TAG, subject_id=tag_id)
-    await record_user_event(session, user.id, UserEventType.HIDE_PERFORMER, subject_id=performer_id)
+    now = datetime(2026, 8, 11, tzinfo=UTC)
+    events = (
+        await record_user_event(session, user.id, UserEventType.HIDE_TAG, subject_id=tag_id),
+        await record_user_event(
+            session, user.id, UserEventType.HIDE_PERFORMER, subject_id=performer_id
+        ),
+    )
+    for event in events:
+        event.created_at = now
     await session.flush()
 
-    preferences = await refresh_user_interest_profile(session, user.id)
+    preferences = await refresh_user_interest_profile(session, user.id, now=now)
     empty_preferences = await refresh_user_interest_profile(session, empty_user.id)
+    refreshed = await refresh_user_interest_profile(session, user.id, now=now + timedelta(days=180))
 
     assert _preference_values(preferences) == {
         (PreferenceAxis.TAG.value, str(tag_id)): (pytest.approx(-100), pytest.approx(0)),
@@ -164,6 +172,8 @@ async def test_hide_signals_are_hard_negative_preferences_and_empty_profiles_are
             pytest.approx(0),
         ),
     }
+    assert _preference_values(refreshed) == _preference_values(preferences)
+    assert len(refreshed) == 2
     assert empty_preferences == []
     assert await session.get(UserPreferenceState, empty_user.id) is not None
     assert list(await session.scalars(select(UserPreference))) == preferences
