@@ -250,6 +250,19 @@ class SabnzbdAdapter:
             del_files="1" if delete_files else "0",
         )
 
+    async def cancel(
+        self, *, host: str, port: int, url_base: str, credentials: str, client_job_id: str
+    ) -> None:
+        """Remove a cancelled request's incomplete SABnzbd job and files."""
+        await self.delete(
+            host=host,
+            port=port,
+            url_base=url_base,
+            credentials=credentials,
+            client_job_id=client_job_id,
+            delete_files=True,
+        )
+
     async def _add(
         self,
         host: str,
