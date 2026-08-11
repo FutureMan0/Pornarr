@@ -1362,6 +1362,66 @@
         "title": "ProviderWrite",
         "type": "object"
       },
+      "RecommendationFeedbackWrite": {
+        "properties": {
+          "event_type": {
+            "$ref": "#/components/schemas/UserEventType"
+          },
+          "subject_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Id"
+          }
+        },
+        "required": [
+          "event_type"
+        ],
+        "title": "RecommendationFeedbackWrite",
+        "type": "object"
+      },
+      "RecommendationResponse": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "media_id": {
+            "format": "uuid",
+            "title": "Media Id",
+            "type": "string"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "reason": {
+            "additionalProperties": true,
+            "title": "Reason",
+            "type": "object"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "media_id",
+          "score",
+          "reason",
+          "model_version",
+          "expires_at"
+        ],
+        "title": "RecommendationResponse",
+        "type": "object"
+      },
       "RequestCreate": {
         "properties": {
           "priority": {
@@ -4636,6 +4696,92 @@
         "summary": "Report Progress",
         "tags": [
           "playback"
+        ]
+      }
+    },
+    "/api/recommendations": {
+      "get": {
+        "operationId": "recommendations_list_recommendations",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RecommendationResponse"
+                  },
+                  "title": "Response Recommendations List Recommendations",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Recommendations",
+        "tags": [
+          "recommendations"
+        ]
+      }
+    },
+    "/api/recommendations/profile": {
+      "delete": {
+        "description": "Remove the user's signals so the next refresh starts from an empty profile.",
+        "operationId": "recommendations_reset_recommendation_profile",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Reset Recommendation Profile",
+        "tags": [
+          "recommendations"
+        ]
+      }
+    },
+    "/api/recommendations/{media_id}/feedback": {
+      "post": {
+        "operationId": "recommendations_record_recommendation_feedback",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecommendationFeedbackWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Recommendation Feedback",
+        "tags": [
+          "recommendations"
         ]
       }
     },
