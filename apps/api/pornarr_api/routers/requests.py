@@ -2,26 +2,45 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Annotated, Any, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi import Request as HttpRequest
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from pornarr_api.auth import database_session, get_current_user
 from pornarr_api.errors import ErrorResponse
+from pornarr_core.filters import ContentCandidate, evaluate_filters, resolve_rules
+from pornarr_core.filters import FilterAction as CoreFilterAction
+from pornarr_core.filters import FilterRule as CoreFilterRule
+from pornarr_core.filters import FilterRuleKind as CoreFilterRuleKind
+from pornarr_db.download_clients import route_download_client
+from pornarr_db.downloads import is_release_blocked
 from pornarr_db.events import record_user_event
 from pornarr_db.models.download import DownloadJob
 from pornarr_db.models.download_client import DownloadClient
+from pornarr_db.models.filters import (
+    ContentFilterProfile,
+    ContentFilterRule,
+    FilterProfileScope,
+)
+from pornarr_db.models.indexer import IndexerStats
+from pornarr_db.models.media import Media
 from pornarr_db.models.playback import UserEventType
+from pornarr_db.models.release import ReleaseCache
 from pornarr_db.models.request import Request, RequestHistory, RequestStatus
 from pornarr_db.models.user import User, UserRole
 from pornarr_db.requests import InvalidRequestTransitionError, transition_request
-from pornarr_integrations.downloaders import DownloadClientCancellationAdapter
+from pornarr_integrations.downloaders import (
+    DownloadClientCancellationAdapter,
+    TorrentSubmissionAdapter,
+    UsenetSubmissionAdapter,
+)
 from pornarr_shared.errors import PornarrError
 
 router = APIRouter(prefix="/requests", tags=["requests"])
@@ -54,6 +73,46 @@ class RequestCancellationError(PornarrError):
     status = 502
 
 
+class RequestGrabError(PornarrError):
+    code = "REQUEST_NOT_GRABBABLE"
+    status = 409
+
+
+class ReleaseExpiredError(PornarrError):
+    code = "RELEASE_EXPIRED"
+    status = 409
+
+
+class ReleaseNotFoundError(PornarrError):
+    code = "RELEASE_NOT_FOUND"
+    status = 404
+
+
+class ReleaseBlockedError(PornarrError):
+    code = "RELEASE_BLOCKED"
+    status = 409
+
+
+class ReleaseInLibraryError(PornarrError):
+    code = "RELEASE_IN_LIBRARY"
+    status = 409
+
+
+class ReleaseFilteredError(PornarrError):
+    code = "RELEASE_FILTERED"
+    status = 422
+
+
+class ReleaseProtocolError(PornarrError):
+    code = "RELEASE_PROTOCOL_UNSUPPORTED"
+    status = 422
+
+
+class GrabSubmissionError(PornarrError):
+    code = "GRAB_SUBMISSION_FAILED"
+    status = 502
+
+
 class RequestCreate(BaseModel):
     query: Annotated[str, Field(min_length=1, max_length=512)]
     selected_release_guid: Annotated[str | None, Field(max_length=1024)] = None
@@ -72,6 +131,10 @@ class RequestPriorityWrite(BaseModel):
     priority: Annotated[int, Field(ge=0)]
 
 
+class GrabWrite(BaseModel):
+    release_id: UUID
+
+
 class RequestHistoryResponse(BaseModel):
     status: RequestStatus
 
@@ -84,6 +147,12 @@ class RequestResponse(BaseModel):
     status: RequestStatus
     priority: int
     history: list[RequestHistoryResponse]
+
+
+class GrabResponse(BaseModel):
+    request_id: UUID
+    download_job_id: UUID
+    status: RequestStatus
 
 
 def request_response(request: Request, history: list[RequestHistory]) -> RequestResponse:
@@ -201,6 +270,184 @@ async def _create_request(
     session.add(history)
     await record_user_event(session, user.id, UserEventType.REQUEST, value=float(payload.priority))
     return request_response(request, [history])
+
+
+@router.post(
+    "/{request_id}/grab",
+    response_model=GrabResponse,
+    status_code=201,
+    responses={
+        **_AUTHENTICATION_ERRORS,
+        404: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
+        502: {"model": ErrorResponse},
+    },
+)
+async def grab_release(
+    request_id: UUID,
+    payload: GrabWrite,
+    http_request: HttpRequest,
+    response: Response,
+    user: CurrentUser,
+    session: Session,
+) -> GrabResponse:
+    """Revalidate one cached release and submit it exactly once."""
+
+    request = await request_or_404(session, user, request_id)
+    if request.status not in {
+        RequestStatus.SEARCHING,
+        RequestStatus.RESULTS_FOUND,
+        RequestStatus.QUEUED,
+    }:
+        raise RequestGrabError("This request cannot accept a release in its current state.")
+    release = await session.scalar(
+        select(ReleaseCache).where(ReleaseCache.id == payload.release_id).with_for_update()
+    )
+    if release is None:
+        raise ReleaseNotFoundError("The selected release is not present in the cache.")
+
+    existing = await session.scalar(
+        select(DownloadJob).where(DownloadJob.release_guid == release.guid).limit(1)
+    )
+    if existing is not None:
+        await _attach_grabbed_release(session, request, release.guid, existing.id)
+        response.status_code = 200
+        return GrabResponse(
+            request_id=request.id,
+            download_job_id=existing.id,
+            status=request.status,
+        )
+
+    if release.expires_at <= datetime.now(release.expires_at.tzinfo):
+        raise ReleaseExpiredError("The selected release has expired from the cache.")
+    if await is_release_blocked(session, release.guid):
+        raise ReleaseBlockedError("The selected release is temporarily blocked.")
+    if await _library_has_release(session, release.normalized_title):
+        raise ReleaseInLibraryError("The requested title is already in the library.")
+    decision = await _release_filter_decision(session, user.id, release)
+    if decision.action is not CoreFilterAction.ALLOW:
+        raise ReleaseFilteredError("The selected release is blocked by a content filter.")
+
+    protocol = _release_protocol(release)
+    client = await route_download_client(session, protocol)
+    adapter = http_request.app.state.download_client_adapters.get(client.implementation)
+    if adapter is None:
+        raise ReleaseProtocolError("No compatible adapter is registered for the selected client.")
+    client_job_id = await _submit_release(adapter, client, release, protocol)
+    job = DownloadJob(
+        download_client_id=client.id,
+        client_name=client.name,
+        protocol=protocol,
+        release_guid=release.guid,
+        client_job_id=client_job_id,
+        status="queued",
+        priority=request.priority,
+        size_bytes=release.size,
+    )
+    session.add(job)
+    await session.flush()
+    await _attach_grabbed_release(session, request, release.guid, job.id)
+    stats = await session.get(IndexerStats, release.indexer_id)
+    if stats is not None:
+        stats.grabs += 1
+    return GrabResponse(request_id=request.id, download_job_id=job.id, status=request.status)
+
+
+async def _attach_grabbed_release(
+    session: AsyncSession, request: Request, release_guid: str, download_job_id: UUID
+) -> None:
+    request.selected_release_guid = release_guid
+    request.download_job_id = download_job_id
+    if request.status is RequestStatus.SEARCHING:
+        await transition_request(session, request, RequestStatus.RESULTS_FOUND)
+    if request.status is RequestStatus.RESULTS_FOUND:
+        await transition_request(session, request, RequestStatus.QUEUED)
+
+
+async def _library_has_release(session: AsyncSession, normalized_title: str) -> bool:
+    return (
+        await session.scalar(
+            select(Media.id).where(Media.normalized_title == normalized_title).limit(1)
+        )
+        is not None
+    )
+
+
+async def _release_filter_decision(session: AsyncSession, user_id: UUID, release: ReleaseCache):
+    profiles = await session.scalars(
+        select(ContentFilterProfile)
+        .options(selectinload(ContentFilterProfile.rules))
+        .where(
+            or_(
+                ContentFilterProfile.scope == FilterProfileScope.GLOBAL,
+                ContentFilterProfile.user_id == user_id,
+            )
+        )
+    )
+    global_rules: list[CoreFilterRule] = []
+    user_rules: list[CoreFilterRule] = []
+    for profile in profiles:
+        rules = global_rules if profile.scope is FilterProfileScope.GLOBAL else user_rules
+        rules.extend(_core_filter_rule(rule) for rule in profile.rules)
+    return evaluate_filters(
+        ContentCandidate(title=release.title), resolve_rules(global_rules, user_rules)
+    )
+
+
+def _core_filter_rule(rule: ContentFilterRule) -> CoreFilterRule:
+    return CoreFilterRule(
+        id=str(rule.id),
+        kind=CoreFilterRuleKind(rule.kind.value),
+        pattern=rule.pattern,
+        action=CoreFilterAction(rule.action.value),
+        enabled=rule.enabled,
+    )
+
+
+def _release_protocol(release: ReleaseCache) -> str:
+    if release.magnet_url is not None:
+        return "torrent"
+    if release.download_url is not None:
+        return "usenet"
+    raise ReleaseProtocolError("The selected release has no supported download URL.")
+
+
+async def _submit_release(
+    adapter: object, client: DownloadClient, release: ReleaseCache, protocol: str
+) -> str:
+    try:
+        if protocol == "torrent":
+            magnet = release.magnet_url
+            if release.info_hash is None or magnet is None or not hasattr(adapter, "add_magnet"):
+                raise ReleaseProtocolError("The selected torrent cannot be submitted safely.")
+            await cast(TorrentSubmissionAdapter, adapter).add_magnet(
+                host=client.host,
+                port=client.port,
+                url_base=client.url_base,
+                credentials=client.credentials,
+                magnet=magnet,
+                category=client.category,
+                paused=False,
+            )
+            return release.info_hash
+        download_url = release.download_url
+        if download_url is None or not hasattr(adapter, "add_url"):
+            raise ReleaseProtocolError("The selected release cannot be submitted to this client.")
+        return await cast(UsenetSubmissionAdapter, adapter).add_url(
+            host=client.host,
+            port=client.port,
+            url_base=client.url_base,
+            credentials=client.credentials,
+            url=download_url,
+            category=client.category,
+            priority=client.priority,
+            paused=False,
+        )
+    except ReleaseProtocolError:
+        raise
+    except Exception as error:
+        raise GrabSubmissionError("The download client rejected the release.") from error
 
 
 @router.patch(

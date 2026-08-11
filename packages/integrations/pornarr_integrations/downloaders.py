@@ -68,3 +68,36 @@ class DownloadClientCancellationAdapter(Protocol):
         credentials: str,
         client_job_id: str,
     ) -> None: ...
+
+
+class TorrentSubmissionAdapter(Protocol):
+    """A torrent client operation used when accepting a cached release."""
+
+    async def add_magnet(
+        self,
+        *,
+        host: str,
+        port: int,
+        url_base: str,
+        credentials: str,
+        magnet: str,
+        category: str | None,
+        paused: bool,
+    ) -> None: ...
+
+
+class UsenetSubmissionAdapter(Protocol):
+    """A Usenet client operation used when accepting a cached release."""
+
+    async def add_url(
+        self,
+        *,
+        host: str,
+        port: int,
+        url_base: str,
+        credentials: str,
+        url: str,
+        category: str | None,
+        priority: int,
+        paused: bool,
+    ) -> str: ...
