@@ -1,8 +1,9 @@
-"""OIDC discovery, kept separate from the later login flow."""
+"""OIDC discovery and authentication helpers."""
 
 from __future__ import annotations
 
 import asyncio
+import hmac
 import ipaddress
 import json
 import socket
@@ -11,13 +12,25 @@ from typing import Any
 from urllib.parse import urlsplit
 
 import httpcore
+import httpx
+import jwt
 
+from pornarr_db.models.oidc import OidcProvider
 from pornarr_shared.errors import PornarrError
+
+_ALLOWED_ID_TOKEN_ALGORITHMS = frozenset(
+    {"RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512", "EdDSA"}
+)
 
 
 class OidcDiscoveryError(PornarrError):
     code = "OIDC_DISCOVERY_FAILED"
     status = 422
+
+
+class OidcAuthenticationError(PornarrError):
+    code = "OIDC_AUTHENTICATION_FAILED"
+    status = 401
 
 
 def normalise_issuer(issuer: str) -> str:
@@ -161,3 +174,80 @@ async def discover(issuer: str, *, allow_private_issuers: bool = False) -> dict[
     ):
         raise OidcDiscoveryError("The provider discovery document is invalid.")
     return document
+
+
+async def exchange_code(
+    provider: OidcProvider,
+    document: dict[str, Any],
+    code: str,
+    verifier: str,
+    redirect_uri: str,
+) -> str:
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            response = await client.post(
+                document["token_endpoint"],
+                data={
+                    "grant_type": "authorization_code",
+                    "code": code,
+                    "redirect_uri": redirect_uri,
+                    "client_id": provider.client_id,
+                    "client_secret": provider.client_secret,
+                    "code_verifier": verifier,
+                },
+            )
+            response.raise_for_status()
+            token = response.json()["id_token"]
+    except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
+        raise OidcAuthenticationError("The provider could not complete authentication.") from exc
+    if not isinstance(token, str):
+        raise OidcAuthenticationError("The provider returned an invalid identity token.")
+    return token
+
+
+async def _signing_key(document: dict[str, Any], token: str) -> jwt.PyJWK:
+    try:
+        header = jwt.get_unverified_header(token)
+        key_id = header["kid"]
+        if not isinstance(key_id, str):
+            raise ValueError
+        async with httpx.AsyncClient(timeout=5) as client:
+            response = await client.get(document["jwks_uri"])
+            response.raise_for_status()
+            keys = response.json()["keys"]
+        key_data = next(key for key in keys if key.get("kid") == key_id)
+        key = jwt.PyJWK(key_data)
+    except (
+        AttributeError,
+        httpx.HTTPError,
+        jwt.PyJWTError,
+        KeyError,
+        StopIteration,
+        TypeError,
+        ValueError,
+    ) as exc:
+        raise OidcAuthenticationError("The provider signing key is invalid.") from exc
+    if key.algorithm_name not in _ALLOWED_ID_TOKEN_ALGORITHMS:
+        raise OidcAuthenticationError("The provider signing key is invalid.")
+    return key
+
+
+async def validate_id_token(
+    token: str, provider: OidcProvider, document: dict[str, Any], nonce: str
+) -> dict[str, Any]:
+    try:
+        key = await _signing_key(document, token)
+        claims = jwt.decode(
+            token,
+            key,
+            algorithms=tuple(_ALLOWED_ID_TOKEN_ALGORITHMS),
+            audience=provider.client_id,
+            issuer=provider.issuer,
+            options={"require": ["aud", "exp", "iss", "nonce", "sub"]},
+        )
+    except jwt.PyJWTError as exc:
+        raise OidcAuthenticationError("The provider identity token is invalid.") from exc
+    token_nonce = claims.get("nonce")
+    if not isinstance(token_nonce, str) or not hmac.compare_digest(token_nonce, nonce):
+        raise OidcAuthenticationError("The provider identity token is invalid.")
+    return claims
