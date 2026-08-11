@@ -913,6 +913,7 @@ export interface components {
         };
         /** HealthReport */
         HealthReport: {
+            backup?: components["schemas"]["ComponentHealth"] | null;
             database: components["schemas"]["ComponentHealth"];
             filesystem: components["schemas"]["ComponentHealth"];
             redis: components["schemas"]["ComponentHealth"];

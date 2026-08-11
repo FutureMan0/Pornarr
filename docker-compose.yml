@@ -12,6 +12,8 @@ x-pornarr: &pornarr
     # ONE mount. Splitting downloads and library across volumes breaks
     # hardlinking. See docs/operations/deployment.md
     - ${DATA_PATH_HOST:-./data}:/data
+    # Backups stay separate from media and can be checked by the API health endpoint.
+    - ${BACKUP_PATH_HOST:-./backups}:/backups
 
 services:
   migrate:

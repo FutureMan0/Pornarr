@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     redis_url: str
 
     data_path: Path = Path("/data")
+    backup_path: Path = Path("/backups")
+    backup_max_age_hours: int | None = Field(default=None, ge=1)
 
     base_path: str = ""
 

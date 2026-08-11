@@ -551,6 +551,16 @@
       },
       "HealthReport": {
         "properties": {
+          "backup": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComponentHealth"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "database": {
             "$ref": "#/components/schemas/ComponentHealth"
           },

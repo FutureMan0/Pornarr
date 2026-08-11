@@ -31,6 +31,10 @@ rebuild:
 migrate:
 	docker compose run --rm migrate
 
+## backup: create a database dump and secret-free bootstrap configuration
+backup:
+	bash infrastructure/scripts/backup.sh
+
 ## revision: create a migration from model changes (m="message")
 revision:
 	docker compose exec api uv run alembic revision --autogenerate -m "$(m)"
@@ -84,5 +88,5 @@ openapi:
 check: lint typecheck test
 	docker compose exec api uv run alembic check
 
-.PHONY: help setup up down logs rebuild migrate revision shell psql \
+.PHONY: help setup up down logs rebuild migrate backup revision shell psql \
         lint format typecheck test test-integration test-e2e openapi check
