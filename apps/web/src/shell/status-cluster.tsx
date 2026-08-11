@@ -14,8 +14,10 @@
 import { Button } from "@pornarr/ui";
 import type { JSX } from "react";
 import { useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export function StatusCluster(): JSX.Element {
+  const { t } = useTranslation();
   const panelId = useId();
   const [open, setOpen] = useState(false);
 
@@ -27,19 +29,17 @@ export function StatusCluster(): JSX.Element {
         aria-controls={open ? panelId : undefined}
         onClick={() => setOpen((previous) => !previous)}
       >
-        Activity
+        {t("activity.title")}
       </Button>
 
       {open ? (
         <section
           id={panelId}
-          aria-label="Activity"
+          aria-label={t("activity.title")}
           className="absolute right-0 top-full z-[var(--z-dropdown)] mt-2 flex w-[calc(var(--space-16)*5)] flex-col gap-2 rounded-lg bg-surface p-4 shadow-[var(--shadow-floating)]"
         >
-          <p className={"text-sm text-ink"}>Nothing is transferring right now.</p>
-          <p className={"text-xs text-ink-muted"}>
-            Downloads, imports and their speeds appear here as they start.
-          </p>
+          <p className={"text-sm text-ink"}>{t("activity.idle")}</p>
+          <p className={"text-xs text-ink-muted"}>{t("activity.hint")}</p>
         </section>
       ) : null}
     </div>

@@ -11,29 +11,31 @@
  * later issues; what stands there now says so plainly rather than 404ing.
  */
 import type { JSX } from "react";
+import { useTranslation } from "react-i18next";
 import type { RouteObject } from "react-router-dom";
 import { Navigate, createBrowserRouter } from "react-router-dom";
 import { LoginRoute } from "./auth/login-route";
 import { RequireAuth } from "./auth/require-auth";
 import { AppShell } from "./shell/app-shell";
-import { NAV_ITEMS } from "./shell/sidebar";
+import { NAV_ITEMS, type NavId } from "./shell/sidebar";
 
-function Placeholder({ title }: { readonly title: string }): JSX.Element {
+/** Titled from the destination's own key, so it reads the same as its link. */
+function Placeholder({ navId }: { readonly navId: NavId }): JSX.Element {
+  const { t } = useTranslation();
   return (
     <section className="flex flex-col gap-2">
-      <h1 className={"text-lg text-ink"}>{title}</h1>
-      <p className={"text-sm text-ink-muted"}>This screen is not built yet.</p>
+      <h1 className={"text-lg text-ink"}>{t(`nav.${navId}`)}</h1>
+      <p className={"text-sm text-ink-muted"}>{t("screen.notBuilt")}</p>
     </section>
   );
 }
 
 function NotFound(): JSX.Element {
+  const { t } = useTranslation();
   return (
     <section className="flex flex-col gap-2">
-      <h1 className={"text-lg text-ink"}>Not found</h1>
-      <p className={"text-sm text-ink-muted"}>
-        There is nothing at this address. Pick a destination from the navigation.
-      </p>
+      <h1 className={"text-lg text-ink"}>{t("screen.notFoundTitle")}</h1>
+      <p className={"text-sm text-ink-muted"}>{t("screen.notFoundBody")}</p>
     </section>
   );
 }
@@ -50,7 +52,7 @@ export const appRoutes: RouteObject[] = [
           { index: true, element: <Navigate to="/library" replace /> },
           ...NAV_ITEMS.map((item) => ({
             path: item.path.slice(1),
-            element: <Placeholder title={item.label} />,
+            element: <Placeholder navId={item.id} />,
           })),
           { path: "*", element: <NotFound /> },
         ],

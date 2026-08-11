@@ -9,7 +9,10 @@
  */
 import { Input, Menu } from "@pornarr/ui";
 import type { FormEvent, JSX, RefObject } from "react";
+import { useTranslation } from "react-i18next";
 import { useLogout, useSession } from "../auth/session";
+import { LOCALES, setLocale } from "../i18n";
+import { localeName } from "../i18n/format";
 import { messageForError } from "../lib/api-error";
 import { DRAWER_ID, type SidebarLayout } from "./sidebar";
 import { StatusCluster } from "./status-cluster";
@@ -27,6 +30,7 @@ export interface TopBarProps {
 }
 
 export function TopBar({ layout, drawerOpen, onOpenDrawer, triggerRef }: TopBarProps): JSX.Element {
+  const { t } = useTranslation();
   const session = useSession();
   const logout = useLogout();
 
@@ -47,7 +51,7 @@ export function TopBar({ layout, drawerOpen, onOpenDrawer, triggerRef }: TopBarP
               "text-sm rounded-md border border-border-control px-2 py-1 text-ink-muted transition-colors duration-[var(--duration-fast)] ease-out hover:bg-surface-3 hover:text-ink"
             }
           >
-            Navigation
+            {t("nav.navigation")}
           </button>
         </div>
       ) : null}
@@ -56,9 +60,9 @@ export function TopBar({ layout, drawerOpen, onOpenDrawer, triggerRef }: TopBarP
       <search className="min-w-0 flex-1">
         <form onSubmit={onSearchSubmit}>
           <label className="visually-hidden" htmlFor="global-search">
-            Search
+            {t("search.label")}
           </label>
-          <Input id="global-search" name="q" type="search" placeholder="Search" />
+          <Input id="global-search" name="q" type="search" placeholder={t("search.placeholder")} />
         </form>
       </search>
 
@@ -70,17 +74,30 @@ export function TopBar({ layout, drawerOpen, onOpenDrawer, triggerRef }: TopBarP
         </p>
       ) : null}
 
+      {/* The override. Each language names itself, so the entry a reader needs
+          is legible even when the interface currently is not. */}
       <Menu
-        label={session.data?.username ?? "Account"}
+        label={t("locale.label")}
+        items={LOCALES.map((locale) => ({
+          id: locale,
+          label: localeName(locale),
+          onSelect: () => {
+            void setLocale(locale);
+          },
+        }))}
+      />
+
+      <Menu
+        label={session.data?.username ?? t("account.menu")}
         items={[
           {
             id: "logout",
-            label: "Sign out",
+            label: t("account.signOut"),
             onSelect: () => logout.mutate({}),
           },
           {
             id: "logout-everywhere",
-            label: "Sign out everywhere",
+            label: t("account.signOutEverywhere"),
             onSelect: () => logout.mutate({ everywhere: true }),
           },
         ]}

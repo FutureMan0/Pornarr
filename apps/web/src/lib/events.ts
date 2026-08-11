@@ -20,6 +20,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 
 export const EVENTS_URL = "/api/events";
@@ -81,17 +82,28 @@ const INVALIDATED_BY: Readonly<Record<PornarrEventType, readonly QueryKeyPrefix[
   "media.available": [["library"]],
 };
 
+type AnnouncementKey =
+  | "events.downloadCompleted"
+  | "events.downloadFailed"
+  | "events.importCompleted"
+  | "events.mediaAvailable";
+
 /**
  * What gets announced. DESIGN.md wants state changes announced politely, and
  * "politely" includes not narrating every progress tick — only the four frames
  * that mean a piece of work reached its end are worth interrupting a reader
- * for. The sentences are ours; the server never supplies prose.
+ * for. The sentences are ours and live in the locale files; the server never
+ * supplies prose.
+ *
+ * The *key* is what the hook stores, not the sentence: an announcement made
+ * before a language switch is still on screen after it, and it has to be in the
+ * language the reader just asked for.
  */
-const ANNOUNCEMENTS: Readonly<Partial<Record<PornarrEventType, string>>> = {
-  "download.completed": "A download finished.",
-  "download.failed": "A download failed.",
-  "import.completed": "An import finished.",
-  "media.available": "New media is available.",
+const ANNOUNCEMENT_KEYS: Readonly<Partial<Record<PornarrEventType, AnnouncementKey>>> = {
+  "download.completed": "events.downloadCompleted",
+  "download.failed": "events.downloadFailed",
+  "import.completed": "events.importCompleted",
+  "media.available": "events.mediaAvailable",
 };
 
 /** Parse one frame. Returns null for anything that is not a valid envelope. */
@@ -130,8 +142,12 @@ export interface EventStreamState {
  * exist (jsdom), which keeps every other test in this app from needing a stub.
  */
 export function useEventStream(): EventStreamState {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [announcement, setAnnouncement] = useState("");
+  const [announced, setAnnounced] = useState<{
+    readonly key: AnnouncementKey;
+    readonly nonce: number;
+  } | null>(null);
 
   useEffect(() => {
     if (typeof EventSource === "undefined") return undefined;
@@ -145,11 +161,10 @@ export function useEventStream(): EventStreamState {
 
         applyEvent(queryClient, parsed);
 
-        const message = ANNOUNCEMENTS[type];
-        // Re-announce an identical sentence by making the node's text differ:
-        // a live region that receives the same string twice says it once.
-        if (message !== undefined)
-          setAnnouncement((previous) => nextAnnouncement(previous, message));
+        const key = ANNOUNCEMENT_KEYS[type];
+        if (key !== undefined) {
+          setAnnounced((previous) => ({ key, nonce: (previous?.nonce ?? 0) + 1 }));
+        }
       };
 
       source.addEventListener(type, listener);
@@ -162,10 +177,9 @@ export function useEventStream(): EventStreamState {
     };
   }, [queryClient]);
 
-  return { announcement };
-}
-
-/** Alternate a trailing space so repeats of one sentence still announce. */
-function nextAnnouncement(previous: string, message: string): string {
-  return previous === message ? `${message} ` : message;
+  if (announced === null) return { announcement: "" };
+  // A live region handed the same string twice says it once. Alternating a
+  // trailing space makes every announcement a different string from the last.
+  const sentence = t(announced.key);
+  return { announcement: announced.nonce % 2 === 0 ? `${sentence} ` : sentence };
 }

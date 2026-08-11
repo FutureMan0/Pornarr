@@ -14,6 +14,7 @@
 import { cx } from "@pornarr/ui";
 import type { JSX, KeyboardEvent } from "react";
 import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
 export type SidebarLayout = "full" | "rail" | "drawer";
@@ -21,16 +22,23 @@ export type SidebarLayout = "full" | "rail" | "drawer";
 export interface NavItem {
   readonly id: string;
   readonly path: string;
-  readonly label: string;
 }
 
-/** The shell's destinations. `routes.tsx` builds the route table from this. */
-export const NAV_ITEMS: readonly NavItem[] = [
-  { id: "library", path: "/library", label: "Library" },
-  { id: "requests", path: "/requests", label: "Requests" },
-  { id: "downloads", path: "/downloads", label: "Downloads" },
-  { id: "settings", path: "/settings", label: "Settings" },
-];
+/**
+ * The shell's destinations. `routes.tsx` builds the route table from this.
+ *
+ * No label here: the id *is* the key under `nav` in the locale files, so a
+ * destination cannot be added without a translated name, and the check is the
+ * compiler's rather than a reviewer's.
+ */
+export const NAV_ITEMS = [
+  { id: "library", path: "/library" },
+  { id: "requests", path: "/requests" },
+  { id: "downloads", path: "/downloads" },
+  { id: "settings", path: "/settings" },
+] as const satisfies readonly NavItem[];
+
+export type NavId = (typeof NAV_ITEMS)[number]["id"];
 
 const RAIL_QUERY = "(max-width: 1279.98px)";
 const DRAWER_QUERY = "(max-width: 767.98px)";
@@ -71,6 +79,7 @@ export interface SidebarProps {
 }
 
 export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | null {
+  const { t } = useTranslation();
   const drawerRef = useRef<HTMLDivElement>(null);
   const isDrawer = layout === "drawer";
 
@@ -111,7 +120,7 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
 
   const nav = (
     <nav
-      aria-label="Primary"
+      aria-label={t("nav.primary")}
       data-layout={layout}
       className={cx(
         "flex h-full flex-col gap-1 p-2",
@@ -135,7 +144,7 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
           )}
           onClick={onClose}
         >
-          Close
+          {t("nav.close")}
         </button>
       ) : null}
 
@@ -156,11 +165,11 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
                 )
               }
             >
-              <NavIcon id={item.id} label={item.label} />
+              <NavIcon id={item.id} label={t(`nav.${item.id}`)} />
               {/* The rail keeps the label for assistive technology; only the
                   pixels go away. */}
               <span className={layout === "rail" ? "visually-hidden" : undefined}>
-                {item.label}
+                {t(`nav.${item.id}`)}
               </span>
             </NavLink>
           </li>
@@ -183,7 +192,7 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
         className="fixed inset-0 z-[var(--z-backdrop)] bg-[color-mix(in_oklch,var(--bg)_72%,transparent)]"
         onClick={onClose}
       >
-        <span className="visually-hidden">Close navigation</span>
+        <span className="visually-hidden">{t("nav.closeNavigation")}</span>
       </button>
       <div
         id={DRAWER_ID}
@@ -194,7 +203,7 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
         // The trap, Escape handling and focus return below supply what it would give.
         role="dialog"
         aria-modal="true"
-        aria-label="Navigation"
+        aria-label={t("nav.navigation")}
         className="fixed inset-y-0 left-0 z-[var(--z-modal)]"
         onKeyDown={onDrawerKeyDown}
       >

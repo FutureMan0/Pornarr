@@ -1,0 +1,84 @@
+{
+  "app": {
+    "name": "Pornarr"
+  },
+  "login": {
+    "subtitle": "Melde dich an, um fortzufahren.",
+    "username": "Benutzername",
+    "password": "Passwort",
+    "submit": "Anmelden"
+  },
+  "session": {
+    "checking": "Sitzung wird geprüft",
+    "unavailableTitle": "Sitzung konnte nicht geprüft werden",
+    "retry": "Erneut versuchen"
+  },
+  "shell": {
+    "skipToContent": "Zum Inhalt springen"
+  },
+  "nav": {
+    "primary": "Hauptnavigation",
+    "navigation": "Navigation",
+    "close": "Schließen",
+    "closeNavigation": "Navigation schließen",
+    "library": "Bibliothek",
+    "requests": "Anfragen",
+    "downloads": "Downloads",
+    "settings": "Einstellungen"
+  },
+  "search": {
+    "label": "Suche",
+    "placeholder": "Suchen"
+  },
+  "account": {
+    "menu": "Konto",
+    "signOut": "Abmelden",
+    "signOutEverywhere": "Überall abmelden"
+  },
+  "activity": {
+    "title": "Aktivität",
+    "idle": "Derzeit wird nichts übertragen.",
+    "hint": "Downloads, Importe und ihre Geschwindigkeiten erscheinen hier, sobald sie starten."
+  },
+  "locale": {
+    "label": "Sprache"
+  },
+  "screen": {
+    "notBuilt": "Diese Seite ist noch nicht gebaut.",
+    "notFoundTitle": "Nicht gefunden",
+    "notFoundBody": "Unter dieser Adresse gibt es nichts. Wähle ein Ziel aus der Navigation."
+  },
+  "events": {
+    "downloadCompleted": "Ein Download ist fertig.",
+    "downloadFailed": "Ein Download ist fehlgeschlagen.",
+    "importCompleted": "Ein Import ist fertig.",
+    "mediaAvailable": "Neue Medien sind verfügbar."
+  },
+  "format": {
+    "unknown": "Unbekannt"
+  },
+  "errors": {
+    "INVALID_CREDENTIALS": "Benutzername und Passwort passen nicht zusammen.",
+    "NOT_AUTHENTICATED": "Deine Sitzung ist abgelaufen. Melde dich erneut an.",
+    "FORBIDDEN": "Dein Konto darf das nicht.",
+    "CSRF_FAILED": "Diese Anfrage konnte nicht verifiziert werden. Lade die Seite neu und versuche es erneut.",
+    "LOGIN_RATE_LIMITED": "Zu viele Anmeldeversuche. Warte eine Minute und versuche es erneut.",
+    "OIDC_DISCOVERY_FAILED": "Dieser Identitätsanbieter war nicht erreichbar oder hat etwas Unbrauchbares geantwortet.",
+    "WEB_ASSETS_MISSING": "Die Oberflächendateien fehlen in dieser Installation.",
+    "NOT_IMPLEMENTED": "Das ist noch nicht gebaut.",
+    "CONFIGURATION_INVALID": "Diese Instanz ist falsch konfiguriert. Sieh im Server-Log nach.",
+    "DECRYPTION_FAILED": "Gespeicherte Zugangsdaten konnten nicht gelesen werden. Das Anwendungsgeheimnis passt nicht zu dem, mit dem sie gespeichert wurden.",
+    "BAD_REQUEST": "Mit dieser Anfrage konnte der Server nichts anfangen.",
+    "NOT_FOUND": "Das gibt es nicht, oder nicht mehr.",
+    "METHOD_NOT_ALLOWED": "Diese Aktion ist unter dieser Adresse nicht verfügbar.",
+    "CONFLICT": "Das steht im Konflikt mit etwas, das bereits existiert.",
+    "PAYLOAD_TOO_LARGE": "Das ist zu groß zum Senden.",
+    "VALIDATION_FAILED": "Ein Teil der Eingabe ist ungültig. Prüfe die markierten Felder.",
+    "RATE_LIMITED": "Zu viele Anfragen. Warte einen Moment und versuche es erneut.",
+    "INTERNAL_ERROR": "Auf dem Server ist ein Problem aufgetreten. Sieh im Server-Log nach.",
+    "SERVICE_UNAVAILABLE": "Der Server ist noch nicht bereit. Versuche es gleich noch einmal.",
+    "NETWORK_UNREACHABLE": "Der Server war nicht erreichbar. Prüfe, ob er läuft.",
+    "unknown": "Etwas ist schiefgelaufen ({{code}}).",
+    "generic": "Etwas ist schiefgelaufen. Versuche es erneut."
+  }
+}

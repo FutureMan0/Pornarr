@@ -11,6 +11,7 @@
  */
 import type { JSX } from "react";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
 import { useEventStream } from "../lib/events";
 import { Sidebar, useSidebarLayout } from "./sidebar";
@@ -23,6 +24,7 @@ const CONTENT_OFFSET = {
 } as const;
 
 export function AppShell(): JSX.Element {
+  const { t } = useTranslation();
   const layout = useSidebarLayout();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -49,7 +51,7 @@ export function AppShell(): JSX.Element {
           "text-sm sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[var(--z-toast)] focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:text-ink"
         }
       >
-        Skip to content
+        {t("shell.skipToContent")}
       </a>
 
       <Sidebar layout={layout} open={drawerOpen} onClose={closeDrawer} />

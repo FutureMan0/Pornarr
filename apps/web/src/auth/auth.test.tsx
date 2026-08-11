@@ -10,7 +10,7 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { CSRF_COOKIE, CSRF_HEADER } from "../lib/api";
-import { ERROR_MESSAGES, FALLBACK_ERROR_MESSAGE } from "../lib/api-error";
+import { messageForError, messageForErrorCode } from "../lib/api-error";
 import {
   TEST_USER,
   VALID_PASSWORD,
@@ -58,7 +58,7 @@ describe("session restore", () => {
     renderApp("/library");
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toBe(FALLBACK_ERROR_MESSAGE);
+    expect(alert.textContent).toBe(messageForError(new TypeError("offline")));
     expect(screen.queryByRole("button", { name: "Sign in" })).toBeNull();
     expect(screen.queryByRole("navigation", { name: "Primary" })).toBeNull();
   });
@@ -79,7 +79,7 @@ describe("login", () => {
     await signIn("wrong");
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toBe(ERROR_MESSAGES.INVALID_CREDENTIALS);
+    expect(alert.textContent).toBe(messageForErrorCode("INVALID_CREDENTIALS"));
     expect(document.body.textContent).not.toContain("INVALID_CREDENTIALS");
     expect(screen.queryByRole("navigation", { name: "Primary" })).toBeNull();
   });
@@ -97,7 +97,7 @@ describe("login", () => {
     await signIn(VALID_PASSWORD);
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toBe(ERROR_MESSAGES.LOGIN_RATE_LIMITED);
+    expect(alert.textContent).toBe(messageForErrorCode("LOGIN_RATE_LIMITED"));
     expect(document.body.textContent).not.toContain("LOGIN_RATE_LIMITED");
   });
 });
@@ -149,7 +149,7 @@ describe("logout", () => {
     await user.click(screen.getByRole("menuitem", { name: "Sign out" }));
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toBe(ERROR_MESSAGES.CSRF_FAILED);
+    expect(alert.textContent).toBe(messageForErrorCode("CSRF_FAILED"));
     expect(document.body.textContent).not.toContain("CSRF_FAILED");
     expect(screen.getByRole("navigation", { name: "Primary" })).toBeTruthy();
   });

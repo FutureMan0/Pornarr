@@ -9,12 +9,14 @@
 import { Button, Input } from "@pornarr/ui";
 import type { FormEvent, JSX } from "react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Navigate, useLocation } from "react-router-dom";
 import { messageForError } from "../lib/api-error";
 import type { FromLocationState } from "./require-auth";
 import { useLogin, useSession } from "./session";
 
 export function LoginRoute(): JSX.Element {
+  const { t } = useTranslation();
   const session = useSession();
   const login = useLogin();
   const location = useLocation();
@@ -34,14 +36,14 @@ export function LoginRoute(): JSX.Element {
   return (
     <main className="mx-auto flex min-h-full w-full max-w-[calc(var(--space-16)*6)] flex-col justify-center gap-6 p-6">
       <div className="flex flex-col gap-2">
-        <h1 className={"text-lg text-ink"}>Pornarr</h1>
-        <p className={"text-sm text-ink-muted"}>Sign in to continue.</p>
+        <h1 className={"text-lg text-ink"}>{t("app.name")}</h1>
+        <p className={"text-sm text-ink-muted"}>{t("login.subtitle")}</p>
       </div>
 
       <form className="flex flex-col gap-4" onSubmit={onSubmit}>
         <div className="flex flex-col gap-2">
           <label className={"text-sm text-ink-muted"} htmlFor="login-username">
-            Username
+            {t("login.username")}
           </label>
           <Input
             id="login-username"
@@ -55,7 +57,7 @@ export function LoginRoute(): JSX.Element {
 
         <div className="flex flex-col gap-2">
           <label className={"text-sm text-ink-muted"} htmlFor="login-password">
-            Password
+            {t("login.password")}
           </label>
           <Input
             id="login-password"
@@ -80,7 +82,7 @@ export function LoginRoute(): JSX.Element {
         ) : null}
 
         <Button type="submit" loading={login.isPending}>
-          Sign in
+          {t("login.submit")}
         </Button>
       </form>
     </main>

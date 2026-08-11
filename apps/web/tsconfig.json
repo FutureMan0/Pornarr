@@ -6,6 +6,8 @@
     "jsx": "react-jsx",
     "types": ["vite/client"]
   },
-  "include": ["src"],
+  // The locale files are listed explicitly: `include` picks up TypeScript by
+  // default, and `resolveJsonModule` is what types `t()` against en.json.
+  "include": ["src", "src/**/*.json"],
   "references": [{ "path": "../../packages/ui" }, { "path": "../../packages/api-client" }]
 }
