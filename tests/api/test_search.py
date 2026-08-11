@@ -5,6 +5,7 @@ from __future__ import annotations
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.routers import search as search_router
@@ -17,6 +18,7 @@ from pornarr_db.models.filters import (
     FilterRuleKind,
 )
 from pornarr_db.models.media import Media, MediaFile
+from pornarr_db.models.playback import UserEvent
 from pornarr_shared.metrics import REGISTRY
 from tests.api.test_auth import create_user, login
 
@@ -63,3 +65,8 @@ async def test_local_search_honours_the_requesting_users_filter_profile(
     assert response.status_code == 200
     assert response.json() == {"items": [], "next_cursor": None}
     assert REGISTRY.get_sample_value("pornarr_operations_total", labels=labels) == before + 1
+    async with AsyncSession(app.state.engine) as session:
+        event = await session.scalar(select(UserEvent))
+    assert event is not None
+    assert event.event_type == "search"
+    assert event.value == 0

@@ -14,8 +14,10 @@ from sqlalchemy.orm import selectinload
 
 from pornarr_api.auth import database_session, get_current_user
 from pornarr_api.errors import ErrorResponse
+from pornarr_db.events import record_user_event
 from pornarr_db.models.download import DownloadJob
 from pornarr_db.models.download_client import DownloadClient
+from pornarr_db.models.playback import UserEventType
 from pornarr_db.models.request import Request, RequestHistory, RequestStatus
 from pornarr_db.models.user import User, UserRole
 from pornarr_db.requests import InvalidRequestTransitionError, transition_request
@@ -197,6 +199,7 @@ async def _create_request(
     await session.flush()
     history = RequestHistory(request_id=request.id, status=status)
     session.add(history)
+    await record_user_event(session, user.id, UserEventType.REQUEST, value=float(payload.priority))
     return request_response(request, [history])
 
 

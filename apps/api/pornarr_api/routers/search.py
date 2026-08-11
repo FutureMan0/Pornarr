@@ -22,6 +22,7 @@ from pornarr_core.filters import FilterAction as CoreFilterAction
 from pornarr_core.filters import FilterRule as CoreFilterRule
 from pornarr_core.filters import FilterRuleKind as CoreFilterRuleKind
 from pornarr_db.audit import write_audit
+from pornarr_db.events import record_user_event
 from pornarr_db.media_search import (
     MediaSearch,
     MediaSearchResult,
@@ -35,6 +36,7 @@ from pornarr_db.models.filters import (
     ContentFilterRule,
     FilterProfileScope,
 )
+from pornarr_db.models.playback import UserEventType
 from pornarr_db.models.user import User
 from pornarr_shared.metrics import measure
 
@@ -114,6 +116,7 @@ async def local_search(
                     context={"rule_id": decision.rule.id},
                 )
         next_cursor = _next_cursor(results, limit, sort, q)
+        await record_user_event(session, user.id, UserEventType.SEARCH, value=float(len(items)))
         return LocalSearchResponse(items=items, next_cursor=next_cursor)
 
 

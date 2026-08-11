@@ -39,6 +39,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/account/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record Account Event */
+        post: operations["account_record_account_event"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/account/oidc": {
         parameters: {
             query?: never;
@@ -1513,6 +1530,8 @@ export interface components {
             transcode_max_per_user: number;
             /** Transcode Max Sw Sessions */
             transcode_max_sw_sessions: number | null;
+            /** User Event Retention Days */
+            user_event_retention_days: number | null;
         };
         /**
          * RuntimeSettingsWrite
@@ -1559,6 +1578,8 @@ export interface components {
             transcode_max_per_user?: number | null;
             /** Transcode Max Sw Sessions */
             transcode_max_sw_sessions?: number | null;
+            /** User Event Retention Days */
+            user_event_retention_days?: number | null;
         };
         /** SetupCompleteResponse */
         SetupCompleteResponse: {
@@ -1668,6 +1689,41 @@ export interface components {
             /** Username */
             username: string | null;
         };
+        /** UserEventResponse */
+        UserEventResponse: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            event_type: components["schemas"]["UserEventType"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Media Id */
+            media_id: string | null;
+            /** Subject Id */
+            subject_id: string | null;
+            /** Value */
+            value: number | null;
+        };
+        /**
+         * UserEventType
+         * @enum {string}
+         */
+        UserEventType: "search" | "view" | "play" | "progress" | "completed" | "favourite" | "unfavourite" | "request" | "not_interested" | "hide_tag" | "hide_performer";
+        /** UserEventWrite */
+        UserEventWrite: {
+            event_type: components["schemas"]["UserEventType"];
+            /** Media Id */
+            media_id?: string | null;
+            /** Subject Id */
+            subject_id?: string | null;
+            /** Value */
+            value?: number | null;
+        };
         /**
          * UserRole
          * @enum {string}
@@ -1765,6 +1821,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    account_record_account_event: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserEventWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserEventResponse"];
+                };
             };
             /** @description Validation Error */
             422: {

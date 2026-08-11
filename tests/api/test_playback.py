@@ -5,11 +5,13 @@ from uuid import uuid4
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from pornarr_api.main import create_app
 from pornarr_db.base import Base
 from pornarr_db.models.media import Media, MediaFile
+from pornarr_db.models.playback import UserEvent
 from pornarr_db.models.user import User
 from tests.api.test_app import build_settings
 from tests.api.test_auth import MemoryRedis, create_user, login
@@ -63,6 +65,11 @@ async def test_playback_info_reports_direct_play_for_the_default_browser(app, cl
 
     assert response.status_code == 200
     assert response.json() == {"direct_play": True, "reasons": []}
+    async with AsyncSession(app.state.engine) as session:
+        event = await session.scalar(select(UserEvent))
+    assert event is not None
+    assert event.event_type == "view"
+    assert event.media_id == media_file.media_id
 
 
 async def test_playback_info_returns_machine_readable_incompatibility_reasons(app, client) -> None:

@@ -7,7 +7,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,13 +21,18 @@ from pornarr_api.auth import (
 )
 from pornarr_api.errors import ErrorResponse
 from pornarr_db.audit import write_audit
+from pornarr_db.events import record_user_event
 from pornarr_db.models.api_keys import UserApiKey
+from pornarr_db.models.entities import Performer, Tag
+from pornarr_db.models.media import Media
 from pornarr_db.models.oidc import OidcIdentity, OidcProvider
+from pornarr_db.models.playback import UserEventType
 from pornarr_db.models.user import User
 from pornarr_shared.errors import PornarrError
 
 router = APIRouter(prefix="/account/api-keys", tags=["account"])
 oidc_router = APIRouter(prefix="/account/oidc", tags=["account"])
+event_router = APIRouter(prefix="/account/events", tags=["account"])
 Session = Annotated[AsyncSession, Depends(database_session)]
 
 
@@ -53,6 +58,38 @@ class OidcIdentityResponse(BaseModel):
     provider_name: str
 
 
+class UserEventWrite(BaseModel):
+    event_type: UserEventType
+    media_id: UUID | None = None
+    value: float | None = None
+    subject_id: UUID | None = None
+
+    @model_validator(mode="after")
+    def has_relevant_target(self) -> UserEventWrite:
+        media_events = {
+            UserEventType.FAVOURITE,
+            UserEventType.UNFAVOURITE,
+            UserEventType.NOT_INTERESTED,
+        }
+        subject_events = {UserEventType.HIDE_TAG, UserEventType.HIDE_PERFORMER}
+        if self.event_type in media_events and self.media_id is None:
+            raise ValueError("media_id is required for this event type")
+        if self.event_type in subject_events and self.subject_id is None:
+            raise ValueError("subject_id is required for this event type")
+        if self.event_type not in media_events | subject_events:
+            raise ValueError("event type is captured by the corresponding product action")
+        return self
+
+
+class UserEventResponse(BaseModel):
+    id: UUID
+    event_type: UserEventType
+    media_id: UUID | None
+    value: float | None
+    subject_id: UUID | None
+    created_at: datetime
+
+
 class OidcUnlinkWouldLockAccountError(PornarrError):
     code = "OIDC_UNLINK_WOULD_LOCK_ACCOUNT"
     status = 409
@@ -69,6 +106,39 @@ CurrentUser = Annotated[User, Depends(session_user)]
 
 def key_response(key: UserApiKey) -> ApiKeyResponse:
     return ApiKeyResponse.model_validate(key, from_attributes=True)
+
+
+@event_router.post("", response_model=UserEventResponse, status_code=201)
+async def record_account_event(
+    payload: UserEventWrite, user: CurrentUser, session: Session
+) -> UserEventResponse:
+    if payload.media_id is not None and await session.get(Media, payload.media_id) is None:
+        raise HTTPException(status_code=404)
+    if payload.event_type is UserEventType.HIDE_TAG:
+        target = await session.get(Tag, payload.subject_id)
+        if target is None:
+            raise HTTPException(status_code=404)
+    if payload.event_type is UserEventType.HIDE_PERFORMER:
+        target = await session.get(Performer, payload.subject_id)
+        if target is None:
+            raise HTTPException(status_code=404)
+    event = await record_user_event(
+        session,
+        user.id,
+        payload.event_type,
+        media_id=payload.media_id,
+        value=payload.value,
+        subject_id=payload.subject_id,
+    )
+    await session.flush()
+    return UserEventResponse(
+        id=event.id,
+        event_type=payload.event_type,
+        media_id=event.media_id,
+        value=event.value,
+        subject_id=event.subject_id,
+        created_at=event.created_at,
+    )
 
 
 @router.post("", response_model=ApiKeyCreatedResponse, status_code=201)

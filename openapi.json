@@ -1703,6 +1703,17 @@
               }
             ],
             "title": "Transcode Max Sw Sessions"
+          },
+          "user_event_retention_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Event Retention Days"
           }
         },
         "required": [
@@ -1711,6 +1722,7 @@
           "transcode_max_per_user",
           "playback_completion_threshold_percent",
           "audit_retention_days",
+          "user_event_retention_days",
           "min_free_disk_percent",
           "default_daily_download_limit_gb",
           "default_max_auto_jobs",
@@ -1973,6 +1985,18 @@
               }
             ],
             "title": "Transcode Max Sw Sessions"
+          },
+          "user_event_retention_days": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Event Retention Days"
           }
         },
         "title": "RuntimeSettingsWrite",
@@ -2232,6 +2256,132 @@
         "title": "TranscodeSessionResponse",
         "type": "object"
       },
+      "UserEventResponse": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "event_type": {
+            "$ref": "#/components/schemas/UserEventType"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "media_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Id"
+          },
+          "subject_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Id"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "id",
+          "event_type",
+          "media_id",
+          "value",
+          "subject_id",
+          "created_at"
+        ],
+        "title": "UserEventResponse",
+        "type": "object"
+      },
+      "UserEventType": {
+        "enum": [
+          "search",
+          "view",
+          "play",
+          "progress",
+          "completed",
+          "favourite",
+          "unfavourite",
+          "request",
+          "not_interested",
+          "hide_tag",
+          "hide_performer"
+        ],
+        "title": "UserEventType",
+        "type": "string"
+      },
+      "UserEventWrite": {
+        "properties": {
+          "event_type": {
+            "$ref": "#/components/schemas/UserEventType"
+          },
+          "media_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Id"
+          },
+          "subject_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Id"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "event_type"
+        ],
+        "title": "UserEventWrite",
+        "type": "object"
+      },
       "UserRole": {
         "enum": [
           "admin",
@@ -2383,6 +2533,47 @@
           }
         },
         "summary": "Revoke Api Key",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/api/account/events": {
+      "post": {
+        "operationId": "account_record_account_event",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserEventWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserEventResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Account Event",
         "tags": [
           "account"
         ]
