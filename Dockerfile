@@ -33,9 +33,60 @@ RUN pnpm --filter @pornarr/web run build --if-present \
     && if [ -d apps/web/dist ]; then cp -r apps/web/dist/. /web/; fi
 
 # ---------------------------------------------------------------------------
-# Stage 2 — resolve Python dependencies
+# Stage 2 — build a current FFmpeg with the required hardware encoders
 # ---------------------------------------------------------------------------
-FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS python-deps
+# Alpine is the maintained, small runtime base. Its packaged FFmpeg omits
+# NVENC, so build a pinned upstream release with both NVENC and VAAPI instead.
+# The proprietary NVIDIA libraries themselves are mounted from the host by the
+# NVIDIA container toolkit at runtime.
+FROM alpine:3.22 AS ffmpeg-build
+
+ARG FFMPEG_REF=38b88335f99e76ed89ff3c93f877fdefce736c13
+ARG NV_CODEC_HEADERS_REF=c69278340ab1d5559c7d7bf0edf615dc33ddbba7
+
+RUN apk add --no-cache \
+        build-base \
+        git \
+        libdrm-dev \
+        libva-dev \
+        nasm \
+        pkgconf \
+        x264-dev \
+        x265-dev \
+        yasm
+
+RUN git clone --depth 1 https://github.com/FFmpeg/nv-codec-headers.git /nv-codec-headers \
+    && cd /nv-codec-headers \
+    && git fetch --depth 1 origin "$NV_CODEC_HEADERS_REF" \
+    && git checkout --detach FETCH_HEAD \
+    && make PREFIX=/usr install \
+    && git clone --depth 1 https://github.com/FFmpeg/FFmpeg.git /src \
+    && cd /src \
+    && git fetch --depth 1 origin "$FFMPEG_REF" \
+    && git checkout --detach FETCH_HEAD \
+    && ./configure \
+        --prefix=/opt/ffmpeg \
+        --disable-debug \
+        --disable-doc \
+        --disable-static \
+        --enable-ffnvcodec \
+        --enable-gpl \
+        --enable-libdrm \
+        --enable-libx264 \
+        --enable-libx265 \
+        --enable-nvenc \
+        --enable-shared \
+        --enable-vaapi \
+    && make -j"$(nproc)" \
+    && make install
+
+# ---------------------------------------------------------------------------
+# Stage 3 — resolve Python dependencies
+# ---------------------------------------------------------------------------
+FROM python:3.13-alpine3.22 AS python-deps
+
+COPY --from=ghcr.io/astral-sh/uv@sha256:e9a8312ed6a98f515208dd792c61178a0b7c8fbfb807af01534f0e6fe10b24f5 \
+    /usr/local/bin/uv /usr/local/bin/uv
 
 WORKDIR /app
 ENV UV_COMPILE_BYTECODE=1 \
@@ -62,26 +113,31 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
 # ---------------------------------------------------------------------------
-# Stage 3 — runtime base, shared by development and production
+# Stage 4 — runtime base, shared by development and production
 # ---------------------------------------------------------------------------
-FROM python:3.13-slim-bookworm AS base
+FROM python:3.13-alpine3.22 AS base
 
-# ffmpeg: Debian's build carries VAAPI and NVENC. curl: container healthchecks.
-# The NVIDIA user-space libraries are mounted from the host by the container
-# toolkit, which is why nothing CUDA is installed here.
-RUN apt-get update \
-    && apt-get install --no-install-recommends -y \
-        ffmpeg \
-        curl \
+# Apply all currently available Alpine fixes. This is deliberately not
+# --ignore-unfixed: the release gate rejects any remaining HIGH or CRITICAL CVE.
+RUN apk upgrade --no-cache \
+    && apk add --no-cache \
         ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+        curl \
+        libdrm \
+        libstdc++ \
+        libva \
+        x264-libs \
+        x265-libs
+
+COPY --from=ffmpeg-build /opt/ffmpeg /usr/local
 
 # Fixed uid/gid so files written to a bind-mounted /data have predictable
 # ownership on the host.
-RUN groupadd --gid 1000 pornarr \
-    && useradd --uid 1000 --gid 1000 --create-home --shell /bin/bash pornarr
+RUN addgroup --gid 1000 pornarr \
+    && adduser --disabled-password --gecos '' --home /home/pornarr --uid 1000 --ingroup pornarr pornarr
 
 ENV PATH="/app/.venv/bin:$PATH" \
+    LD_LIBRARY_PATH="/usr/local/lib" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
@@ -93,11 +149,12 @@ ENTRYPOINT ["/usr/local/bin/entrypoint"]
 CMD ["api"]
 
 # ---------------------------------------------------------------------------
-# Stage 4 — development: source arrives by bind mount, not by COPY
+# Stage 5 — development: source arrives by bind mount, not by COPY
 # ---------------------------------------------------------------------------
 FROM base AS development
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv@sha256:e9a8312ed6a98f515208dd792c61178a0b7c8fbfb807af01534f0e6fe10b24f5 \
+    /usr/local/bin/uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=0 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never \
@@ -112,7 +169,7 @@ RUN mkdir -p /data && chown -R pornarr:pornarr /data /app
 USER pornarr
 
 # ---------------------------------------------------------------------------
-# Stage 5 — runtime
+# Stage 6 — runtime
 # ---------------------------------------------------------------------------
 FROM base AS runtime
 

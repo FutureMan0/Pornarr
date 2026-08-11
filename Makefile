@@ -27,6 +27,11 @@ logs:
 rebuild:
 	docker compose up -d --build --wait
 
+## scan-image: build and fail on any runtime HIGH or CRITICAL CVE
+scan-image:
+	docker build --target runtime -t pornarr:local .
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.58.1 image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 pornarr:local
+
 ## migrate: apply database migrations
 migrate:
 	docker compose run --rm migrate
@@ -84,5 +89,5 @@ openapi:
 check: lint typecheck test
 	docker compose exec api uv run alembic check
 
-.PHONY: help setup up down logs rebuild migrate revision shell psql \
+.PHONY: help setup up down logs rebuild scan-image migrate revision shell psql \
         lint format typecheck test test-integration test-e2e openapi check
