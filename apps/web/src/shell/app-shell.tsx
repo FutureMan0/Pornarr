@@ -13,6 +13,8 @@ import type { JSX } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
+import { ConnectionStatus } from "../errors/connection-status";
+import { ErrorBoundary } from "../errors/error-boundary";
 import { useEventStream } from "../lib/events";
 import { Sidebar, useSidebarLayout } from "./sidebar";
 import { TopBar } from "./top-bar";
@@ -28,7 +30,7 @@ export function AppShell(): JSX.Element {
   const layout = useSidebarLayout();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
-  const { announcement } = useEventStream();
+  const { announcement, status } = useEventStream();
 
   // Growing past the drawer breakpoint with the drawer open would leave an
   // overlay on top of a sidebar that is already visible.
@@ -65,7 +67,14 @@ export function AppShell(): JSX.Element {
         />
 
         <main id="main" className="mx-auto w-full max-w-[var(--layout-content-max-width)] p-6">
-          <Outlet />
+          <ConnectionStatus status={status} />
+
+          {/* Inside the shell rather than around it: a screen that throws takes
+              the screen down, and the navigation out of it stays usable. The
+              boundary in `app.tsx` is the one that catches everything else. */}
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
 
