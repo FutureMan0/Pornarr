@@ -29,10 +29,12 @@ from pornarr_db.models.filters import (
 )
 from pornarr_db.models.indexer import Indexer, IndexerStats
 from pornarr_db.models.media import Media, MediaFile, MediaFileHistory
+from pornarr_db.models.notification import Notification, NotificationKind, NotificationPreference
 from pornarr_db.models.oidc import OidcIdentity, OidcProvider
 from pornarr_db.models.playback import PlaybackProgress, UserEvent
 from pornarr_db.models.quality import QualityDefinition, QualityProfile, QualityProfileItem
 from pornarr_db.models.release import ReleaseCache
+from pornarr_db.models.request import Request, RequestHistory, RequestStatus
 from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.models.settings import Setting
 from pornarr_db.models.statistics import PerformanceMeasurement, PerformanceMetric
@@ -63,6 +65,9 @@ __all__ = [
     "MediaFileHistory",
     "MediaPerformer",
     "MediaTag",
+    "Notification",
+    "NotificationKind",
+    "NotificationPreference",
     "OidcIdentity",
     "OidcProvider",
     "PerformanceMeasurement",
@@ -73,6 +78,9 @@ __all__ = [
     "QualityProfile",
     "QualityProfileItem",
     "ReleaseCache",
+    "Request",
+    "RequestHistory",
+    "RequestStatus",
     "RootFolder",
     "Setting",
     "Studio",
