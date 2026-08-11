@@ -73,6 +73,7 @@ class Settings(BaseSettings):
     auto_download_size_weight: float = Field(default=0.05, ge=0)
     auto_download_duplicate_risk_weight: float = Field(default=0.10, ge=0)
     auto_download_expected_download_time_weight: float = Field(default=0.05, ge=0)
+    request_max_active_per_user: int = Field(default=10, ge=0)
 
     oidc_allow_private_issuers: bool = False
 

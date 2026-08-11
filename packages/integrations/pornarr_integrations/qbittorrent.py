@@ -264,6 +264,19 @@ class QbittorrentAdapter:
             deleteFiles=str(delete_files).lower(),
         )
 
+    async def cancel(
+        self, *, host: str, port: int, url_base: str, credentials: str, client_job_id: str
+    ) -> None:
+        """Remove a cancelled request's incomplete torrent and its files."""
+        await self.delete(
+            host=host,
+            port=port,
+            url_base=url_base,
+            credentials=credentials,
+            client_job_id=client_job_id,
+            delete_files=True,
+        )
+
     async def delete_after_seeding(
         self, *, host: str, port: int, url_base: str, credentials: str, client_job_id: str
     ) -> bool:

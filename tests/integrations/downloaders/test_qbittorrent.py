@@ -199,6 +199,7 @@ async def test_controls_and_seeding_policy_protected_removal() -> None:
     await adapter.resume(**connection, client_job_id=TORRENT_HASH)
     await adapter.delete(**connection, client_job_id=TORRENT_HASH, delete_files=False)
     await adapter.delete(**connection, client_job_id=TORRENT_HASH, delete_files=True)
+    await adapter.cancel(**connection, client_job_id=TORRENT_HASH)
     assert not await adapter.delete_after_seeding(**connection, client_job_id=TORRENT_HASH)
 
     recorded["ratio"] = 1
@@ -210,3 +211,4 @@ async def test_controls_and_seeding_policy_protected_removal() -> None:
     assert {"hashes": [TORRENT_HASH]} in post_forms
     assert {"hashes": [TORRENT_HASH], "deleteFiles": ["false"]} in post_forms
     assert {"hashes": [TORRENT_HASH], "deleteFiles": ["true"]} in post_forms
+    assert post_forms.count({"hashes": [TORRENT_HASH], "deleteFiles": ["true"]}) == 2
