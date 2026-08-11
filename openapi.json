@@ -1015,6 +1015,9 @@
             "title": "Client Id",
             "type": "string"
           },
+          "default_role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
           "discovery_fetched_at": {
             "anyOf": [
               {
@@ -1044,12 +1047,49 @@
             "title": "Name",
             "type": "string"
           },
+          "required_claim": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Claim"
+          },
+          "required_claim_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Claim Value"
+          },
+          "role_claim": {
+            "title": "Role Claim",
+            "type": "string"
+          },
+          "role_mapping": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/UserRole"
+            },
+            "title": "Role Mapping",
+            "type": "object"
+          },
           "scopes": {
             "items": {
               "type": "string"
             },
             "title": "Scopes",
             "type": "array"
+          },
+          "username_claim": {
+            "title": "Username Claim",
+            "type": "string"
           }
         },
         "required": [
@@ -1058,6 +1098,12 @@
           "issuer",
           "client_id",
           "scopes",
+          "username_claim",
+          "role_claim",
+          "role_mapping",
+          "default_role",
+          "required_claim",
+          "required_claim_value",
           "enabled",
           "discovery_fetched_at"
         ],
@@ -1078,6 +1124,10 @@
             "type": "string",
             "writeOnly": true
           },
+          "default_role": {
+            "$ref": "#/components/schemas/UserRole",
+            "default": "user"
+          },
           "enabled": {
             "default": true,
             "title": "Enabled",
@@ -1095,12 +1145,59 @@
             "title": "Name",
             "type": "string"
           },
+          "required_claim": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Claim"
+          },
+          "required_claim_value": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Claim Value"
+          },
+          "role_claim": {
+            "default": "groups",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Role Claim",
+            "type": "string"
+          },
+          "role_mapping": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/UserRole"
+            },
+            "title": "Role Mapping",
+            "type": "object"
+          },
           "scopes": {
             "items": {
               "type": "string"
             },
             "title": "Scopes",
             "type": "array"
+          },
+          "username_claim": {
+            "default": "preferred_username",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Username Claim",
+            "type": "string"
           }
         },
         "required": [
@@ -2898,6 +2995,16 @@
               }
             },
             "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
           },
           "422": {
             "content": {

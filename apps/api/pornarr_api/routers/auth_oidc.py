@@ -12,15 +12,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import create_session, database_session
 from pornarr_api.errors import ErrorResponse
 from pornarr_api.oidc import OidcAuthenticationError, discover, exchange_code, validate_id_token
+from pornarr_api.oidc_mapping import resolve_oidc_user
 from pornarr_api.routers.auth import set_auth_cookies
-from pornarr_db.models.oidc import OidcIdentity, OidcProvider
-from pornarr_db.models.user import User
+from pornarr_db.models.oidc import OidcProvider
 from pornarr_shared.errors import PornarrError
 
 router = APIRouter(prefix="/auth/oidc", tags=["auth"])
@@ -31,11 +30,6 @@ Session = Annotated[AsyncSession, Depends(database_session)]
 class OidcStateInvalidError(PornarrError):
     code = "OIDC_STATE_INVALID"
     status = 400
-
-
-class OidcIdentityNotLinkedError(PornarrError):
-    code = "OIDC_IDENTITY_NOT_LINKED"
-    status = 403
 
 
 def _state_key(state: str) -> str:
@@ -99,6 +93,7 @@ async def oidc_login(
         400: {"model": ErrorResponse},
         401: {"model": ErrorResponse},
         403: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
         422: {"model": ErrorResponse},
     },
 )
@@ -124,17 +119,7 @@ async def oidc_callback(
     document = await _discovery(provider)
     token = await exchange_code(provider, document, code, verifier, _callback_url(request))
     claims = await validate_id_token(token, provider, document, nonce)
-    subject = claims.get("sub")
-    if not isinstance(subject, str):
-        raise OidcAuthenticationError("The provider identity token is invalid.")
-    identity = await session.scalar(
-        select(OidcIdentity).where(
-            OidcIdentity.provider_id == provider.id, OidcIdentity.subject == subject
-        )
-    )
-    user = await session.get(User, identity.user_id) if identity is not None else None
-    if user is None or not user.is_active:
-        raise OidcIdentityNotLinkedError("The OIDC identity is not linked to an active account.")
+    user = await resolve_oidc_user(session, provider, claims)
     session_token, csrf_token = await create_session(request, user)
     response = RedirectResponse(f"{request.app.state.settings.base_path}/", status_code=303)
     set_auth_cookies(response, request, session_token, csrf_token)

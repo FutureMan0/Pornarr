@@ -68,12 +68,21 @@ async def test_admin_can_create_list_and_delete_a_provider(app, client) -> None:
         "issuer": "https://issuer.example/",
         "client_id": "client-id",
         "client_secret": "secret-value",
+        "username_claim": "email",
+        "role_claim": "roles",
+        "role_mapping": {"administrators": "admin"},
+        "default_role": "user",
+        "required_claim": "tenant",
+        "required_claim_value": "trusted",
     }
 
     created = await client.post("/api/admin/oidc", json=payload, headers=csrf_headers(client))
 
     assert created.status_code == 201
     assert created.json()["issuer"] == "https://issuer.example"
+    assert created.json()["role_mapping"] == {"administrators": "admin"}
+    assert created.json()["required_claim"] == "tenant"
+    assert created.json()["required_claim_value"] == "trusted"
     assert "client_secret" not in created.text
     provider_id = created.json()["id"]
     assert (await client.get("/api/admin/oidc")).json()[0]["id"] == provider_id
