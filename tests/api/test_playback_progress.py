@@ -80,7 +80,15 @@ async def test_completion_is_recorded_once_and_continue_watching_is_ordered_by_r
         events = list(await session.scalars(select(UserEvent)))
         await session.commit()
 
-    assert [event.event_type for event in events] == ["playback.completed"]
+    assert [event.event_type for event in events] == [
+        "play",
+        "progress",
+        "progress",
+        "completed",
+        "progress",
+        "play",
+        "progress",
+    ]
     continue_watching = await client.get("/api/playback/continue-watching")
     assert continue_watching.status_code == 200
     assert [item["media_id"] for item in continue_watching.json()] == [

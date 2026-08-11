@@ -18,6 +18,7 @@ _RUNTIME_SETTING_FIELDS = frozenset(
         "transcode_max_per_user",
         "playback_completion_threshold_percent",
         "audit_retention_days",
+        "user_event_retention_days",
         "min_free_disk_percent",
         "default_daily_download_limit_gb",
         "default_max_auto_jobs",
@@ -45,6 +46,7 @@ class RuntimeSettings(BaseModel):
     transcode_max_per_user: int
     playback_completion_threshold_percent: int
     audit_retention_days: int | None
+    user_event_retention_days: int | None
     min_free_disk_percent: int
     default_daily_download_limit_gb: int
     default_max_auto_jobs: int
@@ -78,6 +80,7 @@ class RuntimeSettingsWrite(BaseModel):
     transcode_max_per_user: int | None = Field(default=None, ge=1)
     playback_completion_threshold_percent: int | None = Field(default=None, ge=1, le=100)
     audit_retention_days: int | None = Field(default=None, ge=1)
+    user_event_retention_days: int | None = Field(default=None, ge=1)
     min_free_disk_percent: int | None = Field(default=None, ge=0, le=99)
     default_daily_download_limit_gb: int | None = Field(default=None, ge=0)
     default_max_auto_jobs: int | None = Field(default=None, ge=0)

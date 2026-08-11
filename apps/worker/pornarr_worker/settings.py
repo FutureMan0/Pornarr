@@ -22,6 +22,7 @@ from pornarr_worker.artwork import ARTWORK_JOB, LIBRARY_ARTWORK_JOB
 from pornarr_worker.cleanup import cleanup_transcodes
 from pornarr_worker.jobs.automation import AUTOMATION_EXECUTION_JOB
 from pornarr_worker.jobs.download_poll import DOWNLOAD_POLL_JOB
+from pornarr_worker.jobs.events import PRUNE_USER_EVENTS_JOB
 from pornarr_worker.jobs.scan import SCAN_JOB
 from pornarr_worker.jobs.storage import REFRESH_STORAGE_JOB
 from pornarr_worker.search import RELEASE_CACHE_CLEANUP_JOB, SEARCH_INDEXERS_JOB
@@ -49,6 +50,7 @@ class WorkerSettings:
         DOWNLOAD_POLL_JOB,
         AUTOMATION_EXECUTION_JOB,
         REFRESH_STORAGE_JOB,
+        PRUNE_USER_EVENTS_JOB,
     ]
     queue_name: ClassVar = DEFAULT_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
@@ -136,6 +138,13 @@ class SchedulerSettings:
             name=REFRESH_STORAGE_JOB.name,
             minute={0},
             run_at_startup=True,
+            max_tries=JOB_MAX_TRIES,
+        ),
+        cron(
+            PRUNE_USER_EVENTS_JOB.coroutine,
+            name=PRUNE_USER_EVENTS_JOB.name,
+            hour=3,
+            minute=30,
             max_tries=JOB_MAX_TRIES,
         ),
     ]

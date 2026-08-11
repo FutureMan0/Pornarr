@@ -184,6 +184,52 @@ def test_deleting_a_user_removes_its_filter_profile(clean_database: None) -> Non
     assert remaining == (0,)
 
 
+def test_user_event_upgrade_preserves_completion_and_cascades_with_its_user(
+    clean_database: None,
+) -> None:
+    assert _alembic("upgrade", "0030").returncode == 0
+    user_id = "3ea5562a-3c8d-4ea2-8f2d-f0a6c6b11825"
+    media_id = "db5f12e7-9835-47a8-a5b2-c8412432d5d0"
+    event_id = "d1f20f59-9179-49e4-ae0b-c79f9d1a2faf"
+    with psycopg.connect(_psycopg_url()) as connection:
+        connection.execute(
+            "INSERT INTO users (id, username, password_hash) VALUES (%s, %s, %s)",
+            (user_id, "event-owner", "not-a-real-password"),
+        )
+        connection.execute(
+            "INSERT INTO media (id, title, normalized_title) VALUES (%s, %s, %s)",
+            (media_id, "Example", "example"),
+        )
+        connection.execute(
+            """INSERT INTO user_events (id, user_id, media_id, event_type)
+            VALUES (%s, %s, %s, %s)""",
+            (event_id, user_id, media_id, "playback.completed"),
+        )
+        connection.commit()
+
+    result = _alembic("upgrade", "head")
+    assert result.returncode == 0, result.stderr
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        migrated = connection.execute(
+            "SELECT event_type, value, subject_id FROM user_events WHERE id = %s", (event_id,)
+        ).fetchone()
+        connection.execute(
+            "INSERT INTO user_events (id, user_id, event_type) VALUES (%s, %s, %s)",
+            ("838751e7-bae4-43cc-9796-bce1b36169fe", user_id, "search"),
+        )
+        indexes = connection.execute(
+            "SELECT indexname FROM pg_indexes WHERE tablename = 'user_events'"
+        ).fetchall()
+        connection.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        remaining = connection.execute("SELECT count(*) FROM user_events").fetchone()
+        connection.commit()
+
+    assert migrated == ("completed", None, None)
+    assert "ix_user_events_user_id_created_at" in {name for (name,) in indexes}
+    assert remaining == (0,)
+
+
 def test_media_files_reject_two_active_rows_for_one_medium(clean_database: None) -> None:
     assert _alembic("upgrade", "head").returncode == 0
 

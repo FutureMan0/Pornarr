@@ -6,11 +6,13 @@ from collections.abc import Iterator
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import hash_password
 from pornarr_db.models.download import DownloadJob
 from pornarr_db.models.download_client import DownloadClient
+from pornarr_db.models.playback import UserEvent
 from pornarr_db.models.request import Request, RequestHistory, RequestStatus
 from pornarr_db.models.user import User, UserRole
 from pornarr_db.types import set_cipher
@@ -50,6 +52,12 @@ async def test_users_can_create_specific_and_search_requests_then_filter_their_l
     assert specific.json()["selected_release_guid"] == "release-1"
     assert search.status_code == 201
     assert search.json()["status"] == "searching"
+    async with AsyncSession(app.state.engine) as session:
+        events = list(await session.scalars(select(UserEvent).order_by(UserEvent.created_at)))
+    assert [(event.event_type, event.value) for event in events] == [
+        ("request", 50),
+        ("request", 50),
+    ]
     assert (await client.get("/api/requests?status=searching")).json() == [
         {
             **search.json(),

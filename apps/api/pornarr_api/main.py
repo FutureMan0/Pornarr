@@ -16,6 +16,7 @@ from pornarr_api.auth import enforce_csrf
 from pornarr_api.errors import register_error_handlers
 from pornarr_api.lifespan import lifespan
 from pornarr_api.middleware import RequestIdMiddleware
+from pornarr_api.routers.account import event_router as account_event_router
 from pornarr_api.routers.account import oidc_router as account_oidc_router
 from pornarr_api.routers.account import router as account_router
 from pornarr_api.routers.account_storage import router as account_storage_router
@@ -64,6 +65,7 @@ api_router.include_router(auth_router)
 api_router.include_router(auth_oidc_router)
 api_router.include_router(account_router)
 api_router.include_router(account_oidc_router)
+api_router.include_router(account_event_router)
 api_router.include_router(admin_download_clients_router)
 api_router.include_router(account_storage_router)
 api_router.include_router(admin_oidc_router)

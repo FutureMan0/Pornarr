@@ -28,8 +28,9 @@ from pornarr_core.playback import (
     PlaybackSource,
     decide_direct_play,
 )
+from pornarr_db.events import record_user_event
 from pornarr_db.models.media import Media, MediaFile
-from pornarr_db.models.playback import PlaybackProgress, UserEvent
+from pornarr_db.models.playback import PlaybackProgress, UserEventType
 from pornarr_db.models.user import User
 from pornarr_db.settings import get_runtime_settings
 
@@ -117,7 +118,7 @@ def _response(decision: DirectPlayDecision) -> PlaybackInfoResponse:
 )
 async def playback_info(
     media_id: UUID,
-    _: CurrentUser,
+    user: CurrentUser,
     session: Session,
     capabilities: Annotated[ClientCapabilities, Depends(client_capabilities)],
 ) -> PlaybackInfoResponse:
@@ -126,6 +127,7 @@ async def playback_info(
     )
     if media_file is None:
         raise HTTPException(status_code=404)
+    await record_user_event(session, user.id, UserEventType.VIEW, media_id=media_id)
     return _response(decide_direct_play(_source(media_file.codecs), capabilities))
 
 
@@ -183,6 +185,8 @@ async def report_progress(
         payload.position_seconds * 100
         >= payload.duration_seconds * settings.playback_completion_threshold_percent
     )
+    is_new_progress = progress is None
+    was_completed = progress.completed if progress is not None else False
     if progress is None:
         progress = PlaybackProgress(
             user_id=user.id,
@@ -200,18 +204,17 @@ async def report_progress(
             progress.completed = True
             progress.completed_at = datetime.now(UTC)
 
-    if reached_threshold and progress.completed_at is not None:
-        event = await session.scalar(
-            select(UserEvent).where(
-                UserEvent.user_id == user.id,
-                UserEvent.media_id == media_id,
-                UserEvent.event_type == "playback.completed",
-            )
-        )
-        if event is None:
-            session.add(
-                UserEvent(user_id=user.id, media_id=media_id, event_type="playback.completed")
-            )
+    if is_new_progress:
+        await record_user_event(session, user.id, UserEventType.PLAY, media_id=media_id)
+    await record_user_event(
+        session,
+        user.id,
+        UserEventType.PROGRESS,
+        media_id=media_id,
+        value=payload.position_seconds,
+    )
+    if reached_threshold and not was_completed:
+        await record_user_event(session, user.id, UserEventType.COMPLETED, media_id=media_id)
 
     await session.flush()
     return progress_response(progress)
