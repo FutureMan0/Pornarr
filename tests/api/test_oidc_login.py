@@ -13,6 +13,7 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 from jwt.algorithms import RSAAlgorithm
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.oidc import OidcAuthenticationError, validate_id_token
@@ -21,7 +22,7 @@ from pornarr_db.models.user import UserRole
 from pornarr_db.types import set_cipher
 from pornarr_shared.crypto import CredentialCipher
 from tests.api.test_app import SECRET
-from tests.api.test_auth import create_user
+from tests.api.test_auth import create_user, csrf_headers, login
 
 pytest_plugins = ("tests.api.test_auth",)
 
@@ -185,6 +186,165 @@ async def test_oidc_refuses_an_identity_outside_the_provider_allowlist(
 
     assert response.status_code == 403
     assert response.json()["code"] == "OIDC_IDENTITY_NOT_ALLOWED"
+
+
+async def test_oidc_links_to_the_signed_in_account_and_survives_logout(
+    app, client, monkeypatch
+) -> None:
+    user = await create_user(app)
+    provider = await _provider(app)
+    await login(client, user.username, "correct horse battery staple")
+
+    async def exchange_code(*_: object) -> str:
+        return "id-token"
+
+    async def validate_id_token(*_: object) -> dict[str, str]:
+        return {"sub": "provider-user"}
+
+    monkeypatch.setattr("pornarr_api.routers.auth_oidc.exchange_code", exchange_code)
+    monkeypatch.setattr("pornarr_api.routers.auth_oidc.validate_id_token", validate_id_token)
+    started = await client.get(f"/api/auth/oidc/{provider.id}/link", follow_redirects=False)
+    state = parse_qs(urlparse(started.headers["location"]).query)["state"][0]
+
+    callback = await client.get(
+        "/api/auth/oidc/callback",
+        params={"code": "authorization-code", "state": state},
+        follow_redirects=False,
+    )
+
+    assert callback.status_code == 303
+    linked = (await client.get("/api/account/oidc")).json()
+    assert len(linked) == 1
+    assert linked[0]["provider_id"] == str(provider.id)
+    assert linked[0]["provider_name"] == "example"
+    assert (await client.post("/api/auth/logout", headers=csrf_headers(client))).status_code == 204
+    await login(client, user.username, "correct horse battery staple")
+    assert (await client.get("/api/account/oidc")).json() == linked
+    assert (
+        await client.delete(f"/api/account/oidc/{linked[0]['id']}", headers=csrf_headers(client))
+    ).status_code == 204
+    assert (await client.get("/api/account/oidc")).json() == []
+
+
+async def test_oidc_link_callback_requires_the_initiating_session(app, client, monkeypatch) -> None:
+    user = await create_user(app)
+    provider = await _provider(app)
+    await login(client, user.username, "correct horse battery staple")
+
+    async def exchange_code(*_: object) -> str:
+        return "id-token"
+
+    async def validate_id_token(*_: object) -> dict[str, str]:
+        return {"sub": "provider-user"}
+
+    monkeypatch.setattr("pornarr_api.routers.auth_oidc.exchange_code", exchange_code)
+    monkeypatch.setattr("pornarr_api.routers.auth_oidc.validate_id_token", validate_id_token)
+    started = await client.get(f"/api/auth/oidc/{provider.id}/link", follow_redirects=False)
+    state = parse_qs(urlparse(started.headers["location"]).query)["state"][0]
+    client.cookies.clear()
+
+    response = await client.get(
+        "/api/auth/oidc/callback",
+        params={"code": "authorization-code", "state": state},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 400
+    assert response.json()["code"] == "OIDC_STATE_INVALID"
+
+
+async def test_oidc_auto_links_a_verified_email(app, client, monkeypatch) -> None:
+    user = await create_user(app, username="local@example.test")
+    provider = await _provider(app)
+
+    async def exchange_code(*_: object) -> str:
+        return "id-token"
+
+    async def validate_id_token(*_: object) -> dict[str, object]:
+        return {
+            "sub": "provider-user",
+            "preferred_username": "other-name",
+            "email": user.username,
+            "email_verified": True,
+        }
+
+    monkeypatch.setattr("pornarr_api.routers.auth_oidc.exchange_code", exchange_code)
+    monkeypatch.setattr("pornarr_api.routers.auth_oidc.validate_id_token", validate_id_token)
+    started = await client.get(f"/api/auth/oidc/{provider.id}/login", follow_redirects=False)
+    state = parse_qs(urlparse(started.headers["location"]).query)["state"][0]
+
+    assert (
+        await client.get(
+            "/api/auth/oidc/callback",
+            params={"code": "authorization-code", "state": state},
+            follow_redirects=False,
+        )
+    ).status_code == 303
+    assert (await client.get("/api/auth/me")).json()["id"] == str(user.id)
+
+
+async def test_oidc_does_not_auto_link_an_unverified_email(app, client, monkeypatch) -> None:
+    user = await create_user(app, username="local@example.test")
+    provider = await _provider(app)
+
+    async def exchange_code(*_: object) -> str:
+        return "id-token"
+
+    async def validate_id_token(*_: object) -> dict[str, object]:
+        return {
+            "sub": "provider-user",
+            "preferred_username": "other-name",
+            "email": user.username,
+            "email_verified": False,
+        }
+
+    monkeypatch.setattr("pornarr_api.routers.auth_oidc.exchange_code", exchange_code)
+    monkeypatch.setattr("pornarr_api.routers.auth_oidc.validate_id_token", validate_id_token)
+    started = await client.get(f"/api/auth/oidc/{provider.id}/login", follow_redirects=False)
+    state = parse_qs(urlparse(started.headers["location"]).query)["state"][0]
+
+    assert (
+        await client.get(
+            "/api/auth/oidc/callback",
+            params={"code": "authorization-code", "state": state},
+            follow_redirects=False,
+        )
+    ).status_code == 303
+    async with AsyncSession(app.state.engine) as session:
+        identity = await session.scalar(
+            select(OidcIdentity).where(OidcIdentity.subject == "provider-user")
+        )
+    assert identity is not None
+    assert identity.user_id != user.id
+
+
+async def test_oidc_refuses_to_unlink_the_only_login_method(app, client, monkeypatch) -> None:
+    await create_user(app)
+    provider = await _provider(app)
+
+    async def exchange_code(*_: object) -> str:
+        return "id-token"
+
+    async def validate_id_token(*_: object) -> dict[str, str]:
+        return {"sub": "provider-user", "preferred_username": "only-oidc"}
+
+    monkeypatch.setattr("pornarr_api.routers.auth_oidc.exchange_code", exchange_code)
+    monkeypatch.setattr("pornarr_api.routers.auth_oidc.validate_id_token", validate_id_token)
+    started = await client.get(f"/api/auth/oidc/{provider.id}/login", follow_redirects=False)
+    state = parse_qs(urlparse(started.headers["location"]).query)["state"][0]
+    assert (
+        await client.get(
+            "/api/auth/oidc/callback",
+            params={"code": "authorization-code", "state": state},
+            follow_redirects=False,
+        )
+    ).status_code == 303
+    identity_id = (await client.get("/api/account/oidc")).json()[0]["id"]
+
+    response = await client.delete(f"/api/account/oidc/{identity_id}", headers=csrf_headers(client))
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "OIDC_UNLINK_WOULD_LOCK_ACCOUNT"
 
 
 async def test_oidc_token_validation_rejects_expired_and_wrongly_signed_tokens(

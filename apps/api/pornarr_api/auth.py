@@ -80,6 +80,10 @@ def verify_password(password_hash: str, password: str) -> bool:
         return False
 
 
+def has_local_password(user: User) -> bool:
+    return user.password_hash != PASSWORDLESS_PASSWORD_HASH
+
+
 def session_key(token: str) -> str:
     return f"pornarr:auth:session:{token}"
 

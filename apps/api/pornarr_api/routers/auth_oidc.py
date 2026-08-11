@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import hmac
 import json
 import secrets
 from typing import Annotated, Any
@@ -14,17 +15,19 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pornarr_api.auth import create_session, database_session
+from pornarr_api.auth import SESSION_COOKIE, create_session, database_session, get_current_user
 from pornarr_api.errors import ErrorResponse
 from pornarr_api.oidc import OidcAuthenticationError, discover, exchange_code, validate_id_token
-from pornarr_api.oidc_mapping import resolve_oidc_user
+from pornarr_api.oidc_mapping import link_oidc_identity, resolve_oidc_user
 from pornarr_api.routers.auth import set_auth_cookies
 from pornarr_db.models.oidc import OidcProvider
+from pornarr_db.models.user import User
 from pornarr_shared.errors import PornarrError
 
 router = APIRouter(prefix="/auth/oidc", tags=["auth"])
 STATE_TTL_SECONDS = 10 * 60
 Session = Annotated[AsyncSession, Depends(database_session)]
+CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
 class OidcStateInvalidError(PornarrError):
@@ -51,15 +54,8 @@ async def _discovery(provider: OidcProvider) -> dict[str, Any]:
     return await discover(provider.issuer)
 
 
-@router.get(
-    "/{provider_id}/login",
-    status_code=307,
-    responses={404: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
-)
-async def oidc_login(
-    provider_id: UUID,
-    request: Request,
-    session: Session,
+async def _start_authorization(
+    provider_id: UUID, request: Request, session: AsyncSession, *, link_user: User | None = None
 ) -> RedirectResponse:
     provider = await session.get(OidcProvider, provider_id)
     if provider is None or not provider.enabled:
@@ -68,10 +64,19 @@ async def oidc_login(
     state = secrets.token_urlsafe(32)
     nonce = secrets.token_urlsafe(32)
     verifier = secrets.token_urlsafe(64)
+    state_data: dict[str, str] = {
+        "provider_id": str(provider.id),
+        "nonce": nonce,
+        "code_verifier": verifier,
+    }
+    if link_user is not None:
+        session_token = request.cookies.get(SESSION_COOKIE)
+        if session_token is None:
+            raise OidcStateInvalidError("The OIDC link state is invalid.")
+        state_data["link_user_id"] = str(link_user.id)
+        state_data["link_session_token"] = session_token
     await request.app.state.redis.set(
-        _state_key(state),
-        json.dumps({"provider_id": str(provider.id), "nonce": nonce, "code_verifier": verifier}),
-        ex=STATE_TTL_SECONDS,
+        _state_key(state), json.dumps(state_data), ex=STATE_TTL_SECONDS
     )
     parameters = {
         "response_type": "code",
@@ -84,6 +89,34 @@ async def oidc_login(
         "code_challenge_method": "S256",
     }
     return RedirectResponse(f"{document['authorization_endpoint']}?{urlencode(parameters)}")
+
+
+@router.get(
+    "/{provider_id}/login",
+    status_code=307,
+    responses={404: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
+)
+async def oidc_login(
+    provider_id: UUID,
+    request: Request,
+    session: Session,
+) -> RedirectResponse:
+    return await _start_authorization(provider_id, request, session)
+
+
+@router.get(
+    "/{provider_id}/link",
+    status_code=307,
+    responses={
+        401: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
+    },
+)
+async def oidc_link(
+    provider_id: UUID, request: Request, session: Session, user: CurrentUser
+) -> RedirectResponse:
+    return await _start_authorization(provider_id, request, session, link_user=user)
 
 
 @router.get(
@@ -113,12 +146,32 @@ async def oidc_callback(
         raise OidcStateInvalidError("The OIDC login state is invalid or has expired.") from exc
     if not isinstance(nonce, str) or not isinstance(verifier, str):
         raise OidcStateInvalidError("The OIDC login state is invalid or has expired.")
+    link_user_id = state_data.get("link_user_id")
+    link_session_token = state_data.get("link_session_token")
+    if (link_user_id is None) != (link_session_token is None):
+        raise OidcStateInvalidError("The OIDC link state is invalid.")
+    if link_user_id is not None:
+        if not isinstance(link_user_id, str) or not isinstance(link_session_token, str):
+            raise OidcStateInvalidError("The OIDC link state is invalid.")
+        try:
+            expected_user_id = UUID(link_user_id)
+        except ValueError as exc:
+            raise OidcStateInvalidError("The OIDC link state is invalid.") from exc
     provider = await session.get(OidcProvider, provider_id)
     if provider is None or not provider.enabled:
         raise OidcAuthenticationError("The OIDC provider is unavailable.")
     document = await _discovery(provider)
     token = await exchange_code(provider, document, code, verifier, _callback_url(request))
     claims = await validate_id_token(token, provider, document, nonce)
+    if link_user_id is not None:
+        session_token = request.cookies.get(SESSION_COOKIE)
+        if session_token is None or not hmac.compare_digest(session_token, link_session_token):
+            raise OidcStateInvalidError("The OIDC link state is invalid.")
+        user = await get_current_user(request, session)
+        if user.id != expected_user_id:
+            raise OidcStateInvalidError("The OIDC link state is invalid.")
+        await link_oidc_identity(session, provider, claims, user)
+        return RedirectResponse(f"{request.app.state.settings.base_path}/", status_code=303)
     user = await resolve_oidc_user(session, provider, claims)
     session_token, csrf_token = await create_session(request, user)
     response = RedirectResponse(f"{request.app.state.settings.base_path}/", status_code=303)

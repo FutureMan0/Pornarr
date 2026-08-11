@@ -1,4 +1,4 @@
-"""Session-only management of a user's API keys."""
+"""Session-only management of a user's authentication settings."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import (
@@ -16,13 +16,18 @@ from pornarr_api.auth import (
     database_session,
     generate_api_key,
     get_current_user,
+    has_local_password,
     hash_password,
 )
+from pornarr_api.errors import ErrorResponse
 from pornarr_db.audit import write_audit
 from pornarr_db.models.api_keys import UserApiKey
+from pornarr_db.models.oidc import OidcIdentity, OidcProvider
 from pornarr_db.models.user import User
+from pornarr_shared.errors import PornarrError
 
 router = APIRouter(prefix="/account/api-keys", tags=["account"])
+oidc_router = APIRouter(prefix="/account/oidc", tags=["account"])
 Session = Annotated[AsyncSession, Depends(database_session)]
 
 
@@ -40,6 +45,17 @@ class ApiKeyResponse(BaseModel):
 
 class ApiKeyCreatedResponse(ApiKeyResponse):
     key: str
+
+
+class OidcIdentityResponse(BaseModel):
+    id: UUID
+    provider_id: UUID
+    provider_name: str
+
+
+class OidcUnlinkWouldLockAccountError(PornarrError):
+    code = "OIDC_UNLINK_WOULD_LOCK_ACCOUNT"
+    status = 409
 
 
 async def session_user(request: Request, user: Annotated[User, Depends(get_current_user)]) -> User:
@@ -91,3 +107,34 @@ async def revoke_api_key(key_id: UUID, user: CurrentUser, session: Session) -> N
         raise HTTPException(status_code=404)
     await session.delete(key)
     write_audit(session, actor_id=user.id, action="apikey.revoked", target=str(key_id))
+
+
+@oidc_router.get("", response_model=list[OidcIdentityResponse])
+async def list_oidc_identities(user: CurrentUser, session: Session) -> list[OidcIdentityResponse]:
+    identities = await session.execute(
+        select(OidcIdentity, OidcProvider.name)
+        .join(OidcProvider, OidcProvider.id == OidcIdentity.provider_id)
+        .where(OidcIdentity.user_id == user.id)
+        .order_by(OidcIdentity.created_at)
+    )
+    return [
+        OidcIdentityResponse(id=identity.id, provider_id=identity.provider_id, provider_name=name)
+        for identity, name in identities
+    ]
+
+
+@oidc_router.delete("/{identity_id}", status_code=204, responses={409: {"model": ErrorResponse}})
+async def unlink_oidc_identity(identity_id: UUID, user: CurrentUser, session: Session) -> None:
+    identity = await session.scalar(
+        select(OidcIdentity).where(OidcIdentity.id == identity_id, OidcIdentity.user_id == user.id)
+    )
+    if identity is None:
+        raise HTTPException(status_code=404)
+    identity_count = await session.scalar(
+        select(func.count()).select_from(OidcIdentity).where(OidcIdentity.user_id == user.id)
+    )
+    if identity_count == 1 and not has_local_password(user):
+        raise OidcUnlinkWouldLockAccountError(
+            "Unlinking would leave this account without a login method."
+        )
+    await session.delete(identity)
