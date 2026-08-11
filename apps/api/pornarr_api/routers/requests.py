@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any, cast
 from uuid import UUID
 
@@ -36,10 +36,13 @@ from pornarr_db.models.release import ReleaseCache
 from pornarr_db.models.request import Request, RequestHistory, RequestStatus
 from pornarr_db.models.user import User, UserRole
 from pornarr_db.requests import InvalidRequestTransitionError, transition_request
-from pornarr_integrations.downloaders import (
-    DownloadClientCancellationAdapter,
-    TorrentSubmissionAdapter,
-    UsenetSubmissionAdapter,
+from pornarr_db.settings import get_runtime_settings
+from pornarr_integrations.downloaders import DownloadClientCancellationAdapter
+from pornarr_integrations.submission import (
+    ReleaseSubmissionError,
+    UnsupportedReleaseError,
+    release_protocol,
+    submit_release,
 )
 from pornarr_shared.errors import PornarrError
 
@@ -250,19 +253,34 @@ async def create_request(
         )
         if active_count is not None and active_count >= maximum:
             raise RequestQuotaError("The active request quota has been reached.")
-    return await _create_request(payload, user, session)
+    runtime_settings = await get_runtime_settings(session, http_request.app.state.settings)
+    return await _create_request(
+        payload,
+        user,
+        session,
+        request_search_max_age_days=runtime_settings.request_search_max_age_days,
+    )
 
 
 async def _create_request(
-    payload: RequestCreate, user: User, session: AsyncSession
+    payload: RequestCreate,
+    user: User,
+    session: AsyncSession,
+    *,
+    request_search_max_age_days: int | None = None,
 ) -> RequestResponse:
     status = RequestStatus.QUEUED if payload.selected_release_guid else RequestStatus.SEARCHING
+    now = datetime.now(UTC)
     request = Request(
         user_id=user.id,
         query=payload.query,
         selected_release_guid=payload.selected_release_guid,
         status=status,
         priority=payload.priority,
+        next_search_at=now if payload.selected_release_guid is None else None,
+        search_expires_at=(now + timedelta(days=request_search_max_age_days))
+        if request_search_max_age_days is not None and payload.selected_release_guid is None
+        else None,
     )
     session.add(request)
     await session.flush()
@@ -329,12 +347,34 @@ async def grab_release(
     if decision.action is not CoreFilterAction.ALLOW:
         raise ReleaseFilteredError("The selected release is blocked by a content filter.")
 
-    protocol = _release_protocol(release)
+    try:
+        protocol = release_protocol(
+            magnet_url=release.magnet_url, download_url=release.download_url
+        )
+    except UnsupportedReleaseError as error:
+        raise ReleaseProtocolError(str(error)) from error
     client = await route_download_client(session, protocol)
     adapter = http_request.app.state.download_client_adapters.get(client.implementation)
     if adapter is None:
         raise ReleaseProtocolError("No compatible adapter is registered for the selected client.")
-    client_job_id = await _submit_release(adapter, client, release, protocol)
+    try:
+        client_job_id = await submit_release(
+            adapter,
+            protocol=protocol,
+            host=client.host,
+            port=client.port,
+            url_base=client.url_base,
+            credentials=client.credentials,
+            category=client.category,
+            priority=client.priority,
+            magnet_url=release.magnet_url,
+            info_hash=release.info_hash,
+            download_url=release.download_url,
+        )
+    except UnsupportedReleaseError as error:
+        raise ReleaseProtocolError(str(error)) from error
+    except ReleaseSubmissionError as error:
+        raise GrabSubmissionError(str(error)) from error
     job = DownloadJob(
         download_client_id=client.id,
         client_name=client.name,
@@ -403,51 +443,6 @@ def _core_filter_rule(rule: ContentFilterRule) -> CoreFilterRule:
         action=CoreFilterAction(rule.action.value),
         enabled=rule.enabled,
     )
-
-
-def _release_protocol(release: ReleaseCache) -> str:
-    if release.magnet_url is not None:
-        return "torrent"
-    if release.download_url is not None:
-        return "usenet"
-    raise ReleaseProtocolError("The selected release has no supported download URL.")
-
-
-async def _submit_release(
-    adapter: object, client: DownloadClient, release: ReleaseCache, protocol: str
-) -> str:
-    try:
-        if protocol == "torrent":
-            magnet = release.magnet_url
-            if release.info_hash is None or magnet is None or not hasattr(adapter, "add_magnet"):
-                raise ReleaseProtocolError("The selected torrent cannot be submitted safely.")
-            await cast(TorrentSubmissionAdapter, adapter).add_magnet(
-                host=client.host,
-                port=client.port,
-                url_base=client.url_base,
-                credentials=client.credentials,
-                magnet=magnet,
-                category=client.category,
-                paused=False,
-            )
-            return release.info_hash
-        download_url = release.download_url
-        if download_url is None or not hasattr(adapter, "add_url"):
-            raise ReleaseProtocolError("The selected release cannot be submitted to this client.")
-        return await cast(UsenetSubmissionAdapter, adapter).add_url(
-            host=client.host,
-            port=client.port,
-            url_base=client.url_base,
-            credentials=client.credentials,
-            url=download_url,
-            category=client.category,
-            priority=client.priority,
-            paused=False,
-        )
-    except ReleaseProtocolError:
-        raise
-    except Exception as error:
-        raise GrabSubmissionError("The download client rejected the release.") from error
 
 
 @router.patch(

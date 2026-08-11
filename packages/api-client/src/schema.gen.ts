@@ -1659,6 +1659,8 @@ export interface components {
             recommendation_studio_weight: number;
             /** Recommendation Tag Weight */
             recommendation_tag_weight: number;
+            /** Request Search Max Age Days */
+            request_search_max_age_days: number;
             /** Transcode Max Hw Sessions */
             transcode_max_hw_sessions: number | null;
             /** Transcode Max Per User */
@@ -1719,6 +1721,8 @@ export interface components {
             recommendation_studio_weight?: number | null;
             /** Recommendation Tag Weight */
             recommendation_tag_weight?: number | null;
+            /** Request Search Max Age Days */
+            request_search_max_age_days?: number | null;
             /** Transcode Max Hw Sessions */
             transcode_max_hw_sessions?: number | null;
             /** Transcode Max Per User */

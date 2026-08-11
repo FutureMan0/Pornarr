@@ -81,6 +81,7 @@ class Settings(BaseSettings):
     recommendation_recency_weight: float = Field(default=0.10, ge=0)
     recommendation_popularity_weight: float = Field(default=0.10, ge=0)
     request_max_active_per_user: int = Field(default=10, ge=0)
+    request_search_max_age_days: int = Field(default=90, ge=1)
 
     oidc_allow_private_issuers: bool = False
 

@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Uuid, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, String, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from pornarr_db.base import Base, TimestampMixin
@@ -31,6 +31,7 @@ def _enum_values(enum: type[StrEnum]) -> list[str]:
 
 class Request(TimestampMixin, Base):
     __tablename__ = "requests"
+    __table_args__ = (Index("ix_requests_search_schedule", "status", "next_search_at"),)
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(
@@ -42,6 +43,13 @@ class Request(TimestampMixin, Base):
         Enum(RequestStatus, name="request_status", values_callable=_enum_values), nullable=False
     )
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=50, server_default="50")
+    search_attempts: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    next_search_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    search_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     download_job_id: Mapped[UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("download_jobs.id", ondelete="SET NULL"), nullable=True
     )

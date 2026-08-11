@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from datetime import timedelta
+from uuid import UUID
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -54,10 +56,15 @@ async def test_users_can_create_specific_and_search_requests_then_filter_their_l
     assert search.json()["status"] == "searching"
     async with AsyncSession(app.state.engine) as session:
         events = list(await session.scalars(select(UserEvent).order_by(UserEvent.created_at)))
+        scheduled = await session.get(Request, UUID(search.json()["id"]))
     assert [(event.event_type, event.value) for event in events] == [
         ("request", 50),
         ("request", 50),
     ]
+    assert scheduled is not None
+    assert scheduled.next_search_at is not None
+    assert scheduled.search_expires_at is not None
+    assert scheduled.search_expires_at - scheduled.next_search_at == timedelta(days=90)
     assert (await client.get("/api/requests?status=searching")).json() == [
         {
             **search.json(),

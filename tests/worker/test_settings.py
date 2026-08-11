@@ -44,6 +44,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "prune_user_events_job",
         "refresh_interest_profiles_job",
         "refresh_recommendations_job",
+        "dispatch_due_request_searches",
     ]
     assert [job.name for job in settings.TranscodeWorkerSettings.functions] == [
         "generate_preview_sprite_job",
@@ -53,6 +54,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
     assert [job.name for job in settings.IndexerWorkerSettings.functions] == [
         "search_indexers",
         "cleanup_release_cache",
+        "request_search",
     ]
     assert [function.name for function in settings.ImportWorkerSettings.functions] == [
         "heartbeat",
@@ -63,6 +65,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "prune_user_events_job",
         "refresh_interest_profiles_job",
         "refresh_recommendations_job",
+        "dispatch_due_request_searches",
         "scan",
     ]
     required_arq_options = {
@@ -84,5 +87,6 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "prune_user_events_job",
         "refresh_interest_profiles_job",
         "refresh_recommendations_job",
+        "dispatch_due_request_searches",
     ]
     assert cron_jobs["download_poll"].second == set(range(0, 60, 5))
