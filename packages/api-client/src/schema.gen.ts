@@ -913,6 +913,7 @@ export interface components {
         };
         /** HealthReport */
         HealthReport: {
+            backup?: components["schemas"]["ComponentHealth"] | null;
             database: components["schemas"]["ComponentHealth"];
             filesystem: components["schemas"]["ComponentHealth"];
             redis: components["schemas"]["ComponentHealth"];
@@ -1197,6 +1198,22 @@ export interface components {
         RuntimeSettings: {
             /** Audit Retention Days */
             audit_retention_days: number | null;
+            /** Auto Download Duplicate Risk Weight */
+            auto_download_duplicate_risk_weight: number;
+            /** Auto Download Expected Download Time Weight */
+            auto_download_expected_download_time_weight: number;
+            /** Auto Download Indexer Reliability Weight */
+            auto_download_indexer_reliability_weight: number;
+            /** Auto Download Metadata Weight */
+            auto_download_metadata_weight: number;
+            /** Auto Download Recency Weight */
+            auto_download_recency_weight: number;
+            /** Auto Download Recommendation Weight */
+            auto_download_recommendation_weight: number;
+            /** Auto Download Release Weight */
+            auto_download_release_weight: number;
+            /** Auto Download Size Weight */
+            auto_download_size_weight: number;
             /** Default Auto Downloads Enabled */
             default_auto_downloads_enabled: boolean;
             /** Default Daily Download Limit Gb */
@@ -1223,6 +1240,22 @@ export interface components {
         RuntimeSettingsWrite: {
             /** Audit Retention Days */
             audit_retention_days?: number | null;
+            /** Auto Download Duplicate Risk Weight */
+            auto_download_duplicate_risk_weight?: number | null;
+            /** Auto Download Expected Download Time Weight */
+            auto_download_expected_download_time_weight?: number | null;
+            /** Auto Download Indexer Reliability Weight */
+            auto_download_indexer_reliability_weight?: number | null;
+            /** Auto Download Metadata Weight */
+            auto_download_metadata_weight?: number | null;
+            /** Auto Download Recency Weight */
+            auto_download_recency_weight?: number | null;
+            /** Auto Download Recommendation Weight */
+            auto_download_recommendation_weight?: number | null;
+            /** Auto Download Release Weight */
+            auto_download_release_weight?: number | null;
+            /** Auto Download Size Weight */
+            auto_download_size_weight?: number | null;
             /** Default Auto Downloads Enabled */
             default_auto_downloads_enabled?: boolean | null;
             /** Default Daily Download Limit Gb */

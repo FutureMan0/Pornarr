@@ -14,7 +14,9 @@ from contextlib import asynccontextmanager, suppress
 
 import redis.asyncio as redis
 from fastapi import FastAPI
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from pornarr_db.backup import ensure_app_secret_matches
 from pornarr_db.session import dispose_engine, get_engine
 from pornarr_media.capabilities import detect_hardware_capabilities
 from pornarr_media.sessions import TranscodeSessionRegistry
@@ -40,8 +42,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     register_secret(settings.app_secret.get_secret_value())
     install_redaction()
 
+    app.state.engine = get_engine(settings)
+    try:
+        async with AsyncSession(app.state.engine) as session:
+            await ensure_app_secret_matches(session, settings.app_secret.get_secret_value())
+            await session.commit()
+    except Exception:
+        await dispose_engine()
+        raise
     app.state.redis = redis.from_url(settings.redis_url, decode_responses=True)
-    app.state.engine = get_engine()
     app.state.hardware_capabilities = detect_hardware_capabilities(
         requested=settings.transcode_hwaccel
     )

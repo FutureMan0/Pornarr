@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     redis_url: str
 
     data_path: Path = Path("/data")
+    backup_path: Path = Path("/backups")
+    backup_max_age_hours: int | None = Field(default=None, ge=1)
 
     base_path: str = ""
 
@@ -63,6 +65,14 @@ class Settings(BaseSettings):
     default_max_auto_jobs: int = Field(default=2, ge=0)
     default_max_auto_downloads_per_day: int = Field(default=3, ge=0)
     default_auto_downloads_enabled: bool = False
+    auto_download_recommendation_weight: float = Field(default=0.30, ge=0)
+    auto_download_metadata_weight: float = Field(default=0.15, ge=0)
+    auto_download_release_weight: float = Field(default=0.15, ge=0)
+    auto_download_indexer_reliability_weight: float = Field(default=0.10, ge=0)
+    auto_download_recency_weight: float = Field(default=0.10, ge=0)
+    auto_download_size_weight: float = Field(default=0.05, ge=0)
+    auto_download_duplicate_risk_weight: float = Field(default=0.10, ge=0)
+    auto_download_expected_download_time_weight: float = Field(default=0.05, ge=0)
 
     oidc_allow_private_issuers: bool = False
 

@@ -18,18 +18,18 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from pornarr_shared.config import get_settings
+from pornarr_shared.config import Settings, get_settings
 
 _engine: AsyncEngine | None = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
-def get_engine() -> AsyncEngine:
+def get_engine(settings: Settings | None = None) -> AsyncEngine:
     global _engine
     if _engine is None:
-        settings = get_settings()
+        resolved_settings = settings or get_settings()
         _engine = create_async_engine(
-            settings.database_url,
+            resolved_settings.database_url,
             pool_size=5,
             max_overflow=10,
             pool_pre_ping=True,

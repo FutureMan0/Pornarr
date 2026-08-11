@@ -551,6 +551,16 @@
       },
       "HealthReport": {
         "properties": {
+          "backup": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComponentHealth"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "database": {
             "$ref": "#/components/schemas/ComponentHealth"
           },
@@ -1327,6 +1337,38 @@
             ],
             "title": "Audit Retention Days"
           },
+          "auto_download_duplicate_risk_weight": {
+            "title": "Auto Download Duplicate Risk Weight",
+            "type": "number"
+          },
+          "auto_download_expected_download_time_weight": {
+            "title": "Auto Download Expected Download Time Weight",
+            "type": "number"
+          },
+          "auto_download_indexer_reliability_weight": {
+            "title": "Auto Download Indexer Reliability Weight",
+            "type": "number"
+          },
+          "auto_download_metadata_weight": {
+            "title": "Auto Download Metadata Weight",
+            "type": "number"
+          },
+          "auto_download_recency_weight": {
+            "title": "Auto Download Recency Weight",
+            "type": "number"
+          },
+          "auto_download_recommendation_weight": {
+            "title": "Auto Download Recommendation Weight",
+            "type": "number"
+          },
+          "auto_download_release_weight": {
+            "title": "Auto Download Release Weight",
+            "type": "number"
+          },
+          "auto_download_size_weight": {
+            "title": "Auto Download Size Weight",
+            "type": "number"
+          },
           "default_auto_downloads_enabled": {
             "title": "Default Auto Downloads Enabled",
             "type": "boolean"
@@ -1388,7 +1430,15 @@
           "default_daily_download_limit_gb",
           "default_max_auto_jobs",
           "default_max_auto_downloads_per_day",
-          "default_auto_downloads_enabled"
+          "default_auto_downloads_enabled",
+          "auto_download_recommendation_weight",
+          "auto_download_metadata_weight",
+          "auto_download_release_weight",
+          "auto_download_indexer_reliability_weight",
+          "auto_download_recency_weight",
+          "auto_download_size_weight",
+          "auto_download_duplicate_risk_weight",
+          "auto_download_expected_download_time_weight"
         ],
         "title": "RuntimeSettings",
         "type": "object"
@@ -1408,6 +1458,102 @@
               }
             ],
             "title": "Audit Retention Days"
+          },
+          "auto_download_duplicate_risk_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Duplicate Risk Weight"
+          },
+          "auto_download_expected_download_time_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Expected Download Time Weight"
+          },
+          "auto_download_indexer_reliability_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Indexer Reliability Weight"
+          },
+          "auto_download_metadata_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Metadata Weight"
+          },
+          "auto_download_recency_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Recency Weight"
+          },
+          "auto_download_recommendation_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Recommendation Weight"
+          },
+          "auto_download_release_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Release Weight"
+          },
+          "auto_download_size_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Size Weight"
           },
           "default_auto_downloads_enabled": {
             "anyOf": [
