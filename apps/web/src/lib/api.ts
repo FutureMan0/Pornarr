@@ -26,12 +26,9 @@ const CSRF_EXEMPT_PATHS: ReadonlySet<string> = new Set(["/api/auth/login"]);
 /**
  * Read the double-submit token out of `document.cookie`.
  *
- * KNOWN BUG — issue #215: the API sets `pornarr_csrf` with `path="/api"`, so
- * the browser withholds it from `document.cookie` on every application route
- * and this returns null. Mutations therefore go out without the header and the
- * API answers 403 CSRF_FAILED. The read is written correctly regardless: the
- * moment #215 lands and the cookie is issued on `path="/"`, this starts working
- * with no change here. Do not paper over it at the call sites.
+ * The API scopes this readable cookie to the SPA root, while the session cookie
+ * remains HttpOnly and restricted to `/api`. Decode it here rather than at each
+ * mutation call site, so every unsafe request follows the same CSRF rule.
  */
 export function readCsrfToken(): string | null {
   if (typeof document === "undefined") return null;

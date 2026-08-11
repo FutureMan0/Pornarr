@@ -38,8 +38,8 @@ export function useSession(): UseQueryResult<SessionUser | null, ApiRequestError
     queryFn: async () => {
       const { data, error, response } = await getApiClient().GET("/api/auth/me");
       if (response.status === 401) return null;
-      if (error !== undefined) throw apiFailure(error, response);
-      return data ?? null;
+      if (error !== undefined || data === undefined) throw apiFailure(error, response);
+      return data;
     },
     retry: false,
     staleTime: Number.POSITIVE_INFINITY,
@@ -76,11 +76,10 @@ export interface LogoutOptions {
 /**
  * Sign out.
  *
- * Blocked by issue #215 until the CSRF cookie is readable: the request goes out
- * without `X-CSRF-Token` and the API answers 403 CSRF_FAILED. The failure is
- * surfaced rather than hidden, and the cache is emptied only on success —
- * showing a login screen while the server-side session is still alive would be
- * a lie about the security state.
+ * The API scopes the readable CSRF cookie to the SPA, so the shared client can
+ * echo it on this request. A failure is surfaced and the cache is emptied only
+ * on success — showing a login screen while the server-side session is still
+ * alive would be a lie about the security state.
  */
 export function useLogout(): UseMutationResult<void, ApiRequestError, LogoutOptions> {
   const queryClient = useQueryClient();

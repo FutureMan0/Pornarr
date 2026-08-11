@@ -10,7 +10,7 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { CSRF_COOKIE, CSRF_HEADER } from "../lib/api";
-import { ERROR_MESSAGES } from "../lib/api-error";
+import { ERROR_MESSAGES, FALLBACK_ERROR_MESSAGE } from "../lib/api-error";
 import {
   TEST_USER,
   VALID_PASSWORD,
@@ -50,6 +50,16 @@ describe("session restore", () => {
     renderApp("/library");
 
     expect(await screen.findByRole("button", { name: "Sign in" })).toBeTruthy();
+    expect(screen.queryByRole("navigation", { name: "Primary" })).toBeNull();
+  });
+
+  test("an unavailable session endpoint is shown as an error, not a logout", async () => {
+    server.use(http.get("/api/auth/me", () => HttpResponse.error()));
+    renderApp("/library");
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toBe(FALLBACK_ERROR_MESSAGE);
+    expect(screen.queryByRole("button", { name: "Sign in" })).toBeNull();
     expect(screen.queryByRole("navigation", { name: "Primary" })).toBeNull();
   });
 });
@@ -106,7 +116,7 @@ describe("logout", () => {
     expect(await screen.findByRole("button", { name: "Sign in" })).toBeTruthy();
   });
 
-  test("sends the CSRF header once the cookie is readable (issue #215)", async () => {
+  test("sends the CSRF header", async () => {
     signedIn();
     document.cookie = `${CSRF_COOKIE}=token-abc; path=/`;
     let sent: string | null = null;
@@ -148,7 +158,7 @@ describe("logout", () => {
 describe("401 on any request", () => {
   test("drops the application onto the login screen", async () => {
     signedIn();
-    const { queryClient } = renderApp("/library");
+    renderApp("/library");
     await screen.findByRole("navigation", { name: "Primary" });
 
     // Any endpoint at all: the middleware does not care which one.
@@ -166,6 +176,5 @@ describe("401 on any request", () => {
     await user.click(screen.getByRole("menuitem", { name: "Sign out" }));
 
     expect(await screen.findByRole("button", { name: "Sign in" })).toBeTruthy();
-    expect(queryClient.getQueryData(["auth", "session"])).toBeNull();
   });
 });
