@@ -38,6 +38,7 @@ _RUNTIME_SETTING_FIELDS = frozenset(
         "recommendation_quality_weight",
         "recommendation_recency_weight",
         "recommendation_popularity_weight",
+        "request_search_max_age_days",
         "log_level",
         "metrics_enabled",
     }
@@ -72,6 +73,7 @@ class RuntimeSettings(BaseModel):
     recommendation_quality_weight: float
     recommendation_recency_weight: float
     recommendation_popularity_weight: float
+    request_search_max_age_days: int
     log_level: str
     metrics_enabled: bool
 
@@ -112,6 +114,7 @@ class RuntimeSettingsWrite(BaseModel):
     recommendation_quality_weight: float | None = Field(default=None, ge=0)
     recommendation_recency_weight: float | None = Field(default=None, ge=0)
     recommendation_popularity_weight: float | None = Field(default=None, ge=0)
+    request_search_max_age_days: int | None = Field(default=None, ge=1)
     log_level: str | None = Field(default=None, pattern="^(debug|info|warning|error)$")
     metrics_enabled: bool | None = None
 
@@ -137,6 +140,7 @@ class RuntimeSettingsWrite(BaseModel):
         "recommendation_quality_weight",
         "recommendation_recency_weight",
         "recommendation_popularity_weight",
+        "request_search_max_age_days",
         "log_level",
         "metrics_enabled",
     )

@@ -1800,6 +1800,10 @@
             "title": "Recommendation Tag Weight",
             "type": "number"
           },
+          "request_search_max_age_days": {
+            "title": "Request Search Max Age Days",
+            "type": "integer"
+          },
           "transcode_max_hw_sessions": {
             "anyOf": [
               {
@@ -1864,6 +1868,7 @@
           "recommendation_quality_weight",
           "recommendation_recency_weight",
           "recommendation_popularity_weight",
+          "request_search_max_age_days",
           "log_level",
           "metrics_enabled"
         ],
@@ -2149,6 +2154,18 @@
               }
             ],
             "title": "Recommendation Tag Weight"
+          },
+          "request_search_max_age_days": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Search Max Age Days"
           },
           "transcode_max_hw_sessions": {
             "anyOf": [

@@ -36,7 +36,9 @@ _ALLOWED_TRANSITIONS = {
     RequestStatus.NOT_FOUND: frozenset(
         {RequestStatus.SEARCHING, RequestStatus.MONITORING, RequestStatus.CANCELLED}
     ),
-    RequestStatus.MONITORING: frozenset({RequestStatus.SEARCHING, RequestStatus.CANCELLED}),
+    RequestStatus.MONITORING: frozenset(
+        {RequestStatus.SEARCHING, RequestStatus.NOT_FOUND, RequestStatus.CANCELLED}
+    ),
     RequestStatus.AVAILABLE: frozenset(),
     RequestStatus.CANCELLED: frozenset(),
 }
