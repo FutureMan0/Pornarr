@@ -33,6 +33,9 @@ class MemoryRedis:
     async def get(self, key: str) -> str | None:
         return self.values.get(key)
 
+    async def getdel(self, key: str) -> str | None:
+        return self.values.pop(key, None)
+
     async def set(self, key: str, value: str, *, ex: int) -> bool:
         self.values[key] = value
         return True

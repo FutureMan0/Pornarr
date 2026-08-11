@@ -24,6 +24,7 @@ from pornarr_api.routers.admin_library import router as admin_library_router
 from pornarr_api.routers.admin_oidc import router as admin_oidc_router
 from pornarr_api.routers.admin_settings import router as admin_settings_router
 from pornarr_api.routers.auth import router as auth_router
+from pornarr_api.routers.auth_oidc import router as auth_oidc_router
 from pornarr_api.routers.events import router as events_router
 from pornarr_api.routers.health import router as health_router
 from pornarr_api.routers.playback import progress_router as playback_progress_router
@@ -55,6 +56,7 @@ def stable_operation_id(route: APIRoute) -> str:
 
 api_router = APIRouter(prefix=API_PREFIX, dependencies=[Depends(enforce_csrf)])
 api_router.include_router(auth_router)
+api_router.include_router(auth_oidc_router)
 api_router.include_router(account_router)
 api_router.include_router(admin_download_clients_router)
 api_router.include_router(admin_oidc_router)
