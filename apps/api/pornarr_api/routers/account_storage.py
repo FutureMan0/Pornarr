@@ -21,6 +21,8 @@ class DailyStorageUsageResponse(BaseModel):
     day: date
     downloaded_bytes: int
     download_count: int
+    reserved_bytes: int
+    reserved_download_count: int
 
 
 @router.get("", response_model=DailyStorageUsageResponse)
@@ -32,4 +34,6 @@ async def read_daily_storage_usage(
         day=usage.day,
         downloaded_bytes=usage.downloaded_bytes,
         download_count=usage.download_count,
+        reserved_bytes=usage.reserved_bytes,
+        reserved_download_count=usage.reserved_download_count,
     )

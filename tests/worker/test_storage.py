@@ -62,6 +62,7 @@ async def test_low_space_notifies_active_administrators_once(
 
     assert refreshed == {"checked": 1, "unavailable": 0, "warnings": 1}
     assert folder.free_space_bytes == 12
+    assert folder.total_space_bytes == 100
     assert folder.last_space_checked_at is not None
     assert folder.low_space_warning_sent is True
     assert redis.events == [

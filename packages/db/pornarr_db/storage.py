@@ -24,7 +24,12 @@ async def daily_storage_usage(
     day = utc_day(now)
     usage = await session.get(DailyStorageUsage, (user_id, day))
     return usage or DailyStorageUsage(
-        user_id=user_id, day=day, downloaded_bytes=0, download_count=0
+        user_id=user_id,
+        day=day,
+        downloaded_bytes=0,
+        download_count=0,
+        reserved_bytes=0,
+        reserved_download_count=0,
     )
 
 
