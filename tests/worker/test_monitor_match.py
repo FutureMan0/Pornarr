@@ -165,6 +165,33 @@ async def test_studio_alias_matches_a_release(session: AsyncSession) -> None:
     assert request is not None and request.is_automatic is True
 
 
+async def test_near_miss_performer_name_does_not_create_an_automatic_request(
+    session: AsyncSession,
+) -> None:
+    user = User(username="owner", password_hash="hash")
+    performer = Performer(name="Alice Example", normalized_name="alice example")
+    session.add_all((user, performer))
+    profile = await _profile(session)
+    release = _release()
+    release.title = "Alice Exampleton WEB 1080p"
+    release.normalized_title = "alice exampleton web 1080p"
+    session.add_all(
+        (
+            Monitor(
+                user_id=user.id,
+                kind=MonitorKind.PERFORMER,
+                performer_id=performer.id,
+                quality_profile_id=profile.id,
+            ),
+            release,
+        )
+    )
+    await session.flush()
+
+    assert await match_release(session, release) == 0
+    assert await session.scalar(select(Request)) is None
+
+
 async def test_match_respects_minimum_score_quality_and_filters(session: AsyncSession) -> None:
     user = User(username="owner", password_hash="hash")
     session.add(user)

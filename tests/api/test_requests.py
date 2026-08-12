@@ -17,6 +17,7 @@ from pornarr_db.models.download_client import DownloadClient
 from pornarr_db.models.playback import UserEvent
 from pornarr_db.models.request import Request, RequestHistory, RequestStatus
 from pornarr_db.models.user import User, UserRole
+from pornarr_db.requests import transition_request
 from pornarr_db.types import set_cipher
 from pornarr_shared.crypto import CredentialCipher
 from tests.api.test_app import SECRET
@@ -70,6 +71,46 @@ async def test_users_can_create_specific_and_search_requests_then_filter_their_l
         {
             **search.json(),
             "history": [{"status": "searching"}],
+        }
+    ]
+
+
+async def test_created_request_reaches_available_with_a_complete_lifecycle(app, client) -> None:
+    user = await create_user(app)
+    await login(client, user.username, "correct horse battery staple")
+    created = await client.post(
+        "/api/requests", json={"query": "Example"}, headers=csrf_headers(client)
+    )
+    request_id = UUID(created.json()["id"])
+
+    async with AsyncSession(app.state.engine, expire_on_commit=False) as session:
+        request = await session.get(Request, request_id)
+        assert request is not None
+        for status in (
+            RequestStatus.RESULTS_FOUND,
+            RequestStatus.QUEUED,
+            RequestStatus.DOWNLOADING,
+            RequestStatus.PROCESSING,
+            RequestStatus.AVAILABLE,
+        ):
+            await transition_request(session, request, status)
+        await session.commit()
+
+    available = await client.get("/api/requests?status=available")
+
+    assert created.status_code == 201
+    assert available.json() == [
+        {
+            **created.json(),
+            "status": "available",
+            "history": [
+                {"status": "searching"},
+                {"status": "results_found"},
+                {"status": "queued"},
+                {"status": "downloading"},
+                {"status": "processing"},
+                {"status": "available"},
+            ],
         }
     ]
 

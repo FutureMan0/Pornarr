@@ -31,6 +31,18 @@ def new_releases(releases: Sequence[Release], last_rss_guid: str | None) -> list
     return list(releases)
 
 
+def unique_releases(releases: Sequence[Release]) -> list[Release]:
+    """Preserve feed order while handling duplicate GUIDs from an indexer."""
+
+    seen: set[str] = set()
+    unique = []
+    for release in releases:
+        if release.guid not in seen:
+            unique.append(release)
+            seen.add(release.guid)
+    return unique
+
+
 async def fetch_rss(
     target: SearchTarget,
 ) -> tuple[str, list[Release] | None, Exception | None]:
@@ -67,7 +79,7 @@ async def rss_sync(context: dict[str, Any], cycle: int) -> int:
     outcomes = await asyncio.gather(*(fetch_rss(target) for target in targets))
     discovered = 0
     for target, (status, releases, error) in zip(targets, outcomes, strict=True):
-        unseen = new_releases(releases or (), target.last_rss_guid)
+        unseen = unique_releases(new_releases(releases or (), target.last_rss_guid))
         await record_search_outcome(
             redis,
             target.id,

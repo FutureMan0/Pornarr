@@ -118,7 +118,8 @@ async def match_release(session: AsyncSession, release: ReleaseCache) -> int:
     candidates: dict[UUID, list[Monitor]] = defaultdict(list)
     matched_at = datetime.now(UTC)
     for monitor in monitors:
-        if await monitor_score(session, monitor, release) >= monitor.minimum_score:
+        score = await monitor_score(session, monitor, release)
+        if score > 0 and score >= monitor.minimum_score:
             monitor.last_match_at = matched_at
             candidates[monitor.user_id].append(monitor)
 

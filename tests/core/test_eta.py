@@ -55,6 +55,20 @@ def test_higher_priority_job_adds_queue_time_to_jobs_behind_it() -> None:
     assert queued_estimate(priority=60, waiting=waiting).low_seconds == 0
 
 
+def test_manual_priority_preempts_automatic_work_in_a_mixed_queue() -> None:
+    waiting = [
+        Job(priority=90, remaining_seconds=30),
+        Job(priority=80, remaining_seconds=60),
+        Job(priority=60, remaining_seconds=120),
+        Job(priority=40, remaining_seconds=240),
+    ]
+
+    assert queued_estimate(priority=100, waiting=waiting).low_seconds == 0
+    assert queued_estimate(priority=80, waiting=waiting).low_seconds == 72
+    assert queued_estimate(priority=60, waiting=waiting).low_seconds == 168
+    assert queued_estimate(priority=40, waiting=waiting).low_seconds == 360
+
+
 def test_total_estimate_adds_measured_unpack_and_import_ranges() -> None:
     result = total_estimate(
         search_estimate(Protocol.USENET, 8_000, 100, seeders=None),
