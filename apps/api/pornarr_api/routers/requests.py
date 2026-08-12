@@ -32,7 +32,11 @@ from pornarr_db.models.user import User, UserRole
 from pornarr_db.release_filters import release_filter_decision
 from pornarr_db.requests import InvalidRequestTransitionError, transition_request
 from pornarr_db.settings import get_runtime_settings
-from pornarr_integrations.downloaders import DownloadClientCancellationAdapter
+from pornarr_integrations.downloaders import (
+    DownloadClientCancellationAdapter,
+    DownloadClientControlAdapter,
+    DownloadClientPriorityAdapter,
+)
 from pornarr_integrations.submission import (
     ReleaseSubmissionError,
     UnsupportedReleaseError,
@@ -68,6 +72,16 @@ class RequestActionError(PornarrError):
 
 class RequestCancellationError(PornarrError):
     code = "REQUEST_CANCELLATION_FAILED"
+    status = 502
+
+
+class RequestControlError(PornarrError):
+    code = "REQUEST_CONTROL_FAILED"
+    status = 502
+
+
+class RequestPriorityError(PornarrError):
+    code = "REQUEST_PRIORITY_UPDATE_FAILED"
     status = 502
 
 
@@ -211,6 +225,78 @@ async def cancel_download_if_present(
         )
     except Exception as error:
         raise RequestCancellationError("The download client did not cancel the request.") from error
+
+
+async def control_download_if_present(
+    http_request: HttpRequest, session: AsyncSession, request: Request, *, action: str
+) -> None:
+    if request.status in _TERMINAL_STATUSES:
+        raise RequestActionError("This request can no longer be controlled.")
+    if request.download_job_id is None:
+        raise RequestActionError("This request has no download to control.")
+    job = await session.get(DownloadJob, request.download_job_id)
+    if job is None or job.download_client_id is None or job.client_job_id is None:
+        raise RequestActionError("This request has no download to control.")
+    client = await session.get(DownloadClient, job.download_client_id)
+    if client is None:
+        raise RequestActionError("This request has no download to control.")
+    adapter = http_request.app.state.download_client_adapters.get(client.implementation)
+    if adapter is None or not hasattr(adapter, action):
+        raise RequestControlError(f"The download client cannot {action} this request.")
+    try:
+        controller = cast(DownloadClientControlAdapter, adapter)
+        if action == "pause":
+            await controller.pause(
+                host=client.host,
+                port=client.port,
+                url_base=client.url_base,
+                credentials=client.credentials,
+                client_job_id=job.client_job_id,
+            )
+            job.status = "paused"
+        else:
+            await controller.resume(
+                host=client.host,
+                port=client.port,
+                url_base=client.url_base,
+                credentials=client.credentials,
+                client_job_id=job.client_job_id,
+            )
+            job.status = "queued"
+    except Exception as error:
+        raise RequestControlError(f"The download client did not {action} the request.") from error
+
+
+async def update_download_priority_if_present(
+    http_request: HttpRequest, session: AsyncSession, request: Request, *, priority: int
+) -> None:
+    if request.download_job_id is None:
+        return
+    job = await session.get(DownloadJob, request.download_job_id)
+    if job is None:
+        return
+    job.priority = priority
+    if job.download_client_id is None or job.client_job_id is None:
+        return
+    client = await session.get(DownloadClient, job.download_client_id)
+    if client is None:
+        return
+    adapter = http_request.app.state.download_client_adapters.get(client.implementation)
+    if adapter is None or not hasattr(adapter, "set_priority"):
+        return
+    try:
+        await cast(DownloadClientPriorityAdapter, adapter).set_priority(
+            host=client.host,
+            port=client.port,
+            url_base=client.url_base,
+            credentials=client.credentials,
+            client_job_id=job.client_job_id,
+            priority=priority,
+        )
+    except Exception as error:
+        raise RequestPriorityError(
+            "The download client did not update the request priority."
+        ) from error
 
 
 @router.get("", response_model=list[RequestResponse], responses=_AUTHENTICATION_ERRORS)
@@ -420,16 +506,24 @@ async def _library_has_release(session: AsyncSession, normalized_title: str) -> 
         **_AUTHENTICATION_ERRORS,
         404: {"model": ErrorResponse},
         422: {"model": ErrorResponse},
+        502: {"model": ErrorResponse},
     },
 )
 async def change_priority(
-    request_id: UUID, payload: RequestPriorityWrite, user: CurrentUser, session: Session
+    request_id: UUID,
+    payload: RequestPriorityWrite,
+    http_request: HttpRequest,
+    user: CurrentUser,
+    session: Session,
 ) -> RequestResponse:
     request = await request_or_404(session, user, request_id)
     if user.role is not UserRole.ADMIN and payload.priority > USER_REQUEST_PRIORITY:
         raise ForbiddenError("Only an administrator can raise a request above user priority.")
     previous_priority = request.priority
     request.priority = payload.priority
+    await update_download_priority_if_present(
+        http_request, session, request, priority=payload.priority
+    )
     if user.role is UserRole.ADMIN:
         write_audit(
             session,
@@ -438,6 +532,44 @@ async def change_priority(
             target=str(request.id),
             context={"previous_priority": previous_priority, "priority": payload.priority},
         )
+    await session.flush()
+    return request_response(request, await request_history(session, request.id))
+
+
+@router.post(
+    "/{request_id}/pause",
+    response_model=RequestResponse,
+    responses={
+        **_AUTHENTICATION_ERRORS,
+        404: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+        502: {"model": ErrorResponse},
+    },
+)
+async def pause_request(
+    request_id: UUID, http_request: HttpRequest, user: CurrentUser, session: Session
+) -> RequestResponse:
+    request = await request_or_404(session, user, request_id)
+    await control_download_if_present(http_request, session, request, action="pause")
+    await session.flush()
+    return request_response(request, await request_history(session, request.id))
+
+
+@router.post(
+    "/{request_id}/resume",
+    response_model=RequestResponse,
+    responses={
+        **_AUTHENTICATION_ERRORS,
+        404: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+        502: {"model": ErrorResponse},
+    },
+)
+async def resume_request(
+    request_id: UUID, http_request: HttpRequest, user: CurrentUser, session: Session
+) -> RequestResponse:
+    request = await request_or_404(session, user, request_id)
+    await control_download_if_present(http_request, session, request, action="resume")
     await session.flush()
     return request_response(request, await request_history(session, request.id))
 

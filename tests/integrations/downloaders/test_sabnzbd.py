@@ -123,7 +123,7 @@ async def test_adds_url_and_nzb_file_with_category_priority_and_pause() -> None:
             **connection,
             url="https://indexer.example/release.nzb",
             category="pornarr",
-            priority=1,
+            priority=80,
             paused=False,
         )
         == NZO_ID
@@ -134,7 +134,7 @@ async def test_adds_url_and_nzb_file_with_category_priority_and_pause() -> None:
             nzb_file=b"<nzb></nzb>",
             filename="release.nzb",
             category="pornarr",
-            priority=1,
+            priority=80,
             paused=True,
         )
         == NZO_ID
@@ -228,6 +228,7 @@ async def test_controls_and_history_phases_keep_repair_and_import_distinct() -> 
 
     await adapter.pause(**connection, client_job_id=NZO_ID)
     await adapter.resume(**connection, client_job_id=NZO_ID)
+    await adapter.set_priority(**connection, client_job_id=NZO_ID, priority=100)
     await adapter.delete(**connection, client_job_id=NZO_ID, delete_files=False)
     await adapter.delete(**connection, client_job_id=NZO_ID, delete_files=True)
     await adapter.cancel(**connection, client_job_id=NZO_ID)
@@ -272,6 +273,14 @@ async def test_controls_and_history_phases_keep_repair_and_import_distinct() -> 
     assert [dict(request.url.params) for request in requests] == [
         {"output": "json", "apikey": API_KEY, "mode": "queue", "name": "pause", "value": NZO_ID},
         {"output": "json", "apikey": API_KEY, "mode": "queue", "name": "resume", "value": NZO_ID},
+        {
+            "output": "json",
+            "apikey": API_KEY,
+            "mode": "queue",
+            "name": "priority",
+            "value": NZO_ID,
+            "value2": "2",
+        },
         {
             "output": "json",
             "apikey": API_KEY,
