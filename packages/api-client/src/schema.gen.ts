@@ -818,6 +818,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Queue
+         * @description List queue jobs with deterministic sorting and current priority-based ETAs.
+         */
+        get: operations["queue_list_queue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/recommendations": {
         parameters: {
             query?: never;
@@ -927,6 +947,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/requests/{request_id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause Request */
+        post: operations["requests_pause_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/requests/{request_id}/priority": {
         parameters: {
             query?: never;
@@ -942,6 +979,23 @@ export interface paths {
         head?: never;
         /** Change Priority */
         patch: operations["requests_change_priority"];
+        trace?: never;
+    };
+    "/api/requests/{request_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume Request */
+        post: operations["requests_resume_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/requests/{request_id}/retry": {
@@ -1120,6 +1174,11 @@ export interface components {
              */
             status: "healthy" | "unhealthy";
         };
+        /**
+         * Confidence
+         * @enum {string}
+         */
+        Confidence: "high" | "medium" | "low" | "unknown";
         /** CurrentUserResponse */
         CurrentUserResponse: {
             /** Id */
@@ -1652,6 +1711,56 @@ export interface components {
              */
             username_claim: string;
         };
+        /** QueueEstimateResponse */
+        QueueEstimateResponse: {
+            confidence: components["schemas"]["Confidence"];
+            /** High Seconds */
+            high_seconds: number | null;
+            /** Low Seconds */
+            low_seconds: number | null;
+        };
+        /** QueueJobResponse */
+        QueueJobResponse: {
+            /** Client Name */
+            client_name: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Estimated Seconds */
+            estimated_seconds: number | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Priority */
+            priority: number;
+            /** Protocol */
+            protocol: string;
+            queue_estimate: components["schemas"]["QueueEstimateResponse"];
+            /** Release Guid */
+            release_guid: string;
+            /** Remaining Bytes */
+            remaining_bytes: number | null;
+            /** Request Id */
+            request_id: string | null;
+            /** Status */
+            status: string;
+        };
+        /** QueueListResponse */
+        QueueListResponse: {
+            /** Items */
+            items: components["schemas"]["QueueJobResponse"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /**
+         * QueueSort
+         * @enum {string}
+         */
+        QueueSort: "priority" | "created_at" | "status";
         /** RecommendationFeedbackWrite */
         RecommendationFeedbackWrite: {
             event_type: components["schemas"]["UserEventType"];
@@ -3864,6 +3973,41 @@ export interface operations {
             };
         };
     };
+    queue_list_queue: {
+        parameters: {
+            query?: {
+                status?: string | null;
+                download_client_id?: string | null;
+                sort?: components["schemas"]["QueueSort"];
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     recommendations_list_recommendations: {
         parameters: {
             query?: never;
@@ -4164,6 +4308,73 @@ export interface operations {
             };
         };
     };
+    requests_pause_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     requests_change_priority: {
         parameters: {
             query?: never;
@@ -4208,6 +4419,82 @@ export interface operations {
             };
             /** @description Unprocessable Content */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    requests_resume_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -230,6 +230,26 @@ class SabnzbdAdapter:
     ) -> None:
         await self._control(host, port, url_base, credentials, "resume", client_job_id)
 
+    async def set_priority(
+        self,
+        *,
+        host: str,
+        port: int,
+        url_base: str,
+        credentials: str,
+        client_job_id: str,
+        priority: int,
+    ) -> None:
+        await self._control(
+            host,
+            port,
+            url_base,
+            credentials,
+            "priority",
+            client_job_id,
+            value2=_queue_priority(priority),
+        )
+
     async def delete(
         self,
         *,
@@ -344,9 +364,20 @@ class SabnzbdAdapter:
 def _add_options(category: str | None, priority: int, paused: bool) -> dict[str, str]:
     return {
         "cat": category or "*",
-        "priority": "-2" if paused else str(priority),
+        "priority": "-2" if paused else _queue_priority(priority),
         "pp": "2",
     }
+
+
+def _queue_priority(priority: int) -> str:
+    """Map Pornarr's five request levels onto SABnzbd's four native levels."""
+    if priority >= 100:
+        return "2"
+    if priority >= 80:
+        return "1"
+    if priority >= 60:
+        return "0"
+    return "-1"
 
 
 def _api_url(host: str, port: int, url_base: str) -> str:

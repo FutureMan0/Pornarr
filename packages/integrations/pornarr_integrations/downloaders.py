@@ -70,6 +70,45 @@ class DownloadClientCancellationAdapter(Protocol):
     ) -> None: ...
 
 
+class DownloadClientControlAdapter(Protocol):
+    """Pause and resume individual download-client jobs."""
+
+    async def pause(
+        self,
+        *,
+        host: str,
+        port: int,
+        url_base: str,
+        credentials: str,
+        client_job_id: str,
+    ) -> None: ...
+
+    async def resume(
+        self,
+        *,
+        host: str,
+        port: int,
+        url_base: str,
+        credentials: str,
+        client_job_id: str,
+    ) -> None: ...
+
+
+class DownloadClientPriorityAdapter(Protocol):
+    """Set a numeric priority when the download client supports one."""
+
+    async def set_priority(
+        self,
+        *,
+        host: str,
+        port: int,
+        url_base: str,
+        credentials: str,
+        client_job_id: str,
+        priority: int,
+    ) -> None: ...
+
+
 class TorrentSubmissionAdapter(Protocol):
     """A torrent client operation used when accepting a cached release."""
 

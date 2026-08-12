@@ -336,6 +336,13 @@ def test_request_contract_declares_structured_errors(app) -> None:
     paths = app.openapi()["paths"]
 
     assert {"401", "409", "422"} <= paths["/api/requests"]["post"]["responses"].keys()
+    assert {"401", "404", "422", "502"} <= paths["/api/requests/{request_id}/priority"]["patch"][
+        "responses"
+    ].keys()
+    for action in ("pause", "resume"):
+        assert {"401", "404", "409", "502"} <= paths[f"/api/requests/{{request_id}}/{action}"][
+            "post"
+        ]["responses"].keys()
     assert {"401", "404", "409", "502"} <= paths["/api/requests/{request_id}/cancel"]["post"][
         "responses"
     ].keys()
