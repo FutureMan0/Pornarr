@@ -622,6 +622,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/monitors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Monitors */
+        get: operations["monitors_list_monitors"];
+        put?: never;
+        /** Create Monitor */
+        post: operations["monitors_create_monitor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/monitors/{monitor_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Monitor */
+        delete: operations["monitors_delete_monitor"];
+        options?: never;
+        head?: never;
+        /** Update Monitor */
+        patch: operations["monitors_update_monitor"];
+        trace?: never;
+    };
     "/api/notifications": {
         parameters: {
             query?: never;
@@ -1344,6 +1380,70 @@ export interface components {
          * @enum {string}
          */
         MediaSort: "relevance" | "date_added" | "title" | "size" | "duration";
+        /** MonitorCreate */
+        MonitorCreate: {
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            kind: components["schemas"]["MonitorKind"];
+            /**
+             * Minimum Score
+             * @default 0
+             */
+            minimum_score: number;
+            /** Performer Id */
+            performer_id?: string | null;
+            /** Quality Profile Id */
+            quality_profile_id?: string | null;
+            /** Query */
+            query?: string | null;
+            /** Studio Id */
+            studio_id?: string | null;
+        };
+        /**
+         * MonitorKind
+         * @enum {string}
+         */
+        MonitorKind: "performer" | "studio" | "query";
+        /** MonitorResponse */
+        MonitorResponse: {
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["MonitorKind"];
+            /** Last Match At */
+            last_match_at: string | null;
+            /** Minimum Score */
+            minimum_score: number;
+            /** Performer Id */
+            performer_id: string | null;
+            /**
+             * Quality Profile Id
+             * Format: uuid
+             */
+            quality_profile_id: string;
+            /** Query */
+            query: string | null;
+            /** Studio Id */
+            studio_id: string | null;
+        };
+        /** MonitorUpdate */
+        MonitorUpdate: {
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Minimum Score */
+            minimum_score?: number | null;
+            /** Quality Profile Id */
+            quality_profile_id?: string | null;
+            /** Query */
+            query?: string | null;
+        };
         /**
          * NotificationKind
          * @enum {string}
@@ -3217,6 +3317,159 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    monitors_list_monitors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonitorResponse"][];
+                };
+            };
+        };
+    };
+    monitors_create_monitor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MonitorCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonitorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    monitors_delete_monitor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                monitor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    monitors_update_monitor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                monitor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MonitorUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonitorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

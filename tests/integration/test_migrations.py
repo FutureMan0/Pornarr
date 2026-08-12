@@ -184,6 +184,38 @@ def test_deleting_a_user_removes_its_filter_profile(clean_database: None) -> Non
     assert remaining == (0,)
 
 
+def test_deleting_a_monitored_performer_removes_its_monitor(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        user_id = str(uuid4())
+        performer_id = str(uuid4())
+        monitor_id = str(uuid4())
+        profile = connection.execute("SELECT id FROM quality_profiles WHERE is_default").fetchone()
+        assert profile is not None
+        connection.execute(
+            "INSERT INTO users (id, username, password_hash) VALUES (%s, %s, %s)",
+            (user_id, "monitor-owner", "not-a-real-password"),
+        )
+        connection.execute(
+            "INSERT INTO performers (id, name, normalized_name, metadata) "
+            "VALUES (%s, %s, %s, '{}'::jsonb)",
+            (performer_id, "Example Performer", "example performer"),
+        )
+        connection.execute(
+            "INSERT INTO monitors (id, user_id, kind, performer_id, quality_profile_id) "
+            "VALUES (%s, %s, %s, %s, %s)",
+            (monitor_id, user_id, "performer", performer_id, profile[0]),
+        )
+        connection.execute("DELETE FROM performers WHERE id = %s", (performer_id,))
+        remaining = connection.execute(
+            "SELECT count(*) FROM monitors WHERE id = %s", (monitor_id,)
+        ).fetchone()
+        connection.commit()
+
+    assert remaining == (0,)
+
+
 def test_user_event_upgrade_preserves_completion_and_cascades_with_its_user(
     clean_database: None,
 ) -> None:
