@@ -180,7 +180,7 @@ def _media_has_performer(media_id: object, normalized_name: str):
         .join(Performer, Performer.id == MediaPerformer.performer_id)
         .where(
             MediaPerformer.media_id == media_id,
-            Performer.normalized_name == normalized_name,
+            Performer.normalized_name.op("%")(normalized_name),
         )
         .exists()
     )
@@ -193,7 +193,7 @@ def _media_has_tag(media_id: object, normalized_name: str):
         .join(Tag, Tag.id == MediaTag.tag_id)
         .where(
             MediaTag.media_id == media_id,
-            Tag.normalized_name == normalized_name,
+            Tag.normalized_name.op("%")(normalized_name),
         )
         .exists()
     )

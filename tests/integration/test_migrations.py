@@ -123,6 +123,32 @@ def test_local_search_uses_its_trigram_index_within_200ms(clean_database: None) 
     assert plan["Execution Time"] < 200
 
 
+def test_entity_name_trigram_indexes_tolerate_typos(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        performer_id = uuid4()
+        tag_id = uuid4()
+        connection.execute(
+            "INSERT INTO performers (id, name, normalized_name, metadata) VALUES (%s, %s, %s, %s)",
+            (performer_id, "Alice Example", "alice example", "{}"),
+        )
+        connection.execute(
+            "INSERT INTO tags (id, name, normalized_name, metadata) VALUES (%s, %s, %s, %s)",
+            (tag_id, "Outdoor", "outdoor", "{}"),
+        )
+        connection.execute("SELECT set_config('pg_trgm.similarity_threshold', '0.2', true)")
+        performer = connection.execute(
+            "SELECT id FROM performers WHERE normalized_name %% %s", ("alise example",)
+        ).fetchone()
+        tag = connection.execute(
+            "SELECT id FROM tags WHERE normalized_name %% %s", ("outdor",)
+        ).fetchone()
+
+    assert performer == (performer_id,)
+    assert tag == (tag_id,)
+
+
 def test_filter_migration_seeds_one_disabled_global_profile(clean_database: None) -> None:
     assert _alembic("upgrade", "head").returncode == 0
 
