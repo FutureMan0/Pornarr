@@ -7,6 +7,7 @@ import sys
 
 from pornarr_shared.config import get_settings
 from pornarr_shared.jobs import (
+    BACKLOG_SEARCH_JOB_NAME,
     DEFAULT_QUEUE,
     IMPORT_QUEUE,
     INDEXER_QUEUE,
@@ -46,6 +47,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "refresh_recommendations_job",
         "dispatch_due_request_searches",
         "dispatch_rss_sync",
+        "dispatch_backlog_searches",
     ]
     assert [job.name for job in settings.TranscodeWorkerSettings.functions] == [
         "generate_preview_sprite_job",
@@ -58,7 +60,9 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "request_search",
         "rss_sync",
         "monitor_match",
+        "backlog_search",
     ]
+    assert settings.IndexerWorkerSettings.functions[-1].name == BACKLOG_SEARCH_JOB_NAME
     assert [function.name for function in settings.ImportWorkerSettings.functions] == [
         "heartbeat",
         "cleanup_transcodes",
@@ -70,6 +74,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "refresh_recommendations_job",
         "dispatch_due_request_searches",
         "dispatch_rss_sync",
+        "dispatch_backlog_searches",
         "scan",
     ]
     required_arq_options = {
@@ -93,6 +98,8 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "refresh_recommendations_job",
         "dispatch_due_request_searches",
         "dispatch_rss_sync",
+        "dispatch_backlog_searches",
     ]
     assert cron_jobs["download_poll"].second == set(range(0, 60, 5))
     assert cron_jobs["dispatch_rss_sync"].minute == {0, 15, 30, 45}
+    assert cron_jobs["dispatch_backlog_searches"].minute == set(range(0, 60))

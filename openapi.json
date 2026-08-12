@@ -4809,6 +4809,53 @@
         ]
       }
     },
+    "/api/monitors/{monitor_id}/backlog-search": {
+      "post": {
+        "description": "Queue a fresh search for one monitor without waiting for its daily slot.",
+        "operationId": "monitors_trigger_backlog_search",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "monitor_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Monitor Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Trigger Backlog Search",
+        "tags": [
+          "monitors"
+        ]
+      }
+    },
     "/api/notifications": {
       "get": {
         "operationId": "notifications_list_notifications",

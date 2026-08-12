@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import Request as HttpRequest
 from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -20,6 +21,7 @@ from pornarr_db.models.quality import QualityProfile
 from pornarr_db.models.user import User
 from pornarr_db.release_cache import normalize_release_title
 from pornarr_shared.errors import PornarrError
+from pornarr_shared.jobs import BACKLOG_SEARCH_JOB_NAME, INDEXER_QUEUE, enqueue_once
 
 router = APIRouter(prefix="/monitors", tags=["monitors"])
 CurrentUser = Annotated[User, Depends(get_current_user)]
@@ -190,6 +192,29 @@ async def list_monitors(user: CurrentUser, session: Session) -> list[MonitorResp
         select(Monitor).where(Monitor.user_id == user.id).order_by(Monitor.created_at.desc())
     )
     return [monitor_response(monitor) for monitor in monitors]
+
+
+@router.post(
+    "/{monitor_id}/backlog-search",
+    status_code=202,
+    response_class=Response,
+    responses={404: {"model": ErrorResponse}},
+)
+async def trigger_backlog_search(
+    monitor_id: UUID, request: HttpRequest, user: CurrentUser, session: Session
+) -> Response:
+    """Queue a fresh search for one monitor without waiting for its daily slot."""
+
+    await monitor_or_404(session, user.id, monitor_id)
+    minute = datetime.now(UTC).replace(second=0, microsecond=0).isoformat()
+    await enqueue_once(
+        request.app.state.redis,
+        BACKLOG_SEARCH_JOB_NAME,
+        str(monitor_id),
+        f"manual:{minute}",
+        queue=INDEXER_QUEUE,
+    )
+    return Response(status_code=202)
 
 
 @router.post(

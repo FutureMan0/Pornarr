@@ -21,6 +21,7 @@ from pornarr_shared.jobs import (
 from pornarr_worker.artwork import ARTWORK_JOB, LIBRARY_ARTWORK_JOB
 from pornarr_worker.cleanup import cleanup_transcodes
 from pornarr_worker.jobs.automation import AUTOMATION_EXECUTION_JOB
+from pornarr_worker.jobs.backlog_search import BACKLOG_SEARCH_DISPATCH_JOB, BACKLOG_SEARCH_JOB
 from pornarr_worker.jobs.download_poll import DOWNLOAD_POLL_JOB
 from pornarr_worker.jobs.events import PRUNE_USER_EVENTS_JOB
 from pornarr_worker.jobs.monitor_match import MONITOR_MATCH_JOB
@@ -60,6 +61,7 @@ class WorkerSettings:
         REFRESH_RECOMMENDATIONS_JOB,
         REQUEST_SEARCH_DISPATCH_JOB,
         RSS_SYNC_DISPATCH_JOB,
+        BACKLOG_SEARCH_DISPATCH_JOB,
     ]
     queue_name: ClassVar = DEFAULT_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
@@ -105,6 +107,7 @@ class IndexerWorkerSettings:
         REQUEST_SEARCH_JOB,
         RSS_SYNC_JOB,
         MONITOR_MATCH_JOB,
+        BACKLOG_SEARCH_JOB,
     ]
     queue_name: ClassVar = INDEXER_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
@@ -187,6 +190,13 @@ class SchedulerSettings:
             RSS_SYNC_DISPATCH_JOB.coroutine,
             name=RSS_SYNC_DISPATCH_JOB.name,
             minute=set(range(0, 60, get_settings().rss_sync_interval_minutes)),
+            max_tries=JOB_MAX_TRIES,
+        ),
+        cron(
+            BACKLOG_SEARCH_DISPATCH_JOB.coroutine,
+            name=BACKLOG_SEARCH_DISPATCH_JOB.name,
+            minute=set(range(0, 60)),
+            run_at_startup=True,
             max_tries=JOB_MAX_TRIES,
         ),
     ]

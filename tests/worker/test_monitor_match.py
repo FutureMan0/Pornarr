@@ -19,6 +19,7 @@ from pornarr_db.models.filters import (
     FilterProfileScope,
     FilterRuleKind,
 )
+from pornarr_db.models.media import Media
 from pornarr_db.models.monitor import Monitor, MonitorKind
 from pornarr_db.models.quality import QualityDefinition, QualityProfile, QualityProfileItem
 from pornarr_db.models.release import ReleaseCache
@@ -221,6 +222,35 @@ async def test_match_rejects_a_release_outside_the_monitor_quality_profile(
                 query="Alicia Example",
                 normalized_query="alicia example",
                 quality_profile_id=profile.id,
+            ),
+            release,
+        )
+    )
+    await session.flush()
+
+    assert await match_release(session, release) == 0
+    assert await session.scalar(select(Request)) is None
+
+
+async def test_match_skips_a_release_that_is_already_in_the_library(
+    session: AsyncSession,
+) -> None:
+    user = User(username="owner", password_hash="hash")
+    session.add(user)
+    profile = await _profile(session)
+    release = _release()
+    session.add_all(
+        (
+            Monitor(
+                user_id=user.id,
+                kind=MonitorKind.QUERY,
+                query="Alicia Example",
+                normalized_query="alicia example",
+                quality_profile_id=profile.id,
+            ),
+            Media(
+                title="Alicia Example 2024 WEB 1080p",
+                normalized_title=release.normalized_title,
             ),
             release,
         )
