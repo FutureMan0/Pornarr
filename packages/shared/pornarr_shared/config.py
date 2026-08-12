@@ -82,6 +82,7 @@ class Settings(BaseSettings):
     recommendation_popularity_weight: float = Field(default=0.10, ge=0)
     request_max_active_per_user: int = Field(default=10, ge=0)
     request_search_max_age_days: int = Field(default=90, ge=1)
+    rss_sync_interval_minutes: int = Field(default=15, ge=1, le=60)
 
     oidc_allow_private_issuers: bool = False
 
@@ -109,6 +110,13 @@ class Settings(BaseSettings):
         """
         stripped = value.strip().strip("/")
         return f"/{stripped}" if stripped else ""
+
+    @field_validator("rss_sync_interval_minutes")
+    @classmethod
+    def _rss_sync_interval_divides_an_hour(cls, value: int) -> int:
+        if 60 % value:
+            raise ValueError("RSS_SYNC_INTERVAL_MINUTES must divide 60")
+        return value
 
     # Derived paths. Downloads and library must share one filesystem or
     # hardlinking fails; see docs/operations/deployment.md.

@@ -40,6 +40,7 @@ class SearchTarget:
     adapter: SearchIndexerAdapter | None
     skip_status: str | None = None
     cached_releases: list[Release] | None = None
+    last_rss_guid: str | None = None
 
 
 @dataclass(slots=True)
@@ -165,6 +166,7 @@ async def configured_targets(redis: Any) -> list[SearchTarget]:
                     base_url=indexer.base_url,
                     api_key=indexer.api_key,
                     adapter=ADAPTERS.get(indexer.implementation),
+                    last_rss_guid=indexer.last_rss_guid,
                 )
             )
     return targets
@@ -213,6 +215,8 @@ async def record_search_outcome(
     status: str,
     releases: list[Release] | None,
     error: Exception | None,
+    *,
+    last_rss_guid: str | None = None,
 ) -> None:
     """Persist one actual query's health and aggregate statistics."""
     if status in {IndexerHealth.UNHEALTHY.value, "unavailable", "cached"}:
@@ -226,6 +230,8 @@ async def record_search_outcome(
         if status == "completed":
             if releases is not None:
                 await cache_releases(session, indexer.id, releases)
+            if last_rss_guid is not None:
+                indexer.last_rss_guid = last_rss_guid
             indexer.health = (await CircuitBreaker(redis).record_success(indexer_id)).value
             indexer.health_reason = None
             indexer.last_error = None

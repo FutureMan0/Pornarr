@@ -68,6 +68,9 @@ class Adapter:
             raise RuntimeError
         return [Release("one", "Example", None, None, None, None, ())]
 
+    async def rss(self, *, base_url: str, api_key: str) -> list[Release]:
+        return await self.search(base_url=base_url, api_key=api_key, query="")
+
 
 async def test_results_are_progressive_and_one_timeout_does_not_block_others() -> None:
     redis = Redis()

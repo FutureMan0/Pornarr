@@ -216,6 +216,19 @@ def test_deleting_a_monitored_performer_removes_its_monitor(clean_database: None
     assert remaining == (0,)
 
 
+def test_indexer_rss_marker_is_available_after_upgrade(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        marker_column = connection.execute(
+            """SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'indexers' AND column_name = 'last_rss_guid'"""
+        ).fetchone()
+
+    assert marker_column == ("last_rss_guid",)
+
+
 def test_user_event_upgrade_preserves_completion_and_cascades_with_its_user(
     clean_database: None,
 ) -> None:
