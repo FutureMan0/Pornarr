@@ -76,6 +76,116 @@ async def test_authentication_response_is_not_classified_as_transient(monkeypatc
     assert str(error.value) == "The Torznab authentication failed."
 
 
+async def test_adapter_requests_capabilities_and_search_results(monkeypatch) -> None:
+    calls: list[tuple[str, dict[str, str]]] = []
+
+    class Client:
+        async def __aenter__(self) -> Client:
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            return None
+
+        async def get(self, url: str, *, params: dict[str, str]) -> httpx.Response:
+            calls.append((url, params))
+            document = (
+                '<caps><categories><category id="5000" name="TV" /></categories></caps>'
+                if params["t"] == "caps"
+                else "<rss><channel><item><title>Example</title><guid>one</guid></item></channel></rss>"
+            )
+            return httpx.Response(200, text=document, request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **_: Client())
+    adapter = TorznabAdapter()
+
+    assert (await adapter.test_connection(base_url="https://indexer.example/", api_key="key"))[
+        0
+    ].id == "5000"
+    assert (
+        await adapter.search(base_url="https://indexer.example/", api_key="key", query="example")
+    )[0].guid == "one"
+    assert calls == [
+        ("https://indexer.example", {"apikey": "key", "t": "caps"}),
+        ("https://indexer.example", {"apikey": "key", "t": "search", "q": "example"}),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("result", "expected_failure", "expected_message"),
+    [
+        (
+            httpx.Response(500, request=httpx.Request("GET", "https://indexer.example")),
+            IndexerFailure.TRANSIENT,
+            "The Torznab request failed.",
+        ),
+        (
+            httpx.ReadTimeout("slow", request=httpx.Request("GET", "https://indexer.example")),
+            IndexerFailure.TIMEOUT,
+            "The Torznab request timed out.",
+        ),
+        (
+            httpx.ConnectError("offline", request=httpx.Request("GET", "https://indexer.example")),
+            IndexerFailure.TRANSIENT,
+            "The Torznab request failed.",
+        ),
+    ],
+)
+async def test_transport_failures_are_structured(
+    monkeypatch,
+    result: httpx.Response | httpx.HTTPError,
+    expected_failure: IndexerFailure,
+    expected_message: str,
+) -> None:
+    class Client:
+        async def __aenter__(self) -> Client:
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            return None
+
+        async def get(self, *args: object, **kwargs: object) -> httpx.Response:
+            if isinstance(result, Exception):
+                raise result
+            return result
+
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **_: Client())
+
+    with pytest.raises(TorznabResponseError) as error:
+        await TorznabAdapter()._request("https://indexer.example", "key", {"t": "caps"})
+
+    assert error.value.failure is expected_failure
+    assert str(error.value) == expected_message
+
+
+def test_optional_torznab_fields_tolerate_invalid_values() -> None:
+    release = parse_results(
+        """<rss xmlns:torznab="http://torznab.com/schemas/2015/feed"><channel><item>
+        <title>Example</title><guid>one</guid><pubDate>not a date</pubDate>
+        <enclosure length="not-a-number" /><torznab:attr name="parts" value="invalid" />
+        <torznab:attr name="group" value="alt.example" /><torznab:attr name="poster" value="poster" />
+        <torznab:attr name="password" value="yes" /></item></channel></rss>"""
+    )[0]
+    unprotected = parse_results(
+        """<rss xmlns:torznab="http://torznab.com/schemas/2015/feed"><channel><item>
+        <title>Other</title><guid>two</guid><torznab:attr name="password" value="no" />
+        </item></channel></rss>"""
+    )[0]
+    unknown = parse_results(
+        """<rss xmlns:torznab="http://torznab.com/schemas/2015/feed"><channel><item>
+        <title>Unknown</title><guid>three</guid><torznab:attr name="password" value="maybe" />
+        </item></channel></rss>"""
+    )[0]
+
+    assert (release.published_at, release.size, release.parts) == (None, None, None)
+    assert (release.groups, release.poster, release.password_protected) == (
+        ("alt.example",),
+        "poster",
+        True,
+    )
+    assert unprotected.password_protected is False
+    assert unknown.password_protected is None
+
+
 async def test_rss_request_has_no_search_term() -> None:
     class RecordedAdapter(TorznabAdapter):
         def __init__(self) -> None:
