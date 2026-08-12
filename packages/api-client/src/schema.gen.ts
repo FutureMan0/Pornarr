@@ -1913,6 +1913,8 @@ export interface components {
             min_free_disk_percent: number;
             /** Playback Completion Threshold Percent */
             playback_completion_threshold_percent: number;
+            /** Quarantine Retention Days */
+            quarantine_retention_days: number;
             /** Recommendation Performer Weight */
             recommendation_performer_weight: number;
             /** Recommendation Popularity Weight */
@@ -1975,6 +1977,8 @@ export interface components {
             min_free_disk_percent?: number | null;
             /** Playback Completion Threshold Percent */
             playback_completion_threshold_percent?: number | null;
+            /** Quarantine Retention Days */
+            quarantine_retention_days?: number | null;
             /** Recommendation Performer Weight */
             recommendation_performer_weight?: number | null;
             /** Recommendation Popularity Weight */
