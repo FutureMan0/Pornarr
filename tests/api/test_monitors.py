@@ -131,3 +131,41 @@ async def test_users_cannot_manage_each_others_monitors_and_targets_cascade(app,
         await session.delete(await session.get(Performer, performer.id))
         await session.commit()
         assert await session.scalar(select(Monitor).where(Monitor.id == monitor_id)) is None
+
+
+async def test_user_can_trigger_a_monitor_backlog_search(app, client, monkeypatch) -> None:
+    user = await create_user(app)
+    async with AsyncSession(app.state.engine, expire_on_commit=False) as session:
+        await _quality_profile(session)
+        await session.commit()
+    await login(client, user.username, "correct horse battery staple")
+    created = await client.post(
+        "/api/monitors",
+        json={"kind": "query", "query": "Example Performer"},
+        headers=csrf_headers(client),
+    )
+    calls: list[dict[str, str]] = []
+
+    async def enqueue_job(function: str, *args: object, **kwargs: object) -> dict[str, object]:
+        monitor_id, run_id = args
+        queue = kwargs["_queue_name"]
+        assert isinstance(monitor_id, str)
+        assert isinstance(run_id, str)
+        assert isinstance(queue, str)
+        calls.append(
+            {"function": function, "monitor_id": monitor_id, "run_id": run_id, "queue": queue}
+        )
+        return {}
+
+    monkeypatch.setattr(app.state.redis, "enqueue_job", enqueue_job, raising=False)
+
+    response = await client.post(
+        f"/api/monitors/{created.json()['id']}/backlog-search",
+        headers=csrf_headers(client),
+    )
+
+    assert response.status_code == 202
+    assert calls[0]["function"] == "backlog_search"
+    assert calls[0]["monitor_id"] == created.json()["id"]
+    assert calls[0]["run_id"].startswith("manual:")
+    assert calls[0]["queue"] == "pornarr:indexer"

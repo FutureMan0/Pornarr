@@ -15,6 +15,7 @@ from pornarr_core.filters import FilterAction
 from pornarr_core.quality import QualityProfile as CoreQualityProfile
 from pornarr_core.quality import QualityVerdict, ReleaseCandidate, decide_quality
 from pornarr_db.models.entities import Performer, Studio
+from pornarr_db.models.media import Media
 from pornarr_db.models.monitor import Monitor, MonitorKind
 from pornarr_db.models.quality import QualityProfile, QualityProfileItem
 from pornarr_db.models.release import ReleaseCache
@@ -130,6 +131,10 @@ async def match_release(session: AsyncSession, release: ReleaseCache) -> int:
                 Request.selected_release_guid == release.guid,
             )
             .limit(1)
+        ):
+            continue
+        if await session.scalar(
+            select(Media.id).where(Media.normalized_title == release.normalized_title).limit(1)
         ):
             continue
         if (

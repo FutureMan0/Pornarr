@@ -17,6 +17,7 @@ DEFAULT_QUEUE = "pornarr:default"
 IMPORT_QUEUE = "pornarr:import"
 TRANSCODE_QUEUE = "pornarr:transcode"
 INDEXER_QUEUE = "pornarr:indexer"
+BACKLOG_SEARCH_JOB_NAME = "backlog_search"
 
 JOB_TIMEOUT_SECONDS = 300
 JOB_MAX_TRIES = 3
