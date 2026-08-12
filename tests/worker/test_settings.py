@@ -82,6 +82,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "dispatch_perceptual_hashes",
         "scan",
         "quarantine_job",
+        "upgrade_media_file_job",
     ]
     required_arq_options = {
         "functions",
