@@ -352,6 +352,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/quarantine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Quarantine Items */
+        get: operations["admin_list_quarantine_items"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/quarantine/bulk/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve Bulk Quarantine Items */
+        post: operations["admin_approve_bulk_quarantine_items"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/quarantine/bulk/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Bulk Approval */
+        post: operations["admin_preview_bulk_approval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/quarantine/items/{item_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve Quarantine Item */
+        post: operations["admin_approve_quarantine_item"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/quarantine/items/{item_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject Quarantine Item */
+        post: operations["admin_reject_quarantine_item"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/settings": {
         parameters: {
             query?: never;
@@ -1132,6 +1217,17 @@ export interface components {
             /** Label */
             label: string;
         };
+        /** ApprovalResponse */
+        ApprovalResponse: {
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Path */
+            path: string;
+            placement_method: components["schemas"]["PlacementMethod"];
+        };
         /** AuditLogResponse */
         AuditLogResponse: {
             /** Action */
@@ -1156,6 +1252,36 @@ export interface components {
             source: string;
             /** Target */
             target: string | null;
+        };
+        /** BulkApprovalRequest */
+        BulkApprovalRequest: {
+            /** Item Ids */
+            item_ids: string[];
+            /** Reason Code */
+            reason_code: string;
+            /** Token */
+            token: string;
+        };
+        /** BulkApprovalResponse */
+        BulkApprovalResponse: {
+            /** Approved */
+            approved: components["schemas"]["ApprovalResponse"][];
+        };
+        /** BulkPreviewRequest */
+        BulkPreviewRequest: {
+            /** Item Ids */
+            item_ids: string[];
+            /** Reason Code */
+            reason_code: string;
+        };
+        /** BulkPreviewResponse */
+        BulkPreviewResponse: {
+            /** Items */
+            items: components["schemas"]["QuarantineItemResponse"][];
+            /** Reason Code */
+            reason_code: string;
+            /** Token */
+            token: string;
         };
         /** CodecCapabilityResponse */
         CodecCapabilityResponse: {
@@ -1609,6 +1735,11 @@ export interface components {
          * @enum {string}
          */
         PerformanceMetric: "download_speed" | "post_processing_seconds_per_gib" | "import_seconds_per_gib" | "disk_write_speed";
+        /**
+         * PlacementMethod
+         * @enum {string}
+         */
+        PlacementMethod: "hardlink" | "copy" | "move";
         /** PlaybackInfoResponse */
         PlaybackInfoResponse: {
             /** Direct Play */
@@ -1710,6 +1841,46 @@ export interface components {
              * @default preferred_username
              */
             username_claim: string;
+        };
+        /** QuarantineApproval */
+        QuarantineApproval: {
+            /** Quality */
+            quality?: string | null;
+            /** Release Date */
+            release_date?: string | null;
+            /** Studio */
+            studio?: string | null;
+            /** Title */
+            title?: string | null;
+        };
+        /** QuarantineItemResponse */
+        QuarantineItemResponse: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Extracted Metadata */
+            extracted_metadata: {
+                [key: string]: unknown;
+            };
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Original Path */
+            original_path: string;
+            /** Quarantine Path */
+            quarantine_path: string;
+            /** Reasons */
+            reasons: {
+                [key: string]: unknown;
+            }[];
+            /** Technical Details */
+            technical_details: {
+                [key: string]: unknown;
+            };
         };
         /** QueueEstimateResponse */
         QueueEstimateResponse: {
@@ -2867,6 +3038,156 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PerformanceInputResponse"][];
+                };
+            };
+        };
+    };
+    admin_list_quarantine_items: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuarantineItemResponse"][];
+                };
+            };
+        };
+    };
+    admin_approve_bulk_quarantine_items: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkApprovalRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkApprovalResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_preview_bulk_approval: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkPreviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_approve_quarantine_item: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuarantineApproval"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_reject_quarantine_item: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

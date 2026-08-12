@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_core.library_naming import sanitize_component
+from pornarr_db.metadata_corrections import apply_metadata_correction
 from pornarr_db.models.notification import NotificationKind
 from pornarr_db.models.quarantine import QuarantineItem
 from pornarr_db.notifications import notify_administrators
@@ -59,6 +60,9 @@ async def quarantine_file(
     source: Path,
     quarantine_root: Path,
     reasons: list[QuarantineReason],
+    *,
+    extracted_metadata: dict[str, object] | None = None,
+    technical_details: dict[str, object] | None = None,
 ) -> QuarantineItem:
     """Atomically move one source out of downloads and record why it needs review."""
     if not reasons:
@@ -67,12 +71,15 @@ async def quarantine_file(
     item_id = uuid4()
     destination = quarantine_root / str(item_id) / sanitize_component(source.name)
     reason_payloads = [reason.as_payload() for reason in reasons]
+    metadata = await apply_metadata_correction(session, extracted_metadata or {})
     await asyncio.to_thread(_move_to_quarantine, source, destination)
     item = QuarantineItem(
         id=item_id,
         original_path=str(source),
         quarantine_path=str(destination),
         reasons=reason_payloads,
+        extracted_metadata=metadata,
+        technical_details=technical_details or {},
     )
     session.add(item)
     try:
@@ -85,14 +92,23 @@ async def quarantine_file(
 
 
 async def quarantine_job(
-    context: dict[str, Any], source_path: str, reasons: list[dict[str, object]]
+    context: dict[str, Any],
+    source_path: str,
+    reasons: list[dict[str, object]],
+    extracted_metadata: dict[str, object] | None = None,
+    technical_details: dict[str, object] | None = None,
 ) -> str:
     """Run a reviewable quarantine transition on the dedicated import queue."""
     parsed_reasons = [QuarantineReason.from_payload(reason) for reason in reasons]
     settings = get_settings()
     async with session_scope() as session:
         item = await quarantine_file(
-            session, Path(source_path), settings.quarantine_path, parsed_reasons
+            session,
+            Path(source_path),
+            settings.quarantine_path,
+            parsed_reasons,
+            extracted_metadata=extracted_metadata,
+            technical_details=technical_details,
         )
         await notify_administrators(
             session,
