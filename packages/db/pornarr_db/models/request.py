@@ -49,6 +49,9 @@ class Request(TimestampMixin, Base):
     search_attempts: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default="0"
     )
+    download_retry_attempts: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
     next_search_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     search_expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

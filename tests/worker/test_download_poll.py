@@ -320,16 +320,23 @@ async def test_poll_records_failure_without_collapsing_a_stalled_job(session: As
     async def enqueue_import(_: DownloadJob) -> None:
         pytest.fail("failed and stalled jobs must not be imported")
 
+    handled: list[DownloadJob] = []
+
+    async def handle_failure(job: DownloadJob) -> None:
+        handled.append(job)
+
     await poll_downloads(
         session,
         adapters={"adapter": adapter},
         publish=publish,
         enqueue_import=enqueue_import,
+        handle_failure=handle_failure,
     )
     await session.commit()
 
     assert (failed.status, failed.error) == ("failed", "client error")
     assert stalled.status == "stalled"
+    assert handled == [failed]
     assert events == [
         ("download.status", {"job_id": str(failed.id), "status": "failed"}),
         ("download.status", {"job_id": str(stalled.id), "status": "stalled"}),
