@@ -1681,7 +1681,7 @@
       "RequestCreate": {
         "properties": {
           "priority": {
-            "default": 50,
+            "default": 80,
             "minimum": 0.0,
             "title": "Priority",
             "type": "integer"
@@ -1751,6 +1751,10 @@
             "title": "Id",
             "type": "string"
           },
+          "is_automatic": {
+            "title": "Is Automatic",
+            "type": "boolean"
+          },
           "priority": {
             "title": "Priority",
             "type": "integer"
@@ -1786,6 +1790,7 @@
           "selected_release_guid",
           "status",
           "priority",
+          "is_automatic",
           "history"
         ],
         "title": "RequestResponse",

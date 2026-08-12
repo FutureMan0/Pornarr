@@ -99,6 +99,7 @@ async def test_automation_creates_a_low_priority_request_and_audits_the_decision
     audit = await session.scalar(select(AuditLog))
     assert request is not None
     assert request.priority == 40
+    assert request.is_automatic is True
     assert request.selected_release_guid == "release-1"
     assert usage is not None
     assert usage.downloaded_bytes == 0
