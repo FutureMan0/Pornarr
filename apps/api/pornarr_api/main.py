@@ -25,6 +25,7 @@ from pornarr_api.routers.admin_download_clients import router as admin_download_
 from pornarr_api.routers.admin_indexers import router as admin_indexers_router
 from pornarr_api.routers.admin_library import router as admin_library_router
 from pornarr_api.routers.admin_oidc import router as admin_oidc_router
+from pornarr_api.routers.admin_performance import router as admin_performance_router
 from pornarr_api.routers.admin_settings import router as admin_settings_router
 from pornarr_api.routers.auth import router as auth_router
 from pornarr_api.routers.auth_oidc import router as auth_oidc_router
@@ -71,6 +72,7 @@ api_router.include_router(account_event_router)
 api_router.include_router(admin_download_clients_router)
 api_router.include_router(account_storage_router)
 api_router.include_router(admin_oidc_router)
+api_router.include_router(admin_performance_router)
 api_router.include_router(admin_audit_router)
 api_router.include_router(admin_indexers_router)
 api_router.include_router(admin_library_router)

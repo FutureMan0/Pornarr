@@ -332,6 +332,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/performance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Performance Inputs
+         * @description Show both measured and unknown inputs so estimate confidence is explainable.
+         */
+        get: operations["admin_list_performance_inputs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/settings": {
         parameters: {
             query?: never;
@@ -1515,6 +1535,21 @@ export interface components {
             /** Provider Name */
             provider_name: string;
         };
+        /** PerformanceInputResponse */
+        PerformanceInputResponse: {
+            metric: components["schemas"]["PerformanceMetric"];
+            /** Sample Count */
+            sample_count: number;
+            /** Scope */
+            scope: string | null;
+            /** Value */
+            value: number | null;
+        };
+        /**
+         * PerformanceMetric
+         * @enum {string}
+         */
+        PerformanceMetric: "download_speed" | "post_processing_seconds_per_gib" | "import_seconds_per_gib" | "disk_write_speed";
         /** PlaybackInfoResponse */
         PlaybackInfoResponse: {
             /** Direct Play */
@@ -2699,6 +2734,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_performance_inputs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerformanceInputResponse"][];
                 };
             };
         };
