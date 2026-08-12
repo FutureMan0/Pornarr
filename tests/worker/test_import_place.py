@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from pornarr_worker.jobs import import_place
-from pornarr_worker.jobs.import_place import PlacementMethod, place_file
+from pornarr_core import library_placement
+from pornarr_core.library_placement import PlacementMethod, place_file
 
 
 def test_place_file_hardlinks_on_the_same_filesystem(tmp_path: Path) -> None:
@@ -46,8 +46,8 @@ def test_cross_device_link_copies_and_warns_only_once(
     def cross_device_link(_: Path, __: Path) -> None:
         raise OSError(errno.EXDEV, "cross-device link")
 
-    monkeypatch.setattr(import_place.os, "link", cross_device_link)
-    monkeypatch.setattr(import_place, "_copy_fallback_warned", False)
+    monkeypatch.setattr(library_placement.os, "link", cross_device_link)
+    monkeypatch.setattr(library_placement, "_copy_fallback_warned", False)
     first = tmp_path / "first.mkv"
     second = tmp_path / "second.mkv"
     first.write_bytes(b"first")
@@ -73,7 +73,7 @@ def test_failed_placement_removes_the_reserved_destination(
     def failed_link(_: Path, __: Path) -> None:
         raise OSError(errno.EIO, "disk error")
 
-    monkeypatch.setattr(import_place.os, "link", failed_link)
+    monkeypatch.setattr(library_placement.os, "link", failed_link)
 
     with pytest.raises(OSError, match="disk error"):
         place_file(source, tmp_path / "library", "Studio", "Title", "2024-01-01")

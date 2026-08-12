@@ -21,3 +21,5 @@ class QuarantineItem(TimestampMixin, Base):
     original_path: Mapped[str] = mapped_column(String(1024), nullable=False)
     quarantine_path: Mapped[str] = mapped_column(String(1024), unique=True, nullable=False)
     reasons: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
+    extracted_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    technical_details: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
