@@ -61,6 +61,16 @@ def test_valid_environment_produces_settings(monkeypatch: pytest.MonkeyPatch) ->
     assert settings.default_auto_downloads_enabled is False
     assert settings.min_free_disk_percent == 15
     assert settings.oidc_allow_private_issuers is False
+    assert settings.rss_sync_interval_minutes == 15
+
+
+def test_rss_sync_interval_must_divide_an_hour(monkeypatch: pytest.MonkeyPatch) -> None:
+    for key, value in VALID_ENVIRONMENT.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setenv("RSS_SYNC_INTERVAL_MINUTES", "7")
+
+    with pytest.raises(ConfigurationError, match="RSS_SYNC_INTERVAL_MINUTES must divide 60"):
+        load_settings()
 
 
 def test_private_oidc_issuers_require_an_explicit_opt_in(monkeypatch: pytest.MonkeyPatch) -> None:

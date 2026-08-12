@@ -26,6 +26,7 @@ from pornarr_worker.jobs.events import PRUNE_USER_EVENTS_JOB
 from pornarr_worker.jobs.profile import REFRESH_INTEREST_PROFILES_JOB
 from pornarr_worker.jobs.recommendation import REFRESH_RECOMMENDATIONS_JOB
 from pornarr_worker.jobs.request_search import REQUEST_SEARCH_DISPATCH_JOB, REQUEST_SEARCH_JOB
+from pornarr_worker.jobs.rss_sync import RSS_SYNC_DISPATCH_JOB, RSS_SYNC_JOB
 from pornarr_worker.jobs.scan import SCAN_JOB
 from pornarr_worker.jobs.storage import REFRESH_STORAGE_JOB
 from pornarr_worker.search import RELEASE_CACHE_CLEANUP_JOB, SEARCH_INDEXERS_JOB
@@ -57,6 +58,7 @@ class WorkerSettings:
         REFRESH_INTEREST_PROFILES_JOB,
         REFRESH_RECOMMENDATIONS_JOB,
         REQUEST_SEARCH_DISPATCH_JOB,
+        RSS_SYNC_DISPATCH_JOB,
     ]
     queue_name: ClassVar = DEFAULT_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
@@ -96,7 +98,12 @@ class TranscodeWorkerSettings:
 class IndexerWorkerSettings:
     """Worker dedicated to indexer and feed work."""
 
-    functions: ClassVar = [SEARCH_INDEXERS_JOB, RELEASE_CACHE_CLEANUP_JOB, REQUEST_SEARCH_JOB]
+    functions: ClassVar = [
+        SEARCH_INDEXERS_JOB,
+        RELEASE_CACHE_CLEANUP_JOB,
+        REQUEST_SEARCH_JOB,
+        RSS_SYNC_JOB,
+    ]
     queue_name: ClassVar = INDEXER_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
     job_timeout: ClassVar = JOB_TIMEOUT_SECONDS
@@ -172,6 +179,12 @@ class SchedulerSettings:
             name=REQUEST_SEARCH_DISPATCH_JOB.name,
             minute=set(range(0, 60)),
             run_at_startup=True,
+            max_tries=JOB_MAX_TRIES,
+        ),
+        cron(
+            RSS_SYNC_DISPATCH_JOB.coroutine,
+            name=RSS_SYNC_DISPATCH_JOB.name,
+            minute=set(range(0, 60, get_settings().rss_sync_interval_minutes)),
             max_tries=JOB_MAX_TRIES,
         ),
     ]

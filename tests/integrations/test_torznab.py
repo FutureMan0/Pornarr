@@ -74,3 +74,21 @@ async def test_authentication_response_is_not_classified_as_transient(monkeypatc
 
     assert error.value.failure is IndexerFailure.AUTHENTICATION
     assert str(error.value) == "The Torznab authentication failed."
+
+
+async def test_rss_request_has_no_search_term() -> None:
+    class RecordedAdapter(TorznabAdapter):
+        def __init__(self) -> None:
+            self.params: dict[str, str] | None = None
+
+        async def _request(self, base_url: str, api_key: str, params: dict[str, str]) -> str:
+            self.params = params
+            return (
+                "<rss><channel><item><title>Example</title><guid>one</guid></item></channel></rss>"
+            )
+
+    adapter = RecordedAdapter()
+    releases = await adapter.rss(base_url="https://indexer.example/api", api_key="secret")
+
+    assert releases[0].guid == "one"
+    assert adapter.params == {"t": "search"}

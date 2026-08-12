@@ -30,6 +30,7 @@ class Indexer(TimestampMixin, Base):
     health_reason: Mapped[str | None] = mapped_column(String(32), nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     last_tested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_rss_guid: Mapped[str | None] = mapped_column(String(1024), nullable=True)
 
 
 class IndexerStats(TimestampMixin, Base):
