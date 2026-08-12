@@ -33,6 +33,7 @@ from pornarr_worker.jobs.request_search import REQUEST_SEARCH_DISPATCH_JOB, REQU
 from pornarr_worker.jobs.rss_sync import RSS_SYNC_DISPATCH_JOB, RSS_SYNC_JOB
 from pornarr_worker.jobs.scan import SCAN_JOB
 from pornarr_worker.jobs.storage import REFRESH_STORAGE_JOB
+from pornarr_worker.jobs.upgrade import UPGRADE_MEDIA_FILE_JOB
 from pornarr_worker.search import RELEASE_CACHE_CLEANUP_JOB, SEARCH_INDEXERS_JOB
 from pornarr_worker.sprites import SPRITE_JOB
 
@@ -79,7 +80,12 @@ class WorkerSettings:
 class ImportWorkerSettings:
     """Worker dedicated to slow import and filesystem work."""
 
-    functions: ClassVar = [*WorkerSettings.functions, SCAN_JOB, QUARANTINE_JOB]
+    functions: ClassVar = [
+        *WorkerSettings.functions,
+        SCAN_JOB,
+        QUARANTINE_JOB,
+        UPGRADE_MEDIA_FILE_JOB,
+    ]
     queue_name: ClassVar = IMPORT_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
     job_timeout: ClassVar = JOB_TIMEOUT_SECONDS
