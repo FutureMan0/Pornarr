@@ -1682,6 +1682,7 @@
         "properties": {
           "priority": {
             "default": 80,
+            "maximum": 80.0,
             "minimum": 0.0,
             "title": "Priority",
             "type": "integer"
@@ -1726,6 +1727,7 @@
       "RequestPriorityWrite": {
         "properties": {
           "priority": {
+            "maximum": 100.0,
             "minimum": 0.0,
             "title": "Priority",
             "type": "integer"

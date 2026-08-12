@@ -168,7 +168,7 @@ async def request_search(context: dict[str, Any], request_id: str, attempts: int
             url_base=client.url_base,
             credentials=client.credentials,
             category=client.category,
-            priority=client.priority,
+            priority=request.priority,
             magnet_url=release.magnet_url,
             info_hash=release.info_hash,
             download_url=release.download_url,

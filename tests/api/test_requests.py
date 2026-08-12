@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import hash_password
+from pornarr_db.models.audit import AuditLog
 from pornarr_db.models.download import DownloadJob
 from pornarr_db.models.download_client import DownloadClient
 from pornarr_db.models.playback import UserEvent
@@ -202,6 +203,56 @@ async def test_users_can_change_priority_and_retry_a_failed_request(app, client)
     assert retried.status_code == 200
     assert retried.json()["status"] == "searching"
     assert [item["status"] for item in retried.json()["history"]] == ["failed", "searching"]
+
+
+async def test_priority_is_ordered_capped_for_users_and_audited_for_admins(app, client) -> None:
+    owner = await create_user(app)
+    admin = await create_user(app, username="admin", role=UserRole.ADMIN)
+    await login(client, owner.username, "correct horse battery staple")
+    manual = await client.post(
+        "/api/requests",
+        json={"query": "manual", "priority": 80},
+        headers=csrf_headers(client),
+    )
+    background = await client.post(
+        "/api/requests",
+        json={"query": "background", "priority": 20},
+        headers=csrf_headers(client),
+    )
+    rejected_creation = await client.post(
+        "/api/requests",
+        json={"query": "too high", "priority": 100},
+        headers=csrf_headers(client),
+    )
+    rejected_override = await client.patch(
+        f"/api/requests/{background.json()['id']}/priority",
+        json={"priority": 100},
+        headers=csrf_headers(client),
+    )
+    ordered = await client.get("/api/requests")
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as admin_client:
+        await login(admin_client, admin.username, "correct horse battery staple")
+        override = await admin_client.patch(
+            f"/api/requests/{background.json()['id']}/priority",
+            json={"priority": 100},
+            headers=csrf_headers(admin_client),
+        )
+
+    async with AsyncSession(app.state.engine) as session:
+        audit = await session.scalar(select(AuditLog))
+
+    assert manual.status_code == background.status_code == 201
+    assert rejected_creation.status_code == 422
+    assert rejected_override.status_code == 403
+    assert [item["id"] for item in ordered.json()] == [manual.json()["id"], background.json()["id"]]
+    assert override.json()["priority"] == 100
+    assert audit is not None
+    assert audit.action == "request.priority.overridden"
+    assert audit.actor_id == admin.id
+    assert audit.context == {"previous_priority": 20, "priority": 100}
 
 
 class RecordingCancellationAdapter:

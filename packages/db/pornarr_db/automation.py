@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pornarr_core.priorities import RECOMMENDATION_REQUEST_PRIORITY
 from pornarr_db.audit import write_audit
 from pornarr_db.models.automation import AutomationRule
 from pornarr_db.models.download import DownloadHistory, DownloadJob
@@ -107,7 +108,7 @@ class AutomationDecision:
 async def execute_automation(
     session: AsyncSession, candidate: AutomationCandidate, settings: RuntimeSettings
 ) -> AutomationDecision:
-    """Fail closed, reserve a user's limits, and create a priority-40 request.
+    """Fail closed, reserve a user's limits, and create a recommendation request.
 
     Locking the per-user rule serializes concurrent evaluations for that user.
     The daily counter is therefore reserved in the same transaction as the
@@ -162,7 +163,7 @@ async def execute_automation(
         query=candidate.query,
         selected_release_guid=candidate.release_guid,
         status=RequestStatus.QUEUED,
-        priority=40,
+        priority=RECOMMENDATION_REQUEST_PRIORITY,
         is_automatic=True,
     )
     session.add(request)

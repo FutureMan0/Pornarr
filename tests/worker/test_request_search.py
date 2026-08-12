@@ -63,6 +63,17 @@ class RecordingTorrentAdapter:
         self.magnets.append(magnet)
 
 
+class RecordingUsenetAdapter:
+    def __init__(self) -> None:
+        self.priorities: list[int] = []
+
+    async def add_url(self, **kwargs: object) -> str:
+        priority = kwargs["priority"]
+        assert isinstance(priority, int)
+        self.priorities.append(priority)
+        return "usenet-job"
+
+
 def _profile() -> QualityProfile:
     quality = QualityDefinition(
         name="WEB 1080p",
@@ -242,3 +253,77 @@ async def test_request_search_grabs_a_later_quality_candidate(
     assert request.selected_release_guid == "release-1"
     assert adapter.magnets == ["magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567"]
     assert len(list(await session.scalars(select(DownloadJob)))) == 1
+
+
+async def test_request_search_submits_the_request_priority_to_usenet(
+    session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    user = User(username="alice", password_hash="hash")
+    session.add(user)
+    await session.flush()
+    request = Request(
+        user_id=user.id,
+        query="Example",
+        status=RequestStatus.SEARCHING,
+        priority=80,
+        next_search_at=datetime.now(UTC),
+        search_expires_at=datetime.now(UTC) + timedelta(days=1),
+    )
+    indexer = Indexer(
+        name="Indexer",
+        protocol="usenet",
+        implementation="newznab",
+        base_url="https://indexer.example",
+        api_key="secret",
+    )
+    client = DownloadClient(
+        name="Usenet",
+        protocol="usenet",
+        implementation="sabnzbd",
+        host="client.example",
+        port=8080,
+        credentials="secret",
+        priority=1,
+        health="healthy",
+    )
+    session.add_all((request, indexer, client, _profile()))
+    await session.flush()
+    session.add(IndexerStats(indexer_id=indexer.id))
+    session.add(
+        ReleaseCache(
+            indexer_id=indexer.id,
+            guid="release-1",
+            title="Example WEB 1080p",
+            normalized_title="example web 1080p",
+            details_url=None,
+            download_url="https://indexer.example/download/release-1",
+            published_at=None,
+            size=100,
+            categories=[],
+            groups=[],
+            raw_payload={},
+            expires_at=datetime.now(UTC) + timedelta(days=1),
+        )
+    )
+    await session.flush()
+    adapter = RecordingUsenetAdapter()
+
+    @asynccontextmanager
+    async def scope():
+        yield session
+
+    async def configured_targets(_: object) -> list[object]:
+        return []
+
+    async def run_search(_: object, **__: object) -> None:
+        return None
+
+    monkeypatch.setattr(request_search_job, "session_scope", scope)
+    monkeypatch.setattr(request_search_job, "configured_targets", configured_targets)
+    monkeypatch.setattr(request_search_job, "run_search", run_search)
+    monkeypatch.setattr(request_search_job, "SUBMISSION_ADAPTERS", {"sabnzbd": adapter})
+
+    assert (
+        await request_search_job.request_search({"redis": object()}, str(request.id), 0) == "queued"
+    )
+    assert adapter.priorities == [80]
