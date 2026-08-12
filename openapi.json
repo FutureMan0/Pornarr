@@ -1348,6 +1348,57 @@
         "title": "OidcIdentityResponse",
         "type": "object"
       },
+      "PerformanceInputResponse": {
+        "properties": {
+          "metric": {
+            "$ref": "#/components/schemas/PerformanceMetric"
+          },
+          "sample_count": {
+            "title": "Sample Count",
+            "type": "integer"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "metric",
+          "scope",
+          "value",
+          "sample_count"
+        ],
+        "title": "PerformanceInputResponse",
+        "type": "object"
+      },
+      "PerformanceMetric": {
+        "enum": [
+          "download_speed",
+          "post_processing_seconds_per_gib",
+          "import_seconds_per_gib",
+          "disk_write_speed"
+        ],
+        "title": "PerformanceMetric",
+        "type": "string"
+      },
       "PlaybackInfoResponse": {
         "properties": {
           "direct_play": {
@@ -3784,6 +3835,32 @@
           }
         },
         "summary": "Test Provider",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/performance": {
+      "get": {
+        "description": "Show both measured and unknown inputs so estimate confidence is explainable.",
+        "operationId": "admin_list_performance_inputs",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PerformanceInputResponse"
+                  },
+                  "title": "Response Admin List Performance Inputs",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Performance Inputs",
         "tags": [
           "admin"
         ]
