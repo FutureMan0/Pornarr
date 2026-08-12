@@ -48,11 +48,13 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "dispatch_due_request_searches",
         "dispatch_rss_sync",
         "dispatch_backlog_searches",
+        "dispatch_perceptual_hashes",
     ]
     assert [job.name for job in settings.TranscodeWorkerSettings.functions] == [
         "generate_preview_sprite_job",
         "generate_artwork_job",
         "regenerate_library_artwork_job",
+        "generate_perceptual_hash_job",
     ]
     assert [job.name for job in settings.IndexerWorkerSettings.functions] == [
         "search_indexers",
@@ -75,6 +77,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "dispatch_due_request_searches",
         "dispatch_rss_sync",
         "dispatch_backlog_searches",
+        "dispatch_perceptual_hashes",
         "scan",
     ]
     required_arq_options = {
@@ -92,6 +95,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "heartbeat",
         "cleanup_transcodes",
         "download_poll",
+        "dispatch_perceptual_hashes",
         "refresh_storage",
         "prune_user_events_job",
         "refresh_interest_profiles_job",

@@ -25,6 +25,7 @@ from pornarr_worker.jobs.backlog_search import BACKLOG_SEARCH_DISPATCH_JOB, BACK
 from pornarr_worker.jobs.download_poll import DOWNLOAD_POLL_JOB
 from pornarr_worker.jobs.events import PRUNE_USER_EVENTS_JOB
 from pornarr_worker.jobs.monitor_match import MONITOR_MATCH_JOB
+from pornarr_worker.jobs.phash import PERCEPTUAL_HASH_DISPATCH_JOB, PERCEPTUAL_HASH_JOB
 from pornarr_worker.jobs.profile import REFRESH_INTEREST_PROFILES_JOB
 from pornarr_worker.jobs.recommendation import REFRESH_RECOMMENDATIONS_JOB
 from pornarr_worker.jobs.request_search import REQUEST_SEARCH_DISPATCH_JOB, REQUEST_SEARCH_JOB
@@ -62,6 +63,7 @@ class WorkerSettings:
         REQUEST_SEARCH_DISPATCH_JOB,
         RSS_SYNC_DISPATCH_JOB,
         BACKLOG_SEARCH_DISPATCH_JOB,
+        PERCEPTUAL_HASH_DISPATCH_JOB,
     ]
     queue_name: ClassVar = DEFAULT_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
@@ -88,7 +90,7 @@ class ImportWorkerSettings:
 class TranscodeWorkerSettings:
     """Worker dedicated to FFmpeg work so it cannot starve other queues."""
 
-    functions: ClassVar = [SPRITE_JOB, ARTWORK_JOB, LIBRARY_ARTWORK_JOB]
+    functions: ClassVar = [SPRITE_JOB, ARTWORK_JOB, LIBRARY_ARTWORK_JOB, PERCEPTUAL_HASH_JOB]
     queue_name: ClassVar = TRANSCODE_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
     job_timeout: ClassVar = JOB_TIMEOUT_SECONDS
@@ -149,6 +151,13 @@ class SchedulerSettings:
             name=DOWNLOAD_POLL_JOB.name,
             second=set(range(0, 60, 5)),
             run_at_startup=True,
+            max_tries=JOB_MAX_TRIES,
+        ),
+        cron(
+            PERCEPTUAL_HASH_DISPATCH_JOB.coroutine,
+            name=PERCEPTUAL_HASH_DISPATCH_JOB.name,
+            hour=4,
+            minute=0,
             max_tries=JOB_MAX_TRIES,
         ),
         cron(
