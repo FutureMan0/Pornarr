@@ -30,6 +30,11 @@ profile, not an upgrade, or already past cutoff all end the import here with a r
 only ever tightening the global one. The outcome is allow, quarantine or reject, and
 every firing rule is written to the audit log.
 
+A quarantined outcome stops the import before placement. The source moves under
+`/data/quarantine/` with every matching rule or threshold recorded for review; it is
+never added to the library or served for playback. The configured retention age
+removes expired quarantine files and their review records daily.
+
 **9. Placement.** A hardlink into
 `/data/library/{studio}/{year}/{normalized_title}/{quality}/{normalized_title}{extension}`.
 This is the default token layout; every component is sanitised, and installations may

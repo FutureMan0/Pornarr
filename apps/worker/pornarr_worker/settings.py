@@ -27,6 +27,7 @@ from pornarr_worker.jobs.events import PRUNE_USER_EVENTS_JOB
 from pornarr_worker.jobs.monitor_match import MONITOR_MATCH_JOB
 from pornarr_worker.jobs.phash import PERCEPTUAL_HASH_DISPATCH_JOB, PERCEPTUAL_HASH_JOB
 from pornarr_worker.jobs.profile import REFRESH_INTEREST_PROFILES_JOB
+from pornarr_worker.jobs.quarantine import PRUNE_QUARANTINE_JOB, QUARANTINE_JOB
 from pornarr_worker.jobs.recommendation import REFRESH_RECOMMENDATIONS_JOB
 from pornarr_worker.jobs.request_search import REQUEST_SEARCH_DISPATCH_JOB, REQUEST_SEARCH_JOB
 from pornarr_worker.jobs.rss_sync import RSS_SYNC_DISPATCH_JOB, RSS_SYNC_JOB
@@ -58,6 +59,7 @@ class WorkerSettings:
         AUTOMATION_EXECUTION_JOB,
         REFRESH_STORAGE_JOB,
         PRUNE_USER_EVENTS_JOB,
+        PRUNE_QUARANTINE_JOB,
         REFRESH_INTEREST_PROFILES_JOB,
         REFRESH_RECOMMENDATIONS_JOB,
         REQUEST_SEARCH_DISPATCH_JOB,
@@ -77,7 +79,7 @@ class WorkerSettings:
 class ImportWorkerSettings:
     """Worker dedicated to slow import and filesystem work."""
 
-    functions: ClassVar = [*WorkerSettings.functions, SCAN_JOB]
+    functions: ClassVar = [*WorkerSettings.functions, SCAN_JOB, QUARANTINE_JOB]
     queue_name: ClassVar = IMPORT_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
     job_timeout: ClassVar = JOB_TIMEOUT_SECONDS
@@ -172,6 +174,13 @@ class SchedulerSettings:
             name=PRUNE_USER_EVENTS_JOB.name,
             hour=3,
             minute=30,
+            max_tries=JOB_MAX_TRIES,
+        ),
+        cron(
+            PRUNE_QUARANTINE_JOB.coroutine,
+            name=PRUNE_QUARANTINE_JOB.name,
+            hour=3,
+            minute=45,
             max_tries=JOB_MAX_TRIES,
         ),
         cron(

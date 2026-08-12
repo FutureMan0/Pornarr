@@ -43,6 +43,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "automation_execute",
         "refresh_storage",
         "prune_user_events_job",
+        "prune_quarantine_job",
         "refresh_interest_profiles_job",
         "refresh_recommendations_job",
         "dispatch_due_request_searches",
@@ -72,6 +73,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "automation_execute",
         "refresh_storage",
         "prune_user_events_job",
+        "prune_quarantine_job",
         "refresh_interest_profiles_job",
         "refresh_recommendations_job",
         "dispatch_due_request_searches",
@@ -79,6 +81,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "dispatch_backlog_searches",
         "dispatch_perceptual_hashes",
         "scan",
+        "quarantine_job",
     ]
     required_arq_options = {
         "functions",
@@ -98,6 +101,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "dispatch_perceptual_hashes",
         "refresh_storage",
         "prune_user_events_job",
+        "prune_quarantine_job",
         "refresh_interest_profiles_job",
         "refresh_recommendations_job",
         "dispatch_due_request_searches",

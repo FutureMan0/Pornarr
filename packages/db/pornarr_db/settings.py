@@ -19,6 +19,7 @@ _RUNTIME_SETTING_FIELDS = frozenset(
         "playback_completion_threshold_percent",
         "audit_retention_days",
         "user_event_retention_days",
+        "quarantine_retention_days",
         "min_free_disk_percent",
         "default_daily_download_limit_gb",
         "default_max_auto_jobs",
@@ -54,6 +55,7 @@ class RuntimeSettings(BaseModel):
     playback_completion_threshold_percent: int
     audit_retention_days: int | None
     user_event_retention_days: int | None
+    quarantine_retention_days: int
     min_free_disk_percent: int
     default_daily_download_limit_gb: int
     default_max_auto_jobs: int
@@ -95,6 +97,7 @@ class RuntimeSettingsWrite(BaseModel):
     playback_completion_threshold_percent: int | None = Field(default=None, ge=1, le=100)
     audit_retention_days: int | None = Field(default=None, ge=1)
     user_event_retention_days: int | None = Field(default=None, ge=1)
+    quarantine_retention_days: int | None = Field(default=None, ge=1)
     min_free_disk_percent: int | None = Field(default=None, ge=0, le=99)
     default_daily_download_limit_gb: int | None = Field(default=None, ge=0)
     default_max_auto_jobs: int | None = Field(default=None, ge=0)
@@ -141,6 +144,7 @@ class RuntimeSettingsWrite(BaseModel):
         "recommendation_recency_weight",
         "recommendation_popularity_weight",
         "request_search_max_age_days",
+        "quarantine_retention_days",
         "log_level",
         "metrics_enabled",
     )

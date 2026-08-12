@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     playback_completion_threshold_percent: int = Field(default=90, ge=1, le=100)
     audit_retention_days: int | None = Field(default=None, ge=1)
     user_event_retention_days: int | None = Field(default=365, ge=1)
+    quarantine_retention_days: int = Field(default=30, ge=1)
 
     min_free_disk_percent: int = Field(default=15, ge=0, le=99)
     default_daily_download_limit_gb: int = Field(default=10, ge=0)

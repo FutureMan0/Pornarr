@@ -2221,6 +2221,10 @@
             "title": "Playback Completion Threshold Percent",
             "type": "integer"
           },
+          "quarantine_retention_days": {
+            "title": "Quarantine Retention Days",
+            "type": "integer"
+          },
           "recommendation_performer_weight": {
             "title": "Recommendation Performer Weight",
             "type": "number"
@@ -2294,6 +2298,7 @@
           "playback_completion_threshold_percent",
           "audit_retention_days",
           "user_event_retention_days",
+          "quarantine_retention_days",
           "min_free_disk_percent",
           "default_daily_download_limit_gb",
           "default_max_auto_jobs",
@@ -2527,6 +2532,18 @@
               }
             ],
             "title": "Playback Completion Threshold Percent"
+          },
+          "quarantine_retention_days": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quarantine Retention Days"
           },
           "recommendation_performer_weight": {
             "anyOf": [

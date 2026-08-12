@@ -33,6 +33,7 @@ async def test_admin_changes_a_runtime_limit_without_restarting(app, client) -> 
     assert defaults.json()["default_max_auto_downloads_per_day"] == 3
     assert defaults.json()["auto_download_recommendation_weight"] == 0.3
     assert defaults.json()["user_event_retention_days"] == 365
+    assert defaults.json()["quarantine_retention_days"] == 30
     assert defaults.json()["recommendation_tag_weight"] == 0.3
 
     updated = await client.patch(
@@ -41,6 +42,7 @@ async def test_admin_changes_a_runtime_limit_without_restarting(app, client) -> 
             "playback_completion_threshold_percent": 75,
             "auto_download_recommendation_weight": 0.5,
             "user_event_retention_days": 30,
+            "quarantine_retention_days": 14,
             "recommendation_tag_weight": 0.5,
         },
         headers=csrf_headers(client),
@@ -50,12 +52,14 @@ async def test_admin_changes_a_runtime_limit_without_restarting(app, client) -> 
     assert updated.json()["playback_completion_threshold_percent"] == 75
     assert updated.json()["auto_download_recommendation_weight"] == 0.5
     assert updated.json()["user_event_retention_days"] == 30
+    assert updated.json()["quarantine_retention_days"] == 14
     assert updated.json()["recommendation_tag_weight"] == 0.5
     assert app.state.redis.events[-1]["type"] == "settings.changed"
     assert json.loads(app.state.redis.events[-1]["data"]) == {
         "keys": [
             "auto_download_recommendation_weight",
             "playback_completion_threshold_percent",
+            "quarantine_retention_days",
             "recommendation_tag_weight",
             "user_event_retention_days",
         ]
