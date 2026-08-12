@@ -28,7 +28,7 @@ from pornarr_db.models.filters import (
     FilterRuleKind,
 )
 from pornarr_db.models.indexer import Indexer, IndexerStats
-from pornarr_db.models.media import Media, MediaFile, MediaFileHistory
+from pornarr_db.models.media import DuplicateCandidate, Media, MediaFile, MediaFileHistory
 from pornarr_db.models.monitor import Monitor, MonitorKind
 from pornarr_db.models.notification import Notification, NotificationKind, NotificationPreference
 from pornarr_db.models.oidc import OidcIdentity, OidcProvider
@@ -58,6 +58,7 @@ __all__ = [
     "DownloadClient",
     "DownloadHistory",
     "DownloadJob",
+    "DuplicateCandidate",
     "FilterAction",
     "FilterProfileScope",
     "FilterRuleKind",
