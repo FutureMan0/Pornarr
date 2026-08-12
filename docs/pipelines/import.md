@@ -31,9 +31,11 @@ only ever tightening the global one. The outcome is allow, quarantine or reject,
 every firing rule is written to the audit log.
 
 **9. Placement.** A hardlink into
-`/data/library/{studio}/{year}/{normalized_title}/{quality}/`. If the link fails
-because the paths are on different filesystems, the file is copied and a warning is
-raised. Usenet files may be moved instead, since nothing is seeding.
+`/data/library/{studio}/{year}/{normalized_title}/{quality}/{normalized_title}{extension}`.
+This is the default token layout; every component is sanitised, and installations may
+reorder the `studio`, `year`, `title`, and `quality` tokens. If the link fails because
+the paths are on different filesystems, the file is copied and a warning is raised.
+Usenet files may be moved instead, since nothing is seeding.
 
 **10. Artwork.** Poster, preview frames and a hover sprite with its VTT index.
 
