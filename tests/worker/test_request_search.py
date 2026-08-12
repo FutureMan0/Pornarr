@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from pornarr_db.base import Base
-from pornarr_db.models.download import DownloadJob
+from pornarr_db.models.download import BlockedRelease, DownloadJob
 from pornarr_db.models.download_client import DownloadClient
 from pornarr_db.models.indexer import Indexer, IndexerStats
 from pornarr_db.models.quality import QualityDefinition, QualityProfile, QualityProfileItem
@@ -163,6 +163,19 @@ async def test_best_release_uses_the_default_quality_decision_not_indexer_order(
 
     assert selected is not None
     assert selected.guid == "high"
+    session.add(
+        BlockedRelease(
+            release_guid="high",
+            blocked_until=datetime.now(UTC) + timedelta(minutes=15),
+            reason="download failed",
+        )
+    )
+    await session.flush()
+
+    alternate = await _best_release(session, "Example")
+
+    assert alternate is not None
+    assert alternate.guid == "low"
 
 
 async def test_monitoring_can_end_as_an_explicit_not_found_request(session: AsyncSession) -> None:

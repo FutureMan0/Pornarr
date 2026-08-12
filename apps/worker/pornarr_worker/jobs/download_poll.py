@@ -17,11 +17,13 @@ from pornarr_integrations.qbittorrent import QbittorrentAdapter
 from pornarr_integrations.sabnzbd import SabnzbdAdapter
 from pornarr_shared.events import publish_event
 from pornarr_shared.jobs import IMPORT_QUEUE, enqueue_once, job
+from pornarr_worker.jobs.download_failure import handle_download_failure
 
 IMPORT_DOWNLOAD_JOB = "import_download"
 TERMINAL_STATUSES = frozenset({"completed", "failed", "removed"})
 EventPublisher = Callable[[str, dict[str, Any]], Awaitable[None]]
 ImportEnqueuer = Callable[[DownloadJob], Awaitable[None]]
+FailureHandler = Callable[[DownloadJob], Awaitable[None]]
 
 DOWNLOAD_CLIENT_ADAPTERS: Mapping[str, DownloadClientPollingAdapter] = {
     "qbittorrent": QbittorrentAdapter(),
@@ -35,6 +37,7 @@ async def poll_downloads(
     adapters: Mapping[str, DownloadClientPollingAdapter],
     publish: EventPublisher,
     enqueue_import: ImportEnqueuer,
+    handle_failure: FailureHandler | None = None,
 ) -> None:
     """Synchronise active jobs using one batched poll per configured client."""
     clients = list(
@@ -92,6 +95,7 @@ async def poll_downloads(
                     error="Job no longer exists in the download client.",
                     publish=publish,
                     enqueue_import=enqueue_import,
+                    handle_failure=handle_failure,
                 )
             else:
                 await _apply_poll(
@@ -100,6 +104,7 @@ async def poll_downloads(
                     polled_job,
                     publish=publish,
                     enqueue_import=enqueue_import,
+                    handle_failure=handle_failure,
                 )
 
 
@@ -126,6 +131,7 @@ async def _apply_poll(
     *,
     publish: EventPublisher,
     enqueue_import: ImportEnqueuer,
+    handle_failure: FailureHandler | None,
 ) -> None:
     progress_changed = (
         job_row.size_bytes,
@@ -149,6 +155,7 @@ async def _apply_poll(
         error=polled_job.error,
         publish=publish,
         enqueue_import=enqueue_import,
+        handle_failure=handle_failure,
     )
     if progress_changed and not status_changed:
         await publish(
@@ -171,6 +178,7 @@ async def _transition(
     error: str | None,
     publish: EventPublisher,
     enqueue_import: ImportEnqueuer,
+    handle_failure: FailureHandler | None,
 ) -> bool:
     changed = job_row.status != status
     job_row.status = status
@@ -182,6 +190,8 @@ async def _transition(
     await publish("download.status", {"job_id": str(job_row.id), "status": status})
     if status == "completed":
         await enqueue_import(job_row)
+    if status == "failed" and handle_failure is not None:
+        await handle_failure(job_row)
     return True
 
 
@@ -215,12 +225,16 @@ async def download_poll(context: dict[str, Any]) -> None:
     async def enqueue_import(job_row: DownloadJob) -> None:
         await enqueue_once(redis, IMPORT_DOWNLOAD_JOB, str(job_row.id), queue=IMPORT_QUEUE)
 
+    async def failure_handler(job_row: DownloadJob) -> None:
+        await handle_download_failure(session, redis, job_row)
+
     async with session_scope() as session:
         await poll_downloads(
             session,
             adapters=DOWNLOAD_CLIENT_ADAPTERS,
             publish=publish,
             enqueue_import=enqueue_import,
+            handle_failure=failure_handler,
         )
 
 
