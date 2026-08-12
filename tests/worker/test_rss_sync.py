@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from pornarr_integrations.indexers import IndexerCategory, Release
 from pornarr_worker.jobs import rss_sync
 from pornarr_worker.search import SearchTarget
@@ -28,6 +31,41 @@ class Adapter:
 
 def _release(guid: str) -> Release:
     return Release(guid, f"Release {guid}", None, None, None, None, ())
+
+
+def _recorded_feed() -> list[Release]:
+    fixture = Path(__file__).with_name("fixtures") / "rss-feed-duplicates.json"
+    return [_release(item["guid"]) for item in json.loads(fixture.read_text())]
+
+
+async def test_sync_deduplicates_a_recorded_rss_feed_before_matching(monkeypatch) -> None:
+    target = SearchTarget("recorded", "https://recorded", "key", Adapter(_recorded_feed()))
+    recorded: list[list[str]] = []
+    queued: list[list[str]] = []
+
+    async def configured_targets(_: object) -> list[SearchTarget]:
+        return [target]
+
+    async def record(
+        _: object, __: str, ___: str, releases, ____: object, *, last_rss_guid: str | None
+    ) -> None:
+        assert last_rss_guid == "fresh-release"
+        recorded.append([release.guid for release in releases or []])
+
+    async def enqueue(_: object, __: str, ___: str, guids: list[str], *, queue: str) -> object:
+        assert queue == "pornarr:indexer"
+        queued.append(guids)
+        return object()
+
+    monkeypatch.setattr(rss_sync, "configured_targets", configured_targets)
+    monkeypatch.setattr(rss_sync, "record_search_outcome", record)
+    monkeypatch.setattr(rss_sync, "enqueue_once", enqueue)
+
+    discovered = await rss_sync.rss_sync({"redis": object()}, cycle=1)
+
+    assert discovered == 2
+    assert recorded == [["fresh-release", "duplicate-release"]]
+    assert queued == [["fresh-release", "duplicate-release"]]
 
 
 async def test_sync_fetches_each_healthy_indexer_once_and_only_caches_new_guids(
