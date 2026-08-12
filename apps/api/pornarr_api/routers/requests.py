@@ -13,9 +13,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from pornarr_api.auth import database_session, get_current_user
+from pornarr_api.auth import ForbiddenError, database_session, get_current_user
 from pornarr_api.errors import ErrorResponse
 from pornarr_core.filters import FilterAction as CoreFilterAction
+from pornarr_core.priorities import ADMIN_REQUEST_PRIORITY, USER_REQUEST_PRIORITY
+from pornarr_db.audit import write_audit
 from pornarr_db.download_clients import route_download_client
 from pornarr_db.downloads import is_release_blocked
 from pornarr_db.events import record_user_event
@@ -112,7 +114,7 @@ class GrabSubmissionError(PornarrError):
 class RequestCreate(BaseModel):
     query: Annotated[str, Field(min_length=1, max_length=512)]
     selected_release_guid: Annotated[str | None, Field(max_length=1024)] = None
-    priority: Annotated[int, Field(ge=0)] = 80
+    priority: Annotated[int, Field(ge=0, le=USER_REQUEST_PRIORITY)] = USER_REQUEST_PRIORITY
 
     @field_validator("query")
     @classmethod
@@ -124,7 +126,7 @@ class RequestCreate(BaseModel):
 
 
 class RequestPriorityWrite(BaseModel):
-    priority: Annotated[int, Field(ge=0)]
+    priority: Annotated[int, Field(ge=0, le=ADMIN_REQUEST_PRIORITY)]
 
 
 class GrabWrite(BaseModel):
@@ -216,7 +218,9 @@ async def list_requests(
     user: CurrentUser, session: Session, status: RequestStatus | None = None
 ) -> list[RequestResponse]:
     statement = (
-        select(Request).options(selectinload(Request.history)).order_by(Request.created_at.desc())
+        select(Request)
+        .options(selectinload(Request.history))
+        .order_by(Request.priority.desc(), Request.created_at.desc())
     )
     if user.role is not UserRole.ADMIN:
         statement = statement.where(Request.user_id == user.id)
@@ -361,7 +365,7 @@ async def grab_release(
             url_base=client.url_base,
             credentials=client.credentials,
             category=client.category,
-            priority=client.priority,
+            priority=request.priority,
             magnet_url=release.magnet_url,
             info_hash=release.info_hash,
             download_url=release.download_url,
@@ -422,7 +426,18 @@ async def change_priority(
     request_id: UUID, payload: RequestPriorityWrite, user: CurrentUser, session: Session
 ) -> RequestResponse:
     request = await request_or_404(session, user, request_id)
+    if user.role is not UserRole.ADMIN and payload.priority > USER_REQUEST_PRIORITY:
+        raise ForbiddenError("Only an administrator can raise a request above user priority.")
+    previous_priority = request.priority
     request.priority = payload.priority
+    if user.role is UserRole.ADMIN:
+        write_audit(
+            session,
+            actor_id=user.id,
+            action="request.priority.overridden",
+            target=str(request.id),
+            context={"previous_priority": previous_priority, "priority": payload.priority},
+        )
     await session.flush()
     return request_response(request, await request_history(session, request.id))
 

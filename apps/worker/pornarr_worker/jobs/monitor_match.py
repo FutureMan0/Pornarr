@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from pornarr_core.filters import FilterAction
+from pornarr_core.priorities import MONITOR_REQUEST_PRIORITY
 from pornarr_core.quality import QualityProfile as CoreQualityProfile
 from pornarr_core.quality import QualityVerdict, ReleaseCandidate, decide_quality
 from pornarr_db.models.entities import Performer, Studio
@@ -25,7 +26,7 @@ from pornarr_db.release_filters import release_filter_decision
 from pornarr_db.session import session_scope
 from pornarr_shared.jobs import job
 
-AUTOMATIC_MONITOR_PRIORITY = 60
+AUTOMATIC_MONITOR_PRIORITY = MONITOR_REQUEST_PRIORITY
 EXACT_MATCH_SCORE = 100.0
 
 
