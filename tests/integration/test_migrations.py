@@ -229,6 +229,33 @@ def test_indexer_rss_marker_is_available_after_upgrade(clean_database: None) -> 
     assert marker_column == ("last_rss_guid",)
 
 
+def test_request_migration_flags_automatic_work_and_prioritizes_manual_requests(
+    clean_database: None,
+) -> None:
+    assert _alembic("upgrade", "0036").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        user_id = str(uuid4())
+        connection.execute(
+            "INSERT INTO users (id, username, password_hash) VALUES (%s, %s, %s)",
+            (user_id, "request-owner", "not-a-real-password"),
+        )
+        connection.execute(
+            "INSERT INTO requests (id, user_id, query, status, priority) VALUES (%s, %s, %s, %s, %s)",
+            (str(uuid4()), user_id, "Manual request", "searching", 50),
+        )
+        connection.commit()
+
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        request = connection.execute(
+            "SELECT priority, is_automatic FROM requests WHERE user_id = %s", (user_id,)
+        ).fetchone()
+
+    assert request == (80, False)
+
+
 def test_user_event_upgrade_preserves_completion_and_cascades_with_its_user(
     clean_database: None,
 ) -> None:

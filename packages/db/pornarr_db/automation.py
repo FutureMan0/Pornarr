@@ -163,6 +163,7 @@ async def execute_automation(
         selected_release_guid=candidate.release_guid,
         status=RequestStatus.QUEUED,
         priority=40,
+        is_automatic=True,
     )
     session.add(request)
     write_audit(

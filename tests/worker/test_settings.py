@@ -57,6 +57,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "cleanup_release_cache",
         "request_search",
         "rss_sync",
+        "monitor_match",
     ]
     assert [function.name for function in settings.ImportWorkerSettings.functions] == [
         "heartbeat",

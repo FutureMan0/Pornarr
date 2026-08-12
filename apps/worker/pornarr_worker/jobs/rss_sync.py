@@ -11,6 +11,7 @@ from pornarr_integrations.health import IndexerFailure, failure_for
 from pornarr_integrations.indexers import Release
 from pornarr_shared.config import get_settings
 from pornarr_shared.jobs import INDEXER_QUEUE, enqueue_once, job
+from pornarr_worker.jobs.monitor_match import MONITOR_MATCH_JOB
 from pornarr_worker.search import (
     INDEXER_SEARCH_TIMEOUT_SECONDS,
     SearchTarget,
@@ -75,7 +76,14 @@ async def rss_sync(context: dict[str, Any], cycle: int) -> int:
             error,
             last_rss_guid=releases[0].guid if status == "completed" and releases else None,
         )
-        if status == "completed" and releases:
+        if status == "completed" and unseen:
+            await enqueue_once(
+                redis,
+                MONITOR_MATCH_JOB.name,
+                target.id,
+                [release.guid for release in unseen],
+                queue=INDEXER_QUEUE,
+            )
             discovered += len(unseen)
     return discovered
 

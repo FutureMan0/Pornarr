@@ -42,6 +42,7 @@ async def test_sync_fetches_each_healthy_indexer_once_and_only_caches_new_guids(
         SearchTarget("unhealthy", "https://down", "key", unhealthy, "unhealthy"),
     ]
     recorded: list[tuple[str, str, list[Release] | None, str | None]] = []
+    queued: list[tuple[str, str, list[str]]] = []
 
     async def configured_targets(_: object) -> list[SearchTarget]:
         return targets
@@ -52,8 +53,13 @@ async def test_sync_fetches_each_healthy_indexer_once_and_only_caches_new_guids(
         assert error is None
         recorded.append((indexer_id, status, releases, last_rss_guid))
 
+    async def enqueue(_: object, function: str, indexer_id: str, guids: list[str], *, queue: str):
+        queued.append((function, indexer_id, guids))
+        return object()
+
     monkeypatch.setattr(rss_sync, "configured_targets", configured_targets)
     monkeypatch.setattr(rss_sync, "record_search_outcome", record)
+    monkeypatch.setattr(rss_sync, "enqueue_once", enqueue)
 
     discovered = await rss_sync.rss_sync({"redis": object()}, cycle=1)
 
@@ -67,6 +73,10 @@ async def test_sync_fetches_each_healthy_indexer_once_and_only_caches_new_guids(
         ("first", "completed", ["new"], "new"),
         ("second", "completed", ["other"], "other"),
         ("unhealthy", "unhealthy", [], None),
+    ]
+    assert queued == [
+        ("monitor_match", "first", ["new"]),
+        ("monitor_match", "second", ["other"]),
     ]
 
 

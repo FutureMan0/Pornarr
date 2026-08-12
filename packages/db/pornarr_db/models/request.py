@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, String, Uuid, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Index, Integer, String, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from pornarr_db.base import Base, TimestampMixin
@@ -42,7 +42,10 @@ class Request(TimestampMixin, Base):
     status: Mapped[RequestStatus] = mapped_column(
         Enum(RequestStatus, name="request_status", values_callable=_enum_values), nullable=False
     )
-    priority: Mapped[int] = mapped_column(Integer, nullable=False, default=50, server_default="50")
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, default=80, server_default="80")
+    is_automatic: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
     search_attempts: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default="0"
     )

@@ -9,32 +9,25 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi import Request as HttpRequest
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from pornarr_api.auth import database_session, get_current_user
 from pornarr_api.errors import ErrorResponse
-from pornarr_core.filters import ContentCandidate, evaluate_filters, resolve_rules
 from pornarr_core.filters import FilterAction as CoreFilterAction
-from pornarr_core.filters import FilterRule as CoreFilterRule
-from pornarr_core.filters import FilterRuleKind as CoreFilterRuleKind
 from pornarr_db.download_clients import route_download_client
 from pornarr_db.downloads import is_release_blocked
 from pornarr_db.events import record_user_event
 from pornarr_db.models.download import DownloadJob
 from pornarr_db.models.download_client import DownloadClient
-from pornarr_db.models.filters import (
-    ContentFilterProfile,
-    ContentFilterRule,
-    FilterProfileScope,
-)
 from pornarr_db.models.indexer import IndexerStats
 from pornarr_db.models.media import Media
 from pornarr_db.models.playback import UserEventType
 from pornarr_db.models.release import ReleaseCache
 from pornarr_db.models.request import Request, RequestHistory, RequestStatus
 from pornarr_db.models.user import User, UserRole
+from pornarr_db.release_filters import release_filter_decision
 from pornarr_db.requests import InvalidRequestTransitionError, transition_request
 from pornarr_db.settings import get_runtime_settings
 from pornarr_integrations.downloaders import DownloadClientCancellationAdapter
@@ -119,7 +112,7 @@ class GrabSubmissionError(PornarrError):
 class RequestCreate(BaseModel):
     query: Annotated[str, Field(min_length=1, max_length=512)]
     selected_release_guid: Annotated[str | None, Field(max_length=1024)] = None
-    priority: Annotated[int, Field(ge=0)] = 50
+    priority: Annotated[int, Field(ge=0)] = 80
 
     @field_validator("query")
     @classmethod
@@ -149,6 +142,7 @@ class RequestResponse(BaseModel):
     selected_release_guid: str | None
     status: RequestStatus
     priority: int
+    is_automatic: bool
     history: list[RequestHistoryResponse]
 
 
@@ -166,6 +160,7 @@ def request_response(request: Request, history: list[RequestHistory]) -> Request
         selected_release_guid=request.selected_release_guid,
         status=request.status,
         priority=request.priority,
+        is_automatic=request.is_automatic,
         history=[RequestHistoryResponse(status=item.status) for item in history],
     )
 
@@ -343,7 +338,7 @@ async def grab_release(
         raise ReleaseBlockedError("The selected release is temporarily blocked.")
     if await _library_has_release(session, release.normalized_title):
         raise ReleaseInLibraryError("The requested title is already in the library.")
-    decision = await _release_filter_decision(session, user.id, release)
+    decision = await release_filter_decision(session, user.id, release)
     if decision.action is not CoreFilterAction.ALLOW:
         raise ReleaseFilteredError("The selected release is blocked by a content filter.")
 
@@ -411,37 +406,6 @@ async def _library_has_release(session: AsyncSession, normalized_title: str) -> 
             select(Media.id).where(Media.normalized_title == normalized_title).limit(1)
         )
         is not None
-    )
-
-
-async def _release_filter_decision(session: AsyncSession, user_id: UUID, release: ReleaseCache):
-    profiles = await session.scalars(
-        select(ContentFilterProfile)
-        .options(selectinload(ContentFilterProfile.rules))
-        .where(
-            or_(
-                ContentFilterProfile.scope == FilterProfileScope.GLOBAL,
-                ContentFilterProfile.user_id == user_id,
-            )
-        )
-    )
-    global_rules: list[CoreFilterRule] = []
-    user_rules: list[CoreFilterRule] = []
-    for profile in profiles:
-        rules = global_rules if profile.scope is FilterProfileScope.GLOBAL else user_rules
-        rules.extend(_core_filter_rule(rule) for rule in profile.rules)
-    return evaluate_filters(
-        ContentCandidate(title=release.title), resolve_rules(global_rules, user_rules)
-    )
-
-
-def _core_filter_rule(rule: ContentFilterRule) -> CoreFilterRule:
-    return CoreFilterRule(
-        id=str(rule.id),
-        kind=CoreFilterRuleKind(rule.kind.value),
-        pattern=rule.pattern,
-        action=CoreFilterAction(rule.action.value),
-        enabled=rule.enabled,
     )
 
 

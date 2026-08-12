@@ -1628,7 +1628,7 @@ export interface components {
         RequestCreate: {
             /**
              * Priority
-             * @default 50
+             * @default 80
              */
             priority: number;
             /** Query */
@@ -1654,6 +1654,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Is Automatic */
+            is_automatic: boolean;
             /** Priority */
             priority: number;
             /** Query */

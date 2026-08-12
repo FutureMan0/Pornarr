@@ -58,9 +58,10 @@ async def test_users_can_create_specific_and_search_requests_then_filter_their_l
         events = list(await session.scalars(select(UserEvent).order_by(UserEvent.created_at)))
         scheduled = await session.get(Request, UUID(search.json()["id"]))
     assert [(event.event_type, event.value) for event in events] == [
-        ("request", 50),
-        ("request", 50),
+        ("request", 80),
+        ("request", 80),
     ]
+    assert specific.json()["is_automatic"] is False
     assert scheduled is not None
     assert scheduled.next_search_at is not None
     assert scheduled.search_expires_at is not None

@@ -23,6 +23,7 @@ from pornarr_worker.cleanup import cleanup_transcodes
 from pornarr_worker.jobs.automation import AUTOMATION_EXECUTION_JOB
 from pornarr_worker.jobs.download_poll import DOWNLOAD_POLL_JOB
 from pornarr_worker.jobs.events import PRUNE_USER_EVENTS_JOB
+from pornarr_worker.jobs.monitor_match import MONITOR_MATCH_JOB
 from pornarr_worker.jobs.profile import REFRESH_INTEREST_PROFILES_JOB
 from pornarr_worker.jobs.recommendation import REFRESH_RECOMMENDATIONS_JOB
 from pornarr_worker.jobs.request_search import REQUEST_SEARCH_DISPATCH_JOB, REQUEST_SEARCH_JOB
@@ -103,6 +104,7 @@ class IndexerWorkerSettings:
         RELEASE_CACHE_CLEANUP_JOB,
         REQUEST_SEARCH_JOB,
         RSS_SYNC_JOB,
+        MONITOR_MATCH_JOB,
     ]
     queue_name: ClassVar = INDEXER_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
