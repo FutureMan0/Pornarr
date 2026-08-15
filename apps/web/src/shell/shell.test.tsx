@@ -6,7 +6,7 @@
  * `useSidebarLayout` derives a named layout rather than leaving the three forms
  * to CSS: the name is the thing a test, and a reader, can hold onto.
  */
-import { cleanup, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { TEST_USER, renderApp, setViewportWidth, signedIn, useMockApi } from "../test/harness";
@@ -94,6 +94,15 @@ describe("drawer focus", () => {
 });
 
 describe("keyboard reach", () => {
+  test("opens the global search with the standard keyboard shortcut", async () => {
+    setViewportWidth(1440);
+    renderApp("/library");
+    const input = await screen.findByLabelText("Search");
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+
+    expect(document.activeElement).toBe(input);
+  });
+
   test("Tab reaches the account menu and opens it", async () => {
     setViewportWidth(1440);
     renderApp("/library");

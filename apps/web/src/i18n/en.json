@@ -118,7 +118,71 @@
   },
   "search": {
     "label": "Search",
-    "placeholder": "Search"
+    "placeholder": "Search",
+    "title": "Search",
+    "intro": "Local library matches appear first. Indexer results arrive as each source responds.",
+    "query": "Find a title",
+    "searching": "Searching…",
+    "grab": "Grab",
+    "filters": {
+      "quality": "Quality",
+      "anyQuality": "Any quality",
+      "minimumSize": "Minimum size (bytes)",
+      "maximumSize": "Maximum size (bytes)",
+      "indexer": "Indexer ID",
+      "protocol": "Protocol",
+      "anyProtocol": "Any protocol",
+      "torrent": "Torrent",
+      "usenet": "Usenet",
+      "minimumSeeders": "Minimum seeders",
+      "age": "Maximum age",
+      "anyAge": "Any age",
+      "day": "Past day",
+      "week": "Past week",
+      "month": "Past month",
+      "sort": "Sort"
+    },
+    "sort": {
+      "relevance": "Relevance",
+      "age": "Newest",
+      "size": "Largest",
+      "quality": "Highest quality",
+      "seeders": "Most seeders",
+      "estimatedTime": "Fastest estimate"
+    },
+    "columns": {
+      "title": "Title",
+      "studio": "Studio",
+      "indexer": "Indexer",
+      "quality": "Quality",
+      "size": "Size",
+      "age": "Age",
+      "seeders": "Seeders",
+      "score": "Score",
+      "time": "Time",
+      "action": "Action"
+    },
+    "local": {
+      "title": "In your library",
+      "notSearched": "Enter a title to search your local library.",
+      "loading": "Loading local results",
+      "empty": "No matching library items. Indexer results may still find a release."
+    },
+    "external": {
+      "title": "From indexers",
+      "notSearched": "Indexer results will appear after you search.",
+      "empty": "No indexer has returned a matching release yet.",
+      "indexerStatus": "Indexer search status"
+    },
+    "status": {
+      "pending": "Waiting",
+      "completed": "Completed",
+      "cached": "Cached",
+      "failed": "Failed",
+      "timedOut": "Timed out",
+      "unhealthy": "Unavailable",
+      "cancelled": "Cancelled"
+    }
   },
   "account": {
     "menu": "Account",
