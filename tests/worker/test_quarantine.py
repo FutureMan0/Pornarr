@@ -121,3 +121,35 @@ async def test_quarantine_requires_a_specific_reason(session: AsyncSession, tmp_
         await quarantine_file(session, source, tmp_path / "quarantine", [])
 
     assert source.exists()
+
+
+async def test_failed_quarantine_copy_leaves_no_partial_file(
+    session: AsyncSession, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = tmp_path / "downloads" / "source.mkv"
+    source.parent.mkdir()
+    source.write_bytes(b"media")
+    quarantine_root = tmp_path / "quarantine"
+
+    def interrupted_copy(_: Path, destination: Path, *args, **kwargs) -> None:
+        destination.write_bytes(b"partial")
+        raise OSError("copy interrupted")
+
+    monkeypatch.setattr("pornarr_worker.jobs.quarantine.shutil.copy2", interrupted_copy)
+
+    with pytest.raises(OSError, match="copy interrupted"):
+        await quarantine_file(
+            session=session,
+            source=source,
+            quarantine_root=quarantine_root,
+            reasons=[
+                QuarantineReason(
+                    QuarantineReasonCode.FILTER_RULE,
+                    "filter rule rejects this fixture",
+                    {"rule_id": "fixture"},
+                )
+            ],
+        )
+
+    assert source.read_bytes() == b"media"
+    assert not list(quarantine_root.rglob("*"))

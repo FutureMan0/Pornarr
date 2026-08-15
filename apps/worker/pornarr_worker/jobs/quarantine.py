@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import shutil
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
@@ -165,6 +166,8 @@ def _move_to_quarantine(source: Path, destination: Path) -> None:
     except Exception:
         temporary.unlink(missing_ok=True)
         destination.unlink(missing_ok=True)
+        with suppress(OSError):
+            destination.parent.rmdir()
         raise
 
 
