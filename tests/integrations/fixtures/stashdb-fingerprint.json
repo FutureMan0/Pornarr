@@ -1,0 +1,24 @@
+{
+  "data": {
+    "findScenesBySceneFingerprints": [
+      [
+        {
+          "id": "scene-known-123",
+          "title": "Known Scene",
+          "release_date": "2024-02-14",
+          "studio": { "id": "studio-42", "name": "Example Studio" },
+          "performers": [
+            { "performer": { "id": "performer-7", "name": "Alice Example" } },
+            { "performer": { "id": "performer-7", "name": "Alice Example" } },
+            { "performer": { "id": "performer-8", "name": "Bob Example" } }
+          ],
+          "tags": [
+            { "id": "tag-2", "name": "Outdoor" },
+            { "id": "tag-2", "name": "Outdoor" },
+            { "id": "tag-3", "name": "HD" }
+          ]
+        }
+      ]
+    ]
+  }
+}
