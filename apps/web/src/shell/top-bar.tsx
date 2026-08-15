@@ -2,14 +2,15 @@
  * The top bar: global search, the live status cluster, the account menu, and —
  * in the drawer layout only — the control that opens the navigation.
  *
- * Search is a form with no submit handler yet on purpose: the endpoint does not
- * exist, and a search box that silently does nothing is worse than one that
- * plainly cannot be submitted. It is here because the bar's proportions depend
- * on it, and because DESIGN.md puts it here.
+ * The global form owns only navigation. The route owns fetching, filters and
+ * progressive result state, so the same search address works from the shell,
+ * a bookmark and a browser history entry.
  */
 import { Input, Menu } from "@pornarr/ui";
 import type { FormEvent, JSX, RefObject } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { useLogout, useSession } from "../auth/session";
 import { LOCALES, setLocale } from "../i18n";
 import { localeName } from "../i18n/format";
@@ -31,11 +32,26 @@ export interface TopBarProps {
 
 export function TopBar({ layout, drawerOpen, onOpenDrawer, triggerRef }: TopBarProps): JSX.Element {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const session = useSession();
   const logout = useLogout();
+  const searchFormRef = useRef<HTMLFormElement>(null);
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    const focusSearch = (event: KeyboardEvent): void => {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "k") return;
+      event.preventDefault();
+      searchFormRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+    };
+    window.addEventListener("keydown", focusSearch);
+    return () => window.removeEventListener("keydown", focusSearch);
+  }, []);
 
   const onSearchSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
+    const trimmed = query.trim();
+    navigate(trimmed === "" ? "/search" : `/search?q=${encodeURIComponent(trimmed)}`);
   };
 
   return (
@@ -58,11 +74,18 @@ export function TopBar({ layout, drawerOpen, onOpenDrawer, triggerRef }: TopBarP
 
       {/* The element, not the role: `<search>` carries it natively. */}
       <search className="min-w-0 flex-1">
-        <form onSubmit={onSearchSubmit}>
+        <form ref={searchFormRef} onSubmit={onSearchSubmit}>
           <label className="visually-hidden" htmlFor="global-search">
             {t("search.label")}
           </label>
-          <Input id="global-search" name="q" type="search" placeholder={t("search.placeholder")} />
+          <Input
+            id="global-search"
+            name="q"
+            type="search"
+            value={query}
+            placeholder={t("search.placeholder")}
+            onChange={(event) => setQuery(event.target.value)}
+          />
         </form>
       </search>
 

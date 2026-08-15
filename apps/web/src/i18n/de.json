@@ -118,7 +118,71 @@
   },
   "search": {
     "label": "Suche",
-    "placeholder": "Suchen"
+    "placeholder": "Suchen",
+    "title": "Suche",
+    "intro": "Treffer aus der lokalen Bibliothek erscheinen zuerst. Indexer-Ergebnisse folgen, sobald die einzelnen Quellen antworten.",
+    "query": "Titel suchen",
+    "searching": "Suche läuft…",
+    "grab": "Abrufen",
+    "filters": {
+      "quality": "Qualität",
+      "anyQuality": "Alle Qualitäten",
+      "minimumSize": "Mindestgröße (Bytes)",
+      "maximumSize": "Maximalgröße (Bytes)",
+      "indexer": "Indexer-ID",
+      "protocol": "Protokoll",
+      "anyProtocol": "Alle Protokolle",
+      "torrent": "Torrent",
+      "usenet": "Usenet",
+      "minimumSeeders": "Mindestanzahl Seeder",
+      "age": "Maximales Alter",
+      "anyAge": "Jedes Alter",
+      "day": "Letzter Tag",
+      "week": "Letzte Woche",
+      "month": "Letzter Monat",
+      "sort": "Sortierung"
+    },
+    "sort": {
+      "relevance": "Relevanz",
+      "age": "Neueste",
+      "size": "Größte",
+      "quality": "Höchste Qualität",
+      "seeders": "Meiste Seeder",
+      "estimatedTime": "Schnellste Schätzung"
+    },
+    "columns": {
+      "title": "Titel",
+      "studio": "Studio",
+      "indexer": "Indexer",
+      "quality": "Qualität",
+      "size": "Größe",
+      "age": "Alter",
+      "seeders": "Seeder",
+      "score": "Wertung",
+      "time": "Zeit",
+      "action": "Aktion"
+    },
+    "local": {
+      "title": "In deiner Bibliothek",
+      "notSearched": "Gib einen Titel ein, um deine lokale Bibliothek zu durchsuchen.",
+      "loading": "Lokale Treffer werden geladen",
+      "empty": "Keine passenden Bibliothekseinträge. Indexer könnten dennoch einen Release finden."
+    },
+    "external": {
+      "title": "Von Indexern",
+      "notSearched": "Indexer-Ergebnisse erscheinen nach einer Suche.",
+      "empty": "Noch kein Indexer hat einen passenden Release geliefert.",
+      "indexerStatus": "Indexer-Suchstatus"
+    },
+    "status": {
+      "pending": "Wartet",
+      "completed": "Abgeschlossen",
+      "cached": "Zwischengespeichert",
+      "failed": "Fehlgeschlagen",
+      "timedOut": "Zeitüberschreitung",
+      "unhealthy": "Nicht verfügbar",
+      "cancelled": "Abgebrochen"
+    }
   },
   "account": {
     "menu": "Konto",

@@ -18,6 +18,7 @@ import { LoginRoute } from "./auth/login-route";
 import { RequireAuth } from "./auth/require-auth";
 import { ForbiddenRoute, NotFoundRoute } from "./errors/route-errors";
 import { QuarantineReviewRoute } from "./routes/admin/quarantine/quarantine-review-route";
+import { SearchRoute } from "./routes/search/search-route";
 import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles-route";
 import { SetupGate } from "./routes/setup/setup-gate";
 import { SetupRoute } from "./routes/setup/setup-route";
@@ -59,6 +60,7 @@ export const appRoutes: RouteObject[] = [
               { path: "admin/quarantine", element: <QuarantineReviewRoute /> },
               { path: "settings", element: <Navigate to="/settings/quality" replace /> },
               { path: "settings/quality", element: <QualityProfilesRoute /> },
+              { path: "search", element: <SearchRoute /> },
               ...NAV_ITEMS.filter((item) => item.id !== "settings").map((item) => ({
                 path: item.path.slice(1),
                 element: <Placeholder navId={item.id} />,
