@@ -35,6 +35,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
+      - run: make setup
       - name: Start the full stack
         run: docker compose up -d --wait
       - name: Run end-to-end suite
