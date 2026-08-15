@@ -97,8 +97,9 @@ async def resolve_metadata_cascade(
     sleep: Sleep = asyncio.sleep,
 ) -> MetadataResolution:
     """Resolve metadata from most to least trustworthy, logging every decision."""
+    ordered_providers = _providers_by_precedence(providers)
     if subject.oshash or subject.perceptual_hash:
-        for provider in providers:
+        for provider in ordered_providers:
             candidate = await _attempt(
                 session,
                 provider,
@@ -119,7 +120,7 @@ async def resolve_metadata_cascade(
         site = subject.site
         release_date = subject.release_date
         assert site is not None and release_date is not None
-        for provider in providers:
+        for provider in ordered_providers:
             candidate = await _attempt(
                 session,
                 provider,
@@ -143,7 +144,7 @@ async def resolve_metadata_cascade(
                 )
 
     if subject.title and subject.performers:
-        for provider in providers:
+        for provider in ordered_providers:
             candidates = await _attempt(
                 session,
                 provider,
@@ -270,6 +271,22 @@ def _best_fuzzy_match(
     if not matching:
         return None
     return max(matching, key=lambda candidate: _title_similarity(subject.title, candidate.title))
+
+
+def _providers_by_precedence(
+    providers: Sequence[MetadataProviderAdapter],
+) -> tuple[MetadataProviderAdapter, ...]:
+    return tuple(
+        provider
+        for _, provider in sorted(
+            enumerate(providers), key=lambda item: (_provider_precedence(item[1]), item[0])
+        )
+    )
+
+
+def _provider_precedence(provider: MetadataProviderAdapter) -> int:
+    precedence = getattr(provider, "precedence", 100)
+    return precedence if isinstance(precedence, int) else 100
 
 
 def _is_exact_site_date_title(subject: MetadataSubject, candidate: MetadataCandidate) -> bool:
