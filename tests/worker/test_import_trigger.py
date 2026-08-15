@@ -16,6 +16,7 @@ from pornarr_db.types import set_cipher
 from pornarr_shared.config import Settings
 from pornarr_shared.crypto import CredentialCipher
 from pornarr_shared.jobs import IMPORT_QUEUE, job_key
+from pornarr_worker.jobs.import_intake import IntakeDecision, IntakeReason, IntakeResult
 from pornarr_worker.jobs.import_trigger import (
     discover_download_files,
     dispatch_pending_triggers,
@@ -154,8 +155,49 @@ async def test_trigger_directory_creates_each_file_only_once_after_a_restart(
         str(download_path.resolve()),
         str(media_file.resolve()),
     ]
+
+    async def accepts(_: Path) -> IntakeResult:
+        return IntakeResult(IntakeDecision.ACCEPT)
+
     file_trigger = triggers[1]
-    assert await process_import_trigger(session, file_trigger.id) == "ready"
+    assert await process_import_trigger(session, file_trigger.id, validate=accepts) == "ready"
+
+
+async def test_intake_rejections_remain_visible_on_the_import_trigger(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    source = tmp_path / "sample-feature.mkv"
+    source.write_bytes(b"x" * (60 * 1024**2))
+    trigger = ImportTrigger(source_path=str(source))
+    session.add(trigger)
+    await session.flush()
+
+    assert await process_import_trigger(session, trigger.id) == "rejected"
+    await session.commit()
+    session.expunge_all()
+    stored = await session.get(ImportTrigger, trigger.id)
+
+    assert stored is not None and stored.status == "rejected"
+    assert stored.error_code == IntakeReason.SAMPLE
+    assert stored.error_detail == "Sample files are never imported as the main feature."
+
+
+async def test_intake_retries_still_being_written_files(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    source = tmp_path / "feature.mkv.part"
+    source.write_bytes(b"partial")
+    trigger = ImportTrigger(source_path=str(source))
+    session.add(trigger)
+    await session.flush()
+
+    assert await process_import_trigger(session, trigger.id) == "retry"
+    assert trigger.status == "pending"
+    assert trigger.error_code == IntakeReason.WRITING
+    assert (
+        trigger.error_detail
+        == "The source file is still being written and will be retried automatically."
+    )
 
 
 async def test_filesystem_watcher_fallback_discovers_manually_placed_media(

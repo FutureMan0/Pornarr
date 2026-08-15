@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+from arq.worker import Retry
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from watchfiles import Change, awatch
@@ -17,14 +18,20 @@ from watchfiles import Change, awatch
 from pornarr_db.models.download import DownloadJob, ImportTrigger
 from pornarr_db.session import session_scope
 from pornarr_shared.config import Settings, get_settings
-from pornarr_shared.jobs import IMPORT_QUEUE, enqueue_once, job
+from pornarr_shared.jobs import IMPORT_QUEUE, enqueue_once, job, retry_delay_seconds
+from pornarr_worker.jobs.import_intake import (
+    IntakeDecision,
+    IntakeReason,
+    IntakeResult,
+    validate_import_file,
+)
 
 IMPORT_DOWNLOAD_JOB_NAME = "import_download"
-VIDEO_EXTENSIONS = frozenset({".avi", ".m4v", ".mkv", ".mov", ".mp4", ".webm", ".wmv"})
 PENDING = "pending"
 WATCH_DURATION_SECONDS = 25
 
 TriggerEnqueuer = Callable[[ImportTrigger], Awaitable[None]]
+IntakeValidator = Callable[[Path], Awaitable[IntakeResult]]
 
 
 class PathTranslationError(ValueError):
@@ -115,7 +122,7 @@ async def discover_download_files(session: AsyncSession, settings: Settings) -> 
     """Reconcile the download trees so manually placed files enter the same pipeline."""
     discovered = 0
     for root in (_download_root("torrent", settings), _download_root("usenet", settings)):
-        for path in _iter_media_files(root):
+        for path in _iter_candidate_files(root):
             if await _stage_watched_file(session, path):
                 discovered += 1
     return discovered
@@ -135,7 +142,9 @@ async def dispatch_pending_triggers(session: AsyncSession, enqueue: TriggerEnque
     return len(triggers)
 
 
-async def process_import_trigger(session: AsyncSession, trigger_id: UUID) -> str:
+async def process_import_trigger(
+    session: AsyncSession, trigger_id: UUID, *, validate: IntakeValidator = validate_import_file
+) -> str:
     """Resolve one trigger into file-level import work without duplicating it."""
     trigger = await session.get(ImportTrigger, trigger_id)
     if trigger is None:
@@ -153,18 +162,22 @@ async def process_import_trigger(session: AsyncSession, trigger_id: UUID) -> str
         )
         return trigger.status
     if source.is_dir():
-        for path in _iter_media_files(source):
+        for path in _iter_candidate_files(source):
             await _stage_watched_file(session, path)
         trigger.status = "discovered"
         return trigger.status
-    if not source.is_file() or source.suffix.lower() not in VIDEO_EXTENSIONS:
+    if not source.is_file() or source.is_symlink():
         _mark_failed(
-            trigger,
-            "unsupported_source",
-            f"The completed download path {str(source)!r} is not a supported media file or directory.",
+            trigger, "unsupported_source", f"The import source {str(source)!r} is not a file."
         )
         return trigger.status
-
+    intake = await validate(source)
+    if intake.decision is IntakeDecision.RETRY:
+        _mark_retry(trigger, intake.reason)
+        return "retry"
+    if intake.decision is IntakeDecision.REJECT:
+        _mark_rejected(trigger, intake.reason)
+        return trigger.status
     trigger.status = "ready"
     trigger.error_code = None
     trigger.error_detail = None
@@ -175,6 +188,8 @@ async def import_download(context: dict[str, Any], trigger_id: str) -> str:
     """ARQ entrypoint: resolve a committed trigger, then dispatch its file children."""
     async with session_scope() as session:
         result = await process_import_trigger(session, UUID(trigger_id))
+    if result == "retry":
+        raise Retry(defer=retry_delay_seconds(int(context["job_try"])))
     await dispatch_committed_triggers(context["redis"])
     return result
 
@@ -224,11 +239,7 @@ async def stage_changed_download_files(
             resolved = path.resolve(strict=False)
             if not any(_is_within(resolved, root) for root in roots):
                 continue
-            if (
-                not resolved.is_file()
-                or resolved.is_symlink()
-                or resolved.suffix.lower() not in VIDEO_EXTENSIONS
-            ):
+            if not resolved.is_file() or resolved.is_symlink():
                 continue
         except OSError:
             continue
@@ -260,14 +271,14 @@ def _download_root(protocol: str, settings: Settings) -> Path:
     )
 
 
-def _iter_media_files(root: Path) -> Iterator[Path]:
+def _iter_candidate_files(root: Path) -> Iterator[Path]:
     if not root.is_dir():
         return
     for directory, subdirectories, names in os.walk(root):
         subdirectories.sort()
         for name in sorted(names):
             path = Path(directory, name)
-            if path.suffix.lower() not in VIDEO_EXTENSIONS or path.is_symlink():
+            if path.is_symlink():
                 continue
             try:
                 file_stat = path.stat()
@@ -321,6 +332,33 @@ def _mark_failed(trigger: ImportTrigger, code: str, detail: str) -> None:
     trigger.status = "failed"
     trigger.error_code = code
     trigger.error_detail = detail
+
+
+def _mark_retry(trigger: ImportTrigger, reason: IntakeReason | None) -> None:
+    trigger.error_code = (reason or IntakeReason.WRITING).value
+    trigger.error_detail = (
+        "The source file is still being written and will be retried automatically."
+    )
+
+
+def _mark_rejected(trigger: ImportTrigger, reason: IntakeReason | None) -> None:
+    resolved_reason = reason or IntakeReason.UNSUPPORTED_EXTENSION
+    trigger.status = "rejected"
+    trigger.error_code = resolved_reason.value
+    trigger.error_detail = _intake_rejection_detail(resolved_reason)
+
+
+def _intake_rejection_detail(reason: IntakeReason) -> str:
+    return {
+        IntakeReason.ARCHIVE: "Archive files must be extracted before import.",
+        IntakeReason.EMPTY: "The file is empty and cannot be imported.",
+        IntakeReason.EXTRA: "The file is marked as extra content, not the main feature.",
+        IntakeReason.MALWARE: "The optional malware scan rejected this file.",
+        IntakeReason.SAMPLE: "Sample files are never imported as the main feature.",
+        IntakeReason.TOO_SMALL: "The file is below the minimum import size.",
+        IntakeReason.UNSUPPORTED_EXTENSION: "This file type is not supported for import.",
+        IntakeReason.WRITING: "The file is still being written and cannot be imported yet.",
+    }[reason]
 
 
 IMPORT_DOWNLOAD_JOB = job(import_download)
