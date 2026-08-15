@@ -260,7 +260,8 @@ async def enforce_csrf(request: Request) -> None:
     """Require a session-bound double-submit token on every unsafe API request."""
     if (
         request.method not in _UNSAFE_METHODS
-        or request.url.path in {"/api/auth/login", "/api/setup/complete"}
+        or request.url.path
+        in {"/api/auth/login", "/api/setup/validate-library-path", "/api/setup/complete"}
         or request.headers.get("X-Api-Key")
     ):
         return

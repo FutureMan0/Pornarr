@@ -50,6 +50,15 @@ class SetupWrite(BaseModel):
     library_path: Annotated[str, Field(min_length=1, max_length=1024)]
 
 
+class SetupPathValidationWrite(BaseModel):
+    library_path: Annotated[str, Field(min_length=1, max_length=1024)]
+
+
+class SetupPathValidationResponse(BaseModel):
+    same_filesystem_as_downloads: bool
+    warning: str | None
+
+
 class SetupCompleteResponse(BaseModel):
     username: str
     same_filesystem_as_downloads: bool
@@ -59,6 +68,26 @@ class SetupCompleteResponse(BaseModel):
 @router.get("/status")
 async def setup_status(session: Session) -> dict[str, bool]:
     return {"configured": await session.scalar(select(User.id).limit(1)) is not None}
+
+
+@router.post(
+    "/validate-library-path", response_model=SetupPathValidationResponse, responses=SETUP_ERRORS
+)
+async def validate_library_path(
+    payload: SetupPathValidationWrite, request: Request, session: Session
+) -> SetupPathValidationResponse:
+    if await session.scalar(select(User.id).limit(1)) is not None:
+        raise SetupAlreadyCompletedError("The instance has already been configured.")
+    _, _, same_filesystem = _validate_library_path(
+        payload.library_path, request.app.state.settings.torrents_path
+    )
+    warning = (
+        None if same_filesystem else "different filesystem from downloads; imports cannot hardlink"
+    )
+    return SetupPathValidationResponse(
+        same_filesystem_as_downloads=same_filesystem,
+        warning=warning,
+    )
 
 
 @router.post(

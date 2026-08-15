@@ -8,6 +8,96 @@
     "password": "Passwort",
     "submit": "Anmelden"
   },
+  "setup": {
+    "checking": "Einrichtung wird geprüft",
+    "progress": "Schritt {{current}} von {{total}}",
+    "progressLabel": "Einrichtungsfortschritt",
+    "stepNumber": "Schritt {{number}}",
+    "steps": {
+      "account": "Admin-Konto",
+      "library": "Bibliothekspfad",
+      "filters": "Inhaltsfilter",
+      "metadata": "Metadaten",
+      "summary": "Zusammenfassung"
+    },
+    "next": "Weiter",
+    "back": "Zurück",
+    "account": {
+      "title": "Pornarr einrichten",
+      "body": "Erstelle das Administrationskonto für diese Instanz.",
+      "username": "Benutzername",
+      "usernameRequired": "Gib einen Administrations-Benutzernamen ein.",
+      "password": "Passwort",
+      "passwordTooWeak": "Verwende mindestens 12 Zeichen aus zwei Zeichentypen.",
+      "strength": {
+        "weak": "Passwortstärke: schwach",
+        "fair": "Passwortstärke: ausreichend",
+        "strong": "Passwortstärke: stark"
+      }
+    },
+    "library": {
+      "title": "Bibliothekspfad wählen",
+      "body": "Pornarr speichert importierte Medien in diesem Ordner.",
+      "path": "Bibliothekspfad",
+      "pathRequired": "Gib einen Bibliothekspfad ein.",
+      "crossFilesystem": "Diese Bibliothek liegt auf einem anderen Dateisystem als die Downloads. Beim Import werden Dateien kopiert statt per Hardlink verknüpft.",
+      "continueWithCopy": "Mit Kopier-Importen fortfahren"
+    },
+    "filters": {
+      "title": "Inhaltsfilter prüfen",
+      "body": "Alle Filter beginnen ausgeschaltet. Du kannst Regeln nach der Einrichtung konfigurieren, ohne bereits importierte Medien zu ändern.",
+      "listLabel": "Inhaltsfilter, die ausgeschaltet beginnen",
+      "off": "Aus",
+      "rules": {
+        "term": {
+          "title": "Wörter und Phrasen",
+          "body": "Hält Medien zurück, deren Titel oder Beschreibung einer später hinzugefügten Regel entspricht."
+        },
+        "tag": {
+          "title": "Tags",
+          "body": "Hält Medien mit einem später ausgewählten Tag zurück."
+        },
+        "performer": {
+          "title": "Darstellende Personen",
+          "body": "Hält Medien mit einer später ausgewählten Person zurück."
+        },
+        "minimumConfidence": {
+          "title": "Sicherheit der Metadaten",
+          "body": "Hält Medien zurück, deren Metadaten-Treffer unter einen später gewählten Grenzwert fallen."
+        },
+        "unknownPerformerAge": {
+          "title": "Unbekanntes Alter von Personen",
+          "body": "Hält Medien zurück, wenn das Alter einer zugeordneten Person nicht bekannt ist."
+        },
+        "unknownFileType": {
+          "title": "Unbekannter Dateityp",
+          "body": "Hält Medien zurück, wenn der importierte Dateityp nicht erkannt wird."
+        }
+      }
+    },
+    "metadata": {
+      "title": "Metadatenanbieter",
+      "body": "Externe Metadatenanbieter sind optional. Pornarr kann ohne einen solchen Anbieter starten.",
+      "skipped": "Während dieser Einrichtung wird kein Metadatenanbieter konfiguriert.",
+      "skipAction": "Vorerst überspringen"
+    },
+    "summary": {
+      "title": "Einrichtung prüfen",
+      "body": "Prüfe diese Auswahl, bevor die Instanz erstellt wird.",
+      "account": "Administration",
+      "library": "Bibliothekspfad",
+      "filters": "Inhaltsfilter",
+      "filtersOff": "Alle Filter beginnen ausgeschaltet",
+      "metadata": "Metadatenanbieter",
+      "metadataSkipped": "Kein Anbieter konfiguriert"
+    },
+    "complete": {
+      "action": "Einrichtung abschließen",
+      "title": "Einrichtung abgeschlossen",
+      "body": "Die Instanz ist bereit. Melde dich mit dem Administrationskonto an, um fortzufahren.",
+      "signIn": "Anmelden"
+    }
+  },
   "session": {
     "checking": "Sitzung wird geprüft",
     "unavailableTitle": "Sitzung konnte nicht geprüft werden",
@@ -227,6 +317,9 @@
     "DECRYPTION_FAILED": "Gespeicherte Zugangsdaten konnten nicht gelesen werden. Das Anwendungsgeheimnis passt nicht zu dem, mit dem sie gespeichert wurden.",
     "QUALITY_CONFIGURATION_INVALID": "Dieses Qualitätsprofil oder benutzerdefinierte Format ist ungültig. Prüfe gewählte Qualitäten, Grenze und Namen.",
     "QUALITY_PROFILE_IN_USE": "Dieses Qualitätsprofil wird noch von der Anwendung benötigt und kann nicht gelöscht werden.",
+    "SETUP_REQUIRED": "Schließe die Einrichtung dieser Instanz ab, bevor du die Anwendung verwendest.",
+    "SETUP_ALREADY_COMPLETED": "Diese Instanz wurde bereits eingerichtet.",
+    "SETUP_PATH_INVALID": "Dieser Bibliothekspfad ist nicht verfügbar, kein Ordner oder nicht beschreibbar.",
     "BAD_REQUEST": "Mit dieser Anfrage konnte der Server nichts anfangen.",
     "NOT_FOUND": "Das gibt es nicht, oder nicht mehr.",
     "METHOD_NOT_ALLOWED": "Diese Aktion ist unter dieser Adresse nicht verfügbar.",
@@ -256,6 +349,9 @@
     "DECRYPTION_FAILED": "Stelle das ursprüngliche Anwendungsgeheimnis wieder her oder gib die Zugangsdaten erneut ein.",
     "QUALITY_CONFIGURATION_INVALID": "Prüfe gewählte Qualitäten, Grenze und Namen und speichere erneut.",
     "QUALITY_PROFILE_IN_USE": "Wähle zuerst ein anderes Standardprofil oder verschiebe die Monitore in ein anderes Profil.",
+    "SETUP_REQUIRED": "Schließe zuerst die Einrichtungsschritte ab.",
+    "SETUP_ALREADY_COMPLETED": "Melde dich mit dem bereits vorhandenen Administrationskonto an.",
+    "SETUP_PATH_INVALID": "Wähle einen vorhandenen Ordner, den Pornarr lesen und beschreiben kann.",
     "BAD_REQUEST": "Ändere das Gesendete und versuche es noch einmal.",
     "NOT_FOUND": "Wähle ein Ziel aus der Navigation.",
     "METHOD_NOT_ALLOWED": "Gehe zurück und wähle eine andere Aktion.",
