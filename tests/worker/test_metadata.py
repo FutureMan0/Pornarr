@@ -23,6 +23,7 @@ from pornarr_worker.jobs.metadata import (
 
 class Provider:
     name = "provider"
+    precedence = 100
 
     def __init__(
         self,
@@ -138,6 +139,38 @@ async def test_exact_site_date_title_precedes_fuzzy_matching(session: AsyncSessi
         MetadataTier.SITE_DATE_TITLE,
         ["site_date_title"],
     )
+
+
+async def test_stashdb_wins_same_tier_conflicts_before_tpdb(session: AsyncSession) -> None:
+    stashdb = Provider(
+        exact=MetadataCandidate(
+            title="Known Scene", site="Example Studio", release_date=date(2024, 2, 14)
+        )
+    )
+    stashdb.name = "stashdb"
+    stashdb.precedence = 0
+    tpdb = Provider(
+        exact=MetadataCandidate(
+            title="Conflicting TPDB Scene", site="Example Studio", release_date=date(2024, 2, 14)
+        )
+    )
+    tpdb.name = "tpdb"
+    tpdb.precedence = 1
+
+    resolution = await resolve_metadata_cascade(
+        session,
+        MetadataSubject(
+            source_path="/data/torrents/example.mkv",
+            title="Known Scene",
+            site="Example Studio",
+            release_date=date(2024, 2, 14),
+        ),
+        [tpdb, stashdb],
+    )
+
+    assert resolution.candidate.title == "Known Scene"
+    assert stashdb.calls == ["site_date_title"]
+    assert tpdb.calls == []
 
 
 async def test_no_provider_falls_back_to_filename_confidence(session: AsyncSession) -> None:

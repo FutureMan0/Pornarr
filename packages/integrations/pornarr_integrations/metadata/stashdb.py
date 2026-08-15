@@ -58,6 +58,7 @@ class StashdbAdapter:
     """Map Stash-box's public GraphQL schema onto the metadata provider contract."""
 
     name = "stashdb"
+    precedence = 0
 
     def __init__(
         self,

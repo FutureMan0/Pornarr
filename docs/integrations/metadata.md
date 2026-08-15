@@ -16,6 +16,14 @@ Confidence never exceeds 0.4.
 Provider keys are stored encrypted in `metadata_providers` and entered by the
 administrator. Nothing is bundled.
 
+## Provider precedence
+
+Within a confidence tier, StashDB is authoritative and TPDB is queried only if
+StashDB has no usable result. The cascade enforces this ordering even when adapters
+are supplied in a different order. It does not merge conflicting fields: the first
+provider at the winning tier owns the complete candidate. A higher-confidence TPDB
+site/date/title match still correctly beats a lower-confidence StashDB fuzzy match.
+
 ## Confidence cascade
 
 ```
