@@ -17,7 +17,7 @@ from pornarr_db.models.custom_formats import (
     CustomFormatField,
     CustomFormatOperator,
 )
-from pornarr_db.models.download import BlockedRelease, DownloadHistory, DownloadJob
+from pornarr_db.models.download import BlockedRelease, DownloadHistory, DownloadJob, ImportTrigger
 from pornarr_db.models.download_client import DownloadClient
 from pornarr_db.models.entities import MediaPerformer, MediaTag, Performer, Studio, Tag
 from pornarr_db.models.filters import (
@@ -64,6 +64,7 @@ __all__ = [
     "FilterAction",
     "FilterProfileScope",
     "FilterRuleKind",
+    "ImportTrigger",
     "Indexer",
     "IndexerStats",
     "Media",

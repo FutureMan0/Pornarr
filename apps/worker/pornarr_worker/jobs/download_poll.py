@@ -15,14 +15,19 @@ from pornarr_db.session import session_scope
 from pornarr_integrations.downloaders import DownloadClientJob, DownloadClientPollingAdapter
 from pornarr_integrations.qbittorrent import QbittorrentAdapter
 from pornarr_integrations.sabnzbd import SabnzbdAdapter
+from pornarr_shared.config import get_settings
 from pornarr_shared.events import publish_event
-from pornarr_shared.jobs import IMPORT_QUEUE, enqueue_once, job
+from pornarr_shared.jobs import job
 from pornarr_worker.jobs.download_failure import handle_download_failure
+from pornarr_worker.jobs.import_trigger import (
+    dispatch_committed_triggers,
+    stage_completed_download,
+)
 
-IMPORT_DOWNLOAD_JOB = "import_download"
 TERMINAL_STATUSES = frozenset({"completed", "failed", "removed"})
+NON_POLLABLE_STATUSES = frozenset({"failed", "removed"})
 EventPublisher = Callable[[str, dict[str, Any]], Awaitable[None]]
-ImportEnqueuer = Callable[[DownloadJob], Awaitable[None]]
+ImportEnqueuer = Callable[[DownloadJob, str | None], Awaitable[None]]
 FailureHandler = Callable[[DownloadJob], Awaitable[None]]
 
 DOWNLOAD_CLIENT_ADAPTERS: Mapping[str, DownloadClientPollingAdapter] = {
@@ -49,7 +54,7 @@ async def poll_downloads(
             await session.scalars(
                 select(DownloadJob).where(
                     DownloadJob.download_client_id.in_(client_ids),
-                    DownloadJob.status.not_in(TERMINAL_STATUSES),
+                    DownloadJob.status.not_in(NON_POLLABLE_STATUSES),
                 )
             )
         )
@@ -93,6 +98,7 @@ async def poll_downloads(
                     active_job,
                     status="removed",
                     error="Job no longer exists in the download client.",
+                    output_path=None,
                     publish=publish,
                     enqueue_import=enqueue_import,
                     handle_failure=handle_failure,
@@ -153,6 +159,7 @@ async def _apply_poll(
         job_row,
         status=polled_job.state.value,
         error=polled_job.error,
+        output_path=polled_job.output_path,
         publish=publish,
         enqueue_import=enqueue_import,
         handle_failure=handle_failure,
@@ -176,6 +183,7 @@ async def _transition(
     *,
     status: str,
     error: str | None,
+    output_path: str | None,
     publish: EventPublisher,
     enqueue_import: ImportEnqueuer,
     handle_failure: FailureHandler | None,
@@ -185,11 +193,11 @@ async def _transition(
     job_row.error = error
     if status in TERMINAL_STATUSES:
         await _record_history(session, job_row)
+    if status == "completed":
+        await enqueue_import(job_row, output_path)
     if not changed:
         return False
     await publish("download.status", {"job_id": str(job_row.id), "status": status})
-    if status == "completed":
-        await enqueue_import(job_row)
     if status == "failed" and handle_failure is not None:
         await handle_failure(job_row)
     return True
@@ -222,13 +230,14 @@ async def download_poll(context: dict[str, Any]) -> None:
     async def publish(event_type: str, data: dict[str, Any]) -> None:
         await publish_event(redis, event_type, data)
 
-    async def enqueue_import(job_row: DownloadJob) -> None:
-        await enqueue_once(redis, IMPORT_DOWNLOAD_JOB, str(job_row.id), queue=IMPORT_QUEUE)
-
-    async def failure_handler(job_row: DownloadJob) -> None:
-        await handle_download_failure(session, redis, job_row)
-
     async with session_scope() as session:
+
+        async def enqueue_import(job_row: DownloadJob, output_path: str | None) -> None:
+            await stage_completed_download(session, job_row, output_path, get_settings())
+
+        async def failure_handler(job_row: DownloadJob) -> None:
+            await handle_download_failure(session, redis, job_row)
+
         await poll_downloads(
             session,
             adapters=DOWNLOAD_CLIENT_ADAPTERS,
@@ -236,6 +245,7 @@ async def download_poll(context: dict[str, Any]) -> None:
             enqueue_import=enqueue_import,
             handle_failure=failure_handler,
         )
+    await dispatch_committed_triggers(redis)
 
 
 DOWNLOAD_POLL_JOB = job(download_poll)

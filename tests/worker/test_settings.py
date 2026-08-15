@@ -40,6 +40,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "heartbeat",
         "cleanup_transcodes",
         "download_poll",
+        "watch_download_files",
         "automation_execute",
         "refresh_storage",
         "prune_user_events_job",
@@ -70,6 +71,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "heartbeat",
         "cleanup_transcodes",
         "download_poll",
+        "watch_download_files",
         "automation_execute",
         "refresh_storage",
         "prune_user_events_job",
@@ -83,6 +85,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "scan",
         "quarantine_job",
         "upgrade_media_file_job",
+        "import_download",
     ]
     required_arq_options = {
         "functions",
@@ -99,6 +102,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "heartbeat",
         "cleanup_transcodes",
         "download_poll",
+        "watch_download_files",
         "dispatch_perceptual_hashes",
         "refresh_storage",
         "prune_user_events_job",
@@ -110,5 +114,6 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "dispatch_backlog_searches",
     ]
     assert cron_jobs["download_poll"].second == set(range(0, 60, 5))
+    assert cron_jobs["watch_download_files"].second == {0, 30}
     assert cron_jobs["dispatch_rss_sync"].minute == {0, 15, 30, 45}
     assert cron_jobs["dispatch_backlog_searches"].minute == set(range(0, 60))
