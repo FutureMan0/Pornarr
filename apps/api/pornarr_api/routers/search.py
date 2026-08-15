@@ -25,7 +25,7 @@ from pornarr_core.filters import (
 from pornarr_core.filters import FilterAction as CoreFilterAction
 from pornarr_core.filters import FilterRule as CoreFilterRule
 from pornarr_core.filters import FilterRuleKind as CoreFilterRuleKind
-from pornarr_core.matching import parse_release
+from pornarr_core.matching import parse_release, score_release
 from pornarr_db.audit import write_audit
 from pornarr_db.events import record_user_event
 from pornarr_db.media_search import (
@@ -42,6 +42,7 @@ from pornarr_db.models.filters import (
     FilterProfileScope,
 )
 from pornarr_db.models.indexer import Indexer
+from pornarr_db.models.media import Media, MediaFile
 from pornarr_db.models.playback import UserEventType
 from pornarr_db.models.release import ReleaseCache
 from pornarr_db.models.statistics import PerformanceMetric
@@ -111,6 +112,19 @@ class SearchEstimateResponse(BaseModel):
     confidence: Confidence
 
 
+class SearchMatchKind(StrEnum):
+    NEW = "new"
+    PRESENT = "present"
+    UPGRADE = "upgrade"
+
+
+class SearchMatchResponse(BaseModel):
+    kind: SearchMatchKind
+    media_id: UUID | None
+    score: float | None
+    breakdown: dict[str, float]
+
+
 class ExternalSearchItem(BaseModel):
     id: UUID
     guid: str
@@ -123,6 +137,7 @@ class ExternalSearchItem(BaseModel):
     published_at: datetime | None
     seeders: int | None
     estimate: SearchEstimateResponse
+    match: SearchMatchResponse
 
 
 class IndexerSearchState(BaseModel):
@@ -325,8 +340,9 @@ async def _external_items(
         if (release.indexer_id, release.guid) in keys
     ]
     speeds = await _download_speeds(session, {indexer.protocol for indexer in indexers.values()})
+    matches = await _library_matches(session, releases)
     items = [
-        _external_item(release, indexers[release.indexer_id], speeds)
+        _external_item(release, indexers[release.indexer_id], speeds, matches[release.id])
         for release in releases
         if release.indexer_id in indexers
     ]
@@ -372,8 +388,59 @@ async def _download_speeds(session: AsyncSession, protocols: set[str]) -> dict[s
     return speeds
 
 
+async def _library_matches(
+    session: AsyncSession, releases: list[ReleaseCache]
+) -> dict[UUID, SearchMatchResponse]:
+    """Classify every displayed release with one active-library query."""
+    candidates = list(
+        (
+            await session.execute(
+                select(Media, MediaFile).join(MediaFile).where(MediaFile.is_active)
+            )
+        ).tuples()
+    )
+    matches: dict[UUID, SearchMatchResponse] = {}
+    for release in releases:
+        parsed_release = parse_release(release.title)
+        best = max(
+            (
+                (
+                    score_release(
+                        parsed_release, parse_release(media.title), indexer_reliability=1.0
+                    ),
+                    media,
+                    file,
+                )
+                for media, file in candidates
+            ),
+            default=None,
+            key=lambda value: value[0].total,
+        )
+        if best is None or best[0].total < 0.5:
+            matches[release.id] = SearchMatchResponse(
+                kind=SearchMatchKind.NEW, media_id=None, score=None, breakdown={}
+            )
+            continue
+        score, media, file = best
+        matches[release.id] = SearchMatchResponse(
+            kind=(
+                SearchMatchKind.UPGRADE
+                if _quality_rank(parsed_release.resolution)
+                > _quality_rank(file.quality or file.resolution)
+                else SearchMatchKind.PRESENT
+            ),
+            media_id=media.id,
+            score=score.total,
+            breakdown=score.breakdown,
+        )
+    return matches
+
+
 def _external_item(
-    release: ReleaseCache, indexer: Indexer, speeds: dict[str, int]
+    release: ReleaseCache,
+    indexer: Indexer,
+    speeds: dict[str, int],
+    match: SearchMatchResponse,
 ) -> ExternalSearchItem:
     quality = parse_release(release.title).resolution
     try:
@@ -407,6 +474,7 @@ def _external_item(
             high_seconds=estimate.high_seconds,
             confidence=estimate.confidence,
         ),
+        match=match,
     )
 
 
