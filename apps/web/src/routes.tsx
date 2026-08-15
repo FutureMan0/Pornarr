@@ -17,6 +17,7 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 import { LoginRoute } from "./auth/login-route";
 import { RequireAuth } from "./auth/require-auth";
 import { ForbiddenRoute, NotFoundRoute } from "./errors/route-errors";
+import { QuarantineReviewRoute } from "./routes/admin/quarantine/quarantine-review-route";
 import { AppShell } from "./shell/app-shell";
 import { NAV_ITEMS, type NavId } from "./shell/sidebar";
 
@@ -48,6 +49,7 @@ export const appRoutes: RouteObject[] = [
         element: <AppShell />,
         children: [
           { index: true, element: <Navigate to="/library" replace /> },
+          { path: "admin/quarantine", element: <QuarantineReviewRoute /> },
           ...NAV_ITEMS.map((item) => ({
             path: item.path.slice(1),
             element: <Placeholder navId={item.id} />,
