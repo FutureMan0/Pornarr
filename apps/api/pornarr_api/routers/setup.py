@@ -79,7 +79,7 @@ async def validate_library_path(
     if await session.scalar(select(User.id).limit(1)) is not None:
         raise SetupAlreadyCompletedError("The instance has already been configured.")
     _, _, same_filesystem = _validate_library_path(
-        payload.library_path, request.app.state.settings.torrents_path
+        payload.library_path, request.app.state.settings.data_path
     )
     warning = (
         None if same_filesystem else "different filesystem from downloads; imports cannot hardlink"
@@ -104,7 +104,7 @@ async def complete_setup(
     if await session.scalar(select(User.id).limit(1)) is not None:
         raise SetupAlreadyCompletedError("The instance has already been configured.")
     path, free_space_bytes, same_filesystem = _validate_library_path(
-        payload.library_path, request.app.state.settings.torrents_path
+        payload.library_path, request.app.state.settings.data_path
     )
     if profile is None:
         profile = ContentFilterProfile(scope=FilterProfileScope.GLOBAL)
@@ -132,7 +132,7 @@ async def complete_setup(
     )
 
 
-def _validate_library_path(value: str, torrents_path: Path) -> tuple[Path, int, bool]:
+def _validate_library_path(value: str, data_path: Path) -> tuple[Path, int, bool]:
     try:
         path = Path(value).expanduser().resolve(strict=True)
     except OSError as exc:
@@ -146,7 +146,7 @@ def _validate_library_path(value: str, torrents_path: Path) -> tuple[Path, int, 
             "The library path must be readable and writable.", reason="not_accessible"
         )
     try:
-        return path, shutil.disk_usage(path).free, path.stat().st_dev == torrents_path.stat().st_dev
+        return path, shutil.disk_usage(path).free, path.stat().st_dev == data_path.stat().st_dev
     except OSError as exc:
         raise SetupPathInvalidError(
             "The library path is unavailable.", reason="unavailable"

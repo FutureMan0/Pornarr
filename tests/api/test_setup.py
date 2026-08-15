@@ -141,3 +141,16 @@ async def test_setup_validates_a_library_path_without_configuring_the_instance(
         "warning": "different filesystem from downloads; imports cannot hardlink",
     }
     assert (await client.get("/api/setup/status")).json() == {"configured": False}
+
+
+async def test_setup_accepts_the_data_root_before_download_directories_exist(
+    app, client, tmp_path: Path
+) -> None:
+    app.state.settings = app.state.settings.model_copy(update={"data_path": tmp_path})
+
+    response = await client.post(
+        "/api/setup/validate-library-path", json={"library_path": str(tmp_path)}
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"same_filesystem_as_downloads": True, "warning": None}

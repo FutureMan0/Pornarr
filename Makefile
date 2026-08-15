@@ -10,9 +10,10 @@ setup:
 	@test -f .env || (cp .env.example .env && \
 		sed -i "s|^APP_SECRET=.*|APP_SECRET=$$(openssl rand -hex 32)|" .env && \
 		echo "wrote .env with a generated APP_SECRET")
+	@mkdir -p data backups
 
 ## up: start the full stack with development overrides
-up:
+up: setup
 	docker compose up -d --wait
 
 ## down: stop the stack
