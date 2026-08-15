@@ -615,6 +615,7 @@ dependencies = [
     { name = "pornarr-integrations" },
     { name = "pornarr-media" },
     { name = "pornarr-shared" },
+    { name = "watchfiles" },
 ]
 
 [package.metadata]
@@ -625,6 +626,7 @@ requires-dist = [
     { name = "pornarr-integrations", editable = "packages/integrations" },
     { name = "pornarr-media", editable = "packages/media" },
     { name = "pornarr-shared", editable = "packages/shared" },
+    { name = "watchfiles", specifier = ">=1.2,<2" },
 ]
 
 [[package]]

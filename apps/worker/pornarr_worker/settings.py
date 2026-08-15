@@ -24,6 +24,7 @@ from pornarr_worker.jobs.automation import AUTOMATION_EXECUTION_JOB
 from pornarr_worker.jobs.backlog_search import BACKLOG_SEARCH_DISPATCH_JOB, BACKLOG_SEARCH_JOB
 from pornarr_worker.jobs.download_poll import DOWNLOAD_POLL_JOB
 from pornarr_worker.jobs.events import PRUNE_USER_EVENTS_JOB
+from pornarr_worker.jobs.import_trigger import IMPORT_DOWNLOAD_JOB, WATCH_DOWNLOAD_FILES_JOB
 from pornarr_worker.jobs.monitor_match import MONITOR_MATCH_JOB
 from pornarr_worker.jobs.phash import PERCEPTUAL_HASH_DISPATCH_JOB, PERCEPTUAL_HASH_JOB
 from pornarr_worker.jobs.profile import REFRESH_INTEREST_PROFILES_JOB
@@ -57,6 +58,7 @@ class WorkerSettings:
         HEARTBEAT_JOB,
         CLEANUP_TRANSCODES_JOB,
         DOWNLOAD_POLL_JOB,
+        WATCH_DOWNLOAD_FILES_JOB,
         AUTOMATION_EXECUTION_JOB,
         REFRESH_STORAGE_JOB,
         PRUNE_USER_EVENTS_JOB,
@@ -85,6 +87,7 @@ class ImportWorkerSettings:
         SCAN_JOB,
         QUARANTINE_JOB,
         UPGRADE_MEDIA_FILE_JOB,
+        IMPORT_DOWNLOAD_JOB,
     ]
     queue_name: ClassVar = IMPORT_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
@@ -158,6 +161,13 @@ class SchedulerSettings:
             DOWNLOAD_POLL_JOB.coroutine,
             name=DOWNLOAD_POLL_JOB.name,
             second=set(range(0, 60, 5)),
+            run_at_startup=True,
+            max_tries=JOB_MAX_TRIES,
+        ),
+        cron(
+            WATCH_DOWNLOAD_FILES_JOB.coroutine,
+            name=WATCH_DOWNLOAD_FILES_JOB.name,
+            second={0, 30},
             run_at_startup=True,
             max_tries=JOB_MAX_TRIES,
         ),

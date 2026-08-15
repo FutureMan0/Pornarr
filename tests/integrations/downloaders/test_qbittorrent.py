@@ -78,6 +78,7 @@ def test_recorded_torrent_response_is_parsed() -> None:
     assert torrent.remaining_bytes == 0
     assert torrent.eta_seconds is None
     assert torrent.save_path == "/downloads"
+    assert torrent.output_path == "/downloads/pornarr-fixture"
 
 
 async def test_session_expiry_reauthenticates_before_returning_a_failure() -> None:
@@ -108,6 +109,7 @@ async def test_session_expiry_reauthenticates_before_returning_a_failure() -> No
 
 async def test_reads_all_jobs_in_one_queue_request() -> None:
     recorded = json.loads((FIXTURES / "qbittorrent-torrents-info.json").read_text())
+    recorded[0]["content_path"] = "/downloads/exact-content-path"
     requests: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -127,6 +129,7 @@ async def test_reads_all_jobs_in_one_queue_request() -> None:
 
     assert [job.client_job_id for job in jobs] == [TORRENT_HASH]
     assert jobs[0].estimated_seconds is None
+    assert jobs[0].output_path == "/downloads/exact-content-path"
     assert [request.url.path for request in requests] == [
         "/api/v2/auth/login",
         "/api/v2/torrents/info",

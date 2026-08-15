@@ -55,6 +55,7 @@ class SabnzbdJob:
     eta_seconds: int | None
     error: str | None
     post_processing_seconds: int | None
+    output_path: str | None
 
 
 def map_sabnzbd_queue_state(value: str) -> DownloadState:
@@ -91,6 +92,7 @@ def parse_queue(payload: Mapping[str, object]) -> list[SabnzbdJob]:
             eta_seconds=_duration(_string(slot, "timeleft")),
             error=None,
             post_processing_seconds=None,
+            output_path=None,
         )
         for slot in slots
     ]
@@ -110,6 +112,7 @@ def parse_history_slot(payload: Mapping[str, object]) -> SabnzbdJob:
         eta_seconds=None,
         error=failure or None,
         post_processing_seconds=_integer(payload, "postproc_time"),
+        output_path=_optional_string(payload, "storage"),
     )
 
 
@@ -216,6 +219,7 @@ class SabnzbdAdapter:
                 download_speed_bytes=job.download_speed_bytes,
                 estimated_seconds=job.eta_seconds,
                 error=job.error,
+                output_path=job.output_path,
             )
             for job in [*queue, *history]
         ]
@@ -394,6 +398,15 @@ def _api_key(credentials: str) -> str:
 
 def _string(payload: Mapping[str, object], key: str) -> str:
     value = payload.get(key)
+    if not isinstance(value, str):
+        raise SabnzbdProtocolError(f"SABnzbd field {key!r} must be a string.")
+    return value
+
+
+def _optional_string(payload: Mapping[str, object], key: str) -> str | None:
+    value = payload.get(key)
+    if value is None:
+        return None
     if not isinstance(value, str):
         raise SabnzbdProtocolError(f"SABnzbd field {key!r} must be a string.")
     return value

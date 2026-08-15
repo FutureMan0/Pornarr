@@ -80,6 +80,28 @@ class DownloadHistory(Base):
     )
 
 
+class ImportTrigger(TimestampMixin, Base):
+    """One durable handover from a completed download into the import pipeline."""
+
+    __tablename__ = "import_triggers"
+    __table_args__ = (Index("ix_import_triggers_status", "status"),)
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    download_job_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("download_jobs.id", ondelete="SET NULL"),
+        unique=True,
+        nullable=True,
+    )
+    source_path: Mapped[str] = mapped_column(String(1024), unique=True, nullable=False)
+    reported_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="pending", server_default="pending"
+    )
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    error_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
 class BlockedRelease(TimestampMixin, Base):
     """A release that must not be retried until ``blocked_until`` has passed."""
 

@@ -111,6 +111,7 @@ async def test_poll_batches_each_client_and_isolates_an_unreachable_client(
                 remaining_bytes=0,
                 download_speed_bytes=0,
                 estimated_seconds=0,
+                output_path="/data/torrents/completed-release",
             )
         ]
     )
@@ -118,13 +119,13 @@ async def test_poll_batches_each_client_and_isolates_an_unreachable_client(
         ConnectionError("client unavailable with unreachable-secret")
     )
     events: list[tuple[str, dict[str, Any]]] = []
-    imports: list[str] = []
+    imports: list[tuple[str, str | None]] = []
 
     async def publish(event_type: str, data: dict[str, Any]) -> None:
         events.append((event_type, data))
 
-    async def enqueue_import(job: DownloadJob) -> None:
-        imports.append(str(job.id))
+    async def enqueue_import(job: DownloadJob, output_path: str | None) -> None:
+        imports.append((str(job.id), output_path))
 
     await poll_downloads(
         session,
@@ -149,7 +150,7 @@ async def test_poll_batches_each_client_and_isolates_an_unreachable_client(
     assert unreachable.health == "unhealthy"
     assert unreachable.last_error == "client unavailable with [redacted]"
     assert still_running.status == "downloading"
-    assert imports == [str(completed.id)]
+    assert imports == [(str(completed.id), "/data/torrents/completed-release")]
     assert events == [("download.status", {"job_id": str(completed.id), "status": "completed"})]
     history = await session.scalar(
         select(DownloadHistory).where(DownloadHistory.download_job_id == completed.id)
@@ -187,7 +188,7 @@ async def test_poll_marks_a_client_removed_job_without_enqueuing_import(
     async def publish(event_type: str, data: dict[str, Any]) -> None:
         events.append((event_type, data))
 
-    async def enqueue_import(_: DownloadJob) -> None:
+    async def enqueue_import(_: DownloadJob, __: str | None) -> None:
         pytest.fail("a removed job must not be imported")
 
     await poll_downloads(
@@ -201,6 +202,62 @@ async def test_poll_marks_a_client_removed_job_without_enqueuing_import(
     assert job.status == "removed"
     assert job.error == "Job no longer exists in the download client."
     assert events == [("download.status", {"job_id": str(job.id), "status": "removed"})]
+
+
+async def test_poll_replays_a_persisted_completion_after_a_worker_restart(
+    session: AsyncSession,
+) -> None:
+    client = DownloadClient(
+        name="client",
+        protocol="torrent",
+        implementation="adapter",
+        host="client.example",
+        port=8080,
+        credentials="secret",
+    )
+    session.add(client)
+    await session.flush()
+    completed = DownloadJob(
+        download_client_id=client.id,
+        client_name=client.name,
+        protocol=client.protocol,
+        release_guid="release",
+        client_job_id="client-job",
+        status="completed",
+    )
+    session.add(completed)
+    await session.commit()
+    adapter = PollingAdapter(
+        [
+            DownloadClientJob(
+                client_job_id="client-job",
+                state=DownloadState.COMPLETED,
+                size_bytes=100,
+                remaining_bytes=0,
+                download_speed_bytes=0,
+                estimated_seconds=0,
+                output_path="/data/torrents/release",
+            )
+        ]
+    )
+    imports: list[tuple[str, str | None]] = []
+    events: list[str] = []
+
+    async def publish(event_type: str, _: dict[str, Any]) -> None:
+        events.append(event_type)
+
+    async def enqueue_import(job: DownloadJob, output_path: str | None) -> None:
+        imports.append((str(job.id), output_path))
+
+    await poll_downloads(
+        session,
+        adapters={"adapter": adapter},
+        publish=publish,
+        enqueue_import=enqueue_import,
+    )
+
+    assert imports == [(str(completed.id), "/data/torrents/release")]
+    assert events == ["download.progress"]
 
 
 async def test_polling_one_hundred_jobs_makes_one_client_request(session: AsyncSession) -> None:
@@ -247,7 +304,7 @@ async def test_polling_one_hundred_jobs_makes_one_client_request(session: AsyncS
     async def publish(event_type: str, data: dict[str, Any]) -> None:
         events.append((event_type, data))
 
-    async def enqueue_import(_: DownloadJob) -> None:
+    async def enqueue_import(_: DownloadJob, __: str | None) -> None:
         pytest.fail("running jobs must not be imported")
 
     await poll_downloads(
@@ -317,7 +374,7 @@ async def test_poll_records_failure_without_collapsing_a_stalled_job(session: As
     async def publish(event_type: str, data: dict[str, Any]) -> None:
         events.append((event_type, data))
 
-    async def enqueue_import(_: DownloadJob) -> None:
+    async def enqueue_import(_: DownloadJob, __: str | None) -> None:
         pytest.fail("failed and stalled jobs must not be imported")
 
     handled: list[DownloadJob] = []

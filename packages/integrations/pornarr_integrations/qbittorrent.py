@@ -86,6 +86,7 @@ class QbittorrentTorrent:
     max_ratio: float
     seeding_time_seconds: int
     max_seeding_time_seconds: int
+    content_path: str | None
 
     @property
     def has_met_seeding_policy(self) -> bool:
@@ -101,6 +102,13 @@ class QbittorrentTorrent:
             and self.seeding_time_seconds >= self.max_seeding_time_seconds
         )
         return ratio_reached or time_reached
+
+    @property
+    def output_path(self) -> str:
+        """Prefer qBittorrent's exact content path over its shared save directory."""
+        if self.content_path:
+            return self.content_path
+        return f"{self.save_path.rstrip('/')}/{self.name}"
 
 
 def map_qbittorrent_state(value: str) -> DownloadState:
@@ -130,6 +138,7 @@ def parse_torrent(payload: Mapping[str, object]) -> QbittorrentTorrent:
         max_ratio=_float(payload, "max_ratio"),
         seeding_time_seconds=_integer(payload, "seeding_time"),
         max_seeding_time_seconds=_integer(payload, "max_seeding_time"),
+        content_path=_optional_string(payload, "content_path"),
     )
 
 
@@ -224,6 +233,7 @@ class QbittorrentAdapter:
                 remaining_bytes=torrent.remaining_bytes,
                 download_speed_bytes=torrent.download_speed_bytes,
                 estimated_seconds=torrent.eta_seconds,
+                output_path=torrent.output_path,
             )
             for torrent in await self.list_torrents(
                 host=host,
@@ -382,6 +392,15 @@ def _string(payload: Mapping[str, object], key: str) -> str:
     if not isinstance(value, str):
         raise QbittorrentProtocolError(f"qBittorrent field {key!r} must be a string.")
     return value
+
+
+def _optional_string(payload: Mapping[str, object], key: str) -> str | None:
+    value = payload.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise QbittorrentProtocolError(f"qBittorrent field {key!r} must be a string.")
+    return value or None
 
 
 def _integer(payload: Mapping[str, object], key: str) -> int:

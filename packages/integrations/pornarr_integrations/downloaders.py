@@ -37,6 +37,7 @@ class DownloadClientJob:
     download_speed_bytes: int | None
     estimated_seconds: int | None
     error: str | None = None
+    output_path: str | None = None
 
 
 class DownloadClientAdapter(Protocol):

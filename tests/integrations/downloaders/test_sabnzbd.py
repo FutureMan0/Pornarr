@@ -164,6 +164,7 @@ async def test_reads_queue_and_history() -> None:
         "status": "Extracting",
         "postproc_time": 19,
         "fail_message": "",
+        "storage": "/data/usenet/release",
     }
     requests: list[httpx.Request] = []
 
@@ -193,6 +194,7 @@ async def test_reads_one_batched_poll_for_queue_and_history() -> None:
         "status": "Completed",
         "postproc_time": 19,
         "fail_message": "",
+        "storage": "/data/usenet/release",
     }
     requests: list[httpx.Request] = []
 
@@ -213,6 +215,7 @@ async def test_reads_one_batched_poll_for_queue_and_history() -> None:
 
     assert [job.client_job_id for job in jobs] == [NZO_ID, "history-job"]
     assert jobs[1].state is DownloadState.COMPLETED
+    assert jobs[1].output_path == "/data/usenet/release"
     assert [request.url.params["mode"] for request in requests] == ["queue", "history"]
 
 
