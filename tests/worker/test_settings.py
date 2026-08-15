@@ -86,6 +86,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "quarantine_job",
         "upgrade_media_file_job",
         "import_download",
+        "resolve_metadata_job",
     ]
     required_arq_options = {
         "functions",

@@ -30,6 +30,7 @@ from pornarr_db.models.filters import (
 from pornarr_db.models.indexer import Indexer, IndexerStats
 from pornarr_db.models.media import DuplicateCandidate, Media, MediaFile, MediaFileHistory
 from pornarr_db.models.metadata_correction import MetadataCorrection
+from pornarr_db.models.metadata_match import MetadataMatchLog
 from pornarr_db.models.monitor import Monitor, MonitorKind
 from pornarr_db.models.notification import Notification, NotificationKind, NotificationPreference
 from pornarr_db.models.oidc import OidcIdentity, OidcProvider
@@ -73,6 +74,7 @@ __all__ = [
     "MediaPerformer",
     "MediaTag",
     "MetadataCorrection",
+    "MetadataMatchLog",
     "Monitor",
     "MonitorKind",
     "Notification",
