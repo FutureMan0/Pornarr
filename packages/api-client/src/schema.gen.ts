@@ -352,6 +352,113 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/quality/custom-formats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Custom Formats */
+        get: operations["admin_list_custom_formats"];
+        put?: never;
+        /** Create Custom Format */
+        post: operations["admin_create_custom_format"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/quality/custom-formats/{format_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Custom Format */
+        put: operations["admin_update_custom_format"];
+        post?: never;
+        /** Delete Custom Format */
+        delete: operations["admin_delete_custom_format"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/quality/definitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Quality Definitions */
+        get: operations["admin_list_quality_definitions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/quality/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Quality Decision */
+        post: operations["admin_preview_quality_decision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/quality/profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Quality Profiles */
+        get: operations["admin_list_quality_profiles"];
+        put?: never;
+        /** Create Quality Profile */
+        post: operations["admin_create_quality_profile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/quality/profiles/{profile_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Quality Profile */
+        get: operations["admin_read_quality_profile"];
+        /** Update Quality Profile */
+        put: operations["admin_update_quality_profile"];
+        post?: never;
+        /** Delete Quality Profile */
+        delete: operations["admin_delete_quality_profile"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/quarantine": {
         parameters: {
             query?: never;
@@ -1313,6 +1420,86 @@ export interface components {
             /** Username */
             username: string;
         };
+        /** CustomFormatConditionResponse */
+        CustomFormatConditionResponse: {
+            field: components["schemas"]["CustomFormatField"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean;
+            operator: components["schemas"]["CustomFormatOperator"];
+            /**
+             * Required
+             * @default true
+             */
+            required: boolean;
+            value: components["schemas"]["JsonValue"];
+        };
+        /** CustomFormatConditionWrite */
+        CustomFormatConditionWrite: {
+            field: components["schemas"]["CustomFormatField"];
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean;
+            operator: components["schemas"]["CustomFormatOperator"];
+            /**
+             * Required
+             * @default true
+             */
+            required: boolean;
+            value: components["schemas"]["JsonValue"];
+        };
+        /**
+         * CustomFormatField
+         * @enum {string}
+         */
+        CustomFormatField: "title" | "codec" | "source" | "size" | "indexer" | "protocol" | "flags";
+        /**
+         * CustomFormatOperator
+         * @enum {string}
+         */
+        CustomFormatOperator: "equals" | "contains" | "greater_than" | "less_than";
+        /** CustomFormatResponse */
+        CustomFormatResponse: {
+            /** Conditions */
+            conditions: components["schemas"]["CustomFormatConditionResponse"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Score */
+            score: number;
+        };
+        /** CustomFormatScore */
+        CustomFormatScore: {
+            /** Name */
+            name: string;
+            /** Score */
+            score: number;
+        };
+        /** CustomFormatWrite */
+        CustomFormatWrite: {
+            /** Conditions */
+            conditions: components["schemas"]["CustomFormatConditionWrite"][];
+            /** Name */
+            name: string;
+            /**
+             * Score
+             * @default 0
+             */
+            score: number;
+        };
         /** DailyStorageUsageResponse */
         DailyStorageUsageResponse: {
             /**
@@ -1555,6 +1742,7 @@ export interface components {
             /** Protocol */
             protocol: string;
         };
+        JsonValue: unknown;
         /** LocalSearchItem */
         LocalSearchItem: {
             /** Duration Seconds */
@@ -1841,6 +2029,111 @@ export interface components {
              * @default preferred_username
              */
             username_claim: string;
+        };
+        /** QualityDefinitionResponse */
+        QualityDefinitionResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Maximum Size Mb Per Minute */
+            maximum_size_mb_per_minute: number;
+            /** Minimum Size Mb Per Minute */
+            minimum_size_mb_per_minute: number;
+            /** Name */
+            name: string;
+            /** Resolution */
+            resolution: string;
+            /** Source */
+            source: string;
+            /** Weight */
+            weight: number;
+        };
+        /** QualityPreviewRequest */
+        QualityPreviewRequest: {
+            /**
+             * Custom Formats
+             * @default []
+             */
+            custom_formats: components["schemas"]["CustomFormatWrite"][];
+            profile: components["schemas"]["QualityProfilePreview"];
+            /** Release Name */
+            release_name: string;
+        };
+        /** QualityPreviewResponse */
+        QualityPreviewResponse: {
+            /** Fields */
+            fields: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Matched Custom Formats */
+            matched_custom_formats: components["schemas"]["CustomFormatScore"][];
+            quality: components["schemas"]["QualityDefinitionResponse"] | null;
+            /** Reason */
+            reason: string;
+            /** Score */
+            score: number;
+            /** Verdict */
+            verdict: string;
+        };
+        /** QualityProfilePreview */
+        QualityProfilePreview: {
+            /**
+             * Cutoff Quality Id
+             * Format: uuid
+             */
+            cutoff_quality_id: string;
+            /**
+             * Minimum Custom Format Score
+             * @default 0
+             */
+            minimum_custom_format_score: number;
+            /** Quality Definition Ids */
+            quality_definition_ids: string[];
+        };
+        /** QualityProfileResponse */
+        QualityProfileResponse: {
+            /**
+             * Cutoff Quality Id
+             * Format: uuid
+             */
+            cutoff_quality_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Default */
+            is_default: boolean;
+            /** Minimum Custom Format Score */
+            minimum_custom_format_score: number;
+            /** Name */
+            name: string;
+            /** Qualities */
+            qualities: components["schemas"]["QualityDefinitionResponse"][];
+        };
+        /** QualityProfileWrite */
+        QualityProfileWrite: {
+            /**
+             * Cutoff Quality Id
+             * Format: uuid
+             */
+            cutoff_quality_id: string;
+            /**
+             * Is Default
+             * @default false
+             */
+            is_default: boolean;
+            /**
+             * Minimum Custom Format Score
+             * @default 0
+             */
+            minimum_custom_format_score: number;
+            /** Name */
+            name: string;
+            /** Quality Definition Ids */
+            quality_definition_ids: string[];
         };
         /** QuarantineApproval */
         QuarantineApproval: {
@@ -3038,6 +3331,324 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PerformanceInputResponse"][];
+                };
+            };
+        };
+    };
+    admin_list_custom_formats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomFormatResponse"][];
+                };
+            };
+        };
+    };
+    admin_create_custom_format: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomFormatWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomFormatResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_update_custom_format: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                format_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomFormatWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomFormatResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_delete_custom_format: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                format_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_quality_definitions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualityDefinitionResponse"][];
+                };
+            };
+        };
+    };
+    admin_preview_quality_decision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QualityPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualityPreviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_quality_profiles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualityProfileResponse"][];
+                };
+            };
+        };
+    };
+    admin_create_quality_profile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QualityProfileWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualityProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_read_quality_profile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                profile_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualityProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_update_quality_profile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                profile_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QualityProfileWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualityProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_delete_quality_profile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                profile_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
