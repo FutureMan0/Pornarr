@@ -1207,6 +1207,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/search/indexers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Indexer Search
+         * @description Queue a user's external fan-out without delaying the local search response.
+         */
+        post: operations["search_start_indexer_search"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/search/indexers/{search_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Indexer Search Status
+         * @description Read one user's progressive indexer search with stable, shared filters.
+         */
+        get: operations["search_indexer_search_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/search/local": {
         parameters: {
             query?: never;
@@ -1626,6 +1666,41 @@ export interface components {
             /** Status */
             status: number;
         };
+        /** ExternalSearchItem */
+        ExternalSearchItem: {
+            estimate: components["schemas"]["SearchEstimateResponse"];
+            /** Guid */
+            guid: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Indexer Id
+             * Format: uuid
+             */
+            indexer_id: string;
+            /** Indexer Name */
+            indexer_name: string;
+            /** Protocol */
+            protocol: string;
+            /** Published At */
+            published_at: string | null;
+            /** Quality */
+            quality: string | null;
+            /** Seeders */
+            seeders: number | null;
+            /** Size */
+            size: number | null;
+            /** Title */
+            title: string;
+        };
+        /**
+         * ExternalSearchSort
+         * @enum {string}
+         */
+        ExternalSearchSort: "relevance" | "age" | "size" | "quality" | "seeders" | "estimated_time";
         /** GrabResponse */
         GrabResponse: {
             /**
@@ -1722,6 +1797,37 @@ export interface components {
             protocol: string;
             stats: components["schemas"]["IndexerStatsResponse"];
         };
+        /** IndexerSearchResponse */
+        IndexerSearchResponse: {
+            /** Cancelled */
+            cancelled: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Items */
+            items: components["schemas"]["ExternalSearchItem"][];
+            /** Query */
+            query: string;
+            /** Statuses */
+            statuses: {
+                [key: string]: string;
+            };
+        };
+        /** IndexerSearchStartResponse */
+        IndexerSearchStartResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
+        /** IndexerSearchWrite */
+        IndexerSearchWrite: {
+            /** Q */
+            q: string;
+        };
         /** IndexerStatsResponse */
         IndexerStatsResponse: {
             /** Average Latency Ms */
@@ -1809,7 +1915,7 @@ export interface components {
          * MediaSort
          * @enum {string}
          */
-        MediaSort: "relevance" | "date_added" | "title" | "size" | "duration";
+        MediaSort: "relevance" | "age" | "date_added" | "title" | "size" | "quality" | "duration";
         /** MonitorCreate */
         MonitorCreate: {
             /**
@@ -2482,6 +2588,14 @@ export interface components {
             transcode_max_sw_sessions?: number | null;
             /** User Event Retention Days */
             user_event_retention_days?: number | null;
+        };
+        /** SearchEstimateResponse */
+        SearchEstimateResponse: {
+            confidence: components["schemas"]["Confidence"];
+            /** High Seconds */
+            high_seconds: number | null;
+            /** Low Seconds */
+            low_seconds: number | null;
         };
         /** SetupCompleteResponse */
         SetupCompleteResponse: {
@@ -5527,6 +5641,79 @@ export interface operations {
             };
         };
     };
+    search_start_indexer_search: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IndexerSearchWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndexerSearchStartResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_indexer_search_status: {
+        parameters: {
+            query?: {
+                quality?: string | null;
+                minimum_size_bytes?: number | null;
+                maximum_size_bytes?: number | null;
+                maximum_age_days?: number | null;
+                indexer_id?: string | null;
+                protocol?: string | null;
+                minimum_seeders?: number | null;
+                sort?: components["schemas"]["ExternalSearchSort"];
+            };
+            header?: never;
+            path: {
+                search_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndexerSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     search_local_search: {
         parameters: {
             query: {
@@ -5538,6 +5725,9 @@ export interface operations {
                 tag?: string | null;
                 minimum_duration_seconds?: number | null;
                 maximum_duration_seconds?: number | null;
+                minimum_size_bytes?: number | null;
+                maximum_size_bytes?: number | null;
+                maximum_age_days?: number | null;
                 sort?: components["schemas"]["MediaSort"];
                 cursor?: string | null;
                 limit?: number;

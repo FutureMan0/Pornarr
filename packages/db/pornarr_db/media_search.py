@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import json
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime, timedelta
 from enum import StrEnum
 from uuid import UUID
 
@@ -21,9 +21,11 @@ TRIGRAM_THRESHOLD = 0.2
 
 class MediaSort(StrEnum):
     RELEVANCE = "relevance"
+    AGE = "age"
     DATE_ADDED = "date_added"
     TITLE = "title"
     SIZE = "size"
+    QUALITY = "quality"
     DURATION = "duration"
 
 
@@ -37,6 +39,9 @@ class MediaSearch:
     tag: str | None = None
     minimum_duration_seconds: float | None = None
     maximum_duration_seconds: float | None = None
+    minimum_size_bytes: int | None = None
+    maximum_size_bytes: int | None = None
+    maximum_age_days: int | None = None
     sort: MediaSort = MediaSort.RELEVANCE
     cursor: str | None = None
     limit: int = 50
@@ -81,6 +86,12 @@ def decode_cursor(cursor: str) -> tuple[object, UUID]:
 
 def search_statement(search: MediaSearch) -> Select[tuple[Media, MediaFile, float]]:
     """Build an indexed PostgreSQL statement for a local media query."""
+    if (
+        search.minimum_size_bytes is not None
+        and search.maximum_size_bytes is not None
+        and search.minimum_size_bytes > search.maximum_size_bytes
+    ):
+        raise ValueError("minimum_size_bytes cannot exceed maximum_size_bytes.")
     query = search.query.casefold()
     title_similarity = func.similarity(Media.normalized_title, query)
     title_distance = Media.normalized_title.op("<->")(query)
@@ -111,6 +122,14 @@ def search_statement(search: MediaSearch) -> Select[tuple[Media, MediaFile, floa
         statement = statement.where(MediaFile.duration_seconds >= search.minimum_duration_seconds)
     if search.maximum_duration_seconds is not None:
         statement = statement.where(MediaFile.duration_seconds <= search.maximum_duration_seconds)
+    if search.minimum_size_bytes is not None:
+        statement = statement.where(MediaFile.size >= search.minimum_size_bytes)
+    if search.maximum_size_bytes is not None:
+        statement = statement.where(MediaFile.size <= search.maximum_size_bytes)
+    if search.maximum_age_days is not None:
+        statement = statement.where(
+            Media.release_date >= datetime.now(UTC).date() - timedelta(search.maximum_age_days)
+        )
 
     sort_column, descending = _sort_column(search.sort, relevance, title_distance)
     if search.cursor:
@@ -202,9 +221,11 @@ def _media_has_tag(media_id: object, normalized_name: str):
 def _sort_column(sort: MediaSort, relevance, title_distance):
     columns = {
         MediaSort.RELEVANCE: (title_distance, False),
+        MediaSort.AGE: (func.coalesce(Media.release_date, date.min), True),
         MediaSort.DATE_ADDED: (Media.created_at, True),
         MediaSort.TITLE: (Media.normalized_title, False),
         MediaSort.SIZE: (MediaFile.size, True),
+        MediaSort.QUALITY: (MediaFile.quality, True),
         MediaSort.DURATION: (func.coalesce(MediaFile.duration_seconds, -1), True),
     }
     return columns[sort]
