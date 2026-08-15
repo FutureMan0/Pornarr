@@ -351,6 +351,14 @@ function ExternalRow({
     <tr className="bg-surface text-ink hover:bg-surface-2">
       <td className="max-w-[24rem] truncate px-3 py-2 font-mono text-xs" title={item.title}>
         {item.title}
+        {item.match.kind === "new" ? null : (
+          <a
+            className="ml-2 font-sans text-ink-muted underline decoration-border-control underline-offset-2"
+            href={`/library?media=${item.match.media_id}`}
+          >
+            {t(`search.match.${item.match.kind}`)}
+          </a>
+        )}
       </td>
       <td className="px-3 py-2">{item.indexer_name}</td>
       <td className="px-3 py-2">{item.quality ?? "—"}</td>
@@ -368,7 +376,20 @@ function ExternalRow({
       <td className="px-3 py-2 text-right">
         <Numeric>{item.seeders ?? "—"}</Numeric>
       </td>
-      <td className="px-3 py-2 text-right text-ink-muted">—</td>
+      <td
+        className="px-3 py-2 text-right"
+        title={
+          item.match.score === null
+            ? undefined
+            : t("search.match.scoreBreakdown", {
+                title: format.number(item.match.breakdown.title ?? 0, 2),
+                attributes: format.number(item.match.breakdown.attributes ?? 0, 2),
+                reliability: format.number(item.match.breakdown.reliability ?? 0, 2),
+              })
+        }
+      >
+        <Numeric>{item.match.score === null ? "—" : format.number(item.match.score, 2)}</Numeric>
+      </td>
       <td className="px-3 py-2 text-right">
         <Numeric>{format.estimate(item.estimate.low_seconds, item.estimate.high_seconds)}</Numeric>
       </td>

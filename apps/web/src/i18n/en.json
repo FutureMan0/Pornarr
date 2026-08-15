@@ -182,6 +182,11 @@
       "timedOut": "Timed out",
       "unhealthy": "Unavailable",
       "cancelled": "Cancelled"
+    },
+    "match": {
+      "present": "In library",
+      "upgrade": "Upgrade",
+      "scoreBreakdown": "Title {{title}}, attributes {{attributes}}, indexer reliability {{reliability}}"
     }
   },
   "account": {

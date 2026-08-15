@@ -60,6 +60,12 @@ function searchHandlers() {
             published_at: "2026-08-14T12:00:00Z",
             seeders: 12,
             estimate: { low_seconds: 60, high_seconds: 120, confidence: "high" },
+            match: {
+              kind: "upgrade",
+              media_id: "d1541a90-7a4b-45ff-8a67-66d074e7b072",
+              score: 0.82,
+              breakdown: { title: 0.52, attributes: 0.2, reliability: 0.1 },
+            },
           },
         ],
       }),

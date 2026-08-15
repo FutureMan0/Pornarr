@@ -818,6 +818,9 @@
             "title": "Indexer Name",
             "type": "string"
           },
+          "match": {
+            "$ref": "#/components/schemas/SearchMatchResponse"
+          },
           "protocol": {
             "title": "Protocol",
             "type": "string"
@@ -883,7 +886,8 @@
           "size",
           "published_at",
           "seeders",
-          "estimate"
+          "estimate",
+          "match"
         ],
         "title": "ExternalSearchItem",
         "type": "object"
@@ -3537,6 +3541,60 @@
           "confidence"
         ],
         "title": "SearchEstimateResponse",
+        "type": "object"
+      },
+      "SearchMatchKind": {
+        "enum": [
+          "new",
+          "present",
+          "upgrade"
+        ],
+        "title": "SearchMatchKind",
+        "type": "string"
+      },
+      "SearchMatchResponse": {
+        "properties": {
+          "breakdown": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Breakdown",
+            "type": "object"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SearchMatchKind"
+          },
+          "media_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Id"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          }
+        },
+        "required": [
+          "kind",
+          "media_id",
+          "score",
+          "breakdown"
+        ],
+        "title": "SearchMatchResponse",
         "type": "object"
       },
       "SetupCompleteResponse": {

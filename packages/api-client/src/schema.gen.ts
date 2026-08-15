@@ -1683,6 +1683,7 @@ export interface components {
             indexer_id: string;
             /** Indexer Name */
             indexer_name: string;
+            match: components["schemas"]["SearchMatchResponse"];
             /** Protocol */
             protocol: string;
             /** Published At */
@@ -2596,6 +2597,23 @@ export interface components {
             high_seconds: number | null;
             /** Low Seconds */
             low_seconds: number | null;
+        };
+        /**
+         * SearchMatchKind
+         * @enum {string}
+         */
+        SearchMatchKind: "new" | "present" | "upgrade";
+        /** SearchMatchResponse */
+        SearchMatchResponse: {
+            /** Breakdown */
+            breakdown: {
+                [key: string]: number;
+            };
+            kind: components["schemas"]["SearchMatchKind"];
+            /** Media Id */
+            media_id: string | null;
+            /** Score */
+            score: number | null;
         };
         /** SetupCompleteResponse */
         SetupCompleteResponse: {

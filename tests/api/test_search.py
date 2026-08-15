@@ -253,6 +253,17 @@ async def test_indexer_search_status_filters_results_and_sorts_unknown_estimates
             published_at=now - timedelta(days=14),
             seeders=None,
         )
+        existing = Media(id=uuid4(), title="Example Scene", normalized_title="example scene")
+        session.add(existing)
+        session.add(
+            MediaFile(
+                id=uuid4(),
+                media_id=existing.id,
+                path="/library/example.mp4",
+                size=1_000_000,
+                quality="720p",
+            )
+        )
         await record_measurement(
             session,
             metric=PerformanceMetric.DOWNLOAD_SPEED,
@@ -268,6 +279,7 @@ async def test_indexer_search_status_filters_results_and_sorts_unknown_estimates
         torrent_id = torrent.id
         usenet_id = usenet.id
         fast_id = fast.id
+        existing_id = existing.id
         unknown_id = unknown.id
         old_id = old.id
         await session.commit()
@@ -308,6 +320,11 @@ async def test_indexer_search_status_filters_results_and_sorts_unknown_estimates
         "high_seconds": 2,
         "confidence": "low",
     }
+    match = filtered.json()["items"][0]["match"]
+    assert match["kind"] == "upgrade"
+    assert match["media_id"] == str(existing_id)
+    assert match["score"] > 0.5
+    assert set(match["breakdown"]) == {"title", "attributes", "reliability"}
 
     sorted_response = await client.get(
         f"/api/search/indexers/{search_id}", params={"sort": "estimated_time"}
