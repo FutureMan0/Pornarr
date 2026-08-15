@@ -795,6 +795,111 @@
         "title": "ErrorResponse",
         "type": "object"
       },
+      "ExternalSearchItem": {
+        "properties": {
+          "estimate": {
+            "$ref": "#/components/schemas/SearchEstimateResponse"
+          },
+          "guid": {
+            "title": "Guid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "indexer_id": {
+            "format": "uuid",
+            "title": "Indexer Id",
+            "type": "string"
+          },
+          "indexer_name": {
+            "title": "Indexer Name",
+            "type": "string"
+          },
+          "protocol": {
+            "title": "Protocol",
+            "type": "string"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality"
+          },
+          "seeders": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seeders"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "guid",
+          "title",
+          "indexer_id",
+          "indexer_name",
+          "protocol",
+          "quality",
+          "size",
+          "published_at",
+          "seeders",
+          "estimate"
+        ],
+        "title": "ExternalSearchItem",
+        "type": "object"
+      },
+      "ExternalSearchSort": {
+        "enum": [
+          "relevance",
+          "age",
+          "size",
+          "quality",
+          "seeders",
+          "estimated_time"
+        ],
+        "title": "ExternalSearchSort",
+        "type": "string"
+      },
       "GrabResponse": {
         "properties": {
           "download_job_id": {
@@ -1069,6 +1174,75 @@
         "title": "IndexerResponse",
         "type": "object"
       },
+      "IndexerSearchResponse": {
+        "properties": {
+          "cancelled": {
+            "title": "Cancelled",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ExternalSearchItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "statuses": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Statuses",
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "query",
+          "statuses",
+          "cancelled",
+          "items"
+        ],
+        "title": "IndexerSearchResponse",
+        "type": "object"
+      },
+      "IndexerSearchStartResponse": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "IndexerSearchStartResponse",
+        "type": "object"
+      },
+      "IndexerSearchWrite": {
+        "properties": {
+          "q": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Q",
+            "type": "string"
+          }
+        },
+        "required": [
+          "q"
+        ],
+        "title": "IndexerSearchWrite",
+        "type": "object"
+      },
       "IndexerStatsResponse": {
         "properties": {
           "average_latency_ms": {
@@ -1317,9 +1491,11 @@
       "MediaSort": {
         "enum": [
           "relevance",
+          "age",
           "date_added",
           "title",
           "size",
+          "quality",
           "duration"
         ],
         "title": "MediaSort",
@@ -3325,6 +3501,42 @@
           }
         },
         "title": "RuntimeSettingsWrite",
+        "type": "object"
+      },
+      "SearchEstimateResponse": {
+        "properties": {
+          "confidence": {
+            "$ref": "#/components/schemas/Confidence"
+          },
+          "high_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "High Seconds"
+          },
+          "low_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Low Seconds"
+          }
+        },
+        "required": [
+          "low_seconds",
+          "high_seconds",
+          "confidence"
+        ],
+        "title": "SearchEstimateResponse",
         "type": "object"
       },
       "SetupCompleteResponse": {
@@ -7582,6 +7794,220 @@
         ]
       }
     },
+    "/api/search/indexers": {
+      "post": {
+        "description": "Queue a user's external fan-out without delaying the local search response.",
+        "operationId": "search_start_indexer_search",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IndexerSearchWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexerSearchStartResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Indexer Search",
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/api/search/indexers/{search_id}": {
+      "get": {
+        "description": "Read one user's progressive indexer search with stable, shared filters.",
+        "operationId": "search_indexer_search_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "search_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Search Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "quality",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Quality"
+            }
+          },
+          {
+            "in": "query",
+            "name": "minimum_size_bytes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Minimum Size Bytes"
+            }
+          },
+          {
+            "in": "query",
+            "name": "maximum_size_bytes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Maximum Size Bytes"
+            }
+          },
+          {
+            "in": "query",
+            "name": "maximum_age_days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 36500,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Maximum Age Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "indexer_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Indexer Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "protocol",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 32,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Protocol"
+            }
+          },
+          {
+            "in": "query",
+            "name": "minimum_seeders",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Minimum Seeders"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ExternalSearchSort",
+              "default": "relevance"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexerSearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Indexer Search Status",
+        "tags": [
+          "search"
+        ]
+      }
+    },
     "/api/search/local": {
       "get": {
         "operationId": "search_local_search",
@@ -7711,6 +8137,58 @@
                 }
               ],
               "title": "Maximum Duration Seconds"
+            }
+          },
+          {
+            "in": "query",
+            "name": "minimum_size_bytes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Minimum Size Bytes"
+            }
+          },
+          {
+            "in": "query",
+            "name": "maximum_size_bytes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Maximum Size Bytes"
+            }
+          },
+          {
+            "in": "query",
+            "name": "maximum_age_days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 36500,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Maximum Age Days"
             }
           },
           {

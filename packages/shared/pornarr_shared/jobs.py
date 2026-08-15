@@ -18,6 +18,7 @@ IMPORT_QUEUE = "pornarr:import"
 TRANSCODE_QUEUE = "pornarr:transcode"
 INDEXER_QUEUE = "pornarr:indexer"
 BACKLOG_SEARCH_JOB_NAME = "backlog_search"
+INDEXER_SEARCH_JOB_NAME = "search_indexers"
 
 JOB_TIMEOUT_SECONDS = 300
 JOB_MAX_TRIES = 3
@@ -26,6 +27,12 @@ JOB_COMPLETION_WAIT_SECONDS = 30
 WORKER_HEALTH_KEY = f"{DEFAULT_QUEUE}:health-check"
 
 JobCoroutine = Callable[..., Awaitable[Any]]
+
+
+def indexer_search_state_key(search_id: str) -> str:
+    """Return the Redis key for one user's transient indexer-search state."""
+
+    return f"pornarr:indexer-search:{search_id}"
 
 
 def job_key(function: str, *args: object, queue: str, **kwargs: object) -> str:
