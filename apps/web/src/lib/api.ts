@@ -21,7 +21,11 @@ const UNSAFE_METHODS: ReadonlySet<string> = new Set(["POST", "PUT", "PATCH", "DE
  * no cookie to echo yet. Matched on the contract path rather than the URL so a
  * base path or proxy prefix cannot silently defeat it.
  */
-const CSRF_EXEMPT_PATHS: ReadonlySet<string> = new Set(["/api/auth/login"]);
+const CSRF_EXEMPT_PATHS: ReadonlySet<string> = new Set([
+  "/api/auth/login",
+  "/api/setup/validate-library-path",
+  "/api/setup/complete",
+]);
 
 /**
  * Read the double-submit token out of `document.cookie`.

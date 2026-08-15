@@ -19,6 +19,8 @@ import { RequireAuth } from "./auth/require-auth";
 import { ForbiddenRoute, NotFoundRoute } from "./errors/route-errors";
 import { QuarantineReviewRoute } from "./routes/admin/quarantine/quarantine-review-route";
 import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles-route";
+import { SetupGate } from "./routes/setup/setup-gate";
+import { SetupRoute } from "./routes/setup/setup-route";
 import { AppShell } from "./shell/app-shell";
 import { NAV_ITEMS, type NavId } from "./shell/sidebar";
 
@@ -41,24 +43,30 @@ function Placeholder({ navId }: { readonly navId: NavId }): JSX.Element {
 export const FORBIDDEN_PATH = "/forbidden";
 
 export const appRoutes: RouteObject[] = [
-  { path: "/login", element: <LoginRoute /> },
+  { path: "/setup", element: <SetupRoute /> },
   {
     path: "/",
-    element: <RequireAuth />,
+    element: <SetupGate />,
     children: [
+      { path: "login", element: <LoginRoute /> },
       {
-        element: <AppShell />,
+        element: <RequireAuth />,
         children: [
-          { index: true, element: <Navigate to="/library" replace /> },
-          { path: "admin/quarantine", element: <QuarantineReviewRoute /> },
-          { path: "settings", element: <Navigate to="/settings/quality" replace /> },
-          { path: "settings/quality", element: <QualityProfilesRoute /> },
-          ...NAV_ITEMS.filter((item) => item.id !== "settings").map((item) => ({
-            path: item.path.slice(1),
-            element: <Placeholder navId={item.id} />,
-          })),
-          { path: FORBIDDEN_PATH.slice(1), element: <ForbiddenRoute /> },
-          { path: "*", element: <NotFoundRoute /> },
+          {
+            element: <AppShell />,
+            children: [
+              { index: true, element: <Navigate to="/library" replace /> },
+              { path: "admin/quarantine", element: <QuarantineReviewRoute /> },
+              { path: "settings", element: <Navigate to="/settings/quality" replace /> },
+              { path: "settings/quality", element: <QualityProfilesRoute /> },
+              ...NAV_ITEMS.filter((item) => item.id !== "settings").map((item) => ({
+                path: item.path.slice(1),
+                element: <Placeholder navId={item.id} />,
+              })),
+              { path: FORBIDDEN_PATH.slice(1), element: <ForbiddenRoute /> },
+              { path: "*", element: <NotFoundRoute /> },
+            ],
+          },
         ],
       },
     ],

@@ -1258,6 +1258,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/setup/validate-library-path": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate Library Path */
+        post: operations["setup_validate_library_path"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/transcode/sessions/{session_id}/heartbeat": {
         parameters: {
             query?: never;
@@ -2474,6 +2491,18 @@ export interface components {
             username: string;
             /** Warning */
             warning: string | null;
+        };
+        /** SetupPathValidationResponse */
+        SetupPathValidationResponse: {
+            /** Same Filesystem As Downloads */
+            same_filesystem_as_downloads: boolean;
+            /** Warning */
+            warning: string | null;
+        };
+        /** SetupPathValidationWrite */
+        SetupPathValidationWrite: {
+            /** Library Path */
+            library_path: string;
         };
         /** SetupWrite */
         SetupWrite: {
@@ -5599,6 +5628,48 @@ export interface operations {
                     "application/json": {
                         [key: string]: boolean;
                     };
+                };
+            };
+        };
+    };
+    setup_validate_library_path: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetupPathValidationWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupPathValidationResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

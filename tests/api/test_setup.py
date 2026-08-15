@@ -54,6 +54,13 @@ async def test_fresh_instance_serves_only_setup_then_unlocks(app, client, tmp_pa
             )
         )
         assert rule_count == 6
+        enabled_rule_count = await connection.scalar(
+            select(func.count(ContentFilterRule.id)).where(
+                ContentFilterRule.profile_id == profile_id,
+                ContentFilterRule.enabled.is_(True),
+            )
+        )
+        assert enabled_rule_count == 0
     repeated = await client.post(
         "/api/setup/complete",
         json={
@@ -64,6 +71,11 @@ async def test_fresh_instance_serves_only_setup_then_unlocks(app, client, tmp_pa
     )
     assert repeated.status_code == 409
     assert repeated.json()["code"] == "SETUP_ALREADY_COMPLETED"
+    validation_after_setup = await client.post(
+        "/api/setup/validate-library-path", json={"library_path": str(library_path)}
+    )
+    assert validation_after_setup.status_code == 409
+    assert validation_after_setup.json()["code"] == "SETUP_ALREADY_COMPLETED"
     await login(client, "admin", "correct horse battery staple")
     assert (await client.get("/api/auth/me")).status_code == 200
 
@@ -100,3 +112,32 @@ async def test_setup_reports_a_different_filesystem(
     assert (
         response.json()["warning"] == "different filesystem from downloads; imports cannot hardlink"
     )
+
+
+async def test_setup_validates_a_library_path_without_configuring_the_instance(
+    app, client, tmp_path: Path, monkeypatch
+) -> None:
+    app.state.settings = app.state.settings.model_copy(update={"data_path": tmp_path})
+    app.state.settings.torrents_path.mkdir()
+    library_path = tmp_path / "library"
+    library_path.mkdir()
+    original_stat = Path.stat
+
+    def stat_on_other_device(path: Path, *args, **kwargs):
+        result = original_stat(path, *args, **kwargs)
+        if path == library_path:
+            return SimpleNamespace(st_dev=result.st_dev + 1, st_mode=result.st_mode)
+        return result
+
+    monkeypatch.setattr(Path, "stat", stat_on_other_device)
+
+    response = await client.post(
+        "/api/setup/validate-library-path", json={"library_path": str(library_path)}
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "same_filesystem_as_downloads": False,
+        "warning": "different filesystem from downloads; imports cannot hardlink",
+    }
+    assert (await client.get("/api/setup/status")).json() == {"configured": False}

@@ -8,6 +8,96 @@
     "password": "Password",
     "submit": "Sign in"
   },
+  "setup": {
+    "checking": "Checking setup",
+    "progress": "Step {{current}} of {{total}}",
+    "progressLabel": "Setup progress",
+    "stepNumber": "Step {{number}}",
+    "steps": {
+      "account": "Admin account",
+      "library": "Library path",
+      "filters": "Content filters",
+      "metadata": "Metadata",
+      "summary": "Summary"
+    },
+    "next": "Continue",
+    "back": "Back",
+    "account": {
+      "title": "Set up Pornarr",
+      "body": "Create the administrator account for this instance.",
+      "username": "Username",
+      "usernameRequired": "Enter an administrator username.",
+      "password": "Password",
+      "passwordTooWeak": "Use at least 12 characters from two character types.",
+      "strength": {
+        "weak": "Password strength: weak",
+        "fair": "Password strength: fair",
+        "strong": "Password strength: strong"
+      }
+    },
+    "library": {
+      "title": "Choose the library path",
+      "body": "Pornarr stores imported media in this folder.",
+      "path": "Library path",
+      "pathRequired": "Enter a library path.",
+      "crossFilesystem": "This library is on a different filesystem from downloads. Imports will copy instead of hardlinking.",
+      "continueWithCopy": "Continue with copy imports"
+    },
+    "filters": {
+      "title": "Review content filters",
+      "body": "Every filter starts off. You can configure rules after setup without changing what is already imported.",
+      "listLabel": "Content filters that start off",
+      "off": "Off",
+      "rules": {
+        "term": {
+          "title": "Words and phrases",
+          "body": "Blocks media whose title or description matches a rule you add later."
+        },
+        "tag": {
+          "title": "Tags",
+          "body": "Blocks media carrying a tag you choose later."
+        },
+        "performer": {
+          "title": "Performers",
+          "body": "Blocks media featuring a performer you choose later."
+        },
+        "minimumConfidence": {
+          "title": "Metadata confidence",
+          "body": "Holds media whose metadata match falls below a threshold you choose later."
+        },
+        "unknownPerformerAge": {
+          "title": "Unknown performer age",
+          "body": "Holds media when a matched performer’s age is not known."
+        },
+        "unknownFileType": {
+          "title": "Unknown file type",
+          "body": "Holds media when the imported file type is not recognised."
+        }
+      }
+    },
+    "metadata": {
+      "title": "Metadata providers",
+      "body": "External metadata providers are optional. Pornarr can start without one.",
+      "skipped": "No metadata provider will be configured during this setup.",
+      "skipAction": "Skip for now"
+    },
+    "summary": {
+      "title": "Review setup",
+      "body": "Check these choices before creating the instance.",
+      "account": "Administrator",
+      "library": "Library path",
+      "filters": "Content filters",
+      "filtersOff": "All filters start off",
+      "metadata": "Metadata providers",
+      "metadataSkipped": "No provider configured"
+    },
+    "complete": {
+      "action": "Complete setup",
+      "title": "Setup complete",
+      "body": "The instance is ready. Sign in with the administrator account to continue.",
+      "signIn": "Sign in"
+    }
+  },
   "session": {
     "checking": "Checking your session",
     "unavailableTitle": "Could not check your session",
@@ -227,6 +317,9 @@
     "DECRYPTION_FAILED": "A stored credential could not be read. The application secret does not match the one it was saved with.",
     "QUALITY_CONFIGURATION_INVALID": "This quality profile or custom format is not valid. Check the selected qualities, cutoff and names.",
     "QUALITY_PROFILE_IN_USE": "This quality profile is still required by the application and cannot be deleted.",
+    "SETUP_REQUIRED": "Finish setting up this instance before using the application.",
+    "SETUP_ALREADY_COMPLETED": "This instance has already been configured.",
+    "SETUP_PATH_INVALID": "That library path is unavailable, not a folder, or cannot be written to.",
     "BAD_REQUEST": "That request was not something the server could use.",
     "NOT_FOUND": "That does not exist, or no longer does.",
     "METHOD_NOT_ALLOWED": "That action is not available on this address.",
@@ -256,6 +349,9 @@
     "DECRYPTION_FAILED": "Restore the original application secret, or enter the credential again.",
     "QUALITY_CONFIGURATION_INVALID": "Check the selected qualities, cutoff and names, then save again.",
     "QUALITY_PROFILE_IN_USE": "Choose another default profile or move the monitors to another profile first.",
+    "SETUP_REQUIRED": "Finish the setup steps before using the application.",
+    "SETUP_ALREADY_COMPLETED": "Sign in with the administrator account that already exists.",
+    "SETUP_PATH_INVALID": "Choose an existing folder that Pornarr can read and write.",
     "BAD_REQUEST": "Change what was sent and try once more.",
     "NOT_FOUND": "Pick a destination from the navigation.",
     "METHOD_NOT_ALLOWED": "Go back and choose a different action.",

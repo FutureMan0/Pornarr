@@ -3357,6 +3357,46 @@
         "title": "SetupCompleteResponse",
         "type": "object"
       },
+      "SetupPathValidationResponse": {
+        "properties": {
+          "same_filesystem_as_downloads": {
+            "title": "Same Filesystem As Downloads",
+            "type": "boolean"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warning"
+          }
+        },
+        "required": [
+          "same_filesystem_as_downloads",
+          "warning"
+        ],
+        "title": "SetupPathValidationResponse",
+        "type": "object"
+      },
+      "SetupPathValidationWrite": {
+        "properties": {
+          "library_path": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Library Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "library_path"
+        ],
+        "title": "SetupPathValidationWrite",
+        "type": "object"
+      },
       "SetupWrite": {
         "properties": {
           "library_path": {
@@ -7810,6 +7850,57 @@
           }
         },
         "summary": "Setup Status",
+        "tags": [
+          "setup"
+        ]
+      }
+    },
+    "/api/setup/validate-library-path": {
+      "post": {
+        "operationId": "setup_validate_library_path",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetupPathValidationWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupPathValidationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Validate Library Path",
         "tags": [
           "setup"
         ]

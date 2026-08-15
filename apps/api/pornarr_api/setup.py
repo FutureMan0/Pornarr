@@ -11,7 +11,15 @@ from starlette.types import ASGIApp
 
 from pornarr_db.models.user import User
 
-_ALLOWED = frozenset({"/health", "/api/setup/status", "/api/setup/complete", "/api/openapi.json"})
+_ALLOWED = frozenset(
+    {
+        "/health",
+        "/api/setup/status",
+        "/api/setup/validate-library-path",
+        "/api/setup/complete",
+        "/api/openapi.json",
+    }
+)
 
 
 class SetupMiddleware(BaseHTTPMiddleware):
