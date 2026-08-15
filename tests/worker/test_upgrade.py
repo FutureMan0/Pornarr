@@ -103,6 +103,44 @@ async def test_failed_upgrade_verification_keeps_the_original_file_active_and_in
     assert list(await session.scalars(select(MediaFileHistory))) == []
 
 
+async def test_upgrade_activates_the_replacement_before_removing_the_old_file(
+    session: AsyncSession, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    media, old_file = await _media_with_existing_file(session, tmp_path)
+    source = tmp_path / "downloads" / "replacement.mkv"
+    source.parent.mkdir()
+    source.write_bytes(b"replacement")
+    old_path = Path(old_file.path)
+    original_unlink = Path.unlink
+    active_replacements_at_removal: list[bool] = []
+
+    def record_activation_then_unlink(path: Path, *args, **kwargs) -> None:
+        if path == old_path:
+            active_replacements_at_removal.extend(
+                candidate.is_active
+                for candidate in session.identity_map.values()
+                if isinstance(candidate, MediaFile) and candidate.id != old_file.id
+            )
+            assert old_file.is_active is False
+        original_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "unlink", record_activation_then_unlink)
+
+    result = await upgrade_media_file(
+        session,
+        media.id,
+        source,
+        tmp_path / "library",
+        quality="2160p",
+        probe_file=_probe(103),
+    )
+
+    assert active_replacements_at_removal == [True]
+    replacement = await session.get(MediaFile, result.media_file_id)
+    assert replacement is not None and replacement.is_active is True
+    assert not old_path.exists()
+
+
 async def _media_with_existing_file(
     session: AsyncSession, tmp_path: Path
 ) -> tuple[Media, MediaFile]:

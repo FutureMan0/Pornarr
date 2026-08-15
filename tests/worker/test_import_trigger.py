@@ -163,6 +163,39 @@ async def test_trigger_directory_creates_each_file_only_once_after_a_restart(
     assert await process_import_trigger(session, file_trigger.id, validate=accepts) == "ready"
 
 
+async def test_processing_the_same_ready_file_twice_does_not_change_its_state(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    source = tmp_path / "feature.mkv"
+    source.write_bytes(b"media")
+    trigger = ImportTrigger(source_path=str(source))
+    session.add(trigger)
+    await session.flush()
+
+    async def accepts(_: Path) -> IntakeResult:
+        return IntakeResult(IntakeDecision.ACCEPT)
+
+    assert await process_import_trigger(session, trigger.id, validate=accepts) == "ready"
+    await session.flush()
+    await session.refresh(trigger)
+    state_before_retry = (
+        trigger.status,
+        trigger.error_code,
+        trigger.error_detail,
+        trigger.updated_at,
+    )
+
+    assert await process_import_trigger(session, trigger.id, validate=accepts) == "ready"
+    await session.flush()
+    await session.refresh(trigger)
+
+    assert (trigger.status, trigger.error_code, trigger.error_detail, trigger.updated_at) == (
+        state_before_retry
+    )
+    assert list(await session.scalars(select(ImportTrigger))) == [trigger]
+    assert source.read_bytes() == b"media"
+
+
 async def test_intake_rejections_remain_visible_on_the_import_trigger(
     session: AsyncSession, tmp_path: Path
 ) -> None:
