@@ -2,6 +2,7 @@
   "app": {
     "name": "Pornarr"
   },
+  "indexers": { "title": "Indexers", "loading": "Loading indexers", "priority": "Priority {{value}}", "stats": "{{queries}} queries, {{failures}} failures", "test": "Test", "reset": "Reset health", "remove": "Remove" },
   "downloadClients": { "title": "Download clients", "intro": "Connection health and the latest client error are shown here.", "loading": "Loading download clients", "test": "Test connection", "remove": "Remove" },
   "monitors": {
     "title": "Monitors",
