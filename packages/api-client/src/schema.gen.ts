@@ -1763,8 +1763,25 @@ export interface components {
             /** Status */
             status: number;
         };
+        /** ExternalSearchAlternate */
+        ExternalSearchAlternate: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Indexer Id
+             * Format: uuid
+             */
+            indexer_id: string;
+            /** Indexer Name */
+            indexer_name: string;
+        };
         /** ExternalSearchItem */
         ExternalSearchItem: {
+            /** Alternates */
+            alternates?: components["schemas"]["ExternalSearchAlternate"][];
             estimate: components["schemas"]["SearchEstimateResponse"];
             /** Guid */
             guid: string;
