@@ -1,14 +1,23 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # Role dispatcher. One image, four roles — see docs/adr/0015-single-image.md
 #
+# POSIX sh, not bash: the runtime image is Alpine and deliberately carries no
+# bash. Nothing below needs it, so the dispatcher must not reintroduce a package
+# into an image whose release gate rejects every HIGH or CRITICAL CVE.
+#
 # `exec` in every branch so the process replaces the shell: without it PID 1 is
-# bash, SIGTERM never reaches the application, and every container stop becomes
-# a ten-second wait followed by SIGKILL — which for a worker means dropped jobs.
+# the shell, SIGTERM never reaches the application, and every container stop
+# becomes a ten-second wait followed by SIGKILL — for a worker, dropped jobs.
 
-set -euo pipefail
+# No `pipefail`: it is a bash/busybox extension that dash rejects outright, and
+# there is not a single pipe below for it to guard.
+set -eu
 
 ROLE="${1:-api}"
-shift || true
+# Not `shift || true`: in dash a shift past the last argument is a special
+# builtin error that aborts the script outright, and `|| true` does not catch
+# it. Unreachable through `CMD ["api"]`, but not worth leaving as a trap.
+if [ "$#" -gt 0 ]; then shift; fi
 
 case "$ROLE" in
   api)
@@ -50,7 +59,7 @@ case "$ROLE" in
     ;;
 
   shell)
-    exec /bin/bash "$@"
+    exec /bin/sh "$@"
     ;;
 
   *)

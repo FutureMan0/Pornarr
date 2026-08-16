@@ -47,7 +47,7 @@ revision:
 
 ## shell: open a shell in the api container
 shell:
-	docker compose exec api bash
+	docker compose exec api sh
 
 ## psql: open a database shell
 psql:
