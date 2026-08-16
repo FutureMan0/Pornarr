@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
+import { VideoPlayer } from "../../components/player/video-player";
 
 type Tag = { name: string; confidence: number; source: string };
 type Detail = {
@@ -72,13 +73,7 @@ export function MediaDetailRoute() {
         })}{" "}
         · {media.metadata_source}
       </p>
-      <a
-        className="button"
-        href={media.playable ? `/api/media/${media.id}/stream` : undefined}
-        aria-disabled={!media.playable}
-      >
-        {media.playable ? t("media.play") : t("media.unavailable")}
-      </a>
+      {media.playable ? <VideoPlayer mediaId={media.id} title={media.title} /> : <p>{t("media.unavailable")}</p>}
       <section>
         <h2 className="text-lg text-ink">{t("media.tags")}</h2>
         <ul className="flex flex-wrap gap-2">

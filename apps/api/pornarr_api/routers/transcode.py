@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import ForbiddenError, database_session, get_current_user, require_role
 from pornarr_api.errors import ErrorResponse
-from pornarr_db.models.media import Media
+from pornarr_db.models.media import Media, MediaFile
 from pornarr_db.models.user import User, UserRole
 from pornarr_media.capabilities import HardwareCapabilities
 from pornarr_media.sessions import (
@@ -22,6 +24,7 @@ from pornarr_media.sessions import (
     TranscodeSession,
     TranscodeSessionRegistry,
 )
+from pornarr_media.transcode import start_hls_transcode
 
 router = APIRouter(prefix="/transcode", tags=["transcode"])
 admin_router = APIRouter(prefix="/admin/transcode", tags=["admin"])
@@ -84,6 +87,11 @@ class TranscodeFailureResponse(BaseModel):
     exit_code: int
     reason: str
     created_at: datetime
+
+
+class TranscodeStartResponse(BaseModel):
+    session_id: UUID
+    playlist_url: str
 
 
 def get_registry(request: Request) -> TranscodeSessionRegistry:
@@ -166,6 +174,86 @@ async def heartbeat(
     if session.user_id != user.id:
         raise ForbiddenError("Only the session owner can refresh it.")
     await get_registry(request).heartbeat(session_id, user.id)
+
+
+@router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def stop_session(
+    session_id: UUID, request: Request, user: Annotated[User, Depends(get_current_user)]
+) -> None:
+    session = await get_registry(request).get(session_id)
+    if session is None:
+        raise HTTPException(status_code=404)
+    if session.user_id != user.id:
+        raise ForbiddenError("Only the session owner can stop it.")
+    await get_registry(request).terminate(session_id)
+
+
+def _hls_asset_path(request: Request, session_id: UUID, asset: str) -> Path | None:
+    valid_segment = asset.startswith("segment_") and asset.endswith(".ts") and asset[8:-3].isdigit()
+    if asset not in {"master.m3u8", "variant.m3u8"} and not valid_segment:
+        return None
+    path = request.app.state.settings.transcode_path / str(session_id) / asset
+    return path if path.is_file() else None
+
+
+@router.get("/sessions/{session_id}/hls/{asset}")
+async def hls_asset(
+    session_id: UUID,
+    asset: str,
+    request: Request,
+    user: Annotated[User, Depends(get_current_user)],
+) -> FileResponse:
+    session = await get_registry(request).get(session_id)
+    if session is None:
+        raise HTTPException(status_code=404)
+    if session.user_id != user.id:
+        raise ForbiddenError("Only the session owner can view its stream.")
+    path = _hls_asset_path(request, session_id, asset)
+    if path is None:
+        raise HTTPException(status_code=404)
+    media_type = "application/vnd.apple.mpegurl" if asset.endswith(".m3u8") else "video/mp2t"
+    return FileResponse(path, media_type=media_type)
+
+
+@router.post("/media/{media_id}/sessions", response_model=TranscodeStartResponse, status_code=201)
+async def start_session(
+    media_id: UUID,
+    request: Request,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Session,
+) -> TranscodeStartResponse:
+    media_file = await session.scalar(
+        select(MediaFile).where(MediaFile.media_id == media_id, MediaFile.is_active.is_(True))
+    )
+    if media_file is None:
+        raise HTTPException(status_code=404)
+    source = Path(media_file.path).resolve()
+    if not source.is_relative_to(request.app.state.settings.library_path.resolve()) or not source.is_file():
+        raise HTTPException(status_code=404)
+
+    registry = get_registry(request)
+    capabilities = getattr(request.app.state, "hardware_capabilities", HardwareCapabilities((), (), ()))
+    limits = TranscodeLimits.from_settings(request.app.state.settings, capabilities)
+    mode = await registry.select_mode(user.id, limits)
+    capability = capabilities.methods[0] if mode.value == "hardware" and capabilities.methods else None
+    if mode.value == "hardware" and capability is None:
+        limits = TranscodeLimits(0, limits.software, limits.per_user)
+        mode = await registry.select_mode(user.id, limits)
+    session_id = uuid4()
+    transcode = await start_hls_transcode(
+        source,
+        request.app.state.settings.transcode_path,
+        session_id,
+        acceleration=capability.acceleration if capability else None,
+        device=capability.device if capability else None,
+    )
+    await registry.register(
+        session_id, user.id, media_id, "hls", transcode, hardware=capability is not None
+    )
+    return TranscodeStartResponse(
+        session_id=session_id,
+        playlist_url=f"/api/transcode/sessions/{session_id}/hls/master.m3u8",
+    )
 
 
 @admin_router.get("/sessions", response_model=list[TranscodeSessionResponse])

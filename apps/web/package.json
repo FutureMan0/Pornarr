@@ -18,6 +18,7 @@
     "@pornarr/ui": "workspace:*",
     "@tanstack/react-query": "^5.62.7",
     "@tanstack/react-virtual": "^3.14.9",
+    "hls.js": "^1.7.0",
     "i18next": "^24.2.0",
     "i18next-browser-languagedetector": "^8.0.2",
     "react": "^19.0.0",
