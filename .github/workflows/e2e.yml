@@ -3,6 +3,17 @@ name: E2E
 on:
   push:
     branches: [develop]
+  # The image build alone proves nothing about whether the stack starts: #300
+  # shipped an entrypoint the runtime image could not execute, and only the
+  # post-merge E2E run on develop caught it. Anything that can change how a
+  # container comes up now pays for a full start here, on the pull request.
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - "Dockerfile"
+      - "docker-compose*.yml"
+      - "infrastructure/docker/**"
+      - ".github/workflows/e2e.yml"
   workflow_dispatch:
 
 concurrency:

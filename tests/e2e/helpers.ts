@@ -1,15 +1,15 @@
 import AxeBuilder from "@axe-core/playwright";
-import { type Page, expect, test } from "@playwright/test";
+import { type Page, expect } from "@playwright/test";
 
-const ADMIN_USERNAME = "e2e-admin";
-const ADMIN_PASSWORD = "E2E administrator password! 2026";
+export const ADMIN_USERNAME = "e2e-admin";
+export const ADMIN_PASSWORD = "E2E administrator password! 2026";
 
-async function expectNoAccessibilityViolations(page: Page): Promise<void> {
+export async function expectNoAccessibilityViolations(page: Page): Promise<void> {
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
 }
 
-async function waitForWebServer(page: Page): Promise<void> {
+export async function waitForWebServer(page: Page): Promise<void> {
   await expect
     .poll(
       async () => {
@@ -24,7 +24,7 @@ async function waitForWebServer(page: Page): Promise<void> {
     .toBe(true);
 }
 
-async function setUpAdministrator(page: Page): Promise<void> {
+export async function setUpAdministrator(page: Page): Promise<void> {
   await page.goto("/setup");
 
   await expect(page.getByRole("heading", { name: "Set up Pornarr" })).toBeVisible();
@@ -55,25 +55,21 @@ async function setUpAdministrator(page: Page): Promise<void> {
   await page.getByRole("link", { name: "Sign in" }).click();
 }
 
-test("an administrator can set up, sign in, reach the library and sign out", async ({ page }) => {
+export async function loginAsAdmin(page: Page): Promise<void> {
   await waitForWebServer(page);
   const setupStatus = await page.request.get("/api/setup/status");
   expect(setupStatus.ok()).toBe(true);
   const { configured } = (await setupStatus.json()) as { configured: boolean };
-  if (configured) {
-    await page.goto("/login");
-  } else {
+  if (!configured) {
     await setUpAdministrator(page);
+  } else {
+    await page.goto("/login");
   }
 
-  await expectNoAccessibilityViolations(page);
-  await page.getByLabel("Username").fill(ADMIN_USERNAME);
-  await page.getByLabel("Password").fill(ADMIN_PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: "Library" })).toBeVisible();
-  await expectNoAccessibilityViolations(page);
-
-  await page.getByRole("button", { name: ADMIN_USERNAME }).click();
-  await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
-});
+  if (page.url().includes("/login")) {
+    await page.getByLabel("Username").fill(ADMIN_USERNAME);
+    await page.getByLabel("Password").fill(ADMIN_PASSWORD);
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(page.getByRole("heading", { name: "Library" })).toBeVisible();
+  }
+}

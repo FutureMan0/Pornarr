@@ -165,6 +165,8 @@ ENV UV_COMPILE_BYTECODE=0 \
     APP_ENV=development
 
 COPY --from=python-deps --chown=pornarr:pornarr /app/.venv /app/.venv
+COPY --chown=pornarr:pornarr alembic alembic
+COPY --chown=pornarr:pornarr alembic.ini pyproject.toml ./
 # `uv pip`, not `python -m pip`: a uv-created virtual environment has no pip in
 # it, so the usual invocation fails with "No module named pip".
 RUN uv pip install --python /app/.venv/bin/python --no-cache debugpy
