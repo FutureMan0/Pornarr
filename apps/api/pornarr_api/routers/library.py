@@ -34,6 +34,7 @@ class LibraryItemResponse(BaseModel):
     progress_duration_seconds: float | None
     completed: bool
     poster_url: str
+    sprite_url: str | None
 
 
 class LibraryPageResponse(BaseModel):
@@ -77,6 +78,7 @@ async def browse_library(
             progress_duration_seconds=progress.duration_seconds if progress else None,
             completed=progress.completed if progress else False,
             poster_url=f"/api/media/{media.id}/poster",
+            sprite_url=f"/api/media/{media.id}/sprite",
         )
 
     return LibraryPageResponse(
@@ -102,6 +104,26 @@ async def poster(
     path = directory / "poster.jpg"
     if not path.is_file():
         path = directory / "placeholder.svg"
+    if not path.is_file():
+        raise HTTPException(status_code=404)
+    return FileResponse(path, headers={"Cache-Control": "private, max-age=3600"})
+
+
+@media_router.get("/{media_id}/sprite", response_class=FileResponse)
+async def sprite(
+    media_id: UUID, request: Request, _: CurrentUser, session: Session
+) -> FileResponse:
+    """Serve the generated contact sheet only for an existing active item."""
+    if (
+        await session.scalar(
+            select(MediaFile.id).where(
+                MediaFile.media_id == media_id, MediaFile.is_active.is_(True)
+            )
+        )
+        is None
+    ):
+        raise HTTPException(status_code=404)
+    path = request.app.state.settings.thumbnail_path / str(media_id) / "sprite.jpg"
     if not path.is_file():
         raise HTTPException(status_code=404)
     return FileResponse(path, headers={"Cache-Control": "private, max-age=3600"})
