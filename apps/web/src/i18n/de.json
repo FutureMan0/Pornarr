@@ -434,7 +434,11 @@
   "library": {
     "title": "Bibliothek",
     "loading": "Bibliothek wird geladen…",
-    "empty": "Deine Bibliothek ist leer. Konfiguriere einen Stammordner und scanne ihn, um Medien hinzuzufügen."
+    "empty": "Deine Bibliothek ist leer. Konfiguriere einen Stammordner und scanne ihn, um Medien hinzuzufügen.",
+    "rating": {
+      "none": "Nicht bewertet",
+      "value": "{{value}} von 5, aus {{count}} Bewertungen"
+    }
   },
   "media": {
     "loading": "Medium wird geladen…",

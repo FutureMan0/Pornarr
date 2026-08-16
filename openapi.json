@@ -1813,6 +1813,10 @@
       "JsonValue": {},
       "LibraryItemResponse": {
         "properties": {
+          "comment_count": {
+            "title": "Comment Count",
+            "type": "integer"
+          },
           "completed": {
             "title": "Completed",
             "type": "boolean"
@@ -1929,6 +1933,10 @@
             ],
             "title": "Studio"
           },
+          "tag_count": {
+            "title": "Tag Count",
+            "type": "integer"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -1948,7 +1956,9 @@
           "poster_url",
           "sprite_url",
           "rating",
-          "rating_count"
+          "rating_count",
+          "tag_count",
+          "comment_count"
         ],
         "title": "LibraryItemResponse",
         "type": "object"

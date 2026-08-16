@@ -434,7 +434,11 @@
   "library": {
     "title": "Library",
     "loading": "Loading library…",
-    "empty": "Your library is empty. Configure a root folder and scan it to add media."
+    "empty": "Your library is empty. Configure a root folder and scan it to add media.",
+    "rating": {
+      "none": "Not rated",
+      "value": "{{value}} out of 5, from {{count}} ratings"
+    }
   },
   "media": {
     "loading": "Loading media…",

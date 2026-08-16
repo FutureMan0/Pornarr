@@ -12,7 +12,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import database_session, get_current_user
-from pornarr_api.ratings_summary import rating_filter, rating_summaries
+from pornarr_api.ratings_summary import (
+    comment_counts,
+    rating_filter,
+    rating_summaries,
+    tag_counts,
+)
 from pornarr_api.scoping import library_scope, owns
 from pornarr_db.models.entities import MediaPerformer, MediaTag, Performer, Tag
 from pornarr_db.models.media import Media, MediaFile
@@ -41,6 +46,8 @@ class LibraryItemResponse(BaseModel):
     sprite_url: str | None
     rating: float | None
     rating_count: int
+    tag_count: int
+    comment_count: int
 
 
 class LibraryPageResponse(BaseModel):
@@ -115,7 +122,10 @@ async def browse_library(
             .limit(limit + 1)
         )
     )
-    ratings = await rating_summaries(session, [row[0].id for row in rows])
+    page_ids = [row[0].id for row in rows]
+    ratings = await rating_summaries(session, page_ids)
+    tags = await tag_counts(session, page_ids)
+    comments = await comment_counts(session, page_ids)
 
     def item(
         media: Media, file: MediaFile, progress: PlaybackProgress | None
@@ -130,6 +140,8 @@ async def browse_library(
             resolution=file.resolution,
             rating=ratings.get(media.id, (None, 0))[0],
             rating_count=ratings.get(media.id, (None, 0))[1],
+            tag_count=tags.get(media.id, 0),
+            comment_count=comments.get(media.id, 0),
             position_seconds=progress.position_seconds if progress else None,
             progress_duration_seconds=progress.duration_seconds if progress else None,
             completed=progress.completed if progress else False,

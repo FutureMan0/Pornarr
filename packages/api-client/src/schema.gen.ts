@@ -2862,6 +2862,8 @@ export interface components {
         JsonValue: unknown;
         /** LibraryItemResponse */
         LibraryItemResponse: {
+            /** Comment Count */
+            comment_count: number;
             /** Completed */
             completed: boolean;
             /** Duration Seconds */
@@ -2891,6 +2893,8 @@ export interface components {
             sprite_url: string | null;
             /** Studio */
             studio: string | null;
+            /** Tag Count */
+            tag_count: number;
             /** Title */
             title: string;
         };
