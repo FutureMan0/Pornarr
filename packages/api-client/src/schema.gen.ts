@@ -2556,6 +2556,10 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Download Speed Bytes */
+            download_speed_bytes: number | null;
+            /** Error */
+            error: string | null;
             /** Estimated Seconds */
             estimated_seconds: number | null;
             /**
@@ -2574,6 +2578,8 @@ export interface components {
             remaining_bytes: number | null;
             /** Request Id */
             request_id: string | null;
+            /** Size Bytes */
+            size_bytes: number | null;
             /** Status */
             status: string;
         };

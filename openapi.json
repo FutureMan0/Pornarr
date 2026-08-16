@@ -2900,6 +2900,28 @@
             "title": "Created At",
             "type": "string"
           },
+          "download_speed_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Download Speed Bytes"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
           "estimated_seconds": {
             "anyOf": [
               {
@@ -2954,6 +2976,17 @@
             ],
             "title": "Request Id"
           },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
           "status": {
             "title": "Status",
             "type": "string"
@@ -2968,6 +3001,9 @@
           "status",
           "priority",
           "remaining_bytes",
+          "size_bytes",
+          "download_speed_bytes",
+          "error",
           "estimated_seconds",
           "created_at",
           "queue_estimate"
