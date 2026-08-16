@@ -172,7 +172,12 @@
     "library": "Library",
     "requests": "Requests",
     "downloads": "Downloads",
-    "settings": "Settings"
+    "settings": "Settings",
+    "feed": "Feed",
+    "continue": "Continue",
+    "shorts": "Shorts",
+    "collections": "Collections",
+    "watchlist": "Watchlist"
   },
   "search": {
     "label": "Search",
@@ -438,6 +443,14 @@
     "rating": {
       "none": "Not rated",
       "value": "{{value}} out of 5, from {{count}} ratings"
+    },
+    "filters": "Filters",
+    "results": "{{count}} results",
+    "ratingFloor": "{{count}}★ and up",
+    "noMatches": "Nothing matches that filter.",
+    "sections": {
+      "continue": "Continue watching",
+      "everything": "Everything"
     }
   },
   "media": {
@@ -513,5 +526,87 @@
     "NETWORK_UNREACHABLE": "Check that the server is running and reachable, then try again.",
     "unknown": "Try again, and quote this code if it keeps happening.",
     "generic": "Try again. If it keeps happening, reload the page."
+  },
+  "watchlist": {
+    "title": "Watchlist",
+    "loading": "Loading watchlist",
+    "empty": "Nothing saved yet. Add a title from its page.",
+    "remove": "Remove",
+    "add": "Add to watchlist"
+  },
+  "continueWatching": {
+    "title": "Continue watching",
+    "loading": "Loading",
+    "empty": "Nothing in progress."
+  },
+  "shorts": {
+    "title": "Shorts",
+    "loading": "Loading shorts",
+    "empty": "No clips yet. They are cut from scene markers.",
+    "count": "{{count}} clips",
+    "from": "from {{title}}",
+    "sort": {
+      "label": "Sort",
+      "trending": "Trending",
+      "newest": "Newest",
+      "top": "Top rated",
+      "duration": "Shortest"
+    }
+  },
+  "collections": {
+    "title": "Collections",
+    "loading": "Loading collections",
+    "empty": "No collections yet.",
+    "emptyShelf": "Nothing on this shelf yet.",
+    "name": "Name",
+    "create": "Create",
+    "duplicate": "You already have a collection with that name.",
+    "items": "{{count}} titles",
+    "includeShared": "Include shelves others have shared",
+    "share": "Share with the household",
+    "makePrivate": "Make private",
+    "visibility": {
+      "private": "Private",
+      "shared": "Shared"
+    }
+  },
+  "feed": {
+    "loading": "Loading feed",
+    "open": "Open",
+    "match": "{{value}}% match",
+    "sent": {
+      "title": "Sent to you",
+      "intro": "A friend picked this out by hand.",
+      "empty": "Nobody has sent you anything yet.",
+      "from": "{{name}} sent you this",
+      "markSeen": "Mark seen"
+    },
+    "forYou": {
+      "title": "For you",
+      "empty": "Nothing yet — the feed learns from what gets watched."
+    }
+  },
+  "rating": {
+    "title": "Rating",
+    "count": "{{count}} ratings",
+    "yours": "Your rating",
+    "set": "{{count}} stars",
+    "clear": "Take it back"
+  },
+  "comments": {
+    "title": "Comments ({{count}})",
+    "add": "Add a comment",
+    "post": "Post",
+    "you": "You",
+    "someone": "Someone",
+    "like": "Helpful ({{count}})",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "report": "Report",
+    "reported": "Reported",
+    "edited": "edited",
+    "hidden": "Withheld by an administrator"
   }
 }

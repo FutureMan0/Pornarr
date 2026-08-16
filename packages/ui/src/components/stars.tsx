@@ -45,9 +45,8 @@ export function Stars({ value, count, label, className }: StarsProps): JSX.Eleme
   );
 }
 
-const Star = ({ index }: { readonly index: number }): JSX.Element => (
+const Star = (): JSX.Element => (
   <svg
-    key={index}
     viewBox="0 0 16 16"
     className={styles.star}
     fill="currentColor"
@@ -58,6 +57,11 @@ const Star = ({ index }: { readonly index: number }): JSX.Element => (
   </svg>
 );
 
-const GLYPHS = Array.from({ length: MAXIMUM_STARS }, (_, index) => (
-  <Star key={index} index={index} />
-));
+/**
+ * Keyed by the star's position rather than by its index in the array. The two
+ * happen to coincide here — the row is built once and never reordered — but the
+ * position is the thing that identifies a star, and saying so costs nothing.
+ */
+const POSITIONS = Array.from({ length: MAXIMUM_STARS }, (_, index) => index + 1);
+
+const GLYPHS = POSITIONS.map((position) => <Star key={position} />);

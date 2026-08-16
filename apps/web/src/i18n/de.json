@@ -172,7 +172,12 @@
     "library": "Bibliothek",
     "requests": "Anfragen",
     "downloads": "Downloads",
-    "settings": "Einstellungen"
+    "settings": "Einstellungen",
+    "feed": "Feed",
+    "continue": "Weiterschauen",
+    "shorts": "Shorts",
+    "collections": "Sammlungen",
+    "watchlist": "Merkliste"
   },
   "search": {
     "label": "Suche",
@@ -438,6 +443,14 @@
     "rating": {
       "none": "Nicht bewertet",
       "value": "{{value}} von 5, aus {{count}} Bewertungen"
+    },
+    "filters": "Filter",
+    "results": "{{count}} Treffer",
+    "ratingFloor": "ab {{count}}★",
+    "noMatches": "Nichts passt zu diesem Filter.",
+    "sections": {
+      "continue": "Weiterschauen",
+      "everything": "Alles"
     }
   },
   "media": {
@@ -513,5 +526,87 @@
     "NETWORK_UNREACHABLE": "Prüfe, ob der Server läuft und erreichbar ist, und versuche es erneut.",
     "unknown": "Versuche es erneut und nenne diesen Code, wenn es weiter passiert.",
     "generic": "Versuche es erneut. Wenn es weiter passiert, lade die Seite neu."
+  },
+  "watchlist": {
+    "title": "Merkliste",
+    "loading": "Merkliste wird geladen",
+    "empty": "Noch nichts gemerkt. Füge einen Titel von seiner Seite hinzu.",
+    "remove": "Entfernen",
+    "add": "Auf die Merkliste"
+  },
+  "continueWatching": {
+    "title": "Weiterschauen",
+    "loading": "Wird geladen",
+    "empty": "Nichts angefangen."
+  },
+  "shorts": {
+    "title": "Shorts",
+    "loading": "Shorts werden geladen",
+    "empty": "Noch keine Clips. Sie entstehen aus Szenenmarken.",
+    "count": "{{count}} Clips",
+    "from": "aus {{title}}",
+    "sort": {
+      "label": "Sortierung",
+      "trending": "Angesagt",
+      "newest": "Neueste",
+      "top": "Bestbewertet",
+      "duration": "Kürzeste"
+    }
+  },
+  "collections": {
+    "title": "Sammlungen",
+    "loading": "Sammlungen werden geladen",
+    "empty": "Noch keine Sammlungen.",
+    "emptyShelf": "Dieses Regal ist noch leer.",
+    "name": "Name",
+    "create": "Anlegen",
+    "duplicate": "Eine Sammlung mit diesem Namen hast du schon.",
+    "items": "{{count}} Titel",
+    "includeShared": "Geteilte Regale anderer einbeziehen",
+    "share": "Mit dem Haushalt teilen",
+    "makePrivate": "Privat machen",
+    "visibility": {
+      "private": "Privat",
+      "shared": "Geteilt"
+    }
+  },
+  "feed": {
+    "loading": "Feed wird geladen",
+    "open": "Öffnen",
+    "match": "{{value}} % Übereinstimmung",
+    "sent": {
+      "title": "Für dich gesendet",
+      "intro": "Jemand hat das von Hand ausgesucht.",
+      "empty": "Dir hat noch niemand etwas geschickt.",
+      "from": "{{name}} hat dir das geschickt",
+      "markSeen": "Als gesehen markieren"
+    },
+    "forYou": {
+      "title": "Für dich",
+      "empty": "Noch nichts — der Feed lernt aus dem, was geschaut wird."
+    }
+  },
+  "rating": {
+    "title": "Bewertung",
+    "count": "{{count}} Bewertungen",
+    "yours": "Deine Bewertung",
+    "set": "{{count}} Sterne",
+    "clear": "Zurücknehmen"
+  },
+  "comments": {
+    "title": "Kommentare ({{count}})",
+    "add": "Kommentar hinzufügen",
+    "post": "Absenden",
+    "you": "Du",
+    "someone": "Jemand",
+    "like": "Hilfreich ({{count}})",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "report": "Melden",
+    "reported": "Gemeldet",
+    "edited": "bearbeitet",
+    "hidden": "Von einem Admin zurückgehalten"
   }
 }

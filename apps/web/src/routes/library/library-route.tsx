@@ -24,18 +24,29 @@ type Item = {
 };
 type Page = { items: Item[]; next_offset: number | null };
 
+/** The rating floors the design offers as chips. */
+const RATING_FILTERS = [4, 3] as const;
+
 export function LibraryRoute() {
   const { t } = useTranslation();
+  const [ratingFloor, setRatingFloor] = useState<number | null>(null);
+
   const library = useInfiniteQuery<Page, Error>({
-    queryKey: ["library"],
+    queryKey: ["library", ratingFloor],
     initialPageParam: 0,
     getNextPageParam: (page) => page.next_offset ?? undefined,
     queryFn: async ({ pageParam }): Promise<Page> => {
-      const response = await fetch(`/api/library?limit=48&offset=${pageParam}`);
+      const filter = ratingFloor === null ? "" : `&rating_gte=${ratingFloor}`;
+      const response = await fetch(`/api/library?limit=48&offset=${pageParam}${filter}`);
       if (!response.ok) throw new Error();
       return response.json() as Promise<Page>;
     },
   });
+
+  // Resume position comes from the same rows, so "continue watching" is a
+  // partition of the page rather than a second request.
+  const resuming = (items: Item[]): Item[] =>
+    items.filter((item) => item.position_seconds !== null && item.position_seconds > 0);
   const items = library.data?.pages.flatMap((page) => page.items) ?? [];
   if (library.isPending)
     return (
@@ -62,15 +73,73 @@ export function LibraryRoute() {
       <h1 id="library-heading" className="text-xl text-ink">
         {t("library.title")}
       </h1>
+      {/* The controls are a fieldset; the result count is not one of them, so
+          it sits beside the group rather than inside it. A screen reader
+          reaching the filters is told what they filter, and the count is not
+          announced as though it were another button. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <fieldset className="flex flex-wrap items-center gap-2 border-0 p-0">
+          <legend className="sr-only">{t("library.filters")}</legend>
+          {RATING_FILTERS.map((floor) => (
+            <button
+              key={floor}
+              type="button"
+              aria-pressed={ratingFloor === floor}
+              onClick={() => setRatingFloor(ratingFloor === floor ? null : floor)}
+              className={
+                ratingFloor === floor
+                  ? "rounded-full bg-[color-mix(in_oklch,var(--primary)_16%,transparent)] px-3 py-1 text-xs text-[var(--pa-accent-300)]"
+                  : "rounded-full border border-border px-3 py-1 text-xs text-ink-muted hover:bg-surface-3 hover:text-ink"
+              }
+            >
+              {t("library.ratingFloor", { count: floor })}
+            </button>
+          ))}
+        </fieldset>
+        <span className="ml-auto text-xs text-ink-muted">
+          {t("library.results", { count: items.length })}
+        </span>
+      </div>
+
       {items.length === 0 ? (
-        <p className="text-sm text-ink-muted">{t("library.empty")}</p>
+        <p className="text-sm text-ink-muted">
+          {ratingFloor === null ? t("library.empty") : t("library.noMatches")}
+        </p>
       ) : (
-        <VirtualGrid
-          items={items}
-          onEnd={() =>
-            library.hasNextPage && !library.isFetchingNextPage && void library.fetchNextPage()
-          }
-        />
+        <>
+          {resuming(items).length > 0 ? (
+            <section aria-labelledby="continue-section" className="flex flex-col gap-3">
+              <h2
+                id="continue-section"
+                className="text-2xs uppercase tracking-[0.08em] text-ink-muted"
+              >
+                {t("library.sections.continue")}
+              </h2>
+              <ul className="grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4">
+                {resuming(items).map((item) => (
+                  <li key={item.id}>
+                    <MediaCard item={item} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          <section aria-labelledby="everything-section" className="flex flex-col gap-3">
+            <h2
+              id="everything-section"
+              className="text-2xs uppercase tracking-[0.08em] text-ink-muted"
+            >
+              {t("library.sections.everything")}
+            </h2>
+            <VirtualGrid
+              items={items}
+              onEnd={() =>
+                library.hasNextPage && !library.isFetchingNextPage && void library.fetchNextPage()
+              }
+            />
+          </section>
+        </>
       )}
     </section>
   );

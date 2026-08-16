@@ -35,7 +35,12 @@ export interface NavItem {
  * compiler's rather than a reviewer's.
  */
 export const NAV_ITEMS = [
+  { id: "feed", path: "/feed" },
+  { id: "continue", path: "/continue" },
   { id: "library", path: "/library" },
+  { id: "shorts", path: "/shorts" },
+  { id: "collections", path: "/collections" },
+  { id: "watchlist", path: "/watchlist" },
   { id: "requests", path: "/requests" },
   { id: "downloads", path: "/downloads" },
   { id: "settings", path: "/settings" },
@@ -261,6 +266,31 @@ function NavIcon({ id, label }: { readonly id: string; readonly label: string })
 }
 
 const NAV_ICON_PATHS: Readonly<Record<string, JSX.Element>> = {
+  feed: (
+    <>
+      <circle cx="8" cy="12" r="1.25" fill="currentColor" stroke="none" />
+      <path d="M2.5 8.5a6 6 0 0 1 5 4M2.5 4.5a10 10 0 0 1 9 8" />
+    </>
+  ),
+  continue: (
+    <>
+      <circle cx="8" cy="8" r="6" />
+      <path d="M6.75 5.75 10.5 8l-3.75 2.25Z" />
+    </>
+  ),
+  shorts: (
+    <>
+      <rect x="4.5" y="1.5" width="7" height="13" rx="1.5" />
+      <path d="M7 12.5h2" />
+    </>
+  ),
+  collections: (
+    <>
+      <path d="M2.5 5.5h5l1 1.5h5v6a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1Z" />
+      <path d="M4 5.5V4a1 1 0 0 1 1-1h2.2" />
+    </>
+  ),
+  watchlist: <path d="M4 2.5h8v11l-4-2.75L4 13.5Z" />,
   library: (
     <>
       <rect x="1.5" y="2.5" width="5" height="5" rx="1" />
