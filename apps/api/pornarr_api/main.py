@@ -34,6 +34,7 @@ from pornarr_api.routers.auth_oidc import router as auth_oidc_router
 from pornarr_api.routers.events import router as events_router
 from pornarr_api.routers.health import router as health_router
 from pornarr_api.routers.library import media_router as library_media_router
+from pornarr_api.routers.library import home_router
 from pornarr_api.routers.library import router as library_router
 from pornarr_api.routers.metrics import router as metrics_router
 from pornarr_api.routers.monitors import router as monitors_router
@@ -87,6 +88,7 @@ api_router.include_router(admin_settings_router)
 api_router.include_router(events_router)
 api_router.include_router(health_router)
 api_router.include_router(library_router)
+api_router.include_router(home_router)
 api_router.include_router(library_media_router)
 api_router.include_router(metrics_router)
 api_router.include_router(monitors_router)

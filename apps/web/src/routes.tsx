@@ -18,6 +18,7 @@ import { LoginRoute } from "./auth/login-route";
 import { RequireAuth } from "./auth/require-auth";
 import { ForbiddenRoute, NotFoundRoute } from "./errors/route-errors";
 import { QuarantineReviewRoute } from "./routes/admin/quarantine/quarantine-review-route";
+import { HomeRoute } from "./routes/home/home-route";
 import { LibraryRoute } from "./routes/library/library-route";
 import { MediaDetailRoute } from "./routes/media/media-detail-route";
 import { MonitorsRoute } from "./routes/monitors/monitors-route";
@@ -66,6 +67,7 @@ export const appRoutes: RouteObject[] = [
             element: <AppShell />,
             children: [
               { index: true, element: <Navigate to="/library" replace /> },
+              { path: "home", element: <HomeRoute /> },
               { path: "admin/quarantine", element: <QuarantineReviewRoute /> },
               { path: "settings", element: <Navigate to="/settings/quality" replace /> },
               { path: "settings/quality", element: <QualityProfilesRoute /> },

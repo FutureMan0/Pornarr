@@ -1213,6 +1213,30 @@
         "title": "HealthReport",
         "type": "object"
       },
+      "HomeResponse": {
+        "properties": {
+          "continue_watching": {
+            "items": {
+              "$ref": "#/components/schemas/LibraryItemResponse"
+            },
+            "title": "Continue Watching",
+            "type": "array"
+          },
+          "recently_added": {
+            "items": {
+              "$ref": "#/components/schemas/LibraryItemResponse"
+            },
+            "title": "Recently Added",
+            "type": "array"
+          }
+        },
+        "required": [
+          "continue_watching",
+          "recently_added"
+        ],
+        "title": "HomeResponse",
+        "type": "object"
+      },
       "IndexerResponse": {
         "properties": {
           "base_url": {
@@ -6875,6 +6899,27 @@
         "summary": "Dependency Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/home": {
+      "get": {
+        "operationId": "library_home",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Home",
+        "tags": [
+          "library"
         ]
       }
     },
