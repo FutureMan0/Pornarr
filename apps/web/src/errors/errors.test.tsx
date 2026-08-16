@@ -266,15 +266,18 @@ describe("connection loss", () => {
 
     setOnline(false);
 
-    await waitFor(() => expect(screen.getByText(en.connection.offlineTitle)).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByRole("status").textContent).toContain(en.connection.offlineTitle),
+    );
     // Cause and next step, in a region that was already mounted and empty.
     expect(screen.getByText(en.connection.offlineBody)).toBeTruthy();
-    expect(screen.getByRole("status").textContent).toContain(en.connection.offlineTitle);
     expect(invalidate).not.toHaveBeenCalled();
 
     setOnline(true);
 
-    await waitFor(() => expect(screen.queryByText(en.connection.offlineTitle)).toBeNull());
+    await waitFor(() =>
+      expect(screen.getByRole("status").textContent).not.toContain(en.connection.offlineTitle),
+    );
     expect(invalidate).toHaveBeenCalled();
   });
 
@@ -305,7 +308,11 @@ describe("connection loss", () => {
     setOnline(false);
     source.emit("error");
 
-    await waitFor(() => expect(screen.getByText(en.connection.offlineTitle)).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByRole("status").textContent).toContain(en.connection.offlineTitle),
+    );
+    // The whole point: one cause wins, so the other state is nowhere on screen —
+    // not in the banner and not in the top bar's indicator either.
     expect(screen.queryByText(en.connection.reconnectingTitle)).toBeNull();
   });
 });
