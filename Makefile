@@ -11,6 +11,7 @@ setup:
 		sed -i "s|^APP_SECRET=.*|APP_SECRET=$$(openssl rand -hex 32)|" .env && \
 		echo "wrote .env with a generated APP_SECRET")
 	@mkdir -p data backups
+	@chmod 0777 data backups 2>/dev/null || true
 
 ## up: start the full stack with development overrides
 up: setup
