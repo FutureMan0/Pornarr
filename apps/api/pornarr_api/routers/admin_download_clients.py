@@ -58,6 +58,10 @@ class DownloadClientResponse(BaseModel):
     last_tested_at: datetime | None
 
 
+class DownloadClientUpdate(DownloadClientWrite):
+    pass
+
+
 def response(client: DownloadClient) -> DownloadClientResponse:
     return DownloadClientResponse.model_validate(client, from_attributes=True)
 
@@ -124,6 +128,18 @@ async def test_download_client(
     client.health = "healthy"
     client.last_error = None
     client.last_tested_at = datetime.now(UTC)
+    return response(client)
+
+
+@router.put("/{client_id}", response_model=DownloadClientResponse)
+async def update_download_client(
+    client_id: UUID, payload: DownloadClientUpdate, _: Admin, session: Session
+) -> DownloadClientResponse:
+    client = await client_or_404(session, client_id)
+    for field, value in payload.model_dump(exclude={"credentials"}).items():
+        setattr(client, field, value)
+    client.credentials = payload.credentials.get_secret_value()
+    await session.flush()
     return response(client)
 
 
