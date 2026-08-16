@@ -36,6 +36,11 @@ async function setUpAdministrator(page: Page): Promise<void> {
   await page.getByRole("textbox", { name: "Library path" }).fill("/data");
   await page.getByRole("button", { name: "Continue" }).click();
 
+  const copyImports = page.getByRole("button", { name: "Continue with copy imports" });
+  if (await copyImports.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await copyImports.click();
+  }
+
   await expect(page.getByRole("heading", { name: "Review content filters" })).toBeVisible();
   await page.getByRole("button", { name: "Continue" }).click();
 
