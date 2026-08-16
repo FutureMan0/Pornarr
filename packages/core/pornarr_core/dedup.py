@@ -4,11 +4,103 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
+from difflib import SequenceMatcher
+from enum import StrEnum
 
 from pornarr_integrations.indexers import Release
 
 _WORDS = re.compile(r"[^a-z0-9]+")
+_TITLE_SIMILARITY_THRESHOLD = 0.85
+_MAX_DATE_DISTANCE_DAYS = 2
+_MAX_DURATION_DIFFERENCE = 0.05
+
+
+class DuplicateClassification(StrEnum):
+    DUPLICATE = "duplicate"
+    UPGRADE_CANDIDATE = "upgrade_candidate"
+    DISTINCT = "distinct"
+
+
+class DuplicateSignal(StrEnum):
+    OSHASH = "oshash"
+    TITLE = "title"
+    STUDIO = "studio"
+    RELEASE_DATE = "release_date"
+    DURATION = "duration"
+
+
+@dataclass(frozen=True, slots=True)
+class MediaCandidate:
+    title: str
+    studio: str | None
+    release_date: date | None
+    duration_seconds: float | None
+    oshash: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DuplicateDecision:
+    classification: DuplicateClassification
+    signals: frozenset[DuplicateSignal]
+
+
+def detect_duplicate(incoming: MediaCandidate, existing: MediaCandidate) -> DuplicateDecision:
+    """Preserve conservative import duplicate classification."""
+    if incoming.oshash and incoming.oshash == existing.oshash:
+        return DuplicateDecision(
+            DuplicateClassification.DUPLICATE, frozenset({DuplicateSignal.OSHASH})
+        )
+    signals = frozenset(
+        signal
+        for signal, matches in (
+            (
+                DuplicateSignal.TITLE,
+                SequenceMatcher(None, incoming.title.casefold(), existing.title.casefold()).ratio()
+                > _TITLE_SIMILARITY_THRESHOLD,
+            ),
+            (
+                DuplicateSignal.STUDIO,
+                bool(
+                    incoming.studio
+                    and existing.studio
+                    and incoming.studio.strip().casefold() == existing.studio.strip().casefold()
+                ),
+            ),
+            (
+                DuplicateSignal.RELEASE_DATE,
+                bool(
+                    incoming.release_date
+                    and existing.release_date
+                    and abs((incoming.release_date - existing.release_date).days)
+                    <= _MAX_DATE_DISTANCE_DAYS
+                ),
+            ),
+            (
+                DuplicateSignal.DURATION,
+                bool(
+                    incoming.duration_seconds
+                    and existing.duration_seconds
+                    and abs(incoming.duration_seconds - existing.duration_seconds)
+                    / max(incoming.duration_seconds, existing.duration_seconds)
+                    <= _MAX_DURATION_DIFFERENCE
+                ),
+            ),
+        )
+        if matches
+    )
+    expected = {
+        DuplicateSignal.TITLE,
+        DuplicateSignal.STUDIO,
+        DuplicateSignal.RELEASE_DATE,
+        DuplicateSignal.DURATION,
+    }
+    return DuplicateDecision(
+        DuplicateClassification.UPGRADE_CANDIDATE
+        if signals == expected
+        else DuplicateClassification.DISTINCT,
+        signals,
+    )
 
 
 @dataclass(frozen=True, slots=True)
