@@ -853,6 +853,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/filters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Filters */
+        get: operations["filters_read_filters"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/filters/dry-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dry Run */
+        post: operations["filters_dry_run"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/filters/global/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Global Rule */
+        post: operations["filters_add_global_rule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/filters/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Personal Rule */
+        post: operations["filters_add_personal_rule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/filters/rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Personal Rule */
+        patch: operations["filters_update_personal_rule"];
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -2051,6 +2136,17 @@ export interface components {
              */
             url_base: string;
         };
+        /** DryRunResponse */
+        DryRunResponse: {
+            action: components["schemas"]["FilterAction"];
+            /** Rule Id */
+            rule_id: string | null;
+        };
+        /** DryRunWrite */
+        DryRunWrite: {
+            /** Title */
+            title: string;
+        };
         /**
          * ErrorResponse
          * @description The contract shape for every machine-readable API error.
@@ -2118,6 +2214,23 @@ export interface components {
          * @enum {string}
          */
         ExternalSearchSort: "relevance" | "age" | "size" | "quality" | "seeders" | "estimated_time";
+        /**
+         * FilterAction
+         * @enum {string}
+         */
+        FilterAction: "allow" | "quarantine" | "reject";
+        /** FilterProfilesResponse */
+        FilterProfilesResponse: {
+            /** Global Rules */
+            global_rules: components["schemas"]["RuleResponse"][];
+            /** Personal Rules */
+            personal_rules: components["schemas"]["RuleResponse"][];
+        };
+        /**
+         * FilterRuleKind
+         * @enum {string}
+         */
+        FilterRuleKind: "term" | "tag" | "performer" | "minimum_confidence" | "unknown_performer_age" | "unknown_file_type";
         /** GrabResponse */
         GrabResponse: {
             /**
@@ -2991,6 +3104,37 @@ export interface components {
             enabled: boolean;
             /** Path */
             path: string;
+        };
+        /** RuleResponse */
+        RuleResponse: {
+            action: components["schemas"]["FilterAction"];
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Global Rule */
+            global_rule: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["FilterRuleKind"];
+            /** Pattern */
+            pattern: string;
+        };
+        /** RuleWrite */
+        RuleWrite: {
+            action: components["schemas"]["FilterAction"];
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            kind: components["schemas"]["FilterRuleKind"];
+            /** Pattern */
+            pattern: string;
         };
         /**
          * RuntimeSettings
@@ -5189,6 +5333,160 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    filters_read_filters: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilterProfilesResponse"];
+                };
+            };
+        };
+    };
+    filters_dry_run: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DryRunWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DryRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    filters_add_global_rule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuleWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    filters_add_personal_rule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuleWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    filters_update_personal_rule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuleWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };
