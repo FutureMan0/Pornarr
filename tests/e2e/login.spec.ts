@@ -27,14 +27,25 @@ async function waitForWebServer(page: Page): Promise<void> {
 async function setUpAdministrator(page: Page): Promise<void> {
   await page.goto("/setup");
 
+  await expect(page.getByRole("heading", { name: "Set up Pornarr" })).toBeVisible();
   await page.getByLabel("Username").fill(ADMIN_USERNAME);
   await page.getByLabel("Password").fill(ADMIN_PASSWORD);
   await page.getByRole("button", { name: "Continue" }).click();
+
+  await expect(page.getByRole("heading", { name: "Choose the library path" })).toBeVisible();
   await page.getByRole("textbox", { name: "Library path" }).fill("/data");
   await page.getByRole("button", { name: "Continue" }).click();
+
+  await expect(page.getByRole("heading", { name: "Review content filters" })).toBeVisible();
   await page.getByRole("button", { name: "Continue" }).click();
+
+  await expect(page.getByRole("heading", { name: "Metadata providers" })).toBeVisible();
   await page.getByRole("button", { name: "Skip for now" }).click();
+
+  await expect(page.getByRole("heading", { name: "Review setup" })).toBeVisible();
   await page.getByRole("button", { name: "Complete setup" }).click();
+
+  await expect(page.getByRole("heading", { name: "Setup complete" })).toBeVisible();
   await page.getByRole("link", { name: "Sign in" }).click();
 }
 
