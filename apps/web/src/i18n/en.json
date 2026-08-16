@@ -280,7 +280,8 @@
     "downloadCompleted": "A download finished.",
     "downloadFailed": "A download failed.",
     "importCompleted": "An import finished.",
-    "mediaAvailable": "New media is available."
+    "mediaAvailable": "New media is available.",
+    "notificationReceived": "New notification"
   },
   "format": {
     "unknown": "Unknown"

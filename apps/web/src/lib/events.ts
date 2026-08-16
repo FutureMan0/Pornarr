@@ -40,6 +40,7 @@ export const EVENT_TYPES = [
   "import.completed",
   "media.available",
   "scan.progress",
+  "notification",
 ] as const;
 
 export type PornarrEventType = (typeof EVENT_TYPES)[number];
@@ -82,13 +83,15 @@ const INVALIDATED_BY: Readonly<Record<PornarrEventType, readonly QueryKeyPrefix[
   "import.completed": [["imports"], ["library"]],
   "media.available": [["library"]],
   "scan.progress": [["admin", "library"]],
+  notification: [["notifications"]],
 };
 
 type AnnouncementKey =
   | "events.downloadCompleted"
   | "events.downloadFailed"
   | "events.importCompleted"
-  | "events.mediaAvailable";
+  | "events.mediaAvailable"
+  | "events.notificationReceived";
 
 /**
  * What gets announced. DESIGN.md wants state changes announced politely, and
@@ -106,6 +109,7 @@ const ANNOUNCEMENT_KEYS: Readonly<Partial<Record<PornarrEventType, AnnouncementK
   "download.failed": "events.downloadFailed",
   "import.completed": "events.importCompleted",
   "media.available": "events.mediaAvailable",
+  notification: "events.notificationReceived",
 };
 
 /** Parse one frame. Returns null for anything that is not a valid envelope. */
