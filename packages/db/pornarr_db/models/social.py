@@ -178,6 +178,12 @@ class Short(TimestampMixin, Base):
     media_id: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("media.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    # The marker this clip was cut from, when it was cut from one. `SET NULL`
+    # rather than cascade: re-analysing a file replaces its markers, and that
+    # must not silently delete clips people are already watching.
+    marker_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("scene_markers.id", ondelete="SET NULL"), nullable=True
+    )
     title: Mapped[str] = mapped_column(String(512), nullable=False)
     start_seconds: Mapped[float] = mapped_column(Float, nullable=False)
     end_seconds: Mapped[float] = mapped_column(Float, nullable=False)

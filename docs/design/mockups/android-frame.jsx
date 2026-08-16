@@ -160,7 +160,7 @@ function AndroidDevice({
     // probe reads it; it renders nothing. Keep it on this root element.
     <div data-om-starter="android-frame" style={{
       width, height, borderRadius: 18, overflow: 'hidden',
-      background: dark ? '#161826' : MD_C.surface,
+      background: dark ? 'var(--pa-bg-1)' : MD_C.surface,
       border: `8px solid ${MD_C.frameBorder}`,
       boxShadow: '0 30px 80px rgba(0,0,0,0.25)',
       display: 'flex', flexDirection: 'column', boxSizing: 'border-box',

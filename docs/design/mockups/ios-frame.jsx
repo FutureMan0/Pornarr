@@ -19,7 +19,7 @@
 // Status bar
 // ─────────────────────────────────────────────────────────────
 function IOSStatusBar({ dark = false, time = '9:41' }) {
-  const c = dark ? '#fff' : '#000';
+  const c = dark ? '#fff' : 'var(--pa-bg-00)';
   return (
     <div style={{
       display: 'flex', gap: 154, alignItems: 'center', justifyContent: 'center',
@@ -95,7 +95,7 @@ function IOSGlassPill({ children, dark = false, style = {} }) {
 // ─────────────────────────────────────────────────────────────
 function IOSNavBar({ title = 'Title', dark = false, trailingIcon = true }) {
   const muted = dark ? 'rgba(255,255,255,0.6)' : '#404040';
-  const text = dark ? '#fff' : '#000';
+  const text = dark ? '#fff' : 'var(--pa-bg-00)';
   const pillIcon = (content) => (
     <IOSGlassPill dark={dark}>
       <div style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -142,7 +142,7 @@ function IOSNavBar({ title = 'Title', dark = false, trailingIcon = true }) {
 // Grouped list (inset card, r:26) + row (52px)
 // ─────────────────────────────────────────────────────────────
 function IOSListRow({ title, detail, icon, chevron = true, isLast = false, dark = false }) {
-  const text = dark ? '#fff' : '#000';
+  const text = dark ? '#fff' : 'var(--pa-bg-00)';
   const sec = dark ? 'rgba(235,235,245,0.6)' : 'rgba(60,60,67,0.6)';
   const ter = dark ? 'rgba(235,235,245,0.3)' : 'rgba(60,60,67,0.3)';
   const sep = dark ? 'rgba(84,84,88,0.65)' : 'rgba(60,60,67,0.12)';
@@ -178,7 +178,7 @@ function IOSListRow({ title, detail, icon, chevron = true, isLast = false, dark 
 
 function IOSList({ header, children, dark = false }) {
   const hc = dark ? 'rgba(235,235,245,0.6)' : 'rgba(60,60,67,0.6)';
-  const bg = dark ? '#1a1c2a' : '#fff';
+  const bg = dark ? 'var(--pa-bg-0)' : '#fff';
   return (
     <div>
       {header && (
@@ -208,7 +208,7 @@ function IOSDevice({
     // probe reads it; it renders nothing. Keep it on this root element.
     <div data-om-starter="ios-frame" style={{
       width, height, borderRadius: 48, overflow: 'hidden',
-      position: 'relative', background: dark ? '#161826' : '#F2F2F7',
+      position: 'relative', background: dark ? 'var(--pa-bg-1)' : '#F2F2F7',
       boxShadow: '0 40px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.12)',
       fontFamily: '-apple-system, system-ui, sans-serif',
       WebkitFontSmoothing: 'antialiased',
@@ -216,7 +216,7 @@ function IOSDevice({
       {/* dynamic island */}
       <div style={{
         position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
-        width: 126, height: 37, borderRadius: 24, background: '#000', zIndex: 50,
+        width: 126, height: 37, borderRadius: 24, background: 'var(--pa-bg-00)', zIndex: 50,
       }} />
       {/* status bar (absolute) */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>

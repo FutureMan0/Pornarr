@@ -47,6 +47,10 @@ class PlaybackProgress(TimestampMixin, Base):
         Boolean, nullable=False, default=False, server_default="false"
     )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Whatever the client called itself on the last report. Free text on
+    # purpose: it is a label for a human reading "Playing on", not an identity
+    # the server makes decisions with.
+    device_label: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class UserEventType(StrEnum):

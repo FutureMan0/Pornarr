@@ -139,3 +139,115 @@
     --duration-slow: 1ms;
   }
 }
+
+/**
+ * ---------------------------------------------------------------------------
+ * The delivered design token set (2026-08-16).
+ * ---------------------------------------------------------------------------
+ *
+ * Namespaced `--pa-*` and kept beside the existing tokens rather than replacing
+ * them, because the two disagree on purpose and the swap is a screen-by-screen
+ * migration, not a find-and-replace. Nothing consumes these yet; they are here
+ * so that `contrast.test.ts` can hold them to the same floor as everything else
+ * before a single component is built on them.
+ *
+ * Two differences worth knowing before using one set or the other:
+ *
+ * - The tokens above are neutral, zero-chroma surfaces. These are a tinted
+ *   ground stack, and they drive placeholder artwork from a hue relative to the
+ *   accent. Mixing the two on one screen produces a grey card on a purple page.
+ * - These ship two accents, switched with `<html data-theme="rose|amber">`.
+ *   Rose is the default and matches `--primary` above closely enough that the
+ *   brand does not shift during the migration.
+ *
+ * The delivered source is `docs/design/pornarr-ui/src/styles/tokens.css`, whose
+ * README states the rules these encode. Re-export replaces this block wholesale.
+ */
+
+:root,
+[data-theme="rose"] {
+  --pa-accent-100: #fdf3f8;
+  --pa-accent-200: #f9e2ee;
+  --pa-accent-300: #f2c9de;
+  --pa-accent-400: #e79ac0;
+  --pa-accent-500: #d9629f;
+  --pa-accent-600: #b34f83;
+  --pa-accent-700: #8b3e66;
+  --pa-accent-800: #62304a;
+  --pa-accent-900: #3b2130;
+  --pa-accent: var(--pa-accent-500);
+  --pa-accent-rgb: 217, 98, 159;
+
+  --pa-bg-00: #14111b;
+  --pa-bg-0: #1b1724;
+  --pa-bg-1: #241f2e;
+  --pa-bg-2: #2c2638;
+  --pa-bg-3: #322b40;
+  --pa-bg-4: #40374f;
+
+  --pa-text: #eceef4;
+  --pa-text-dim: #c8c1d2;
+  --pa-text-muted: #a199ae;
+  --pa-text-faint: #9c94a8;
+
+  --pa-art-hue: 268deg;
+  --pa-art-sat: 1;
+  --pa-art-blur: 26px;
+  --pa-art-blur-md: 17px;
+  --pa-art-blur-sm: 12px;
+  --pa-logo-filter: none;
+}
+
+[data-theme="amber"] {
+  --pa-accent-100: #fdf6ef;
+  --pa-accent-200: #f9e8d7;
+  --pa-accent-300: #f2d4b1;
+  --pa-accent-400: #e7aa6b;
+  --pa-accent-500: #d9833f;
+  --pa-accent-600: #b36a2e;
+  --pa-accent-700: #8b5324;
+  --pa-accent-800: #623c1e;
+  --pa-accent-900: #3b2718;
+  --pa-accent: var(--pa-accent-500);
+  --pa-accent-rgb: 217, 131, 63;
+
+  --pa-bg-00: #171310;
+  --pa-bg-0: #1e1916;
+  --pa-bg-1: #29221c;
+  --pa-bg-2: #322a22;
+  --pa-bg-3: #392f26;
+  --pa-bg-4: #483c31;
+
+  --pa-text: #eceef4;
+  --pa-text-dim: #d2c8bd;
+  --pa-text-muted: #a89c8e;
+  --pa-text-faint: #a2968a;
+
+  --pa-art-hue: 28deg;
+  --pa-art-sat: 1.05;
+  --pa-logo-filter: hue-rotate(63deg) saturate(1.08);
+}
+
+:root {
+  /* spacing — 0.7x density, the scale the screens were drawn on */
+  --pa-space-1: 4px;
+  --pa-space-2: 5.6px;
+  --pa-space-3: 8.4px;
+  --pa-space-4: 11.2px;
+  --pa-space-5: 16.8px;
+  --pa-space-6: 22.4px;
+  --pa-space-7: 33.6px;
+
+  --pa-radius-sm: 5px;
+  --pa-radius: 8px;
+  --pa-radius-lg: 14px;
+  --pa-radius-pill: 999px;
+
+  --pa-hairline: inset 0 0 0 1px rgba(236, 238, 244, 0.09);
+  --pa-shadow-sm: 0 0 0 1px rgba(236, 238, 244, 0.09);
+  --pa-shadow-md: 0 0 0 1px rgba(236, 238, 244, 0.09), 0 10px 24px rgba(0, 0, 0, 0.4);
+  --pa-shadow-lg: 0 0 0 1px rgba(236, 238, 244, 0.12), 0 28px 64px rgba(0, 0, 0, 0.55);
+
+  --pa-font: Inter, system-ui, -apple-system, sans-serif;
+  --pa-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

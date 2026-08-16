@@ -36,3 +36,7 @@ graphify-out/
 .vscode/
 *.swp
 .DS_Store
+
+# Per-developer Claude Code settings. The shared ones belong in
+# .claude/settings.json; this file is the local override and is never shared.
+.claude/settings.local.json

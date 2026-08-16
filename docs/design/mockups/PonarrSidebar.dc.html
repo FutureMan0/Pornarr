@@ -11,50 +11,28 @@
 <link rel="stylesheet" href="_ds/nocturne-167c3630-4a16-4056-855f-ba15d3f3fc74/styles.css">
 <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
 <script src="_ds/nocturne-167c3630-4a16-4056-855f-ba15d3f3fc74/_ds_bundle.js"></script>
-<style>
-  :root {
-    --color-accent: #d9629f;
-    --color-accent-100: #fdf3f8;
-    --color-accent-200: #f9e2ee;
-    --color-accent-300: #f2c9de;
-    --color-accent-400: #e79ac0;
-    --color-accent-500: #d9629f;
-    --color-accent-600: #b34f83;
-    --color-accent-700: #8b3e66;
-    --color-accent-800: #62304a;
-    --color-accent-900: #3b2130;
-    --color-accent-2: #e79ac0;
-    --color-accent-2-100: #fdf3f8;
-    --color-accent-2-200: #f9e2ee;
-    --color-accent-2-300: #f2c9de;
-    --color-accent-2-400: #e79ac0;
-    --color-accent-2-500: #d9629f;
-    --color-accent-2-600: #b34f83;
-    --color-accent-2-700: #8b3e66;
-    --color-accent-2-800: #62304a;
-    --color-accent-2-900: #3b2130;
-  }
-</style>
+<link rel="stylesheet" href="theme-rose.css">
+<link rel="stylesheet" href="theme-amber.css">
 </helmet>
-<div style="width:228px;flex:none;height:100%;display:flex;flex-direction:column;gap:14px;padding:16.8px 11.2px;background:#12141f;box-shadow:inset -1px 0 0 rgba(233,233,237,0.08)">
+<div style="width:228px;flex:none;height:100%;display:flex;flex-direction:column;gap:14px;padding:16.8px 11.2px;background:var(--pa-bg-00);box-shadow:inset -1px 0 0 rgba(236,238,244,0.06)">
   <div style="display:flex;align-items:center;gap:8px;padding:0 8.4px">
-    <img src="assets/logo-text.png" alt="Pornarr" style="height:22px;width:auto">
-    <div style="margin-left:auto;font-size:10px;letter-spacing:0.08em;color:#75798c">LOCAL</div>
+    <img class="pa-logo" src="assets/logo-text.png" alt="Pornarr" style="height:22px;width:auto">
+    <div style="margin-left:auto;font-size:10px;letter-spacing:0.08em;color:var(--pa-text-muted)">LOCAL</div>
   </div>
   <div style="{{ roleStyle }}">
     <i class="{{ roleIcon }}" style="font-size:14px"></i>
     <span style="font-size:12px">{{ roleLabel }}</span>
-    <span style="margin-left:auto;font-size:10px;color:#75798c">{{ roleUser }}</span>
+    <span style="margin-left:auto;font-size:10px;color:var(--pa-text-muted)">{{ roleUser }}</span>
   </div>
   <div style="display:flex;flex-direction:column;gap:2px">
     <sc-for list="{{ items }}" as="it" hint-placeholder-count="7">
       <div style="{{ it.style }}"><i class="{{ it.icon }}" style="font-size:17px"></i><span>{{ it.label }}</span><span style="{{ it.badgeStyle }}">{{ it.badge }}</span></div>
     </sc-for>
   </div>
-  <div style="margin-top:auto;display:flex;flex-direction:column;gap:8.4px;padding:11.2px 8.4px;border-radius:8px;background:#1a1c2a">
-    <div style="display:flex;justify-content:space-between;font-size:11px;color:#9397ab"><span>{{ footTitle }}</span><span>{{ footValue }}</span></div>
-    <div style="height:4px;border-radius:2px;background:#292b31;overflow:hidden"><div style="width:{{ footPct }};height:100%;background:#d9629f"></div></div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#75798c"><i class="{{ footIcon }}"></i><span>{{ footNote }}</span></div>
+  <div style="margin-top:auto;display:flex;flex-direction:column;gap:8.4px;padding:11.2px 8.4px;border-radius:8px;background:var(--pa-bg-1)">
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--pa-text-dim)"><span>{{ footTitle }}</span><span>{{ footValue }}</span></div>
+    <div style="height:4px;border-radius:2px;background:var(--pa-bg-4);overflow:hidden"><div style="width:{{ footPct }};height:100%;background:var(--pa-accent-500)"></div></div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--pa-text-muted)"><i class="{{ footIcon }}"></i><span>{{ footNote }}</span></div>
   </div>
 </div>
 
@@ -66,9 +44,12 @@ class Component extends DCLogic {
     const admin = [
       ['Dashboard', 'ph-gauge', ''],
       ['Library', 'ph-squares-four', '3,482'],
+      ['Search', 'ph-magnifying-glass', ''],
       ['Shorts', 'ph-device-mobile', '412'],
       ['Collections', 'ph-users-three', ''],
       ['Tags', 'ph-tag', '214'],
+      ['Requests', 'ph-hand-pointing', '8'],
+      ['Monitors', 'ph-crosshair', '5'],
       ['Queue', 'ph-arrow-circle-down', '4'],
       ['Scan & Import', 'ph-folder-open', '12'],
       ['Settings', 'ph-gear-six', '']
@@ -76,7 +57,8 @@ class Component extends DCLogic {
     const user = [
       ['Feed', 'ph-broadcast', '7'],
       ['Continue', 'ph-play-circle', '3'],
-      ['Library', 'ph-squares-four', ''],
+      ['My library', 'ph-lock-simple', '1,204'],
+      ['Search all', 'ph-magnifying-glass', ''],
       ['Shorts', 'ph-device-mobile', '412'],
       ['Collections', 'ph-users-three', ''],
       ['Tags', 'ph-tag', ''],
@@ -87,7 +69,7 @@ class Component extends DCLogic {
     const active = this.props.active;
     return {
       roleStyle: 'display:flex;align-items:center;gap:8px;padding:6px 8.4px;border-radius:8px;background:' +
-        (isAdmin ? 'rgba(217,98,159,0.14);color:#f2c9de' : '#1a1c2a;color:#b2b6ca'),
+        (isAdmin ? 'rgba(var(--pa-accent-rgb),0.14);color:var(--pa-accent-300)' : 'var(--pa-bg-1);color:var(--pa-text-dim)'),
       roleIcon: isAdmin ? 'ph ph-shield-check' : 'ph ph-user',
       roleLabel: isAdmin ? 'Admin' : 'Guest',
       roleUser: this.props.user || (isAdmin ? 'kai' : 'jonas'),
@@ -102,9 +84,9 @@ class Component extends DCLogic {
           label, badge,
           icon: 'ph ' + icon,
           style: base + (on
-            ? 'color:#f2c9de;background:rgba(217,98,159,0.14);box-shadow:inset 2px 0 0 #d9629f;'
-            : 'color:#b2b6ca;'),
-          badgeStyle: 'margin-left:auto;font-size:10px;color:' + (on ? '#e79ac0' : '#75798c')
+            ? 'color:var(--pa-accent-300);background:rgba(var(--pa-accent-rgb),0.14);box-shadow:inset 2px 0 0 var(--pa-accent-500);'
+            : 'color:var(--pa-text-dim);'),
+          badgeStyle: 'margin-left:auto;font-size:10px;color:' + (on ? 'var(--pa-accent-400)' : 'var(--pa-text-muted)')
         };
       })
     };

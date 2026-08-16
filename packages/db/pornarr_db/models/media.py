@@ -44,6 +44,13 @@ class Media(TimestampMixin, Base):
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    # Whose library this title belongs to. Null means the shared pool, which is
+    # what every existing row is and what a server with `private_libraries` off
+    # keeps producing — the column is a scope, not an owner in the legal sense.
+    # `SET NULL` rather than cascade: deleting a guest must not delete media.
+    owner_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     title: Mapped[str] = mapped_column(String(512), nullable=False)
     normalized_title: Mapped[str] = mapped_column(String(512), nullable=False)
     description: Mapped[str | None] = mapped_column(String, nullable=True)

@@ -175,11 +175,48 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /**
-         * Set Comment State
-         * @description Resolving a comment clears its reports: the queue must be able to empty.
-         */
+        /** Set Comment State */
         patch: operations["admin_set_comment_state"];
+        trace?: never;
+    };
+    "/api/admin/comments/{comment_id}/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide Comment
+         * @description Withhold a comment from everyone but its author and the administrators.
+         */
+        post: operations["admin_hide_comment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/comments/{comment_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve Comment
+         * @description Leave the comment standing and take it off the queue.
+         */
+        post: operations["admin_resolve_comment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/admin/download-clients": {
@@ -1080,6 +1117,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/media/{media_id}/markers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Marker
+         * @description Append a marker by hand, after the ones detection produced.
+         *
+         *     Ordinals are positions in the index, not identifiers, so a manual marker
+         *     takes the next one rather than being inserted in time order — renumbering
+         *     every later marker would invalidate the ids clips point at.
+         */
+        post: operations["scenes_create_marker"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/media/{media_id}/markers/{marker_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Marker
+         * @description Clips cut from this marker keep working; their `marker_id` becomes null.
+         */
+        delete: operations["scenes_delete_marker"];
+        options?: never;
+        head?: never;
+        /** Update Marker */
+        patch: operations["scenes_update_marker"];
+        trace?: never;
+    };
     "/api/media/{media_id}/playback-info": {
         parameters: {
             query?: never;
@@ -1368,6 +1450,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/playback/sessions/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Sessions
+         * @description What "Playing on" reads: this account's live transcodes.
+         *
+         *     Direct play deliberately does not appear. A direct-playing client streams
+         *     the file without asking the server to keep any session state, so there is
+         *     nothing here to report — the absence of a row for a device *is* the signal
+         *     that it is not transcoding, and inventing a record would mean tracking
+         *     playback the server otherwise has no reason to know about.
+         */
+        get: operations["playback_my_sessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/playback/{media_id}/progress": {
         parameters: {
             query?: never;
@@ -1438,6 +1546,49 @@ export interface paths {
          * @description Remove the user's signals so the next refresh starts from an empty profile.
          */
         delete: operations["recommendations_reset_recommendation_profile"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recommendations/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Recommendation
+         * @description Hand a title to someone with a note. They are told who sent it.
+         */
+        post: operations["recommendations_send_recommendation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recommendations/sent-to-me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sent To Me
+         * @description The one place in the product where another person is named.
+         *
+         *     Everything else is anonymous under `anonymous_social`; a hand-picked
+         *     recommendation is worthless without knowing whose taste it was.
+         */
+        get: operations["recommendations_sent_to_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1789,10 +1940,49 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Shorts */
+        /**
+         * List Shorts
+         * @description Trending is recent watching, not all-time rating.
+         *
+         *     A clip cut yesterday that everyone opened should lead over one from March
+         *     with a slightly better average, so trending counts progress events on the
+         *     parent title within the window rather than sorting by score.
+         */
         get: operations["shorts_list_shorts"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shorts/media/{media_id}/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate From Markers
+         * @description Cut clips at the detected scene boundaries of a title.
+         *
+         *     One clip per marker, in order, skipping any that would overlap a clip that
+         *     already exists — so this never disturbs a cut placed by hand, and never
+         *     re-cuts a marker it has already covered.
+         *
+         *     `maximum` bounds one call rather than the title: calling again picks up at
+         *     the first uncovered marker, so a long film can be worked through a few
+         *     clips at a time instead of producing a hundred in one press.
+         *
+         *     A marker is a boundary, not a length: the clip runs from the boundary for
+         *     the requested duration or to the end of the scene, whichever is shorter, so
+         *     a five-second shot does not become a minute of the following one.
+         */
+        post: operations["shorts_generate_from_markers"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1879,6 +2069,44 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/watchlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Watchlist */
+        get: operations["watchlist_list_watchlist"];
+        put?: never;
+        /**
+         * Add To Watchlist
+         * @description Idempotent: adding something already queued is not an error.
+         */
+        post: operations["watchlist_add_to_watchlist"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/watchlist/{media_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove From Watchlist */
+        delete: operations["watchlist_remove_from_watchlist"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2093,7 +2321,7 @@ export interface components {
         /** CommentResponse */
         CommentResponse: {
             /** Author */
-            author: string;
+            author: string | null;
             /** Body */
             body: string;
             /**
@@ -2108,8 +2336,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /** Is Yours */
-            is_yours: boolean;
+            /** Is Own */
+            is_own: boolean;
             /** Likes */
             likes: number;
             /**
@@ -2451,6 +2679,22 @@ export interface components {
          * @enum {string}
          */
         ExternalSearchSort: "relevance" | "age" | "size" | "quality" | "seeders" | "estimated_time";
+        /**
+         * GenerateShortsWrite
+         * @description How many clips to cut, and how long each should be.
+         */
+        GenerateShortsWrite: {
+            /**
+             * Maximum
+             * @default 5
+             */
+            maximum: number;
+            /**
+             * Seconds
+             * @default 60
+             */
+            seconds: number;
+        };
         /** GrabResponse */
         GrabResponse: {
             /**
@@ -2635,6 +2879,10 @@ export interface components {
             progress_duration_seconds: number | null;
             /** Quality */
             quality: string | null;
+            /** Rating */
+            rating: number | null;
+            /** Rating Count */
+            rating_count: number;
             /** Release Date */
             release_date: string | null;
             /** Resolution */
@@ -2662,10 +2910,16 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** In My Library */
+            in_my_library: boolean;
             /** Performers */
             performers: string[];
             /** Quality */
             quality: string | null;
+            /** Rating */
+            rating: number | null;
+            /** Rating Count */
+            rating_count: number;
             /** Release Date */
             release_date: string | null;
             /** Relevance */
@@ -2698,6 +2952,20 @@ export interface components {
             /** Username */
             username: string;
         };
+        /** MarkerPatch */
+        MarkerPatch: {
+            /** End Seconds */
+            end_seconds?: number | null;
+            /** Start Seconds */
+            start_seconds?: number | null;
+        };
+        /** MarkerWrite */
+        MarkerWrite: {
+            /** End Seconds */
+            end_seconds: number;
+            /** Start Seconds */
+            start_seconds: number;
+        };
         /** MediaDetailResponse */
         MediaDetailResponse: {
             /** Bitrate */
@@ -2715,14 +2983,22 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** In My Library */
+            in_my_library: boolean;
             /** Metadata Source */
             metadata_source: string;
+            /** Owner Id */
+            owner_id: string | null;
             /** Path */
             path: string;
             /** Performers */
             performers: string[];
             /** Playable */
             playable: boolean;
+            /** Rating */
+            rating: number | null;
+            /** Rating Count */
+            rating_count: number;
             /** Release Date */
             release_date: string | null;
             /** Resolution */
@@ -2744,7 +3020,7 @@ export interface components {
         /** ModeratedCommentResponse */
         ModeratedCommentResponse: {
             /** Author */
-            author: string;
+            author: string | null;
             /** Body */
             body: string;
             /**
@@ -2759,8 +3035,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /** Is Yours */
-            is_yours: boolean;
+            /** Is Own */
+            is_own: boolean;
             /** Likes */
             likes: number;
             /**
@@ -2924,6 +3200,8 @@ export interface components {
         PlaybackProgressResponse: {
             /** Completed */
             completed: boolean;
+            /** Device Label */
+            device_label: string | null;
             /** Duration Seconds */
             duration_seconds: number;
             /**
@@ -2936,10 +3214,41 @@ export interface components {
         };
         /** PlaybackProgressWrite */
         PlaybackProgressWrite: {
+            /** Device Label */
+            device_label?: string | null;
             /** Duration Seconds */
             duration_seconds: number;
             /** Position Seconds */
             position_seconds: number;
+        };
+        /**
+         * PlayingOnResponse
+         * @description One device this account currently has a transcode running on.
+         */
+        PlayingOnResponse: {
+            /** Device Label */
+            device_label: string | null;
+            /** Hardware */
+            hardware: boolean;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Media Title */
+            media_title: string;
+            /** Mode */
+            mode: string;
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
         };
         /** ProfileResponse */
         ProfileResponse: {
@@ -3143,6 +3452,8 @@ export interface components {
             release_date?: string | null;
             /** Studio */
             studio?: string | null;
+            /** Target Owner Id */
+            target_owner_id?: string | null;
             /** Title */
             title?: string | null;
         };
@@ -3267,6 +3578,8 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+            /** Match Score */
+            match_score: number;
             /**
              * Media Id
              * Format: uuid
@@ -3278,6 +3591,8 @@ export interface components {
             reason: {
                 [key: string]: unknown;
             };
+            /** Reasons */
+            reasons: string[];
             /** Score */
             score: number;
             /** Title */
@@ -3294,6 +3609,8 @@ export interface components {
             query: string;
             /** Selected Release Guid */
             selected_release_guid?: string | null;
+            /** Target Owner Id */
+            target_owner_id?: string | null;
         };
         /** RequestHistoryResponse */
         RequestHistoryResponse: {
@@ -3374,6 +3691,8 @@ export interface components {
          * @description Resolved values with attributes callers can use directly.
          */
         RuntimeSettings: {
+            /** Anonymous Social */
+            anonymous_social: boolean;
             /** Audit Retention Days */
             audit_retention_days: number | null;
             /** Auto Download Duplicate Risk Weight */
@@ -3408,8 +3727,18 @@ export interface components {
             min_free_disk_percent: number;
             /** Playback Completion Threshold Percent */
             playback_completion_threshold_percent: number;
+            /** Pooled Search */
+            pooled_search: boolean;
+            /** Private Libraries */
+            private_libraries: boolean;
             /** Quarantine Retention Days */
             quarantine_retention_days: number;
+            /** Recommendation Hide Finished */
+            recommendation_hide_finished: boolean;
+            /** Recommendation Include Friend Picks */
+            recommendation_include_friend_picks: boolean;
+            /** Recommendation Include Shorts */
+            recommendation_include_shorts: boolean;
             /** Recommendation Performer Weight */
             recommendation_performer_weight: number;
             /** Recommendation Popularity Weight */
@@ -3422,6 +3751,8 @@ export interface components {
             recommendation_studio_weight: number;
             /** Recommendation Tag Weight */
             recommendation_tag_weight: number;
+            /** Recommendation Use Ratings */
+            recommendation_use_ratings: boolean;
             /** Request Search Max Age Days */
             request_search_max_age_days: number;
             /** Transcode Max Hw Sessions */
@@ -3438,6 +3769,8 @@ export interface components {
          * @description Partial update validated before values are persisted.
          */
         RuntimeSettingsWrite: {
+            /** Anonymous Social */
+            anonymous_social?: boolean | null;
             /** Audit Retention Days */
             audit_retention_days?: number | null;
             /** Auto Download Duplicate Risk Weight */
@@ -3472,8 +3805,18 @@ export interface components {
             min_free_disk_percent?: number | null;
             /** Playback Completion Threshold Percent */
             playback_completion_threshold_percent?: number | null;
+            /** Pooled Search */
+            pooled_search?: boolean | null;
+            /** Private Libraries */
+            private_libraries?: boolean | null;
             /** Quarantine Retention Days */
             quarantine_retention_days?: number | null;
+            /** Recommendation Hide Finished */
+            recommendation_hide_finished?: boolean | null;
+            /** Recommendation Include Friend Picks */
+            recommendation_include_friend_picks?: boolean | null;
+            /** Recommendation Include Shorts */
+            recommendation_include_shorts?: boolean | null;
             /** Recommendation Performer Weight */
             recommendation_performer_weight?: number | null;
             /** Recommendation Popularity Weight */
@@ -3486,6 +3829,8 @@ export interface components {
             recommendation_studio_weight?: number | null;
             /** Recommendation Tag Weight */
             recommendation_tag_weight?: number | null;
+            /** Recommendation Use Ratings */
+            recommendation_use_ratings?: boolean | null;
             /** Request Search Max Age Days */
             request_search_max_age_days?: number | null;
             /** Transcode Max Hw Sessions */
@@ -3515,6 +3860,11 @@ export interface components {
             duration_seconds: number;
             /** End Seconds */
             end_seconds: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
             /** Ordinal */
             ordinal: number;
             /** Start Seconds */
@@ -3652,6 +4002,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Marker Id */
+            marker_id: string | null;
             /**
              * Media Id
              * Format: uuid
@@ -3659,12 +4011,22 @@ export interface components {
             media_id: string;
             /** Media Title */
             media_title: string;
+            /**
+             * Parent Media Id
+             * Format: uuid
+             */
+            parent_media_id: string;
             source: components["schemas"]["ShortSource"];
             /** Start Seconds */
             start_seconds: number;
             /** Title */
             title: string;
         };
+        /**
+         * ShortSort
+         * @enum {string}
+         */
+        ShortSort: "trending" | "newest" | "top" | "duration";
         /**
          * ShortSource
          * @enum {string}
@@ -3824,6 +4186,29 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** WatchlistItemResponse */
+        WatchlistItemResponse: {
+            /**
+             * Added At
+             * Format: date-time
+             */
+            added_at: string;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Title */
+            title: string;
+        };
+        /** WatchlistWrite */
+        WatchlistWrite: {
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
         };
     };
     responses: never;
@@ -4117,6 +4502,7 @@ export interface operations {
     admin_list_moderation_queue: {
         parameters: {
             query?: {
+                state?: components["schemas"]["CommentState"] | null;
                 reported_only?: boolean;
                 limit?: number;
                 offset?: number;
@@ -4161,6 +4547,86 @@ export interface operations {
                 "application/json": components["schemas"]["CommentStateWrite"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModeratedCommentResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_hide_comment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModeratedCommentResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_resolve_comment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -6290,6 +6756,7 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
+                rating_gte?: number | null;
             };
             header?: never;
             path?: never;
@@ -6413,6 +6880,134 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommentResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    scenes_create_marker: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkerWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SceneResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    scenes_delete_marker: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+                marker_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scenes_update_marker: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+                marker_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkerPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SceneResponse"];
                 };
             };
             /** @description Not Found */
@@ -7205,6 +7800,26 @@ export interface operations {
             };
         };
     };
+    playback_my_sessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayingOnResponse"][];
+                };
+            };
+        };
+    };
     playback_playback_progress: {
         parameters: {
             query?: never;
@@ -7341,6 +7956,90 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    recommendations_send_recommendation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    recommendations_sent_to_me: {
+        parameters: {
+            query?: {
+                unseen_only?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };
@@ -7947,6 +8646,7 @@ export interface operations {
                 minimum_size_bytes?: number | null;
                 maximum_size_bytes?: number | null;
                 maximum_age_days?: number | null;
+                rating_gte?: number | null;
                 sort?: components["schemas"]["MediaSort"];
                 cursor?: string | null;
                 limit?: number;
@@ -8280,6 +8980,7 @@ export interface operations {
     shorts_list_shorts: {
         parameters: {
             query?: {
+                sort?: components["schemas"]["ShortSort"];
                 limit?: number;
                 offset?: number;
             };
@@ -8296,6 +8997,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShortResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shorts_generate_from_markers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateShortsWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShortResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Validation Error */
@@ -8475,6 +9229,104 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    watchlist_list_watchlist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchlistItemResponse"][];
+                };
+            };
+        };
+    };
+    watchlist_add_to_watchlist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchlistWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    watchlist_remove_from_watchlist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Validation Error */

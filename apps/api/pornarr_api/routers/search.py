@@ -16,6 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from pornarr_api.auth import database_session, get_current_user
+from pornarr_api.ratings_summary import rating_filter, rating_summaries
+from pornarr_api.scoping import owns, search_scope
 from pornarr_core.dedup import IndexedRelease, deduplicate
 from pornarr_core.eta import Confidence, Protocol, search_estimate, unknown
 from pornarr_core.filters import (
@@ -46,9 +48,11 @@ from pornarr_db.models.indexer import Indexer
 from pornarr_db.models.media import Media, MediaFile
 from pornarr_db.models.playback import UserEventType
 from pornarr_db.models.release import ReleaseCache
+from pornarr_db.models.social import Rating
 from pornarr_db.models.statistics import PerformanceMetric
 from pornarr_db.models.user import User
 from pornarr_db.release_cache import normalize_release_title
+from pornarr_db.settings import get_runtime_settings
 from pornarr_db.statistics import rolling_average
 from pornarr_integrations.indexers import Release
 from pornarr_shared.events import publish_event
@@ -66,6 +70,10 @@ Session = Annotated[AsyncSession, Depends(database_session)]
 
 class LocalSearchItem(BaseModel):
     id: UUID
+    # No `owner_id`. Pooled search is meant to tell you the house already has
+    # the film, not whose shelf it is on — that is the whole privacy line
+    # between searching the pool and browsing someone's library.
+    in_my_library: bool
     title: str
     studio: str | None
     release_date: date | None
@@ -76,6 +84,8 @@ class LocalSearchItem(BaseModel):
     performers: list[str]
     tags: list[str]
     relevance: float
+    rating: float | None
+    rating_count: int
 
 
 class LocalSearchResponse(BaseModel):
@@ -250,6 +260,7 @@ async def indexer_search_status(
 
 @router.get("/local", response_model=LocalSearchResponse)
 async def local_search(
+    request: Request,
     user: CurrentUser,
     session: Session,
     q: Annotated[str, Query(min_length=1, max_length=512)],
@@ -263,6 +274,7 @@ async def local_search(
     minimum_size_bytes: Annotated[int | None, Query(ge=0)] = None,
     maximum_size_bytes: Annotated[int | None, Query(ge=0)] = None,
     maximum_age_days: Annotated[int | None, Query(ge=0, le=36_500)] = None,
+    rating_gte: Annotated[float | None, Query(ge=1, le=5)] = None,
     sort: MediaSort = MediaSort.RELEVANCE,
     cursor: str | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
@@ -290,14 +302,28 @@ async def local_search(
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
 
-        page = results[:limit]
+        settings = await get_runtime_settings(session, request.app.state.settings)
+        scope = search_scope(user, settings)
+        page = [result for result in results[:limit] if scope is None or owns(result.media, user)]
+        if rating_gte is not None:
+            rated = set(
+                await session.scalars(
+                    rating_filter(rating_gte).where(
+                        Rating.media_id.in_([result.media.id for result in page])
+                    )
+                )
+            )
+            page = [result for result in page if result.media.id in rated]
         metadata = await search_metadata(session, [result.media.id for result in page])
+        ratings = await rating_summaries(session, [result.media.id for result in page])
         rules = await _rules_for_user(session, user.id)
         items = []
         for result in page:
             decision = _filter_decision(result, metadata[result.media.id], rules)
             if decision.action is CoreFilterAction.ALLOW:
-                items.append(_search_item(result, metadata[result.media.id]))
+                items.append(
+                    _search_item(result, metadata[result.media.id], user=user, ratings=ratings)
+                )
             elif decision.action is CoreFilterAction.REJECT and decision.rule is not None:
                 write_audit(
                     session,
@@ -643,9 +669,17 @@ def _filter_decision(result: MediaSearchResult, metadata, rules: tuple[CoreFilte
     return evaluate_filters(candidate, rules)
 
 
-def _search_item(result: MediaSearchResult, metadata) -> LocalSearchItem:
+def _search_item(
+    result: MediaSearchResult,
+    metadata,
+    *,
+    user: User,
+    ratings: dict[UUID, tuple[float, int]],
+) -> LocalSearchItem:
+    rating, rating_count = ratings.get(result.media.id, (None, 0))
     return LocalSearchItem(
         id=result.media.id,
+        in_my_library=owns(result.media, user),
         title=result.media.title,
         studio=result.media.studio,
         release_date=result.media.release_date,
@@ -656,6 +690,8 @@ def _search_item(result: MediaSearchResult, metadata) -> LocalSearchItem:
         performers=sorted(metadata.performers),
         tags=sorted(metadata.tags),
         relevance=result.relevance,
+        rating=rating,
+        rating_count=rating_count,
     )
 
 
