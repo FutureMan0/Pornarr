@@ -104,6 +104,17 @@ async def update_personal_rule(rule_id: UUID, payload: RuleWrite, user: CurrentU
     return response(rule, False)
 
 
+@router.patch("/global/rules/{rule_id}", response_model=RuleResponse)
+async def update_global_rule(
+    rule_id: UUID, payload: RuleWrite, _: Admin, session: Session
+) -> RuleResponse:
+    rule = await session.get(ContentFilterRule, rule_id)
+    if rule is None or rule.profile.scope is not FilterProfileScope.GLOBAL:
+        raise HTTPException(status_code=404)
+    rule.kind, rule.pattern, rule.action, rule.enabled = payload.kind, payload.pattern, payload.action, payload.enabled
+    return response(rule, True)
+
+
 @router.post("/dry-run", response_model=DryRunResponse)
 async def dry_run(payload: DryRunWrite, user: CurrentUser, session: Session) -> DryRunResponse:
     global_profile, personal = await profiles(session, user.id)
