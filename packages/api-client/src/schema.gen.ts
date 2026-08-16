@@ -2621,6 +2621,8 @@ export interface components {
             };
             /** Score */
             score: number;
+            /** Title */
+            title: string;
         };
         /** RequestCreate */
         RequestCreate: {
