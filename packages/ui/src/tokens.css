@@ -9,32 +9,51 @@
  */
 
 :root {
-  /* Surfaces — true neutral, zero chroma, so that posters and video frames are
-     the only saturated things on screen. */
-  --bg: oklch(0.09 0 0);
-  --surface: oklch(0.13 0 0);
-  --surface-2: oklch(0.17 0 0);
-  --surface-3: oklch(0.21 0 0);
+  /* Surfaces. These are aliases onto the delivered ground stack at the bottom
+     of this file, which is what switches the whole application to the design in
+     one place instead of screen by screen. The names stay because every
+     component and every Tailwind utility already resolves through them.
+
+     They were neutral and zero-chroma; they are now tinted, and they follow
+     `data-theme`. `--pa-bg-00` is deeper still and is the ground behind video —
+     nothing in the four-surface stack maps onto it. */
+  --bg: var(--pa-bg-0);
+  --surface: var(--pa-bg-1);
+  --surface-2: var(--pa-bg-2);
+  --surface-3: var(--pa-bg-3);
 
   /* Lines. --border and --border-strong separate and decorate; neither reaches
      3:1 on any surface, so neither may be the only thing identifying a control.
      --border-control is the resting edge of an interactive control and is the
-     one that clears WCAG 1.4.11 against all four surfaces. */
-  --border: oklch(0.24 0 0);
-  --border-strong: oklch(0.34 0 0);
-  --border-control: oklch(0.52 0 0);
+     one that clears WCAG 1.4.11 against all four surfaces.
 
-  /* Ink. --ink-faint is for disabled states only, never for readable content. */
-  --ink: oklch(0.97 0 0);
-  --ink-muted: oklch(0.72 0 0);
-  --ink-faint: oklch(0.55 0 0);
+     Not aliased: the delivered set draws its edges with a white alpha hairline,
+     which cannot be held to a measured ratio because its result depends on what
+     is behind it. These stay opaque and measured. The value clears 3:1 on all
+     four surfaces in both accents with room to spare — 3.38:1 at its worst. */
+  --border: oklch(0.28 0.012 300);
+  --border-strong: oklch(0.38 0.014 300);
+  --border-control: #857f91;
 
-  /* Brand. Text on --primary is --primary-ink: white on a rose of this
-     lightness does not reach 4.5:1, dark ink does. */
-  --primary: oklch(0.62 0.18 340);
-  --primary-hover: oklch(0.68 0.19 340);
-  --primary-ink: oklch(0.14 0 0);
-  --primary-weak: oklch(0.3 0.07 340);
+  /* Ink. --ink-faint is for disabled states only, never for readable content.
+     --ink-muted takes the delivered `muted` step rather than `dim`: it clears
+     4.5:1 on all four surfaces here (4.86:1 at worst), and `dim` would waste
+     the contrast the ramp is spending. */
+  --ink: var(--pa-text);
+  --ink-muted: var(--pa-text-muted);
+  --ink-faint: var(--pa-text-faint);
+
+  /* Brand. Text on --primary is --primary-ink.
+
+     --primary-ink is the deepest ground rather than the accent's own 900 step:
+     on the rose accent, accent-900 measures 4.29:1, which is under the bar for
+     a button label. The delivered design sidesteps this by drawing its primary
+     button as an outline; this application fills it, so it needs an ink that
+     actually holds — 5.51:1 in rose, 6.39:1 in amber. */
+  --primary: var(--pa-accent-500);
+  --primary-hover: var(--pa-accent-400);
+  --primary-ink: var(--pa-bg-00);
+  --primary-weak: var(--pa-accent-800);
 
   /* Semantic. The -weak variants are backgrounds. Text on them is --ink, never
      the matching hue — see contrast.test.ts. */

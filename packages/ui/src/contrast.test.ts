@@ -19,19 +19,47 @@ import { describe, expect, test } from "vitest";
 const SURFACES = ["bg", "surface", "surface-2", "surface-3"] as const;
 const SEMANTIC = ["success", "warning", "danger", "info"] as const;
 
+const declarations = (block: string): ReadonlyMap<string, string> => {
+  const found = new Map<string, string>();
+  for (const [, name, value] of block.matchAll(/--([\w-]+):\s*([^;]+);/g)) {
+    if (name !== undefined && value !== undefined) found.set(name, value.trim());
+  }
+  return found;
+};
+
 const tokens = ((): ReadonlyMap<string, string> => {
   const raw = readFileSync(new URL("./tokens.css", import.meta.url), "utf8");
   // Comments first: prose that names a token and a colon ("--primary-ink: white
   // on a rose...") otherwise swallows the declaration that follows it.
   const css = raw.replace(/\/\*[\s\S]*?\*\//g, "");
-  // Only the :root block. The reduced-motion override redefines durations, and
-  // picking those up would silently shadow the real values.
+  // Only the first :root block. The reduced-motion override redefines
+  // durations, and picking those up would silently shadow the real values.
   const root = /:root\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
-  const found = new Map<string, string>();
-  for (const [, name, value] of root.matchAll(/--([\w-]+):\s*([^;]+);/g)) {
-    if (name !== undefined && value !== undefined) found.set(name, value.trim());
+  // The surfaces, inks and brand colours are now aliases onto the delivered
+  // ramp, which is declared further down under the default accent's selector.
+  // Resolving one level of indirection is what keeps this test measuring the
+  // colour that actually reaches the screen rather than the string "var(...)".
+  const defaultAccent =
+    /:root,\s*\[data-theme=['"]rose['"]\]\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
+  const named = declarations(root);
+  const ramp = declarations(defaultAccent);
+
+  const resolved = new Map<string, string>();
+  for (const [name, value] of named) {
+    const alias = /^var\(\s*--([\w-]+)\s*\)$/.exec(value)?.[1];
+    if (alias === undefined) {
+      resolved.set(name, value);
+      continue;
+    }
+    const target = ramp.get(alias) ?? named.get(alias);
+    if (target === undefined) throw new Error(`--${name} aliases --${alias}, which is not defined`);
+    if (target.startsWith("var(")) {
+      throw new Error(`--${name} aliases --${alias}, which is itself an alias`);
+    }
+    resolved.set(name, target);
   }
-  return found;
+  for (const [name, value] of ramp) if (!resolved.has(name)) resolved.set(name, value);
+  return resolved;
 })();
 
 const ratio = (fg: string, bg: string): number => {
@@ -56,6 +84,16 @@ const atLeast = (fg: string, bg: string, min: number): void => {
 };
 
 describe("tokens.css parses", () => {
+  test("the surfaces really are the delivered ones, not the neutrals they replaced", () => {
+    // Without this, reverting the aliases leaves every ratio below passing on
+    // the old palette and the migration silently undoes itself.
+    expect(tokens.get("bg")).toBe(tokens.get("pa-bg-0"));
+    expect(tokens.get("surface")).toBe(tokens.get("pa-bg-1"));
+    expect(tokens.get("ink")).toBe(tokens.get("pa-text"));
+    expect(tokens.get("primary")).toBe(tokens.get("pa-accent-500"));
+    expect(tokens.get("bg")).toMatch(/^#/);
+  });
+
   test("the colour tokens the components depend on are all present", () => {
     expect(tokens.size).toBeGreaterThan(0);
     for (const name of [...SURFACES, ...SEMANTIC, "ink", "primary", "border-control"]) {
