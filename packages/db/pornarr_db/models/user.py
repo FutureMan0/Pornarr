@@ -26,6 +26,11 @@ class User(TimestampMixin, Base):
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     username: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    # The name the rest of the household sees on ratings, comments and sends.
+    # Deliberately separate from `username`, which is a credential: a guest
+    # joining a friend's server chooses how they appear without that choice
+    # touching how they sign in. Null means "fall back to the username".
+    display_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(
         Enum(

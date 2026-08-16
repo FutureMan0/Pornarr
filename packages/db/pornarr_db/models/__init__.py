@@ -43,6 +43,19 @@ from pornarr_db.models.release import ReleaseCache
 from pornarr_db.models.request import Request, RequestHistory, RequestStatus
 from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.models.settings import Setting
+from pornarr_db.models.social import (
+    Collection,
+    CollectionItem,
+    CollectionVisibility,
+    Comment,
+    CommentLike,
+    CommentReport,
+    CommentState,
+    MediaSend,
+    Rating,
+    Short,
+    ShortSource,
+)
 from pornarr_db.models.statistics import PerformanceMeasurement, PerformanceMetric
 from pornarr_db.models.storage import DailyStorageUsage
 from pornarr_db.models.user import User, UserRole
@@ -51,6 +64,13 @@ __all__ = [
     "AuditLog",
     "AutomationRule",
     "BlockedRelease",
+    "Collection",
+    "CollectionItem",
+    "CollectionVisibility",
+    "Comment",
+    "CommentLike",
+    "CommentReport",
+    "CommentState",
     "ContentFilterProfile",
     "ContentFilterRule",
     "CustomFormat",
@@ -72,6 +92,7 @@ __all__ = [
     "MediaFile",
     "MediaFileHistory",
     "MediaPerformer",
+    "MediaSend",
     "MediaTag",
     "MetadataCorrection",
     "MetadataMatchLog",
@@ -91,6 +112,7 @@ __all__ = [
     "QualityProfile",
     "QualityProfileItem",
     "QuarantineItem",
+    "Rating",
     "RecommendationCandidate",
     "ReleaseCache",
     "Request",
@@ -98,6 +120,8 @@ __all__ = [
     "RequestStatus",
     "RootFolder",
     "Setting",
+    "Short",
+    "ShortSource",
     "Studio",
     "Tag",
     "User",
