@@ -1495,6 +1495,34 @@
         "title": "IndexerWrite",
         "type": "object"
       },
+      "InterestProfileResponse": {
+        "properties": {
+          "preferences": {
+            "items": {
+              "$ref": "#/components/schemas/PreferenceResponse"
+            },
+            "title": "Preferences",
+            "type": "array"
+          },
+          "retention_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retention Days"
+          }
+        },
+        "required": [
+          "preferences",
+          "retention_days"
+        ],
+        "title": "InterestProfileResponse",
+        "type": "object"
+      },
       "JsonValue": {},
       "LibraryItemResponse": {
         "properties": {
@@ -2413,6 +2441,48 @@
           "duration_seconds"
         ],
         "title": "PlaybackProgressWrite",
+        "type": "object"
+      },
+      "PreferenceAxis": {
+        "enum": [
+          "tag",
+          "performer",
+          "studio",
+          "quality"
+        ],
+        "title": "PreferenceAxis",
+        "type": "string"
+      },
+      "PreferenceResponse": {
+        "properties": {
+          "axis": {
+            "$ref": "#/components/schemas/PreferenceAxis"
+          },
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          }
+        },
+        "required": [
+          "axis",
+          "subject",
+          "label",
+          "score",
+          "hidden"
+        ],
+        "title": "PreferenceResponse",
         "type": "object"
       },
       "ProviderResponse": {
@@ -8111,6 +8181,68 @@
           }
         },
         "summary": "Reset Recommendation Profile",
+        "tags": [
+          "recommendations"
+        ]
+      },
+      "get": {
+        "operationId": "recommendations_interest_profile",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterestProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Interest Profile",
+        "tags": [
+          "recommendations"
+        ]
+      }
+    },
+    "/api/recommendations/profile/hidden/{axis}/{subject}": {
+      "delete": {
+        "operationId": "recommendations_unhide_interest_subject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "axis",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PreferenceAxis"
+            }
+          },
+          {
+            "in": "path",
+            "name": "subject",
+            "required": true,
+            "schema": {
+              "title": "Subject",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unhide Interest Subject",
         "tags": [
           "recommendations"
         ]
