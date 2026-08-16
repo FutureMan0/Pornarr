@@ -17,7 +17,7 @@ from pornarr_db.events import record_user_event
 from pornarr_db.models.entities import Performer, Tag
 from pornarr_db.models.media import Media
 from pornarr_db.models.playback import UserEvent, UserEventType
-from pornarr_db.models.preferences import UserPreference, UserPreferenceState
+from pornarr_db.models.preferences import PreferenceAxis, UserPreference, UserPreferenceState
 from pornarr_db.models.recommendation import RecommendationCandidate
 from pornarr_db.models.user import User
 from pornarr_db.preferences import refresh_user_interest_profile
@@ -36,6 +36,19 @@ class RecommendationResponse(BaseModel):
     reason: dict[str, object]
     model_version: str
     expires_at: datetime
+
+
+class PreferenceResponse(BaseModel):
+    axis: PreferenceAxis
+    subject: str
+    label: str
+    score: float
+    hidden: bool
+
+
+class InterestProfileResponse(BaseModel):
+    preferences: list[PreferenceResponse]
+    retention_days: int | None
 
 
 class RecommendationFeedbackWrite(BaseModel):
@@ -144,3 +157,63 @@ async def reset_recommendation_profile(user: CurrentUser, session: Session) -> N
 
     for model in (RecommendationCandidate, UserPreference, UserPreferenceState, UserEvent):
         await session.execute(delete(model).where(model.user_id == user.id))
+
+
+@router.get("/profile", response_model=InterestProfileResponse)
+async def interest_profile(
+    request: Request, user: CurrentUser, session: Session
+) -> InterestProfileResponse:
+    settings = await get_runtime_settings(session, request.app.state.settings)
+    preferences = list(
+        await session.scalars(
+            select(UserPreference)
+            .where(UserPreference.user_id == user.id)
+            .order_by(UserPreference.axis, UserPreference.score.desc(), UserPreference.subject)
+        )
+    )
+    tag_ids = [UUID(item.subject) for item in preferences if item.axis == PreferenceAxis.TAG.value]
+    performer_ids = [UUID(item.subject) for item in preferences if item.axis == PreferenceAxis.PERFORMER.value]
+    labels = {
+        **{str(item.id): item.name for item in await session.scalars(select(Tag).where(Tag.id.in_(tag_ids)))},
+        **{str(item.id): item.name for item in await session.scalars(select(Performer).where(Performer.id.in_(performer_ids)))},
+    }
+    return InterestProfileResponse(
+        preferences=[
+            PreferenceResponse(
+                axis=PreferenceAxis(preference.axis),
+                subject=preference.subject,
+                label=labels.get(preference.subject, preference.subject),
+                score=preference.score,
+                hidden=preference.raw_score <= -100,
+            )
+            for preference in preferences
+        ],
+        retention_days=settings.user_event_retention_days,
+    )
+
+
+@router.delete("/profile/hidden/{axis}/{subject}", status_code=204)
+async def unhide_interest_subject(
+    axis: PreferenceAxis, subject: str, user: CurrentUser, session: Session
+) -> None:
+    if axis not in {PreferenceAxis.TAG, PreferenceAxis.PERFORMER}:
+        raise HTTPException(status_code=422)
+    try:
+        subject_id = UUID(subject)
+    except ValueError as error:
+        raise HTTPException(status_code=404) from error
+    event_type = UserEventType.HIDE_TAG if axis is PreferenceAxis.TAG else UserEventType.HIDE_PERFORMER
+    await session.execute(
+        delete(UserEvent).where(
+            UserEvent.user_id == user.id,
+            UserEvent.event_type == event_type.value,
+            UserEvent.subject_id == subject_id,
+        )
+    )
+    await session.execute(
+        delete(UserPreference).where(
+            UserPreference.user_id == user.id,
+            UserPreference.axis == axis.value,
+            UserPreference.subject == subject,
+        )
+    )

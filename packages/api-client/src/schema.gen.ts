@@ -1194,7 +1194,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Interest Profile */
+        get: operations["recommendations_interest_profile"];
         put?: never;
         post?: never;
         /**
@@ -1202,6 +1203,23 @@ export interface paths {
          * @description Remove the user's signals so the next refresh starts from an empty profile.
          */
         delete: operations["recommendations_reset_recommendation_profile"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recommendations/profile/hidden/{axis}/{subject}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unhide Interest Subject */
+        delete: operations["recommendations_unhide_interest_subject"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2130,6 +2148,13 @@ export interface components {
             /** Protocol */
             protocol: string;
         };
+        /** InterestProfileResponse */
+        InterestProfileResponse: {
+            /** Preferences */
+            preferences: components["schemas"]["PreferenceResponse"][];
+            /** Retention Days */
+            retention_days: number | null;
+        };
         JsonValue: unknown;
         /** LibraryItemResponse */
         LibraryItemResponse: {
@@ -2418,6 +2443,23 @@ export interface components {
             duration_seconds: number;
             /** Position Seconds */
             position_seconds: number;
+        };
+        /**
+         * PreferenceAxis
+         * @enum {string}
+         */
+        PreferenceAxis: "tag" | "performer" | "studio" | "quality";
+        /** PreferenceResponse */
+        PreferenceResponse: {
+            axis: components["schemas"]["PreferenceAxis"];
+            /** Hidden */
+            hidden: boolean;
+            /** Label */
+            label: string;
+            /** Score */
+            score: number;
+            /** Subject */
+            subject: string;
         };
         /** ProviderResponse */
         ProviderResponse: {
@@ -5766,6 +5808,26 @@ export interface operations {
             };
         };
     };
+    recommendations_interest_profile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterestProfileResponse"];
+                };
+            };
+        };
+    };
     recommendations_reset_recommendation_profile: {
         parameters: {
             query?: never;
@@ -5781,6 +5843,36 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    recommendations_unhide_interest_subject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                axis: components["schemas"]["PreferenceAxis"];
+                subject: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };
