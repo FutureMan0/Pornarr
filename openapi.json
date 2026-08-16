@@ -191,6 +191,206 @@
         "title": "AuditLogResponse",
         "type": "object"
       },
+      "AutomationDecisionResponse": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "context": {
+            "additionalProperties": true,
+            "title": "Context",
+            "type": "object"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          }
+        },
+        "required": [
+          "id",
+          "action",
+          "target",
+          "context",
+          "created_at"
+        ],
+        "title": "AutomationDecisionResponse",
+        "type": "object"
+      },
+      "AutomationResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "allowed_qualities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed Qualities",
+            "type": "array"
+          },
+          "blocked_performers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Blocked Performers",
+            "type": "array"
+          },
+          "blocked_tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Blocked Tags",
+            "type": "array"
+          },
+          "daily_download_limit_gb": {
+            "default": 10,
+            "minimum": 0.0,
+            "title": "Daily Download Limit Gb",
+            "type": "integer"
+          },
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/AutomationDecisionResponse"
+            },
+            "title": "Decisions",
+            "type": "array"
+          },
+          "enabled": {
+            "default": false,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "max_concurrent_jobs": {
+            "default": 2,
+            "minimum": 0.0,
+            "title": "Max Concurrent Jobs",
+            "type": "integer"
+          },
+          "max_downloads_per_day": {
+            "default": 3,
+            "minimum": 0.0,
+            "title": "Max Downloads Per Day",
+            "type": "integer"
+          },
+          "minimum_score": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Minimum Score",
+            "type": "number"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/AutomationUsageResponse"
+          }
+        },
+        "required": [
+          "usage",
+          "decisions"
+        ],
+        "title": "AutomationResponse",
+        "type": "object"
+      },
+      "AutomationRuleWrite": {
+        "additionalProperties": false,
+        "description": "The complete user-owned automation policy.",
+        "properties": {
+          "allowed_qualities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed Qualities",
+            "type": "array"
+          },
+          "blocked_performers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Blocked Performers",
+            "type": "array"
+          },
+          "blocked_tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Blocked Tags",
+            "type": "array"
+          },
+          "daily_download_limit_gb": {
+            "default": 10,
+            "minimum": 0.0,
+            "title": "Daily Download Limit Gb",
+            "type": "integer"
+          },
+          "enabled": {
+            "default": false,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "max_concurrent_jobs": {
+            "default": 2,
+            "minimum": 0.0,
+            "title": "Max Concurrent Jobs",
+            "type": "integer"
+          },
+          "max_downloads_per_day": {
+            "default": 3,
+            "minimum": 0.0,
+            "title": "Max Downloads Per Day",
+            "type": "integer"
+          },
+          "minimum_score": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Minimum Score",
+            "type": "number"
+          }
+        },
+        "title": "AutomationRuleWrite",
+        "type": "object"
+      },
+      "AutomationUsageResponse": {
+        "properties": {
+          "download_count": {
+            "title": "Download Count",
+            "type": "integer"
+          },
+          "downloaded_bytes": {
+            "title": "Downloaded Bytes",
+            "type": "integer"
+          },
+          "reserved_bytes": {
+            "title": "Reserved Bytes",
+            "type": "integer"
+          },
+          "reserved_download_count": {
+            "title": "Reserved Download Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "downloaded_bytes",
+          "reserved_bytes",
+          "download_count",
+          "reserved_download_count"
+        ],
+        "title": "AutomationUsageResponse",
+        "type": "object"
+      },
       "BulkApprovalRequest": {
         "properties": {
           "item_ids": {
@@ -6934,6 +7134,87 @@
         "summary": "Oidc Login",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/automation": {
+      "get": {
+        "operationId": "automation_read_automation",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Automation",
+        "tags": [
+          "automation"
+        ]
+      },
+      "put": {
+        "operationId": "automation_write_automation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutomationRuleWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Write Automation",
+        "tags": [
+          "automation"
+        ]
+      }
+    },
+    "/api/automation/kill": {
+      "post": {
+        "operationId": "automation_kill_automation",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Kill Automation",
+        "tags": [
+          "automation"
         ]
       }
     },
