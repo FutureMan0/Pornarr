@@ -2,6 +2,10 @@
   "app": {
     "name": "Pornarr"
   },
+  "player": {
+    "label": "Player für {{title}}",
+    "unavailable": "Dieses Video kann derzeit nicht wiedergegeben werden."
+  },
   "login": {
     "subtitle": "Melde dich an, um fortzufahren.",
     "username": "Benutzername",

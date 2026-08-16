@@ -4254,6 +4254,25 @@
         "title": "TranscodeSessionResponse",
         "type": "object"
       },
+      "TranscodeStartResponse": {
+        "properties": {
+          "playlist_url": {
+            "title": "Playlist Url",
+            "type": "string"
+          },
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "playlist_url"
+        ],
+        "title": "TranscodeStartResponse",
+        "type": "object"
+      },
       "UserEventResponse": {
         "properties": {
           "created_at": {
@@ -9030,6 +9049,85 @@
         ]
       }
     },
+    "/api/transcode/media/{media_id}/sessions": {
+      "post": {
+        "operationId": "transcode_start_session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscodeStartResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Session",
+        "tags": [
+          "transcode"
+        ]
+      }
+    },
+    "/api/transcode/sessions/{session_id}": {
+      "delete": {
+        "operationId": "transcode_stop_session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stop Session",
+        "tags": [
+          "transcode"
+        ]
+      }
+    },
     "/api/transcode/sessions/{session_id}/heartbeat": {
       "post": {
         "operationId": "transcode_heartbeat",
@@ -9081,6 +9179,56 @@
           }
         },
         "summary": "Heartbeat",
+        "tags": [
+          "transcode"
+        ]
+      }
+    },
+    "/api/transcode/sessions/{session_id}/hls/{asset}": {
+      "get": {
+        "operationId": "transcode_hls_asset",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset",
+            "required": true,
+            "schema": {
+              "title": "Asset",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Hls Asset",
         "tags": [
           "transcode"
         ]

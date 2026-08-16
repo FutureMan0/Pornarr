@@ -106,6 +106,35 @@ async def test_only_the_session_owner_can_heartbeat(app, client, tmp_path: Path)
     assert heartbeat.status_code == 403
 
 
+async def test_owner_can_read_hls_assets_and_stop_their_session(app, client, tmp_path: Path) -> None:
+    from pornarr_media.sessions import TranscodeSessionRegistry
+
+    app.state.settings = app.state.settings.model_copy(update={"data_path": tmp_path})
+    registry = TranscodeSessionRegistry(app.state.redis, app.state.settings.transcode_path)
+    app.state.transcode_sessions = registry
+    owner = await create_user(app)
+    session_id = uuid4()
+    directory = app.state.settings.transcode_path / str(session_id)
+    directory.mkdir(parents=True)
+    (directory / "master.m3u8").write_text("#EXTM3U\n")
+    transcode = FakeTranscode(directory)
+    await registry.register(session_id, owner.id, uuid4(), "hls", transcode)
+    await login(client, owner.username, "correct horse battery staple")
+
+    playlist = await client.get(f"/api/transcode/sessions/{session_id}/hls/master.m3u8")
+    traversal = await client.get(f"/api/transcode/sessions/{session_id}/hls/../session.json")
+    stopped = await client.delete(
+        f"/api/transcode/sessions/{session_id}", headers=csrf_headers(client)
+    )
+
+    assert playlist.status_code == 200
+    assert playlist.headers["content-type"] == "application/vnd.apple.mpegurl"
+    assert playlist.text == "#EXTM3U\n"
+    assert traversal.status_code == 404
+    assert stopped.status_code == 204
+    assert transcode.stopped is True
+
+
 async def test_admin_can_see_current_transcode_limits(app, client) -> None:
     admin = await create_user(app, username="admin", role=UserRole.ADMIN)
     app.state.settings = app.state.settings.model_copy(

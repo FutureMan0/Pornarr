@@ -2,6 +2,10 @@
   "app": {
     "name": "Pornarr"
   },
+  "player": {
+    "label": "Player for {{title}}",
+    "unavailable": "This video cannot be played right now."
+  },
   "login": {
     "subtitle": "Sign in to continue.",
     "username": "Username",
