@@ -50,6 +50,9 @@ class QueueJobResponse(BaseModel):
     status: str
     priority: int
     remaining_bytes: int | None
+    size_bytes: int | None
+    download_speed_bytes: int | None
+    error: str | None
     estimated_seconds: int | None
     created_at: datetime
     queue_estimate: QueueEstimateResponse
@@ -77,6 +80,9 @@ def queue_response(
         status=job.status,
         priority=job.priority,
         remaining_bytes=job.remaining_bytes,
+        size_bytes=job.size_bytes,
+        download_speed_bytes=job.download_speed_bytes,
+        error=job.error,
         estimated_seconds=job.estimated_seconds,
         created_at=job.created_at,
         queue_estimate=QueueEstimateResponse(
