@@ -1,1 +1,8 @@
 blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/FutureMan0/Pornarr/security/advisories/new
+    about: Report vulnerabilities privately; do not open a public issue.
+  - name: Questions and support
+    url: https://github.com/FutureMan0/Pornarr/discussions
+    about: Ask usage and installation questions in Discussions.
