@@ -90,8 +90,9 @@ test("edits a quality profile with keyboard-accessible ordering and previews uns
 
   renderApp("/settings/quality");
 
-  await screen.findByRole("heading", { name: "Quality profiles", level: 1 });
-  await user.click(screen.getByRole("button", { name: "Move WEB 1080p up" }));
+  // The heading lives in the top bar now and is present while the profiles are
+  // still loading, so wait for a control the response produces.
+  await user.click(await screen.findByRole("button", { name: "Move WEB 1080p up" }));
   await user.click(screen.getByRole("button", { name: "Save profile" }));
   await waitFor(() => expect(saveProfile).toHaveBeenCalledOnce());
   expect(saveProfile.mock.calls[0]?.[0]).toMatchObject({

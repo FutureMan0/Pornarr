@@ -3,8 +3,10 @@ import { Button, Input, Select, SkeletonRegion } from "@pornarr/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
+
 import { Numeric, useFormat } from "../../i18n/format";
 import { messageForError } from "../../lib/api-error";
+import { usePageTitle } from "../../shell/page-title";
 import {
   type ExternalSearchItem,
   type SearchFilters,
@@ -27,6 +29,7 @@ const STATUS_KEYS = {
 
 export function SearchRoute() {
   const { t } = useTranslation();
+  usePageTitle(t("search.title"));
   const [params, setParams] = useSearchParams();
   const query = params.get("q") ?? "";
   const deferredQuery = useDebouncedValue(query.trim());
@@ -56,11 +59,8 @@ export function SearchRoute() {
   };
 
   return (
-    <section className="flex flex-col gap-10" aria-labelledby="search-heading">
+    <section className="flex flex-col gap-10" aria-label={t("search.title")}>
       <header className="flex flex-col gap-2">
-        <h1 id="search-heading" className="text-xl text-ink">
-          {t("search.title")}
-        </h1>
         <p className="max-w-[70ch] text-sm text-ink-muted">{t("search.intro")}</p>
       </header>
 

@@ -277,7 +277,12 @@
     "offlineTitle": "Offline",
     "offlineBody": "This device has no network connection. The screen updates itself when it comes back.",
     "reconnectingTitle": "Reconnecting",
-    "reconnectingBody": "The live connection to the server dropped. It is being re-established; nothing needs doing."
+    "reconnectingBody": "The live connection to the server dropped. It is being re-established; nothing needs doing.",
+    "pip": {
+      "live": "Live",
+      "reconnecting": "Reconnecting…",
+      "offline": "Offline"
+    }
   },
   "events": {
     "downloadCompleted": "A download finished.",
@@ -608,5 +613,18 @@
     "reported": "Reported",
     "edited": "edited",
     "hidden": "Withheld by an administrator"
+  },
+  "artwork": {
+    "shown": "Art shown",
+    "hidden": "Art hidden"
+  },
+  "related": {
+    "title": "Related",
+    "reason": {
+      "performer": "Same performer",
+      "studio": "Same studio",
+      "tag_one": "{{count}} shared tag",
+      "tag_other": "{{count}} shared tags"
+    }
   }
 }

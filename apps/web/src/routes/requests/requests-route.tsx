@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { getApiClient } from "../../lib/api";
 import { apiFailure } from "../../lib/api-error";
+import { usePageTitle } from "../../shell/page-title";
 
 type RequestStatus =
   | "searching"
@@ -27,6 +29,7 @@ const TERMINAL = new Set(["available", "cancelled", "failed", "not_found"]);
 
 export function RequestsRoute() {
   const { t } = useTranslation();
+  usePageTitle(t("requests.title"));
   const queryClient = useQueryClient();
   const requests = useQuery({
     queryKey: ["requests"],
@@ -56,11 +59,8 @@ export function RequestsRoute() {
   if (requests.isPending) return <p>{t("requests.loading")}</p>;
   if (requests.isError) return <p role="alert">{t("errors.generic")}</p>;
   return (
-    <section aria-labelledby="requests-heading" className="flex flex-col gap-4">
+    <section aria-label={t("requests.title")} className="flex flex-col gap-4">
       <header>
-        <h1 id="requests-heading" className="text-xl text-ink">
-          {t("requests.title")}
-        </h1>
         <p className="text-sm text-ink-muted">{t("requests.intro")}</p>
       </header>
       {requests.data?.length === 0 ? (

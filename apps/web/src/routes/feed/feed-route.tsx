@@ -12,14 +12,19 @@ import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import { usePageTitle } from "../../shell/page-title";
+
 import { getApiClient } from "../../lib/api";
 import { apiFailure } from "../../lib/api-error";
+import { tileBlur, useArtVisible } from "../../lib/art-visibility";
 import { seedFrom } from "../../lib/format";
 
 const SENT_KEY = ["recommendations", "sent-to-me"] as const;
 
 export function FeedRoute(): JSX.Element {
   const { t } = useTranslation();
+  const artVisible = useArtVisible();
+  usePageTitle(t("feed.sent.title"));
   const cache = useQueryClient();
 
   const forYou = useQuery({
@@ -52,11 +57,8 @@ export function FeedRoute(): JSX.Element {
 
   return (
     <div className="flex flex-col gap-10">
-      <section aria-labelledby="sent-heading" className="flex flex-col gap-4">
+      <section aria-label={t("feed.sent.title")} className="flex flex-col gap-4">
         <div>
-          <h1 id="sent-heading" className="text-xl text-ink">
-            {t("feed.sent.title")}
-          </h1>
           <p className="text-xs text-ink-muted">{t("feed.sent.intro")}</p>
         </div>
 
@@ -123,6 +125,7 @@ export function FeedRoute(): JSX.Element {
               {forYou.data.map((item) => (
                 <li key={item.media_id} className="flex flex-col gap-2">
                   <MediaTile
+                    blur={tileBlur(artVisible)}
                     title={item.title}
                     seed={seedFrom(item.media_id)}
                     rating={null}

@@ -95,12 +95,15 @@ describe("QuarantineReviewRoute", () => {
     const user = userEvent.setup();
     renderApp("/admin/quarantine");
 
-    expect(await screen.findByRole("heading", { name: en.quarantine.title })).toBeTruthy();
+    // The screen's name is in the top bar and is there while the data is still
+    // loading, so it no longer marks the point where the content has arrived.
+    // Wait for something the response produces instead.
     expect(
-      screen.getByRole("button", {
+      await screen.findByRole("button", {
         name: en.quarantine.reasonWithCount.low_confidence.replace("{{count}}", "2"),
       }),
     ).toBeTruthy();
+    expect(screen.getByRole("heading", { name: en.quarantine.title })).toBeTruthy();
     expect(screen.getByText(`${en.quarantine.confidenceActual}:`)).toBeTruthy();
     expect(screen.getByText("0.40")).toBeTruthy();
     expect(screen.getByText(`${en.quarantine.confidenceMinimum}:`)).toBeTruthy();

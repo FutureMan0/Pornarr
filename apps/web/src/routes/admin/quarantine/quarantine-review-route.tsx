@@ -15,6 +15,7 @@ import type { JSX } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router-dom";
+
 import { useSession } from "../../../auth/session";
 import { ErrorScreen } from "../../../errors/error-screen";
 import { Numeric, useFormat } from "../../../i18n/format";
@@ -26,6 +27,7 @@ import {
   messageForError,
   nextStepForError,
 } from "../../../lib/api-error";
+import { usePageTitle } from "../../../shell/page-title";
 
 type QuarantineItem =
   paths["/api/admin/quarantine"]["get"]["responses"][200]["content"]["application/json"][number];
@@ -169,6 +171,7 @@ function LoadingReview(): JSX.Element {
 
 export function QuarantineReviewRoute(): JSX.Element {
   const { t } = useTranslation();
+  usePageTitle(t("quarantine.title"));
   const format = useFormat();
   const session = useSession();
   const queryClient = useQueryClient();
@@ -352,11 +355,8 @@ export function QuarantineReviewRoute(): JSX.Element {
   };
 
   return (
-    <section className="flex flex-col gap-6" aria-labelledby="quarantine-heading">
+    <section className="flex flex-col gap-6" aria-label={t("quarantine.title")}>
       <header className="max-w-[70ch]">
-        <h1 id="quarantine-heading" className="text-xl text-ink">
-          {t("quarantine.title")}
-        </h1>
         <p className="mt-2 text-sm text-ink-muted">{t("quarantine.intro")}</p>
       </header>
 

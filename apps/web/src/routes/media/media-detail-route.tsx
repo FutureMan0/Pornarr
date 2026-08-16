@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+
 import { useParams } from "react-router-dom";
 import { VideoPlayer } from "../../components/player/video-player";
+import { usePageTitle } from "../../shell/page-title";
 import { CommentsPanel } from "./comments-panel";
 import { RatingPanel } from "./rating-panel";
+import { RelatedPanel } from "./related-panel";
 import { WatchlistToggle } from "./watchlist-toggle";
 
 type Tag = { name: string; confidence: number; source: string };
@@ -53,20 +56,21 @@ export function MediaDetailRoute() {
       void queryClient.invalidateQueries({ queryKey: ["media", mediaId] });
     },
   });
+  // The title of this screen is the title of the work, so there is no generic
+  // name to show before it arrives — hence the loading string standing in.
+  // Studio and year become the subtitle, which is where the design puts them.
+  usePageTitle(
+    detail.data?.title ?? t("media.loading"),
+    detail.data === undefined
+      ? undefined
+      : [detail.data.studio, detail.data.release_date].filter(Boolean).join(" · ") || undefined,
+  );
+
   if (detail.isPending) return <p>{t("media.loading")}</p>;
   if (detail.isError || !detail.data) return <p role="alert">{t("errors.generic")}</p>;
   const media = detail.data;
   return (
-    <section className="flex flex-col gap-6" aria-labelledby="media-heading">
-      <header>
-        <h1 id="media-heading" className="text-xl text-ink">
-          {media.title}
-        </h1>
-        <p className="text-sm text-ink-muted">
-          {media.studio ?? "—"}
-          {media.release_date ? ` · ${media.release_date}` : ""}
-        </p>
-      </header>
+    <section className="flex flex-col gap-6" aria-label={media.title}>
       <p className="text-sm text-ink-muted">
         {t("media.confidence", {
           value:
@@ -91,6 +95,8 @@ export function MediaDetailRoute() {
         <RatingPanel mediaId={media.id} />
         <CommentsPanel mediaId={media.id} />
       </div>
+
+      <RelatedPanel mediaId={media.id} />
       <section>
         <h2 className="text-lg text-ink">{t("media.tags")}</h2>
         <ul className="flex flex-wrap gap-2">

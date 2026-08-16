@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
+import { usePageTitle } from "../../shell/page-title";
+
 type Job = {
   id: string;
   client_name: string;
@@ -12,6 +14,7 @@ type Job = {
 };
 export function QueueRoute() {
   const { t } = useTranslation();
+  usePageTitle(t("queue.title"));
   const queue = useQuery({
     queryKey: ["queue"],
     refetchInterval: 5_000,
@@ -24,10 +27,7 @@ export function QueueRoute() {
   if (queue.isPending) return <p>{t("queue.loading")}</p>;
   if (queue.isError) return <p role="alert">{t("errors.generic")}</p>;
   return (
-    <section aria-labelledby="queue-heading">
-      <h1 id="queue-heading" className="text-xl text-ink">
-        {t("queue.title")}
-      </h1>
+    <section aria-label={t("queue.title")}>
       <ul className="mt-4 grid gap-3">
         {queue.data.items.map((job) => (
           <li key={job.id} className="border border-border p-4">

@@ -11,12 +11,17 @@ import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import { usePageTitle } from "../../shell/page-title";
+
 import { getApiClient } from "../../lib/api";
 import { apiFailure } from "../../lib/api-error";
+import { tileBlur, useArtVisible } from "../../lib/art-visibility";
 import { formatDuration, progressOf, seedFrom } from "../../lib/format";
 
 export function ContinueRoute(): JSX.Element {
   const { t } = useTranslation();
+  const artVisible = useArtVisible();
+  usePageTitle(t("continueWatching.title"));
   const resuming = useQuery({
     queryKey: ["continue-watching"],
     queryFn: async () => {
@@ -27,11 +32,7 @@ export function ContinueRoute(): JSX.Element {
   });
 
   return (
-    <section aria-labelledby="continue-heading" className="flex flex-col gap-6">
-      <h1 id="continue-heading" className="text-xl text-ink">
-        {t("continueWatching.title")}
-      </h1>
-
+    <section aria-label={t("continueWatching.title")} className="flex flex-col gap-6">
       {resuming.isPending ? (
         <p className="text-sm text-ink-muted">{t("continueWatching.loading")}</p>
       ) : null}
@@ -49,6 +50,7 @@ export function ContinueRoute(): JSX.Element {
             {resuming.data.map((item) => (
               <li key={item.media_id}>
                 <MediaTile
+                  blur={tileBlur(artVisible)}
                   title={item.title ?? item.media_id}
                   meta={item.device_label ?? undefined}
                   duration={formatDuration(item.duration_seconds)}

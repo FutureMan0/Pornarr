@@ -11,14 +11,19 @@ import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import { usePageTitle } from "../../shell/page-title";
+
 import { getApiClient } from "../../lib/api";
 import { apiFailure } from "../../lib/api-error";
+import { tileBlur, useArtVisible } from "../../lib/art-visibility";
 import { seedFrom } from "../../lib/format";
 
 export const WATCHLIST_QUERY_KEY = ["watchlist"] as const;
 
 export function WatchlistRoute(): JSX.Element {
   const { t } = useTranslation();
+  const artVisible = useArtVisible();
+  usePageTitle(t("watchlist.title"));
   const cache = useQueryClient();
 
   const watchlist = useQuery({
@@ -47,10 +52,7 @@ export function WatchlistRoute(): JSX.Element {
 
   const items = watchlist.data;
   return (
-    <section aria-labelledby="watchlist-heading" className="flex flex-col gap-6">
-      <h1 id="watchlist-heading" className="text-xl text-ink">
-        {t("watchlist.title")}
-      </h1>
+    <section aria-label={t("watchlist.title")} className="flex flex-col gap-6">
       {items.length === 0 ? (
         <p className="text-sm text-ink-muted">{t("watchlist.empty")}</p>
       ) : (
@@ -58,6 +60,7 @@ export function WatchlistRoute(): JSX.Element {
           {items.map((item) => (
             <li key={item.media_id} className="flex flex-col gap-2">
               <MediaTile
+                blur={tileBlur(artVisible)}
                 title={item.title}
                 seed={seedFrom(item.media_id)}
                 ratingLabel={t("library.rating.none")}
@@ -93,10 +96,9 @@ function Screen({
   readonly alert?: boolean;
 }): JSX.Element {
   return (
-    <section aria-labelledby="watchlist-heading">
-      <h1 id="watchlist-heading" className="text-xl text-ink">
-        {title}
-      </h1>
+    // The name of the screen is in the top bar; this region carries it as a
+    // label so the section is still identified without a second heading.
+    <section aria-label={title}>
       <p className="text-sm text-ink-muted" {...(alert ? { role: "alert" } : {})}>
         {body}
       </p>

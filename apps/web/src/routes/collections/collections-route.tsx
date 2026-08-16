@@ -14,7 +14,9 @@ import { Link, useParams } from "react-router-dom";
 
 import { getApiClient } from "../../lib/api";
 import { apiFailure } from "../../lib/api-error";
+import { tileBlur, useArtVisible } from "../../lib/art-visibility";
 import { seedFrom } from "../../lib/format";
+import { usePageTitle } from "../../shell/page-title";
 
 const COLLECTIONS_KEY = ["collections"] as const;
 
@@ -23,6 +25,8 @@ export function CollectionsRoute(): JSX.Element {
   const cache = useQueryClient();
   const [name, setName] = useState("");
   const [shared, setShared] = useState(false);
+
+  usePageTitle(t("collections.title"));
 
   const collections = useQuery({
     queryKey: [...COLLECTIONS_KEY, shared],
@@ -55,11 +59,7 @@ export function CollectionsRoute(): JSX.Element {
   };
 
   return (
-    <section aria-labelledby="collections-heading" className="flex flex-col gap-6">
-      <h1 id="collections-heading" className="text-xl text-ink">
-        {t("collections.title")}
-      </h1>
-
+    <section aria-label={t("collections.title")} className="flex flex-col gap-6">
       <form onSubmit={submit} className="flex flex-wrap items-end gap-2">
         {/* Associated by id rather than by nesting. `Input` renders its own
             element, so a wrapping label leaves the connection to something a
@@ -134,6 +134,7 @@ export function CollectionsRoute(): JSX.Element {
 
 export function CollectionDetailRoute(): JSX.Element {
   const { t } = useTranslation();
+  const artVisible = useArtVisible();
   const { collectionId = "" } = useParams();
   const cache = useQueryClient();
 
@@ -160,6 +161,15 @@ export function CollectionDetailRoute(): JSX.Element {
     onSuccess: () => void cache.invalidateQueries({ queryKey: ["collection", collectionId] }),
   });
 
+  // Unconditional, and before the early returns: the shelf's own name is the
+  // title, so until it loads the bar shows the generic one rather than nothing.
+  usePageTitle(
+    collection.data?.name ?? t("collections.title"),
+    collection.data === undefined
+      ? undefined
+      : t("collections.items", { count: collection.data.item_count }),
+  );
+
   if (collection.isPending)
     return <p className="text-sm text-ink-muted">{t("collections.loading")}</p>;
   if (collection.isError)
@@ -171,14 +181,8 @@ export function CollectionDetailRoute(): JSX.Element {
 
   const detail = collection.data;
   return (
-    <section aria-labelledby="collection-heading" className="flex flex-col gap-6">
+    <section aria-label={detail.name} className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 id="collection-heading" className="text-xl text-ink">
-          {detail.name}
-        </h1>
-        <span className="text-xs text-ink-muted">
-          {t("collections.items", { count: detail.item_count })}
-        </span>
         {detail.is_yours ? (
           <Button
             variant="secondary"
@@ -198,6 +202,7 @@ export function CollectionDetailRoute(): JSX.Element {
           {detail.items.map((item) => (
             <li key={item.media_id}>
               <MediaTile
+                blur={tileBlur(artVisible)}
                 title={item.media_title}
                 seed={seedFrom(item.media_id)}
                 rating={null}

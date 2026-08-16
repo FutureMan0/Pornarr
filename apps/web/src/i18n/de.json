@@ -277,7 +277,12 @@
     "offlineTitle": "Offline",
     "offlineBody": "Dieses Gerät hat keine Netzwerkverbindung. Die Seite aktualisiert sich selbst, sobald sie zurück ist.",
     "reconnectingTitle": "Verbindung wird wiederhergestellt",
-    "reconnectingBody": "Die Live-Verbindung zum Server ist abgerissen. Sie wird neu aufgebaut; du musst nichts tun."
+    "reconnectingBody": "Die Live-Verbindung zum Server ist abgerissen. Sie wird neu aufgebaut; du musst nichts tun.",
+    "pip": {
+      "live": "Live",
+      "reconnecting": "Verbinde erneut…",
+      "offline": "Offline"
+    }
   },
   "events": {
     "downloadCompleted": "Ein Download ist fertig.",
@@ -608,5 +613,18 @@
     "reported": "Gemeldet",
     "edited": "bearbeitet",
     "hidden": "Von einem Admin zurückgehalten"
+  },
+  "artwork": {
+    "shown": "Bilder sichtbar",
+    "hidden": "Bilder verborgen"
+  },
+  "related": {
+    "title": "Ähnliche Titel",
+    "reason": {
+      "performer": "Gleiche Besetzung",
+      "studio": "Gleiches Studio",
+      "tag_one": "{{count}} gemeinsames Tag",
+      "tag_other": "{{count}} gemeinsame Tags"
+    }
   }
 }

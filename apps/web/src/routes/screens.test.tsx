@@ -235,4 +235,77 @@ describe("continue watching", () => {
   });
 });
 
+describe("the related row", () => {
+  test("says why each title is there", async () => {
+    server.use(
+      http.get("/api/media/:mediaId", () => HttpResponse.json(DETAIL)),
+      http.get("/api/media/:mediaId/related", () =>
+        HttpResponse.json([
+          {
+            media_id: "m-2",
+            title: "Second Light",
+            studio: "Northwind",
+            duration_seconds: 1800,
+            reason: "performer",
+            shared_performers: 1,
+            shared_tags: 0,
+            rating: 4.0,
+            rating_count: 2,
+          },
+          {
+            media_id: "m-3",
+            title: "Third Rail",
+            studio: null,
+            duration_seconds: null,
+            reason: "tag",
+            shared_performers: 0,
+            shared_tags: 3,
+            rating: null,
+            rating_count: 0,
+          },
+        ]),
+      ),
+    );
+    renderApp("/library/m-1");
+
+    // The reason is the point of the row; six unexplained titles are noise.
+    expect(await screen.findByText("Same performer")).not.toBeNull();
+    expect(screen.getByText("3 shared tags")).not.toBeNull();
+  });
+
+  test("stays away entirely when nothing is related", async () => {
+    server.use(
+      http.get("/api/media/:mediaId", () => HttpResponse.json(DETAIL)),
+      http.get("/api/media/:mediaId/related", () => HttpResponse.json([])),
+    );
+    renderApp("/library/m-1");
+
+    await screen.findByRole("heading", { level: 1, name: "Aurora 214" });
+    // A heading over an empty row promises something the library cannot give.
+    expect(screen.queryByText("Related")).toBeNull();
+  });
+});
+
+const DETAIL = {
+  id: "m-1",
+  owner_id: null,
+  in_my_library: true,
+  title: "Aurora 214",
+  studio: "Northwind",
+  release_date: "2026-01-01",
+  confidence: 0.9,
+  metadata_source: "test",
+  performers: [],
+  tags: [],
+  path: "/data/a.mp4",
+  size: 1,
+  codecs: null,
+  resolution: "1080p",
+  bitrate: null,
+  duration_seconds: 1200,
+  playable: false,
+  rating: null,
+  rating_count: 0,
+};
+
 const NOW = "2026-08-16T20:00:00Z";

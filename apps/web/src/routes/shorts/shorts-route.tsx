@@ -15,13 +15,16 @@ import { Link } from "react-router-dom";
 
 import { getApiClient } from "../../lib/api";
 import { apiFailure } from "../../lib/api-error";
+import { tileBlur, useArtVisible } from "../../lib/art-visibility";
 import { formatDuration, seedFrom } from "../../lib/format";
+import { usePageTitle } from "../../shell/page-title";
 
 const SORTS = ["trending", "newest", "top", "duration"] as const;
 type Sort = (typeof SORTS)[number];
 
 export function ShortsRoute(): JSX.Element {
   const { t } = useTranslation();
+  const artVisible = useArtVisible();
   const [sort, setSort] = useState<Sort>("trending");
 
   const shorts = useQuery({
@@ -35,19 +38,13 @@ export function ShortsRoute(): JSX.Element {
     },
   });
 
-  return (
-    <section aria-labelledby="shorts-heading" className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 id="shorts-heading" className="text-xl text-ink">
-          {t("shorts.title")}
-        </h1>
-        {shorts.data === undefined ? null : (
-          <span className="text-xs text-ink-muted">
-            {t("shorts.count", { count: shorts.data.length })}
-          </span>
-        )}
-      </div>
+  usePageTitle(
+    t("shorts.title"),
+    shorts.data === undefined ? undefined : t("shorts.count", { count: shorts.data.length }),
+  );
 
+  return (
+    <section aria-label={t("shorts.title")} className="flex flex-col gap-6">
       {/* A fieldset rather than a div carrying role="group": the grouping is
           then in the markup itself, and the legend names it for a screen
           reader without a parallel aria-label to keep in step. */}
@@ -87,6 +84,7 @@ export function ShortsRoute(): JSX.Element {
             {shorts.data.map((short) => (
               <li key={short.id}>
                 <MediaTile
+                  blur={tileBlur(artVisible)}
                   title={short.title}
                   meta={t("shorts.from", { title: short.media_title })}
                   duration={formatDuration(short.duration_seconds)}
