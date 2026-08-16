@@ -3,6 +3,17 @@
 # See docs/adr/0014-containerized-development.md
 
 services:
+  migrate:
+    build:
+      context: .
+      target: development
+    volumes:
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+
   api:
     build:
       context: .
@@ -12,6 +23,9 @@ services:
       APP_ENV: development
       LOG_LEVEL: debug
     volumes:
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+      - ./pyproject.toml:/app/pyproject.toml
       - ./apps:/app/apps
       - ./packages:/app/packages
     ports:
