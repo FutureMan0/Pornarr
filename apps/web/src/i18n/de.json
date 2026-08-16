@@ -2,6 +2,7 @@
   "app": {
     "name": "Pornarr"
   },
+  "home": { "title": "Startseite", "loading": "Startseite wird geladen", "continueWatching": "Weiterschauen", "continueEmpty": "Starte ein Medium aus deiner Bibliothek, damit es hier erscheint.", "recentlyAdded": "Kürzlich hinzugefügt", "recentEmpty": "Deine Bibliothek ist leer. Füge in den Bibliothekseinstellungen einen Ordner hinzu.", "nextTitle": "Als Nächstes", "nextBody": "Downloads, Anfragen und Empfehlungen erscheinen hier, sobald sie verfügbar sind." },
   "indexers": { "title": "Indexer", "loading": "Indexer werden geladen", "priority": "Priorität {{value}}", "stats": "{{queries}} Abfragen, {{failures}} Fehler", "test": "Testen", "reset": "Health zurücksetzen", "remove": "Entfernen" },
   "downloadClients": { "title": "Download-Clients", "intro": "Verbindungsstatus und der letzte Client-Fehler werden hier angezeigt.", "loading": "Download-Clients werden geladen", "test": "Verbindung testen", "remove": "Entfernen" },
   "librarySettings": { "title": "Bibliotheksordner", "intro": "Füge alle lokalen Ordner hinzu, die Pornarr nach Medien durchsuchen soll.", "loading": "Bibliotheksordner werden geladen", "path": "Ordnerpfad", "add": "Ordner hinzufügen", "freeSpace": "{{value}} Bytes frei", "scan": "Jetzt scannen", "cancel": "Scan abbrechen", "progress": "{{value}} Dateien gescannt", "remove": "Entfernen" },

@@ -835,6 +835,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/home": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Home */
+        get: operations["library_home"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/library": {
         parameters: {
             query?: never;
@@ -2004,6 +2021,13 @@ export interface components {
              */
             status: "healthy" | "degraded" | "unhealthy";
             worker: components["schemas"]["ComponentHealth"];
+        };
+        /** HomeResponse */
+        HomeResponse: {
+            /** Continue Watching */
+            continue_watching: components["schemas"]["LibraryItemResponse"][];
+            /** Recently Added */
+            recently_added: components["schemas"]["LibraryItemResponse"][];
         };
         /** IndexerResponse */
         IndexerResponse: {
@@ -4928,6 +4952,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthReport"];
+                };
+            };
+        };
+    };
+    library_home: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeResponse"];
                 };
             };
         };

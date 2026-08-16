@@ -18,6 +18,7 @@ from pornarr_db.models.playback import PlaybackProgress
 from pornarr_db.models.user import User
 
 router = APIRouter(prefix="/library", tags=["library"])
+home_router = APIRouter(prefix="/home", tags=["library"])
 media_router = APIRouter(prefix="/media", tags=["library"])
 CurrentUser = Annotated[User, Depends(get_current_user)]
 Session = Annotated[AsyncSession, Depends(database_session)]
@@ -41,6 +42,11 @@ class LibraryItemResponse(BaseModel):
 class LibraryPageResponse(BaseModel):
     items: list[LibraryItemResponse]
     next_offset: int | None
+
+
+class HomeResponse(BaseModel):
+    continue_watching: list[LibraryItemResponse]
+    recently_added: list[LibraryItemResponse]
 
 
 class DetailTag(BaseModel):
@@ -113,6 +119,44 @@ async def browse_library(
     return LibraryPageResponse(
         items=[item(*row) for row in rows[:limit]],
         next_offset=offset + limit if len(rows) > limit else None,
+    )
+
+
+def library_item(media: Media, file: MediaFile, progress: PlaybackProgress | None) -> LibraryItemResponse:
+    return LibraryItemResponse(
+        id=media.id,
+        title=media.title,
+        studio=media.studio,
+        release_date=media.release_date.isoformat() if media.release_date else None,
+        duration_seconds=file.duration_seconds,
+        quality=file.quality,
+        resolution=file.resolution,
+        position_seconds=progress.position_seconds if progress else None,
+        progress_duration_seconds=progress.duration_seconds if progress else None,
+        completed=progress.completed if progress else False,
+        poster_url=f"/api/media/{media.id}/poster",
+        sprite_url=f"/api/media/{media.id}/sprite",
+    )
+
+
+@home_router.get("", response_model=HomeResponse)
+async def home(user: CurrentUser, session: Session) -> HomeResponse:
+    rows = list(
+        await session.execute(
+            select(Media, MediaFile, PlaybackProgress)
+            .join(MediaFile, (MediaFile.media_id == Media.id) & MediaFile.is_active.is_(True))
+            .outerjoin(
+                PlaybackProgress,
+                (PlaybackProgress.media_id == Media.id) & (PlaybackProgress.user_id == user.id),
+            )
+            .order_by(Media.updated_at.desc(), Media.id.desc())
+            .limit(24)
+        )
+    )
+    items = [library_item(*row) for row in rows]
+    return HomeResponse(
+        continue_watching=[item for item in items if item.position_seconds is not None and not item.completed],
+        recently_added=items[:12],
     )
 
 
