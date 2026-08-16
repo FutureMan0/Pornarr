@@ -377,6 +377,7 @@ async def _external_items(
                 indexer_id=str(release.indexer_id),
                 priority=indexers[release.indexer_id].priority,
                 release=_cached_release(release),
+                healthy=indexers[release.indexer_id].health != "unhealthy",
             )
             for release in releases
             if release.id in by_release_id and release.indexer_id in indexers

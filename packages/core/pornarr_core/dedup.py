@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from difflib import SequenceMatcher
 from enum import StrEnum
 
@@ -108,6 +108,7 @@ class IndexedRelease:
     indexer_id: str
     priority: int
     release: Release
+    healthy: bool = True
 
 
 @dataclass(frozen=True, slots=True)
@@ -123,7 +124,7 @@ def deduplicate(
     groups: list[list[IndexedRelease]] = []
     for candidate in releases:
         for group in groups:
-            if _same_release(candidate.release, group[0].release, size_tolerance):
+            if _same_group(candidate.release, group, size_tolerance):
                 group.append(candidate)
                 break
         else:
@@ -135,12 +136,19 @@ def deduplicate(
     ]
 
 
-def _rank(candidate: IndexedRelease) -> tuple[int, int, int, str]:
+def _rank(candidate: IndexedRelease) -> tuple[bool, int, int, int, str]:
     release = candidate.release
     completeness = sum(
         value is not None for value in (release.download_url, release.size, release.published_at)
     )
-    return (candidate.priority, -completeness, -(release.seeders or 0), release.guid)
+    return (not candidate.healthy, candidate.priority, -completeness, -(release.seeders or 0), release.guid)
+
+
+def _same_group(candidate: Release, group: list[IndexedRelease], tolerance: float) -> bool:
+    hashes = {item.release.info_hash.casefold() for item in group if item.release.info_hash}
+    if len(hashes) > 1:
+        return False
+    return all(_same_release(candidate, item.release, tolerance) for item in group)
 
 
 def _same_release(left: Release, right: Release, tolerance: float) -> bool:
@@ -158,4 +166,8 @@ def _title(value: str) -> str:
 
 
 def _age_close(left: datetime | None, right: datetime | None) -> bool:
-    return left is None or right is None or abs((left - right).total_seconds()) <= 24 * 60 * 60
+    if left is None or right is None:
+        return True
+    left = left.replace(tzinfo=UTC) if left.tzinfo is None else left.astimezone(UTC)
+    right = right.replace(tzinfo=UTC) if right.tzinfo is None else right.astimezone(UTC)
+    return abs((left - right).total_seconds()) <= 24 * 60 * 60

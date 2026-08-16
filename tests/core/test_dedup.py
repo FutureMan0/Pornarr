@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 
 from pornarr_core.dedup import IndexedRelease, deduplicate
@@ -44,3 +45,14 @@ def test_groups_small_size_variance_but_not_distinct_releases() -> None:
         ]
     )
     assert len(groups) == 2
+
+
+def test_prefers_a_healthy_indexer_and_handles_mixed_datetime_timezones() -> None:
+    naive = replace(release("naive"), published_at=datetime(2026, 1, 1))
+    groups = deduplicate(
+        [
+            IndexedRelease("unhealthy", 1, naive, healthy=False),
+            IndexedRelease("healthy", 10, release("aware"), healthy=True),
+        ]
+    )
+    assert groups[0].primary.indexer_id == "healthy"
