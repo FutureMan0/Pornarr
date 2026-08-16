@@ -17,6 +17,7 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
+import { useSession } from "../auth/session";
 import { useNavCounts } from "./nav-counts";
 import { SidebarBrand, SidebarIdentity } from "./sidebar-identity";
 
@@ -25,6 +26,12 @@ export type SidebarLayout = "full" | "rail" | "drawer";
 export interface NavItem {
   readonly id: string;
   readonly path: string;
+  /**
+   * Hidden from guests. Not a security measure — the endpoints behind it check
+   * the role themselves — but a destination that answers 403 has no business
+   * being in someone's navigation.
+   */
+  readonly adminOnly?: boolean;
 }
 
 /**
@@ -35,6 +42,7 @@ export interface NavItem {
  * compiler's rather than a reviewer's.
  */
 export const NAV_ITEMS = [
+  { id: "admin", path: "/admin", adminOnly: true },
   { id: "feed", path: "/feed" },
   { id: "continue", path: "/continue" },
   { id: "library", path: "/library" },
@@ -92,6 +100,13 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
   const isDrawer = layout === "drawer";
   const isRail = layout === "rail";
   const counts = useNavCounts();
+  const session = useSession();
+  // Until the session answers, show the guest set. Rendering the admin entry
+  // first and withdrawing it is worse than adding it a beat late.
+  const isAdmin = session.data?.role === "admin";
+  // `as const` narrows each entry, so the ones without the flag do not have the
+  // property at all — hence the `in` rather than a plain read.
+  const items = NAV_ITEMS.filter((item) => isAdmin || !("adminOnly" in item && item.adminOnly));
 
   // An overlay covers what the reader was reading, so focus moves into it and
   // stays until it closes. Returning focus afterwards belongs to the caller,
@@ -162,7 +177,7 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
       <SidebarIdentity compact={isRail} />
 
       <ul className="flex flex-col gap-0.5">
-        {NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const label = t(`nav.${item.id}`);
           const count = counts[item.id];
           return (

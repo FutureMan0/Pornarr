@@ -428,6 +428,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Overview */
+        get: operations["admin_overview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/performance": {
         parameters: {
             query?: never;
@@ -2937,6 +2954,22 @@ export interface components {
             protocol: string;
         };
         JsonValue: unknown;
+        /**
+         * LibraryHealth
+         * @description Shares of the library, each out of `total`.
+         */
+        LibraryHealth: {
+            /** Artwork Present */
+            artwork_present: number;
+            /** Duplicates Flagged */
+            duplicates_flagged: number;
+            /** Metadata Matched */
+            metadata_matched: number;
+            /** Tagged */
+            tagged: number;
+            /** Total */
+            total: number;
+        };
         /** LibraryItemResponse */
         LibraryItemResponse: {
             /** Comment Count */
@@ -3249,6 +3282,21 @@ export interface components {
             provider_id: string;
             /** Provider Name */
             provider_name: string;
+        };
+        /** OverviewResponse */
+        OverviewResponse: {
+            /** Guests */
+            guests: number;
+            health: components["schemas"]["LibraryHealth"];
+            /** Last Scan At */
+            last_scan_at: string | null;
+            storage: components["schemas"]["StorageTotals"];
+            /** Titles */
+            titles: number;
+            /** Titles Added This Week */
+            titles_added_this_week: number;
+            /** Untagged */
+            untagged: number;
         };
         /** PerformanceInputResponse */
         PerformanceInputResponse: {
@@ -4139,6 +4187,15 @@ export interface components {
          * @enum {string}
          */
         ShortSource: "marker" | "manual" | "hotspot";
+        /** StorageTotals */
+        StorageTotals: {
+            /** Total Bytes */
+            total_bytes: number | null;
+            /** Used Bytes */
+            used_bytes: number | null;
+            /** Volumes */
+            volumes: number;
+        };
         /** TagCorrectionWrite */
         TagCorrectionWrite: {
             /** Name */
@@ -5247,6 +5304,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_overview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverviewResponse"];
                 };
             };
         };

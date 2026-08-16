@@ -1893,6 +1893,40 @@
         "type": "object"
       },
       "JsonValue": {},
+      "LibraryHealth": {
+        "description": "Shares of the library, each out of `total`.",
+        "properties": {
+          "artwork_present": {
+            "title": "Artwork Present",
+            "type": "integer"
+          },
+          "duplicates_flagged": {
+            "title": "Duplicates Flagged",
+            "type": "integer"
+          },
+          "metadata_matched": {
+            "title": "Metadata Matched",
+            "type": "integer"
+          },
+          "tagged": {
+            "title": "Tagged",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "metadata_matched",
+          "artwork_present",
+          "tagged",
+          "duplicates_flagged"
+        ],
+        "title": "LibraryHealth",
+        "type": "object"
+      },
       "LibraryItemResponse": {
         "properties": {
           "comment_count": {
@@ -2911,6 +2945,55 @@
           "provider_name"
         ],
         "title": "OidcIdentityResponse",
+        "type": "object"
+      },
+      "OverviewResponse": {
+        "properties": {
+          "guests": {
+            "title": "Guests",
+            "type": "integer"
+          },
+          "health": {
+            "$ref": "#/components/schemas/LibraryHealth"
+          },
+          "last_scan_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Scan At"
+          },
+          "storage": {
+            "$ref": "#/components/schemas/StorageTotals"
+          },
+          "titles": {
+            "title": "Titles",
+            "type": "integer"
+          },
+          "titles_added_this_week": {
+            "title": "Titles Added This Week",
+            "type": "integer"
+          },
+          "untagged": {
+            "title": "Untagged",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "titles",
+          "titles_added_this_week",
+          "untagged",
+          "guests",
+          "storage",
+          "health",
+          "last_scan_at"
+        ],
+        "title": "OverviewResponse",
         "type": "object"
       },
       "PerformanceInputResponse": {
@@ -5575,6 +5658,43 @@
         "title": "ShortSource",
         "type": "string"
       },
+      "StorageTotals": {
+        "properties": {
+          "total_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Bytes"
+          },
+          "used_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Used Bytes"
+          },
+          "volumes": {
+            "title": "Volumes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "used_bytes",
+          "total_bytes",
+          "volumes"
+        ],
+        "title": "StorageTotals",
+        "type": "object"
+      },
       "TagCorrectionWrite": {
         "properties": {
           "name": {
@@ -7298,6 +7418,27 @@
           }
         },
         "summary": "Test Provider",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/overview": {
+      "get": {
+        "operationId": "admin_overview",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverviewResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Overview",
         "tags": [
           "admin"
         ]

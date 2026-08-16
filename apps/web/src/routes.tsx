@@ -17,6 +17,7 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 import { LoginRoute } from "./auth/login-route";
 import { RequireAuth } from "./auth/require-auth";
 import { ForbiddenRoute, NotFoundRoute } from "./errors/route-errors";
+import { DashboardRoute } from "./routes/admin/dashboard-route";
 import { QuarantineReviewRoute } from "./routes/admin/quarantine/quarantine-review-route";
 import { CollectionDetailRoute, CollectionsRoute } from "./routes/collections/collections-route";
 import { ContinueRoute } from "./routes/continue/continue-route";
@@ -55,6 +56,19 @@ function Placeholder({ navId }: { readonly navId: NavId }): JSX.Element {
  */
 export const FORBIDDEN_PATH = "/forbidden";
 
+/** Sidebar destinations with a screen of their own. */
+const BUILT = new Set([
+  "admin",
+  "feed",
+  "continue",
+  "library",
+  "shorts",
+  "collections",
+  "watchlist",
+  "downloads",
+  "settings",
+]);
+
 export const appRoutes: RouteObject[] = [
   { path: "/setup", element: <SetupRoute /> },
   {
@@ -69,6 +83,7 @@ export const appRoutes: RouteObject[] = [
             element: <AppShell />,
             children: [
               { index: true, element: <Navigate to="/library" replace /> },
+              { path: "admin", element: <DashboardRoute /> },
               { path: "admin/quarantine", element: <QuarantineReviewRoute /> },
               { path: "settings", element: <Navigate to="/settings/quality" replace /> },
               { path: "settings/quality", element: <QualityProfilesRoute /> },
@@ -86,12 +101,13 @@ export const appRoutes: RouteObject[] = [
               { path: "watchlist", element: <WatchlistRoute /> },
               { path: "library", element: <LibraryRoute /> },
               { path: "library/:mediaId", element: <MediaDetailRoute /> },
-              ...NAV_ITEMS.filter((item) => item.id !== "settings" && item.id !== "library").map(
-                (item) => ({
-                  path: item.path.slice(1),
-                  element: <Placeholder navId={item.id} />,
-                }),
-              ),
+              // Destinations in the sidebar that nothing has built yet. Listing
+              // the built ones here too would be harmless — the real route is
+              // declared first and wins — but it hides which are still stubs.
+              ...NAV_ITEMS.filter((item) => !BUILT.has(item.id)).map((item) => ({
+                path: item.path.slice(1),
+                element: <Placeholder navId={item.id} />,
+              })),
               { path: FORBIDDEN_PATH.slice(1), element: <ForbiddenRoute /> },
               { path: "*", element: <NotFoundRoute /> },
             ],

@@ -165,6 +165,7 @@
     }
   },
   "nav": {
+    "admin": "Dashboard",
     "primary": "Primary",
     "navigation": "Navigation",
     "close": "Close",
@@ -662,5 +663,36 @@
       "tag_one": "{{count}} shared tag",
       "tag_other": "{{count}} shared tags"
     }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "loading": "Reading the library…",
+    "lastScan": "Last scan {{when}}",
+    "neverScanned": "No scan has run yet",
+    "titles": "Titles",
+    "addedThisWeek_one": "+{{count}} this week",
+    "addedThisWeek_other": "+{{count}} this week",
+    "nothingNew": "Nothing added this week",
+    "storage": "Storage",
+    "storageOf": "{{percent}}% of {{total}}",
+    "storageUnmeasured_one": "{{count}} volume, not yet measured",
+    "storageUnmeasured_other": "{{count}} volumes, not yet measured",
+    "untagged": "Untagged",
+    "ofTitles_one": "of {{count}} title",
+    "ofTitles_other": "of {{count}} titles",
+    "guests": "Guests",
+    "guestsHint": "Accounts other than yours",
+    "health": "Library health",
+    "healthEmpty": "Nothing in the library to measure yet.",
+    "metadataMatched": "Metadata matched",
+    "artworkPresent": "Artwork present",
+    "tagged": "Tagged",
+    "duplicates": "Held for review",
+    "duplicateFiles_one": "{{count}} file",
+    "duplicateFiles_other": "{{count}} files",
+    "activity": "Activity",
+    "activityEmpty": "Nothing has happened yet.",
+    "openQueue": "Queue →",
+    "storageNone": "No library folder yet"
   }
 }

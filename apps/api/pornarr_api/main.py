@@ -25,6 +25,7 @@ from pornarr_api.routers.admin_download_clients import router as admin_download_
 from pornarr_api.routers.admin_indexers import router as admin_indexers_router
 from pornarr_api.routers.admin_library import router as admin_library_router
 from pornarr_api.routers.admin_oidc import router as admin_oidc_router
+from pornarr_api.routers.admin_overview import router as admin_overview_router
 from pornarr_api.routers.admin_performance import router as admin_performance_router
 from pornarr_api.routers.admin_quality import router as admin_quality_router
 from pornarr_api.routers.admin_quarantine import router as admin_quarantine_router
@@ -89,6 +90,7 @@ api_router.include_router(account_storage_router)
 api_router.include_router(admin_oidc_router)
 api_router.include_router(admin_performance_router)
 api_router.include_router(admin_quality_router)
+api_router.include_router(admin_overview_router)
 api_router.include_router(admin_quarantine_router)
 api_router.include_router(admin_audit_router)
 api_router.include_router(admin_indexers_router)

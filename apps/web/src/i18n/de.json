@@ -165,6 +165,7 @@
     }
   },
   "nav": {
+    "admin": "Übersicht",
     "primary": "Hauptnavigation",
     "navigation": "Navigation",
     "close": "Schließen",
@@ -662,5 +663,36 @@
       "tag_one": "{{count}} gemeinsames Tag",
       "tag_other": "{{count}} gemeinsame Tags"
     }
+  },
+  "dashboard": {
+    "title": "Übersicht",
+    "loading": "Bibliothek wird gelesen…",
+    "lastScan": "Letzter Scan {{when}}",
+    "neverScanned": "Noch kein Scan gelaufen",
+    "titles": "Titel",
+    "addedThisWeek_one": "+{{count}} diese Woche",
+    "addedThisWeek_other": "+{{count}} diese Woche",
+    "nothingNew": "Diese Woche nichts dazugekommen",
+    "storage": "Speicher",
+    "storageOf": "{{percent}} % von {{total}}",
+    "storageUnmeasured_one": "{{count}} Datenträger, noch nicht gemessen",
+    "storageUnmeasured_other": "{{count}} Datenträger, noch nicht gemessen",
+    "untagged": "Ohne Tags",
+    "ofTitles_one": "von {{count}} Titel",
+    "ofTitles_other": "von {{count}} Titeln",
+    "guests": "Gäste",
+    "guestsHint": "Konten außer deinem",
+    "health": "Zustand der Bibliothek",
+    "healthEmpty": "Noch nichts in der Bibliothek zu messen.",
+    "metadataMatched": "Metadaten zugeordnet",
+    "artworkPresent": "Bild vorhanden",
+    "tagged": "Getaggt",
+    "duplicates": "Zur Prüfung zurückgehalten",
+    "duplicateFiles_one": "{{count}} Datei",
+    "duplicateFiles_other": "{{count}} Dateien",
+    "activity": "Aktivität",
+    "activityEmpty": "Bisher ist nichts passiert.",
+    "openQueue": "Warteschlange →",
+    "storageNone": "Noch kein Bibliotheksordner"
   }
 }
