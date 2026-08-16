@@ -18,6 +18,9 @@ import { LoginRoute } from "./auth/login-route";
 import { RequireAuth } from "./auth/require-auth";
 import { ForbiddenRoute, NotFoundRoute } from "./errors/route-errors";
 import { QuarantineReviewRoute } from "./routes/admin/quarantine/quarantine-review-route";
+import { CollectionDetailRoute, CollectionsRoute } from "./routes/collections/collections-route";
+import { ContinueRoute } from "./routes/continue/continue-route";
+import { FeedRoute } from "./routes/feed/feed-route";
 import { LibraryRoute } from "./routes/library/library-route";
 import { MediaDetailRoute } from "./routes/media/media-detail-route";
 import { MonitorsRoute } from "./routes/monitors/monitors-route";
@@ -28,6 +31,8 @@ import { SearchRoute } from "./routes/search/search-route";
 import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles-route";
 import { SetupGate } from "./routes/setup/setup-gate";
 import { SetupRoute } from "./routes/setup/setup-route";
+import { ShortsRoute } from "./routes/shorts/shorts-route";
+import { WatchlistRoute } from "./routes/watchlist/watchlist-route";
 import { AppShell } from "./shell/app-shell";
 import { NAV_ITEMS, type NavId } from "./shell/sidebar";
 
@@ -71,6 +76,12 @@ export const appRoutes: RouteObject[] = [
               { path: "requests", element: <RequestsRoute /> },
               { path: "recommendations", element: <RecommendationsRoute /> },
               { path: "downloads", element: <QueueRoute /> },
+              { path: "feed", element: <FeedRoute /> },
+              { path: "continue", element: <ContinueRoute /> },
+              { path: "shorts", element: <ShortsRoute /> },
+              { path: "collections", element: <CollectionsRoute /> },
+              { path: "collections/:collectionId", element: <CollectionDetailRoute /> },
+              { path: "watchlist", element: <WatchlistRoute /> },
               { path: "library", element: <LibraryRoute /> },
               { path: "library/:mediaId", element: <MediaDetailRoute /> },
               ...NAV_ITEMS.filter((item) => item.id !== "settings" && item.id !== "library").map(
