@@ -298,8 +298,8 @@ function ExternalResults({
                   <ExternalRow
                     key={item.id}
                     item={item}
-                    onGrab={() => grab.mutate(item)}
-                    grabbing={grab.isPending && grab.variables?.id === item.id}
+                    onGrab={(releaseId = item.id) => grab.mutate({ item, releaseId })}
+                    grabbing={grab.isPending && grab.variables?.item.id === item.id}
                     format={format}
                   />
                 ))}
@@ -342,7 +342,7 @@ function ExternalRow({
   format,
 }: {
   readonly item: ExternalSearchItem;
-  readonly onGrab: () => void;
+  readonly onGrab: (releaseId?: string) => void;
   readonly grabbing: boolean;
   readonly format: ReturnType<typeof useFormat>;
 }) {
@@ -351,6 +351,20 @@ function ExternalRow({
     <tr className="bg-surface text-ink hover:bg-surface-2">
       <td className="max-w-[24rem] truncate px-3 py-2 font-mono text-xs" title={item.title}>
         {item.title}
+        {(item.alternates?.length ?? 0) === 0 ? null : (
+          <span className="ml-2 font-sans text-xs text-ink-muted">
+            {(item.alternates ?? []).map((alternate) => (
+              <button
+                key={alternate.id}
+                type="button"
+                className="ml-1 underline decoration-border-control underline-offset-2"
+                onClick={() => onGrab(alternate.id)}
+              >
+                {alternate.indexer_name}
+              </button>
+            ))}
+          </span>
+        )}
         {item.match.kind === "new" ? null : (
           <a
             className="ml-2 font-sans text-ink-muted underline decoration-border-control underline-offset-2"
@@ -394,7 +408,7 @@ function ExternalRow({
         <Numeric>{format.estimate(item.estimate.low_seconds, item.estimate.high_seconds)}</Numeric>
       </td>
       <td className="px-3 py-2 text-right">
-        <Button variant="secondary" loading={grabbing} onClick={onGrab}>
+        <Button variant="secondary" loading={grabbing} onClick={() => onGrab()}>
           {t("search.grab")}
         </Button>
       </td>
