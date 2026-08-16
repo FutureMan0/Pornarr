@@ -33,6 +33,7 @@ from pornarr_api.routers.auth import router as auth_router
 from pornarr_api.routers.automation import router as automation_router
 from pornarr_api.routers.auth_oidc import router as auth_oidc_router
 from pornarr_api.routers.events import router as events_router
+from pornarr_api.routers.filters import router as filters_router
 from pornarr_api.routers.health import router as health_router
 from pornarr_api.routers.library import media_router as library_media_router
 from pornarr_api.routers.library import home_router
@@ -88,6 +89,7 @@ api_router.include_router(admin_indexers_router)
 api_router.include_router(admin_library_router)
 api_router.include_router(admin_settings_router)
 api_router.include_router(events_router)
+api_router.include_router(filters_router)
 api_router.include_router(health_router)
 api_router.include_router(library_router)
 api_router.include_router(home_router)

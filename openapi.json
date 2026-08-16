@@ -1074,6 +1074,46 @@
         "title": "DownloadClientWrite",
         "type": "object"
       },
+      "DryRunResponse": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/FilterAction"
+          },
+          "rule_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Id"
+          }
+        },
+        "required": [
+          "action",
+          "rule_id"
+        ],
+        "title": "DryRunResponse",
+        "type": "object"
+      },
+      "DryRunWrite": {
+        "properties": {
+          "title": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "DryRunWrite",
+        "type": "object"
+      },
       "ErrorResponse": {
         "description": "The contract shape for every machine-readable API error.",
         "properties": {
@@ -1238,6 +1278,51 @@
           "estimated_time"
         ],
         "title": "ExternalSearchSort",
+        "type": "string"
+      },
+      "FilterAction": {
+        "enum": [
+          "allow",
+          "quarantine",
+          "reject"
+        ],
+        "title": "FilterAction",
+        "type": "string"
+      },
+      "FilterProfilesResponse": {
+        "properties": {
+          "global_rules": {
+            "items": {
+              "$ref": "#/components/schemas/RuleResponse"
+            },
+            "title": "Global Rules",
+            "type": "array"
+          },
+          "personal_rules": {
+            "items": {
+              "$ref": "#/components/schemas/RuleResponse"
+            },
+            "title": "Personal Rules",
+            "type": "array"
+          }
+        },
+        "required": [
+          "global_rules",
+          "personal_rules"
+        ],
+        "title": "FilterProfilesResponse",
+        "type": "object"
+      },
+      "FilterRuleKind": {
+        "enum": [
+          "term",
+          "tag",
+          "performer",
+          "minimum_confidence",
+          "unknown_performer_age",
+          "unknown_file_type"
+        ],
+        "title": "FilterRuleKind",
         "type": "string"
       },
       "GrabResponse": {
@@ -3731,6 +3816,71 @@
           "path"
         ],
         "title": "RootFolderWrite",
+        "type": "object"
+      },
+      "RuleResponse": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/FilterAction"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "global_rule": {
+            "title": "Global Rule",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FilterRuleKind"
+          },
+          "pattern": {
+            "maxLength": 512,
+            "title": "Pattern",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "pattern",
+          "action",
+          "id",
+          "global_rule"
+        ],
+        "title": "RuleResponse",
+        "type": "object"
+      },
+      "RuleWrite": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/FilterAction"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FilterRuleKind"
+          },
+          "pattern": {
+            "maxLength": 512,
+            "title": "Pattern",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "pattern",
+          "action"
+        ],
+        "title": "RuleWrite",
         "type": "object"
       },
       "RuntimeSettings": {
@@ -7229,6 +7379,203 @@
         "summary": "Events",
         "tags": [
           "events"
+        ]
+      }
+    },
+    "/api/filters": {
+      "get": {
+        "operationId": "filters_read_filters",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilterProfilesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Filters",
+        "tags": [
+          "filters"
+        ]
+      }
+    },
+    "/api/filters/dry-run": {
+      "post": {
+        "operationId": "filters_dry_run",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DryRunWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DryRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Dry Run",
+        "tags": [
+          "filters"
+        ]
+      }
+    },
+    "/api/filters/global/rules": {
+      "post": {
+        "operationId": "filters_add_global_rule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuleWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Global Rule",
+        "tags": [
+          "filters"
+        ]
+      }
+    },
+    "/api/filters/rules": {
+      "post": {
+        "operationId": "filters_add_personal_rule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuleWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Personal Rule",
+        "tags": [
+          "filters"
+        ]
+      }
+    },
+    "/api/filters/rules/{rule_id}": {
+      "patch": {
+        "operationId": "filters_update_personal_rule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuleWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Personal Rule",
+        "tags": [
+          "filters"
         ]
       }
     },

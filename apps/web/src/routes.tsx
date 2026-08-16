@@ -33,6 +33,7 @@ import { LibrarySettingsRoute } from "./routes/settings/library/library-route";
 import { NotificationPreferencesRoute } from "./routes/settings/notifications/notification-preferences-route";
 import { PreferencesRoute } from "./routes/settings/preferences/preferences-route";
 import { AutomationRoute } from "./routes/settings/automation/automation-route";
+import { FiltersRoute } from "./routes/settings/filters/filters-route";
 import { SetupGate } from "./routes/setup/setup-gate";
 import { SetupRoute } from "./routes/setup/setup-route";
 import { AppShell } from "./shell/app-shell";
@@ -80,6 +81,7 @@ export const appRoutes: RouteObject[] = [
               { path: "settings/notifications", element: <NotificationPreferencesRoute /> },
               { path: "settings/preferences", element: <PreferencesRoute /> },
               { path: "settings/automation", element: <AutomationRoute /> },
+              { path: "settings/filters", element: <FiltersRoute /> },
               { path: "search", element: <SearchRoute /> },
               { path: "monitors", element: <MonitorsRoute /> },
               { path: "requests", element: <RequestsRoute /> },
