@@ -2,6 +2,7 @@
   "app": {
     "name": "Pornarr"
   },
+  "downloadClients": { "title": "Download-Clients", "intro": "Verbindungsstatus und der letzte Client-Fehler werden hier angezeigt.", "loading": "Download-Clients werden geladen", "test": "Verbindung testen", "remove": "Entfernen" },
   "monitors": {
     "title": "Monitore",
     "loading": "Monitore werden geladen",
