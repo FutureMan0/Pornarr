@@ -1358,6 +1358,88 @@
         "title": "ExternalSearchSort",
         "type": "string"
       },
+      "FacetValueResponse": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "count"
+        ],
+        "title": "FacetValueResponse",
+        "type": "object"
+      },
+      "FacetsResponse": {
+        "description": "The numbers beside the filters, and how far they can be trusted.",
+        "properties": {
+          "capped": {
+            "title": "Capped",
+            "type": "boolean"
+          },
+          "duration": {
+            "items": {
+              "$ref": "#/components/schemas/FacetValueResponse"
+            },
+            "title": "Duration",
+            "type": "array"
+          },
+          "matched": {
+            "title": "Matched",
+            "type": "integer"
+          },
+          "rating": {
+            "items": {
+              "$ref": "#/components/schemas/FacetValueResponse"
+            },
+            "title": "Rating",
+            "type": "array"
+          },
+          "resolution": {
+            "items": {
+              "$ref": "#/components/schemas/FacetValueResponse"
+            },
+            "title": "Resolution",
+            "type": "array"
+          },
+          "studio": {
+            "items": {
+              "$ref": "#/components/schemas/FacetValueResponse"
+            },
+            "title": "Studio",
+            "type": "array"
+          },
+          "tag": {
+            "items": {
+              "$ref": "#/components/schemas/FacetValueResponse"
+            },
+            "title": "Tag",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "studio",
+          "resolution",
+          "duration",
+          "rating",
+          "tag",
+          "matched",
+          "total",
+          "capped"
+        ],
+        "title": "FacetsResponse",
+        "type": "object"
+      },
       "GenerateShortsWrite": {
         "description": "How many clips to cut, and how long each should be.",
         "properties": {
@@ -12365,6 +12447,133 @@
           }
         },
         "summary": "Local Search",
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/api/search/local/facets": {
+      "get": {
+        "description": "Counts for the filter sidebar, from the same pipeline as the results.\n\nEverything the list does to a row — the visibility scope, the content filter\nrules — happens here too. A count the list cannot deliver is worse than no\ncount, because a reader will click it.",
+        "operationId": "search_local_search_facets",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "maxLength": 512,
+              "minLength": 1,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "quality",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Quality"
+            }
+          },
+          {
+            "in": "query",
+            "name": "studio",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Studio"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag"
+            }
+          },
+          {
+            "in": "query",
+            "name": "duration",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Duration"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rating_gte",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 5,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rating Gte"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacetsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Local Search Facets",
         "tags": [
           "search"
         ]

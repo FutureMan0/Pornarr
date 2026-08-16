@@ -1815,6 +1815,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/search/local/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Local Search Facets
+         * @description Counts for the filter sidebar, from the same pipeline as the results.
+         *
+         *     Everything the list does to a row — the visibility scope, the content filter
+         *     rules — happens here too. A count the list cannot deliver is worse than no
+         *     count, because a reader will click it.
+         */
+        get: operations["search_local_search_facets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sends": {
         parameters: {
             query?: never;
@@ -2703,6 +2727,35 @@ export interface components {
          * @enum {string}
          */
         ExternalSearchSort: "relevance" | "age" | "size" | "quality" | "seeders" | "estimated_time";
+        /** FacetValueResponse */
+        FacetValueResponse: {
+            /** Count */
+            count: number;
+            /** Value */
+            value: string;
+        };
+        /**
+         * FacetsResponse
+         * @description The numbers beside the filters, and how far they can be trusted.
+         */
+        FacetsResponse: {
+            /** Capped */
+            capped: boolean;
+            /** Duration */
+            duration: components["schemas"]["FacetValueResponse"][];
+            /** Matched */
+            matched: number;
+            /** Rating */
+            rating: components["schemas"]["FacetValueResponse"][];
+            /** Resolution */
+            resolution: components["schemas"]["FacetValueResponse"][];
+            /** Studio */
+            studio: components["schemas"]["FacetValueResponse"][];
+            /** Tag */
+            tag: components["schemas"]["FacetValueResponse"][];
+            /** Total */
+            total: number;
+        };
         /**
          * GenerateShortsWrite
          * @description How many clips to cut, and how long each should be.
@@ -8751,6 +8804,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LocalSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_local_search_facets: {
+        parameters: {
+            query: {
+                q: string;
+                quality?: string | null;
+                studio?: string | null;
+                tag?: string | null;
+                duration?: string | null;
+                rating_gte?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FacetsResponse"];
                 };
             };
             /** @description Validation Error */
