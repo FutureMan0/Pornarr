@@ -15,6 +15,7 @@ import { useLogout, useSession } from "../auth/session";
 import { LOCALES, setLocale } from "../i18n";
 import { localeName } from "../i18n/format";
 import { messageForError } from "../lib/api-error";
+import { NotificationMenu } from "../components/notifications/notification-menu";
 import { DRAWER_ID, type SidebarLayout } from "./sidebar";
 import { StatusCluster } from "./status-cluster";
 
@@ -90,6 +91,7 @@ export function TopBar({ layout, drawerOpen, onOpenDrawer, triggerRef }: TopBarP
       </search>
 
       <StatusCluster />
+      <NotificationMenu />
 
       {logout.error !== null ? (
         <p className={"text-sm text-ink"} role="alert">
