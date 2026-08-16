@@ -47,6 +47,7 @@ request.created     download.queued       download.started
 download.progress   download.completed    download.failed
 import.started      import.completed      media.available
 scan.progress
+notification
 ```
 
 Reverse proxies must not buffer this endpoint. The API sets `X-Accel-Buffering: no`
