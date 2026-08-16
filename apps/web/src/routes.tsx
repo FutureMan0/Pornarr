@@ -28,6 +28,7 @@ import { SearchRoute } from "./routes/search/search-route";
 import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles-route";
 import { DownloadClientsRoute } from "./routes/settings/downloaders/download-clients-route";
 import { IndexersRoute } from "./routes/settings/indexers/indexers-route";
+import { LibrarySettingsRoute } from "./routes/settings/library/library-route";
 import { SetupGate } from "./routes/setup/setup-gate";
 import { SetupRoute } from "./routes/setup/setup-route";
 import { AppShell } from "./shell/app-shell";
@@ -70,6 +71,7 @@ export const appRoutes: RouteObject[] = [
               { path: "settings/quality", element: <QualityProfilesRoute /> },
               { path: "settings/download-clients", element: <DownloadClientsRoute /> },
               { path: "settings/indexers", element: <IndexersRoute /> },
+              { path: "settings/library", element: <LibrarySettingsRoute /> },
               { path: "search", element: <SearchRoute /> },
               { path: "monitors", element: <MonitorsRoute /> },
               { path: "requests", element: <RequestsRoute /> },

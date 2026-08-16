@@ -4,6 +4,7 @@
   },
   "indexers": { "title": "Indexer", "loading": "Indexer werden geladen", "priority": "Priorität {{value}}", "stats": "{{queries}} Abfragen, {{failures}} Fehler", "test": "Testen", "reset": "Health zurücksetzen", "remove": "Entfernen" },
   "downloadClients": { "title": "Download-Clients", "intro": "Verbindungsstatus und der letzte Client-Fehler werden hier angezeigt.", "loading": "Download-Clients werden geladen", "test": "Verbindung testen", "remove": "Entfernen" },
+  "librarySettings": { "title": "Bibliotheksordner", "intro": "Füge alle lokalen Ordner hinzu, die Pornarr nach Medien durchsuchen soll.", "loading": "Bibliotheksordner werden geladen", "path": "Ordnerpfad", "add": "Ordner hinzufügen", "freeSpace": "{{value}} Bytes frei", "scan": "Jetzt scannen", "cancel": "Scan abbrechen", "progress": "{{value}} Dateien gescannt", "remove": "Entfernen" },
   "monitors": {
     "title": "Monitore",
     "loading": "Monitore werden geladen",

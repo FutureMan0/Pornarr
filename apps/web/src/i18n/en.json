@@ -4,6 +4,7 @@
   },
   "indexers": { "title": "Indexers", "loading": "Loading indexers", "priority": "Priority {{value}}", "stats": "{{queries}} queries, {{failures}} failures", "test": "Test", "reset": "Reset health", "remove": "Remove" },
   "downloadClients": { "title": "Download clients", "intro": "Connection health and the latest client error are shown here.", "loading": "Loading download clients", "test": "Test connection", "remove": "Remove" },
+  "librarySettings": { "title": "Library folders", "intro": "Add each local folder Pornarr should scan for media.", "loading": "Loading library folders", "path": "Folder path", "add": "Add folder", "freeSpace": "{{value}} bytes free", "scan": "Scan now", "cancel": "Cancel scan", "progress": "{{value}} files scanned", "remove": "Remove" },
   "monitors": {
     "title": "Monitors",
     "loading": "Loading monitors",
