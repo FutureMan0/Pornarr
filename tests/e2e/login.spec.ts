@@ -36,12 +36,13 @@ async function setUpAdministrator(page: Page): Promise<void> {
   await page.getByRole("textbox", { name: "Library path" }).fill("/data");
   await page.getByRole("button", { name: "Continue" }).click();
 
+  const filtersHeading = page.getByRole("heading", { name: "Review content filters" });
   const copyImports = page.getByRole("button", { name: "Continue with copy imports" });
-  if (await copyImports.isVisible({ timeout: 2000 }).catch(() => false)) {
+  await expect(filtersHeading.or(copyImports)).toBeVisible();
+  if (await copyImports.isVisible()) {
     await copyImports.click();
+    await expect(filtersHeading).toBeVisible();
   }
-
-  await expect(page.getByRole("heading", { name: "Review content filters" })).toBeVisible();
   await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(page.getByRole("heading", { name: "Metadata providers" })).toBeVisible();
