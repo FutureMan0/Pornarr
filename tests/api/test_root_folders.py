@@ -99,3 +99,45 @@ async def test_root_folder_cannot_be_removed_while_it_contains_media(
 
     assert response.status_code == 409
     assert response.json() == {"code": "ROOT_FOLDER_HAS_MEDIA", "status": 409, "context": {}}
+
+
+async def test_admin_can_start_and_cancel_a_root_folder_scan(
+    app, client, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    app.state.settings = app.state.settings.model_copy(update={"data_path": tmp_path})
+    app.state.settings.torrents_path.mkdir()
+    root_folder = tmp_path / "library"
+    root_folder.mkdir()
+    admin = await create_user(app, role=UserRole.ADMIN)
+    await login(client, admin.username, "correct horse battery staple")
+    folder = await client.post(
+        "/api/admin/library/root-folders",
+        json={"path": str(root_folder)},
+        headers=csrf_headers(client),
+    )
+    jobs: list[tuple[str, tuple[object, ...], dict[str, object]]] = []
+
+    async def enqueue_job(function: str, *args: object, **kwargs: object) -> None:
+        jobs.append((function, args, kwargs))
+
+    class ScanJob:
+        def __init__(self, job_id: str, *_: object, **__: object) -> None:
+            self.job_id = job_id
+
+        async def abort(self, **_: object) -> bool:
+            return True
+
+    monkeypatch.setattr(app.state.redis, "enqueue_job", enqueue_job, raising=False)
+    monkeypatch.setattr("pornarr_api.routers.admin_library.Job", ScanJob)
+    started = await client.post(
+        f"/api/admin/library/root-folders/{folder.json()['id']}/scan",
+        headers=csrf_headers(client),
+    )
+    assert started.status_code == 202
+    assert jobs[0][0] == "scan"
+    assert jobs[0][1] == (folder.json()["id"],)
+    cancelled = await client.delete(
+        f"/api/admin/library/root-folders/{folder.json()['id']}/scan/{started.json()['job_id']}",
+        headers=csrf_headers(client),
+    )
+    assert cancelled.status_code == 202

@@ -3977,6 +3977,19 @@
         "title": "RuntimeSettingsWrite",
         "type": "object"
       },
+      "ScanResponse": {
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "title": "ScanResponse",
+        "type": "object"
+      },
       "SearchEstimateResponse": {
         "properties": {
           "confidence": {
@@ -5389,6 +5402,99 @@
           }
         },
         "summary": "Delete Root Folder",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/library/root-folders/{folder_id}/scan": {
+      "post": {
+        "operationId": "admin_scan_root_folder",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "folder_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Folder Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Scan Root Folder",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/library/root-folders/{folder_id}/scan/{job_id}": {
+      "delete": {
+        "operationId": "admin_cancel_root_folder_scan",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "folder_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Folder Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Root Folder Scan",
         "tags": [
           "admin"
         ]

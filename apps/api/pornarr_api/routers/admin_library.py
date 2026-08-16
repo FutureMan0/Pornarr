@@ -10,6 +10,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from arq.jobs import Job
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,6 +21,7 @@ from pornarr_db.models.media import MediaFile
 from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.models.user import User, UserRole
 from pornarr_shared.errors import PornarrError
+from pornarr_shared.jobs import IMPORT_QUEUE, job_key
 
 router = APIRouter(prefix="/admin/library", tags=["admin"])
 Admin = Annotated[User, Depends(require_role(UserRole.ADMIN))]
@@ -42,6 +44,10 @@ class RootFolderResponse(BaseModel):
     low_space_warning_sent: bool
     same_filesystem_as_downloads: bool
     warning: str | None
+
+
+class ScanResponse(BaseModel):
+    job_id: str
 
 
 class RootFolderValidationError(PornarrError):
@@ -101,6 +107,35 @@ async def delete_root_folder(folder_id: UUID, user: Admin, session: Session) -> 
         raise RootFolderInUseError("The root folder still contains media.")
     await session.delete(folder)
     write_audit(session, actor_id=user.id, action="root_folder.deleted", target=str(folder_id))
+
+
+@router.post("/root-folders/{folder_id}/scan", response_model=ScanResponse, status_code=202)
+async def scan_root_folder(
+    folder_id: UUID, request: Request, _: Admin, session: Session
+) -> ScanResponse:
+    folder = await session.get(RootFolder, folder_id)
+    if folder is None:
+        raise HTTPException(status_code=404)
+    if not folder.enabled:
+        raise RootFolderValidationError("The root folder is disabled.", reason="disabled")
+    job_id = job_key("scan", str(folder_id), queue=IMPORT_QUEUE)
+    await request.app.state.redis.enqueue_job(
+        "scan", str(folder_id), _job_id=job_id, _queue_name=IMPORT_QUEUE
+    )
+    return ScanResponse(job_id=job_id)
+
+
+@router.delete("/root-folders/{folder_id}/scan/{job_id}", status_code=202)
+async def cancel_root_folder_scan(
+    folder_id: UUID, job_id: str, request: Request, _: Admin, session: Session
+) -> None:
+    folder = await session.get(RootFolder, folder_id)
+    if folder is None:
+        raise HTTPException(status_code=404)
+    expected_job_id = job_key("scan", str(folder_id), queue=IMPORT_QUEUE)
+    if job_id != expected_job_id:
+        raise HTTPException(status_code=404)
+    await Job(job_id, request.app.state.redis, _queue_name=IMPORT_QUEUE).abort(timeout=0)
 
 
 def _validate_root_folder(path_value: str, downloads_path: Path) -> tuple[Path, int, bool]:

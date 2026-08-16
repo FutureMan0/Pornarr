@@ -5,7 +5,7 @@
  * properties of it shape this file:
  *
  * 1. Frames are *named* events, so `onmessage` never fires. Each type needs its
- *    own `addEventListener`, which is why the twelve names below are a list and
+ *    own `addEventListener`, which is why the names below are a list and
  *    not a comment.
  * 2. `data` is a JSON string and `openapi.json` does not type it. The envelope
  *    is therefore validated here with zod before anything reaches the cache — a
@@ -25,7 +25,7 @@ import { z } from "zod";
 
 export const EVENTS_URL = "/api/events";
 
-/** The twelve documented frame names. docs/api-contract.md is the source. */
+/** The documented frame names. docs/api-contract.md is the source. */
 export const EVENT_TYPES = [
   "search.started",
   "search.result_added",
@@ -39,6 +39,7 @@ export const EVENT_TYPES = [
   "import.started",
   "import.completed",
   "media.available",
+  "scan.progress",
 ] as const;
 
 export type PornarrEventType = (typeof EVENT_TYPES)[number];
@@ -80,6 +81,7 @@ const INVALIDATED_BY: Readonly<Record<PornarrEventType, readonly QueryKeyPrefix[
   "import.started": [["imports"]],
   "import.completed": [["imports"], ["library"]],
   "media.available": [["library"]],
+  "scan.progress": [["admin", "library"]],
 };
 
 type AnnouncementKey =
