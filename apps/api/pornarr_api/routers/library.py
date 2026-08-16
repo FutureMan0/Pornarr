@@ -18,6 +18,7 @@ from pornarr_api.ratings_summary import (
     rating_summaries,
     tag_counts,
 )
+from pornarr_api.related import related_titles
 from pornarr_api.scoping import library_scope, owns
 from pornarr_db.models.entities import MediaPerformer, MediaTag, Performer, Tag
 from pornarr_db.models.media import Media, MediaFile
@@ -277,3 +278,56 @@ async def sprite(
     if not path.is_file():
         raise HTTPException(status_code=404)
     return FileResponse(path, headers={"Cache-Control": "private, max-age=3600"})
+
+
+class RelatedResponse(BaseModel):
+    media_id: UUID
+    title: str
+    studio: str | None
+    duration_seconds: float | None
+    # The strongest shared signal, as a stable key. The interface is translated,
+    # so the server decides *which* reason and the client decides its wording.
+    reason: str
+    shared_performers: int
+    shared_tags: int
+    rating: float | None
+    rating_count: int
+
+
+@media_router.get("/{media_id}/related", response_model=list[RelatedResponse])
+async def media_related(
+    media_id: UUID,
+    request: Request,
+    user: CurrentUser,
+    session: Session,
+    limit: Annotated[int, Query(ge=1, le=24)] = 8,
+) -> list[RelatedResponse]:
+    """Titles like this one.
+
+    Scoped the same way the library is: a neighbour you are not allowed to see
+    in the grid must not appear here either, or the related row becomes a way
+    to enumerate someone else's private titles.
+    """
+    media = await session.get(Media, media_id)
+    if media is None:
+        raise HTTPException(status_code=404)
+
+    settings = await get_runtime_settings(session, request.app.state.settings)
+    neighbours = await related_titles(
+        session, media=media, scope=library_scope(user, settings), limit=limit
+    )
+    ratings = await rating_summaries(session, [item.media_id for item in neighbours])
+    return [
+        RelatedResponse(
+            media_id=item.media_id,
+            title=item.title,
+            studio=item.studio,
+            duration_seconds=item.duration_seconds,
+            reason=item.reason,
+            shared_performers=item.shared_performers,
+            shared_tags=item.shared_tags,
+            rating=ratings.get(item.media_id, (None, 0))[0],
+            rating_count=ratings.get(item.media_id, (None, 0))[1],
+        )
+        for item in neighbours
+    ]

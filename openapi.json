@@ -4000,6 +4000,81 @@
         "title": "RecommendationResponse",
         "type": "object"
       },
+      "RelatedResponse": {
+        "properties": {
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "media_id": {
+            "format": "uuid",
+            "title": "Media Id",
+            "type": "string"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "rating_count": {
+            "title": "Rating Count",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "shared_performers": {
+            "title": "Shared Performers",
+            "type": "integer"
+          },
+          "shared_tags": {
+            "title": "Shared Tags",
+            "type": "integer"
+          },
+          "studio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Studio"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "media_id",
+          "title",
+          "studio",
+          "duration_seconds",
+          "reason",
+          "shared_performers",
+          "shared_tags",
+          "rating",
+          "rating_count"
+        ],
+        "title": "RelatedResponse",
+        "type": "object"
+      },
       "RequestCreate": {
         "properties": {
           "priority": {
@@ -9970,6 +10045,66 @@
         "summary": "Set Rating",
         "tags": [
           "ratings"
+        ]
+      }
+    },
+    "/api/media/{media_id}/related": {
+      "get": {
+        "description": "Titles like this one.\n\nScoped the same way the library is: a neighbour you are not allowed to see\nin the grid must not appear here either, or the related row becomes a way\nto enumerate someone else's private titles.",
+        "operationId": "library_media_related",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 8,
+              "maximum": 24,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RelatedResponse"
+                  },
+                  "title": "Response Library Media Related",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Media Related",
+        "tags": [
+          "library"
         ]
       }
     },

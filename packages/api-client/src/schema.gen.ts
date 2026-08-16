@@ -1221,6 +1221,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/media/{media_id}/related": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Media Related
+         * @description Titles like this one.
+         *
+         *     Scoped the same way the library is: a neighbour you are not allowed to see
+         *     in the grid must not appear here either, or the related row becomes a way
+         *     to enumerate someone else's private titles.
+         */
+        get: operations["library_media_related"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/media/{media_id}/scenes": {
         parameters: {
             query?: never;
@@ -3601,6 +3625,30 @@ export interface components {
             reasons: string[];
             /** Score */
             score: number;
+            /** Title */
+            title: string;
+        };
+        /** RelatedResponse */
+        RelatedResponse: {
+            /** Duration Seconds */
+            duration_seconds: number | null;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Rating */
+            rating: number | null;
+            /** Rating Count */
+            rating_count: number;
+            /** Reason */
+            reason: string;
+            /** Shared Performers */
+            shared_performers: number;
+            /** Shared Tags */
+            shared_tags: number;
+            /** Studio */
+            studio: string | null;
             /** Title */
             title: string;
         };
@@ -7231,6 +7279,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    library_media_related: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelatedResponse"][];
                 };
             };
             /** @description Validation Error */
