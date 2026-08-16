@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import time
 from pathlib import Path
 
 from httpx import ASGITransport, AsyncClient
@@ -54,3 +56,33 @@ async def test_health_is_local_but_dependency_health_is_structured(tmp_path: Pat
     assert live.json() == {"status": "ok"}
     assert report.status_code == 200
     assert report.json()["status"] == "healthy"
+
+
+async def test_health_surfaces_a_configured_backup_age(tmp_path: Path) -> None:
+    for name in ("torrents", "usenet", "library", "quarantine", "thumbnails", "transcodes"):
+        (tmp_path / name).mkdir()
+    backup_path = tmp_path / "backups"
+    backup_path.mkdir()
+    backup = backup_path / "pornarr-test.dump"
+    backup.write_text("dump")
+    settings = Settings(
+        app_secret=SecretStr("a" * 32),
+        database_url="postgresql+psycopg://example",
+        redis_url="redis://example",
+        data_path=tmp_path,
+        backup_path=backup_path,
+        backup_max_age_hours=1,
+    )
+    app = create_app(settings)
+    app.state.engine = Engine()
+    app.state.redis = Redis()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        healthy = await client.get("/api/health")
+        os.utime(backup, (time.time() - 7200, time.time() - 7200))
+        stale = await client.get("/api/health")
+
+    assert healthy.json()["backup"]["status"] == "healthy"
+    assert stale.status_code == 200
+    assert stale.json()["status"] == "degraded"
+    assert stale.json()["backup"]["status"] == "unhealthy"

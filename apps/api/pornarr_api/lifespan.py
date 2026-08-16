@@ -14,12 +14,14 @@ from contextlib import asynccontextmanager, suppress
 
 import redis.asyncio as redis
 from fastapi import FastAPI
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from pornarr_db.backup import ensure_app_secret_matches
 from pornarr_db.session import dispose_engine, get_engine
 from pornarr_media.capabilities import detect_hardware_capabilities
 from pornarr_media.sessions import TranscodeSessionRegistry
 from pornarr_shared.config import Settings
-from pornarr_shared.logging import install_redaction, register_secret
+from pornarr_shared.logging import configure_logging, install_redaction, register_secret
 
 logger = logging.getLogger(__name__)
 TRANSCODE_REAP_INTERVAL_SECONDS = 1
@@ -38,10 +40,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Registered before anything else can log: the secret must never reach a log
     # line, and the first thing that could leak it is a connection error.
     register_secret(settings.app_secret.get_secret_value())
+    configure_logging(settings.log_level)
     install_redaction()
 
+    app.state.engine = get_engine(settings)
+    try:
+        async with AsyncSession(app.state.engine) as session:
+            await ensure_app_secret_matches(session, settings.app_secret.get_secret_value())
+            await session.commit()
+    except Exception:
+        await dispose_engine()
+        raise
     app.state.redis = redis.from_url(settings.redis_url, decode_responses=True)
-    app.state.engine = get_engine()
     app.state.hardware_capabilities = detect_hardware_capabilities(
         requested=settings.transcode_hwaccel
     )

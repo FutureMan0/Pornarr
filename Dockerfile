@@ -25,12 +25,16 @@ COPY apps/web apps/web
 COPY packages/ui packages/ui
 COPY packages/api-client packages/api-client
 
-# `--if-present` so this stage does not fail before the SPA exists (#22). Until
-# then the runtime serves WEB_ASSETS_MISSING, which says so explicitly rather
-# than 404-ing as if the router were broken.
-RUN pnpm --filter @pornarr/web run build --if-present \
+# The guard here was scoped to "before the SPA exists (#22)", and #22 is this
+# change. It has to go, not merely because it is spent: pnpm forwards the flag
+# to the script now that one exists, and Vite's CLI rejects it as `--ifPresent`.
+#
+# A missing web build is now a real failure. Letting it through would produce an
+# image that starts and answers WEB_ASSETS_MISSING, which is a worse place to
+# discover the problem than the build.
+RUN pnpm --filter @pornarr/web run build \
     && mkdir -p /web \
-    && if [ -d apps/web/dist ]; then cp -r apps/web/dist/. /web/; fi
+    && cp -r apps/web/dist/. /web/
 
 # ---------------------------------------------------------------------------
 # Stage 2 — build a current FFmpeg with the required hardware encoders

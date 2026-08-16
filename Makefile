@@ -10,9 +10,10 @@ setup:
 	@test -f .env || (cp .env.example .env && \
 		sed -i "s|^APP_SECRET=.*|APP_SECRET=$$(openssl rand -hex 32)|" .env && \
 		echo "wrote .env with a generated APP_SECRET")
+	@mkdir -p data backups
 
 ## up: start the full stack with development overrides
-up:
+up: setup
 	docker compose up -d --wait
 
 ## down: stop the stack
@@ -35,6 +36,10 @@ scan-image:
 ## migrate: apply database migrations
 migrate:
 	docker compose run --rm migrate
+
+## backup: create a database dump and secret-free bootstrap configuration
+backup:
+	bash infrastructure/scripts/backup.sh
 
 ## revision: create a migration from model changes (m="message")
 revision:
@@ -89,5 +94,5 @@ openapi:
 check: lint typecheck test
 	docker compose exec api uv run alembic check
 
-.PHONY: help setup up down logs rebuild scan-image migrate revision shell psql \
+.PHONY: help setup up down logs rebuild scan-image migrate backup revision shell psql \
         lint format typecheck test test-integration test-e2e openapi check

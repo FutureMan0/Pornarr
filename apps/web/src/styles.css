@@ -1,0 +1,122 @@
+/**
+ * Tailwind, bridged onto the design system rather than beside it.
+ *
+ * @pornarr/ui owns every value; the @theme block below only teaches Tailwind
+ * the names, so `bg-surface` resolves to var(--surface) instead of a second
+ * palette that can drift from the first. `inline` is what keeps it a reference:
+ * without it Tailwind copies the value at build time and the link is severed.
+ *
+ * DESIGN.md: nothing in apps/web may hardcode a colour, radius, duration or
+ * spacing value. Tailwind here is for layout; component internals live in
+ * packages/ui.
+ */
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-control: var(--border-control);
+
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-ink: var(--primary-ink);
+  --color-primary-weak: var(--primary-weak);
+
+  --color-success: var(--success);
+  --color-success-weak: var(--success-weak);
+  --color-warning: var(--warning);
+  --color-warning-weak: var(--warning-weak);
+  --color-danger: var(--danger);
+  --color-danger-weak: var(--danger-weak);
+  --color-info: var(--info);
+  --color-info-weak: var(--info-weak);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --spacing: var(--space-1);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-full: var(--radius-full);
+
+  --ease-out: var(--ease);
+}
+
+/**
+ * The type scale deliberately REPLACES Tailwind's own utilities of the same
+ * names. Bridging it through @theme is impossible — Tailwind's font-size
+ * namespace is also `--text-*`, so `--text-sm: var(--text-sm)` refers to
+ * itself — and leaving the built-ins in place is worse than impossible: it is
+ * silent. `text-sm` would quietly mean 0.875rem instead of the token's
+ * 0.8125rem, a second scale beside the real one that nothing would flag.
+ *
+ * Overriding the names removes the hazard rather than routing around it, and
+ * each step carries size, line height and weight together, the way DESIGN.md
+ * defines them.
+ */
+@utility text-2xs {
+  font-size: var(--text-2xs);
+  line-height: var(--text-2xs-leading);
+  font-weight: var(--text-2xs-weight);
+}
+
+@utility text-xs {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  font-weight: var(--text-xs-weight);
+}
+
+@utility text-sm {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-weight: var(--text-sm-weight);
+}
+
+@utility text-base {
+  font-size: var(--text-base);
+  line-height: var(--text-base-leading);
+  font-weight: var(--text-base-weight);
+}
+
+@utility text-md {
+  font-size: var(--text-md);
+  line-height: var(--text-md-leading);
+  font-weight: var(--text-md-weight);
+}
+
+@utility text-lg {
+  font-size: var(--text-lg);
+  line-height: var(--text-lg-leading);
+  font-weight: var(--text-lg-weight);
+}
+
+@utility text-xl {
+  font-size: var(--text-xl);
+  line-height: var(--text-xl-leading);
+  font-weight: var(--text-xl-weight);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--text-base-leading);
+}

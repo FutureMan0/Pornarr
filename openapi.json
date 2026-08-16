@@ -107,6 +107,29 @@
         "title": "ApiKeyWrite",
         "type": "object"
       },
+      "ApprovalResponse": {
+        "properties": {
+          "media_id": {
+            "format": "uuid",
+            "title": "Media Id",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "placement_method": {
+            "$ref": "#/components/schemas/PlacementMethod"
+          }
+        },
+        "required": [
+          "media_id",
+          "path",
+          "placement_method"
+        ],
+        "title": "ApprovalResponse",
+        "type": "object"
+      },
       "AuditLogResponse": {
         "properties": {
           "action": {
@@ -168,6 +191,107 @@
         "title": "AuditLogResponse",
         "type": "object"
       },
+      "BulkApprovalRequest": {
+        "properties": {
+          "item_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Item Ids",
+            "type": "array"
+          },
+          "reason_code": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "token": {
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_ids",
+          "reason_code",
+          "token"
+        ],
+        "title": "BulkApprovalRequest",
+        "type": "object"
+      },
+      "BulkApprovalResponse": {
+        "properties": {
+          "approved": {
+            "items": {
+              "$ref": "#/components/schemas/ApprovalResponse"
+            },
+            "title": "Approved",
+            "type": "array"
+          }
+        },
+        "required": [
+          "approved"
+        ],
+        "title": "BulkApprovalResponse",
+        "type": "object"
+      },
+      "BulkPreviewRequest": {
+        "properties": {
+          "item_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Item Ids",
+            "type": "array"
+          },
+          "reason_code": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Reason Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_ids",
+          "reason_code"
+        ],
+        "title": "BulkPreviewRequest",
+        "type": "object"
+      },
+      "BulkPreviewResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/QuarantineItemResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "reason_code": {
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "reason_code",
+          "token"
+        ],
+        "title": "BulkPreviewResponse",
+        "type": "object"
+      },
       "CodecCapabilityResponse": {
         "properties": {
           "codec": {
@@ -214,6 +338,16 @@
         "title": "ComponentHealth",
         "type": "object"
       },
+      "Confidence": {
+        "enum": [
+          "high",
+          "medium",
+          "low",
+          "unknown"
+        ],
+        "title": "Confidence",
+        "type": "string"
+      },
       "CurrentUserResponse": {
         "properties": {
           "id": {
@@ -234,6 +368,232 @@
           "role"
         ],
         "title": "CurrentUserResponse",
+        "type": "object"
+      },
+      "CustomFormatConditionResponse": {
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/CustomFormatField"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "negate": {
+            "default": false,
+            "title": "Negate",
+            "type": "boolean"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/CustomFormatOperator"
+          },
+          "required": {
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "value": {
+            "$ref": "#/components/schemas/JsonValue"
+          }
+        },
+        "required": [
+          "field",
+          "operator",
+          "value",
+          "id"
+        ],
+        "title": "CustomFormatConditionResponse",
+        "type": "object"
+      },
+      "CustomFormatConditionWrite": {
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/CustomFormatField"
+          },
+          "negate": {
+            "default": false,
+            "title": "Negate",
+            "type": "boolean"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/CustomFormatOperator"
+          },
+          "required": {
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "value": {
+            "$ref": "#/components/schemas/JsonValue"
+          }
+        },
+        "required": [
+          "field",
+          "operator",
+          "value"
+        ],
+        "title": "CustomFormatConditionWrite",
+        "type": "object"
+      },
+      "CustomFormatField": {
+        "enum": [
+          "title",
+          "codec",
+          "source",
+          "size",
+          "indexer",
+          "protocol",
+          "flags"
+        ],
+        "title": "CustomFormatField",
+        "type": "string"
+      },
+      "CustomFormatOperator": {
+        "enum": [
+          "equals",
+          "contains",
+          "greater_than",
+          "less_than"
+        ],
+        "title": "CustomFormatOperator",
+        "type": "string"
+      },
+      "CustomFormatResponse": {
+        "properties": {
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/CustomFormatConditionResponse"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "score": {
+            "title": "Score",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "score",
+          "conditions"
+        ],
+        "title": "CustomFormatResponse",
+        "type": "object"
+      },
+      "CustomFormatScore": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "score": {
+            "title": "Score",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "score"
+        ],
+        "title": "CustomFormatScore",
+        "type": "object"
+      },
+      "CustomFormatWrite": {
+        "properties": {
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/CustomFormatConditionWrite"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Conditions",
+            "type": "array"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "score": {
+            "default": 0,
+            "title": "Score",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "conditions"
+        ],
+        "title": "CustomFormatWrite",
+        "type": "object"
+      },
+      "DailyStorageUsageResponse": {
+        "properties": {
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "download_count": {
+            "title": "Download Count",
+            "type": "integer"
+          },
+          "downloaded_bytes": {
+            "title": "Downloaded Bytes",
+            "type": "integer"
+          },
+          "reserved_bytes": {
+            "title": "Reserved Bytes",
+            "type": "integer"
+          },
+          "reserved_download_count": {
+            "title": "Reserved Download Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "day",
+          "downloaded_bytes",
+          "download_count",
+          "reserved_bytes",
+          "reserved_download_count"
+        ],
+        "title": "DailyStorageUsageResponse",
+        "type": "object"
+      },
+      "DetailTag": {
+        "properties": {
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "confidence",
+          "source"
+        ],
+        "title": "DetailTag",
         "type": "object"
       },
       "DirectPlayReason": {
@@ -352,6 +712,87 @@
         "title": "DownloadClientResponse",
         "type": "object"
       },
+      "DownloadClientUpdate": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "credentials": {
+            "format": "password",
+            "title": "Credentials",
+            "type": "string",
+            "writeOnly": true
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "host": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Host",
+            "type": "string"
+          },
+          "implementation": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Implementation",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "port": {
+            "maximum": 65535.0,
+            "minimum": 1.0,
+            "title": "Port",
+            "type": "integer"
+          },
+          "priority": {
+            "default": 0,
+            "title": "Priority",
+            "type": "integer"
+          },
+          "protocol": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Protocol",
+            "type": "string"
+          },
+          "remove_completed": {
+            "default": false,
+            "title": "Remove Completed",
+            "type": "boolean"
+          },
+          "url_base": {
+            "default": "",
+            "title": "Url Base",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "protocol",
+          "implementation",
+          "host",
+          "port",
+          "credentials"
+        ],
+        "title": "DownloadClientUpdate",
+        "type": "object"
+      },
       "DownloadClientWrite": {
         "properties": {
           "category": {
@@ -458,6 +899,185 @@
         "title": "ErrorResponse",
         "type": "object"
       },
+      "ExternalSearchAlternate": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "indexer_id": {
+            "format": "uuid",
+            "title": "Indexer Id",
+            "type": "string"
+          },
+          "indexer_name": {
+            "title": "Indexer Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "indexer_id",
+          "indexer_name"
+        ],
+        "title": "ExternalSearchAlternate",
+        "type": "object"
+      },
+      "ExternalSearchItem": {
+        "properties": {
+          "alternates": {
+            "items": {
+              "$ref": "#/components/schemas/ExternalSearchAlternate"
+            },
+            "title": "Alternates",
+            "type": "array"
+          },
+          "estimate": {
+            "$ref": "#/components/schemas/SearchEstimateResponse"
+          },
+          "guid": {
+            "title": "Guid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "indexer_id": {
+            "format": "uuid",
+            "title": "Indexer Id",
+            "type": "string"
+          },
+          "indexer_name": {
+            "title": "Indexer Name",
+            "type": "string"
+          },
+          "match": {
+            "$ref": "#/components/schemas/SearchMatchResponse"
+          },
+          "protocol": {
+            "title": "Protocol",
+            "type": "string"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality"
+          },
+          "seeders": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seeders"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "guid",
+          "title",
+          "indexer_id",
+          "indexer_name",
+          "protocol",
+          "quality",
+          "size",
+          "published_at",
+          "seeders",
+          "estimate",
+          "match"
+        ],
+        "title": "ExternalSearchItem",
+        "type": "object"
+      },
+      "ExternalSearchSort": {
+        "enum": [
+          "relevance",
+          "age",
+          "size",
+          "quality",
+          "seeders",
+          "estimated_time"
+        ],
+        "title": "ExternalSearchSort",
+        "type": "string"
+      },
+      "GrabResponse": {
+        "properties": {
+          "download_job_id": {
+            "format": "uuid",
+            "title": "Download Job Id",
+            "type": "string"
+          },
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RequestStatus"
+          }
+        },
+        "required": [
+          "request_id",
+          "download_job_id",
+          "status"
+        ],
+        "title": "GrabResponse",
+        "type": "object"
+      },
+      "GrabWrite": {
+        "properties": {
+          "release_id": {
+            "format": "uuid",
+            "title": "Release Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "release_id"
+        ],
+        "title": "GrabWrite",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -551,6 +1171,16 @@
       },
       "HealthReport": {
         "properties": {
+          "backup": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComponentHealth"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "database": {
             "$ref": "#/components/schemas/ComponentHealth"
           },
@@ -684,6 +1314,75 @@
         "title": "IndexerResponse",
         "type": "object"
       },
+      "IndexerSearchResponse": {
+        "properties": {
+          "cancelled": {
+            "title": "Cancelled",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ExternalSearchItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "statuses": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Statuses",
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "query",
+          "statuses",
+          "cancelled",
+          "items"
+        ],
+        "title": "IndexerSearchResponse",
+        "type": "object"
+      },
+      "IndexerSearchStartResponse": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "IndexerSearchStartResponse",
+        "type": "object"
+      },
+      "IndexerSearchWrite": {
+        "properties": {
+          "q": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Q",
+            "type": "string"
+          }
+        },
+        "required": [
+          "q"
+        ],
+        "title": "IndexerSearchWrite",
+        "type": "object"
+      },
       "IndexerStatsResponse": {
         "properties": {
           "average_latency_ms": {
@@ -770,6 +1469,160 @@
           "api_key"
         ],
         "title": "IndexerWrite",
+        "type": "object"
+      },
+      "JsonValue": {},
+      "LibraryItemResponse": {
+        "properties": {
+          "completed": {
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "position_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position Seconds"
+          },
+          "poster_url": {
+            "title": "Poster Url",
+            "type": "string"
+          },
+          "progress_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Duration Seconds"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality"
+          },
+          "release_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Date"
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution"
+          },
+          "sprite_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sprite Url"
+          },
+          "studio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Studio"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "studio",
+          "release_date",
+          "duration_seconds",
+          "quality",
+          "resolution",
+          "position_seconds",
+          "progress_duration_seconds",
+          "completed",
+          "poster_url",
+          "sprite_url"
+        ],
+        "title": "LibraryItemResponse",
+        "type": "object"
+      },
+      "LibraryPageResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LibraryItemResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "LibraryPageResponse",
         "type": "object"
       },
       "LocalSearchItem": {
@@ -928,15 +1781,544 @@
         "title": "LoginRequest",
         "type": "object"
       },
+      "MediaDetailResponse": {
+        "properties": {
+          "bitrate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bitrate"
+          },
+          "codecs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Codecs"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "metadata_source": {
+            "title": "Metadata Source",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "performers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Performers",
+            "type": "array"
+          },
+          "playable": {
+            "title": "Playable",
+            "type": "boolean"
+          },
+          "release_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Date"
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          },
+          "studio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Studio"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/DetailTag"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "studio",
+          "release_date",
+          "confidence",
+          "metadata_source",
+          "performers",
+          "tags",
+          "path",
+          "size",
+          "codecs",
+          "resolution",
+          "bitrate",
+          "duration_seconds",
+          "playable"
+        ],
+        "title": "MediaDetailResponse",
+        "type": "object"
+      },
       "MediaSort": {
         "enum": [
           "relevance",
+          "age",
           "date_added",
           "title",
           "size",
+          "quality",
           "duration"
         ],
         "title": "MediaSort",
+        "type": "string"
+      },
+      "MonitorCreate": {
+        "properties": {
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/MonitorKind"
+          },
+          "minimum_score": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Minimum Score",
+            "type": "number"
+          },
+          "performer_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Performer Id"
+          },
+          "quality_profile_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality Profile Id"
+          },
+          "query": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query"
+          },
+          "studio_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Studio Id"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "MonitorCreate",
+        "type": "object"
+      },
+      "MonitorKind": {
+        "enum": [
+          "performer",
+          "studio",
+          "query"
+        ],
+        "title": "MonitorKind",
+        "type": "string"
+      },
+      "MonitorResponse": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/MonitorKind"
+          },
+          "last_match_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Match At"
+          },
+          "minimum_score": {
+            "title": "Minimum Score",
+            "type": "number"
+          },
+          "performer_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Performer Id"
+          },
+          "quality_profile_id": {
+            "format": "uuid",
+            "title": "Quality Profile Id",
+            "type": "string"
+          },
+          "query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query"
+          },
+          "studio_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Studio Id"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "performer_id",
+          "studio_id",
+          "query",
+          "quality_profile_id",
+          "enabled",
+          "minimum_score",
+          "last_match_at"
+        ],
+        "title": "MonitorResponse",
+        "type": "object"
+      },
+      "MonitorUpdate": {
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "minimum_score": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimum Score"
+          },
+          "quality_profile_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality Profile Id"
+          },
+          "query": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query"
+          }
+        },
+        "title": "MonitorUpdate",
+        "type": "object"
+      },
+      "NotificationKind": {
+        "enum": [
+          "request_available",
+          "request_failed",
+          "quarantine_review",
+          "automation_action",
+          "instance_notice"
+        ],
+        "title": "NotificationKind",
+        "type": "string"
+      },
+      "NotificationPreferenceResponse": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/NotificationKind"
+          }
+        },
+        "required": [
+          "kind",
+          "enabled"
+        ],
+        "title": "NotificationPreferenceResponse",
+        "type": "object"
+      },
+      "NotificationPreferenceWrite": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "title": "NotificationPreferenceWrite",
+        "type": "object"
+      },
+      "NotificationResponse": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/NotificationKind"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "payload",
+          "read_at",
+          "created_at"
+        ],
+        "title": "NotificationResponse",
+        "type": "object"
+      },
+      "OidcIdentityResponse": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "provider_id": {
+            "format": "uuid",
+            "title": "Provider Id",
+            "type": "string"
+          },
+          "provider_name": {
+            "title": "Provider Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider_id",
+          "provider_name"
+        ],
+        "title": "OidcIdentityResponse",
+        "type": "object"
+      },
+      "PerformanceInputResponse": {
+        "properties": {
+          "metric": {
+            "$ref": "#/components/schemas/PerformanceMetric"
+          },
+          "sample_count": {
+            "title": "Sample Count",
+            "type": "integer"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "metric",
+          "scope",
+          "value",
+          "sample_count"
+        ],
+        "title": "PerformanceInputResponse",
+        "type": "object"
+      },
+      "PerformanceMetric": {
+        "enum": [
+          "download_speed",
+          "post_processing_seconds_per_gib",
+          "import_seconds_per_gib",
+          "disk_write_speed"
+        ],
+        "title": "PerformanceMetric",
+        "type": "string"
+      },
+      "PlacementMethod": {
+        "enum": [
+          "hardlink",
+          "copy",
+          "move"
+        ],
+        "title": "PlacementMethod",
         "type": "string"
       },
       "PlaybackInfoResponse": {
@@ -1015,6 +2397,9 @@
             "title": "Client Id",
             "type": "string"
           },
+          "default_role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
           "discovery_fetched_at": {
             "anyOf": [
               {
@@ -1044,12 +2429,49 @@
             "title": "Name",
             "type": "string"
           },
+          "required_claim": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Claim"
+          },
+          "required_claim_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Claim Value"
+          },
+          "role_claim": {
+            "title": "Role Claim",
+            "type": "string"
+          },
+          "role_mapping": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/UserRole"
+            },
+            "title": "Role Mapping",
+            "type": "object"
+          },
           "scopes": {
             "items": {
               "type": "string"
             },
             "title": "Scopes",
             "type": "array"
+          },
+          "username_claim": {
+            "title": "Username Claim",
+            "type": "string"
           }
         },
         "required": [
@@ -1058,6 +2480,12 @@
           "issuer",
           "client_id",
           "scopes",
+          "username_claim",
+          "role_claim",
+          "role_mapping",
+          "default_role",
+          "required_claim",
+          "required_claim_value",
           "enabled",
           "discovery_fetched_at"
         ],
@@ -1078,6 +2506,10 @@
             "type": "string",
             "writeOnly": true
           },
+          "default_role": {
+            "$ref": "#/components/schemas/UserRole",
+            "default": "user"
+          },
           "enabled": {
             "default": true,
             "title": "Enabled",
@@ -1095,12 +2527,59 @@
             "title": "Name",
             "type": "string"
           },
+          "required_claim": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Claim"
+          },
+          "required_claim_value": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Claim Value"
+          },
+          "role_claim": {
+            "default": "groups",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Role Claim",
+            "type": "string"
+          },
+          "role_mapping": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/UserRole"
+            },
+            "title": "Role Mapping",
+            "type": "object"
+          },
           "scopes": {
             "items": {
               "type": "string"
             },
             "title": "Scopes",
             "type": "array"
+          },
+          "username_claim": {
+            "default": "preferred_username",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Username Claim",
+            "type": "string"
           }
         },
         "required": [
@@ -1111,6 +2590,745 @@
         ],
         "title": "ProviderWrite",
         "type": "object"
+      },
+      "QualityDefinitionResponse": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "maximum_size_mb_per_minute": {
+            "title": "Maximum Size Mb Per Minute",
+            "type": "number"
+          },
+          "minimum_size_mb_per_minute": {
+            "title": "Minimum Size Mb Per Minute",
+            "type": "number"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "resolution": {
+            "title": "Resolution",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "resolution",
+          "source",
+          "weight",
+          "minimum_size_mb_per_minute",
+          "maximum_size_mb_per_minute"
+        ],
+        "title": "QualityDefinitionResponse",
+        "type": "object"
+      },
+      "QualityPreviewRequest": {
+        "properties": {
+          "custom_formats": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CustomFormatWrite"
+            },
+            "maxItems": 64,
+            "title": "Custom Formats",
+            "type": "array"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/QualityProfilePreview"
+          },
+          "release_name": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Release Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "release_name",
+          "profile"
+        ],
+        "title": "QualityPreviewRequest",
+        "type": "object"
+      },
+      "QualityPreviewResponse": {
+        "properties": {
+          "fields": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Fields",
+            "type": "object"
+          },
+          "matched_custom_formats": {
+            "items": {
+              "$ref": "#/components/schemas/CustomFormatScore"
+            },
+            "title": "Matched Custom Formats",
+            "type": "array"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QualityDefinitionResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "score": {
+            "title": "Score",
+            "type": "integer"
+          },
+          "verdict": {
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "quality",
+          "score",
+          "verdict",
+          "reason",
+          "matched_custom_formats",
+          "fields"
+        ],
+        "title": "QualityPreviewResponse",
+        "type": "object"
+      },
+      "QualityProfilePreview": {
+        "properties": {
+          "cutoff_quality_id": {
+            "format": "uuid",
+            "title": "Cutoff Quality Id",
+            "type": "string"
+          },
+          "minimum_custom_format_score": {
+            "default": 0,
+            "title": "Minimum Custom Format Score",
+            "type": "integer"
+          },
+          "quality_definition_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "title": "Quality Definition Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "quality_definition_ids",
+          "cutoff_quality_id"
+        ],
+        "title": "QualityProfilePreview",
+        "type": "object"
+      },
+      "QualityProfileResponse": {
+        "properties": {
+          "cutoff_quality_id": {
+            "format": "uuid",
+            "title": "Cutoff Quality Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_default": {
+            "title": "Is Default",
+            "type": "boolean"
+          },
+          "minimum_custom_format_score": {
+            "title": "Minimum Custom Format Score",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/QualityDefinitionResponse"
+            },
+            "title": "Qualities",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "cutoff_quality_id",
+          "minimum_custom_format_score",
+          "is_default",
+          "qualities"
+        ],
+        "title": "QualityProfileResponse",
+        "type": "object"
+      },
+      "QualityProfileWrite": {
+        "properties": {
+          "cutoff_quality_id": {
+            "format": "uuid",
+            "title": "Cutoff Quality Id",
+            "type": "string"
+          },
+          "is_default": {
+            "default": false,
+            "title": "Is Default",
+            "type": "boolean"
+          },
+          "minimum_custom_format_score": {
+            "default": 0,
+            "title": "Minimum Custom Format Score",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "quality_definition_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "title": "Quality Definition Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "quality_definition_ids",
+          "cutoff_quality_id",
+          "name"
+        ],
+        "title": "QualityProfileWrite",
+        "type": "object"
+      },
+      "QuarantineApproval": {
+        "properties": {
+          "quality": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality"
+          },
+          "release_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Date"
+          },
+          "studio": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Studio"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "QuarantineApproval",
+        "type": "object"
+      },
+      "QuarantineItemResponse": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "extracted_metadata": {
+            "additionalProperties": true,
+            "title": "Extracted Metadata",
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "original_path": {
+            "title": "Original Path",
+            "type": "string"
+          },
+          "quarantine_path": {
+            "title": "Quarantine Path",
+            "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "technical_details": {
+            "additionalProperties": true,
+            "title": "Technical Details",
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "original_path",
+          "quarantine_path",
+          "reasons",
+          "extracted_metadata",
+          "technical_details",
+          "created_at"
+        ],
+        "title": "QuarantineItemResponse",
+        "type": "object"
+      },
+      "QueueEstimateResponse": {
+        "properties": {
+          "confidence": {
+            "$ref": "#/components/schemas/Confidence"
+          },
+          "high_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "High Seconds"
+          },
+          "low_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Low Seconds"
+          }
+        },
+        "required": [
+          "low_seconds",
+          "high_seconds",
+          "confidence"
+        ],
+        "title": "QueueEstimateResponse",
+        "type": "object"
+      },
+      "QueueJobResponse": {
+        "properties": {
+          "client_name": {
+            "title": "Client Name",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "download_speed_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Download Speed Bytes"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "estimated_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Seconds"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "integer"
+          },
+          "protocol": {
+            "title": "Protocol",
+            "type": "string"
+          },
+          "queue_estimate": {
+            "$ref": "#/components/schemas/QueueEstimateResponse"
+          },
+          "release_guid": {
+            "title": "Release Guid",
+            "type": "string"
+          },
+          "remaining_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remaining Bytes"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "request_id",
+          "client_name",
+          "protocol",
+          "release_guid",
+          "status",
+          "priority",
+          "remaining_bytes",
+          "size_bytes",
+          "download_speed_bytes",
+          "error",
+          "estimated_seconds",
+          "created_at",
+          "queue_estimate"
+        ],
+        "title": "QueueJobResponse",
+        "type": "object"
+      },
+      "QueueListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/QueueJobResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "QueueListResponse",
+        "type": "object"
+      },
+      "QueueSort": {
+        "enum": [
+          "priority",
+          "created_at",
+          "status"
+        ],
+        "title": "QueueSort",
+        "type": "string"
+      },
+      "RecommendationFeedbackWrite": {
+        "properties": {
+          "event_type": {
+            "$ref": "#/components/schemas/UserEventType"
+          },
+          "subject_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Id"
+          }
+        },
+        "required": [
+          "event_type"
+        ],
+        "title": "RecommendationFeedbackWrite",
+        "type": "object"
+      },
+      "RecommendationResponse": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "media_id": {
+            "format": "uuid",
+            "title": "Media Id",
+            "type": "string"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "reason": {
+            "additionalProperties": true,
+            "title": "Reason",
+            "type": "object"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "media_id",
+          "title",
+          "score",
+          "reason",
+          "model_version",
+          "expires_at"
+        ],
+        "title": "RecommendationResponse",
+        "type": "object"
+      },
+      "RequestCreate": {
+        "properties": {
+          "priority": {
+            "default": 80,
+            "maximum": 80.0,
+            "minimum": 0.0,
+            "title": "Priority",
+            "type": "integer"
+          },
+          "query": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Query",
+            "type": "string"
+          },
+          "selected_release_guid": {
+            "anyOf": [
+              {
+                "maxLength": 1024,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Release Guid"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "RequestCreate",
+        "type": "object"
+      },
+      "RequestHistoryResponse": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/RequestStatus"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "RequestHistoryResponse",
+        "type": "object"
+      },
+      "RequestPriorityWrite": {
+        "properties": {
+          "priority": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Priority",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "priority"
+        ],
+        "title": "RequestPriorityWrite",
+        "type": "object"
+      },
+      "RequestResponse": {
+        "properties": {
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/RequestHistoryResponse"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_automatic": {
+            "title": "Is Automatic",
+            "type": "boolean"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "integer"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "selected_release_guid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Release Guid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RequestStatus"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "user_id",
+          "query",
+          "selected_release_guid",
+          "status",
+          "priority",
+          "is_automatic",
+          "history"
+        ],
+        "title": "RequestResponse",
+        "type": "object"
+      },
+      "RequestStatus": {
+        "enum": [
+          "searching",
+          "results_found",
+          "queued",
+          "downloading",
+          "processing",
+          "available",
+          "failed",
+          "not_found",
+          "monitoring",
+          "cancelled"
+        ],
+        "title": "RequestStatus",
+        "type": "string"
       },
       "RootFolderResponse": {
         "properties": {
@@ -1139,6 +3357,22 @@
             ],
             "title": "Last Scanned At"
           },
+          "last_space_checked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Space Checked At"
+          },
+          "low_space_warning_sent": {
+            "title": "Low Space Warning Sent",
+            "type": "boolean"
+          },
           "path": {
             "title": "Path",
             "type": "string"
@@ -1146,6 +3380,17 @@
           "same_filesystem_as_downloads": {
             "title": "Same Filesystem As Downloads",
             "type": "boolean"
+          },
+          "total_space_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Space Bytes"
           },
           "warning": {
             "anyOf": [
@@ -1164,7 +3409,10 @@
           "path",
           "enabled",
           "free_space_bytes",
+          "total_space_bytes",
           "last_scanned_at",
+          "last_space_checked_at",
+          "low_space_warning_sent",
           "same_filesystem_as_downloads",
           "warning"
         ],
@@ -1189,6 +3437,634 @@
           "path"
         ],
         "title": "RootFolderWrite",
+        "type": "object"
+      },
+      "RuntimeSettings": {
+        "description": "Resolved values with attributes callers can use directly.",
+        "properties": {
+          "audit_retention_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audit Retention Days"
+          },
+          "auto_download_duplicate_risk_weight": {
+            "title": "Auto Download Duplicate Risk Weight",
+            "type": "number"
+          },
+          "auto_download_expected_download_time_weight": {
+            "title": "Auto Download Expected Download Time Weight",
+            "type": "number"
+          },
+          "auto_download_indexer_reliability_weight": {
+            "title": "Auto Download Indexer Reliability Weight",
+            "type": "number"
+          },
+          "auto_download_metadata_weight": {
+            "title": "Auto Download Metadata Weight",
+            "type": "number"
+          },
+          "auto_download_recency_weight": {
+            "title": "Auto Download Recency Weight",
+            "type": "number"
+          },
+          "auto_download_recommendation_weight": {
+            "title": "Auto Download Recommendation Weight",
+            "type": "number"
+          },
+          "auto_download_release_weight": {
+            "title": "Auto Download Release Weight",
+            "type": "number"
+          },
+          "auto_download_size_weight": {
+            "title": "Auto Download Size Weight",
+            "type": "number"
+          },
+          "default_auto_downloads_enabled": {
+            "title": "Default Auto Downloads Enabled",
+            "type": "boolean"
+          },
+          "default_daily_download_limit_gb": {
+            "title": "Default Daily Download Limit Gb",
+            "type": "integer"
+          },
+          "default_max_auto_downloads_per_day": {
+            "title": "Default Max Auto Downloads Per Day",
+            "type": "integer"
+          },
+          "default_max_auto_jobs": {
+            "title": "Default Max Auto Jobs",
+            "type": "integer"
+          },
+          "log_level": {
+            "title": "Log Level",
+            "type": "string"
+          },
+          "metrics_enabled": {
+            "title": "Metrics Enabled",
+            "type": "boolean"
+          },
+          "min_free_disk_percent": {
+            "title": "Min Free Disk Percent",
+            "type": "integer"
+          },
+          "playback_completion_threshold_percent": {
+            "title": "Playback Completion Threshold Percent",
+            "type": "integer"
+          },
+          "quarantine_retention_days": {
+            "title": "Quarantine Retention Days",
+            "type": "integer"
+          },
+          "recommendation_performer_weight": {
+            "title": "Recommendation Performer Weight",
+            "type": "number"
+          },
+          "recommendation_popularity_weight": {
+            "title": "Recommendation Popularity Weight",
+            "type": "number"
+          },
+          "recommendation_quality_weight": {
+            "title": "Recommendation Quality Weight",
+            "type": "number"
+          },
+          "recommendation_recency_weight": {
+            "title": "Recommendation Recency Weight",
+            "type": "number"
+          },
+          "recommendation_studio_weight": {
+            "title": "Recommendation Studio Weight",
+            "type": "number"
+          },
+          "recommendation_tag_weight": {
+            "title": "Recommendation Tag Weight",
+            "type": "number"
+          },
+          "request_search_max_age_days": {
+            "title": "Request Search Max Age Days",
+            "type": "integer"
+          },
+          "transcode_max_hw_sessions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcode Max Hw Sessions"
+          },
+          "transcode_max_per_user": {
+            "title": "Transcode Max Per User",
+            "type": "integer"
+          },
+          "transcode_max_sw_sessions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcode Max Sw Sessions"
+          },
+          "user_event_retention_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Event Retention Days"
+          }
+        },
+        "required": [
+          "transcode_max_hw_sessions",
+          "transcode_max_sw_sessions",
+          "transcode_max_per_user",
+          "playback_completion_threshold_percent",
+          "audit_retention_days",
+          "user_event_retention_days",
+          "quarantine_retention_days",
+          "min_free_disk_percent",
+          "default_daily_download_limit_gb",
+          "default_max_auto_jobs",
+          "default_max_auto_downloads_per_day",
+          "default_auto_downloads_enabled",
+          "auto_download_recommendation_weight",
+          "auto_download_metadata_weight",
+          "auto_download_release_weight",
+          "auto_download_indexer_reliability_weight",
+          "auto_download_recency_weight",
+          "auto_download_size_weight",
+          "auto_download_duplicate_risk_weight",
+          "auto_download_expected_download_time_weight",
+          "recommendation_tag_weight",
+          "recommendation_performer_weight",
+          "recommendation_studio_weight",
+          "recommendation_quality_weight",
+          "recommendation_recency_weight",
+          "recommendation_popularity_weight",
+          "request_search_max_age_days",
+          "log_level",
+          "metrics_enabled"
+        ],
+        "title": "RuntimeSettings",
+        "type": "object"
+      },
+      "RuntimeSettingsWrite": {
+        "additionalProperties": false,
+        "description": "Partial update validated before values are persisted.",
+        "properties": {
+          "audit_retention_days": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audit Retention Days"
+          },
+          "auto_download_duplicate_risk_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Duplicate Risk Weight"
+          },
+          "auto_download_expected_download_time_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Expected Download Time Weight"
+          },
+          "auto_download_indexer_reliability_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Indexer Reliability Weight"
+          },
+          "auto_download_metadata_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Metadata Weight"
+          },
+          "auto_download_recency_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Recency Weight"
+          },
+          "auto_download_recommendation_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Recommendation Weight"
+          },
+          "auto_download_release_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Release Weight"
+          },
+          "auto_download_size_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Download Size Weight"
+          },
+          "default_auto_downloads_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Auto Downloads Enabled"
+          },
+          "default_daily_download_limit_gb": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Daily Download Limit Gb"
+          },
+          "default_max_auto_downloads_per_day": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Max Auto Downloads Per Day"
+          },
+          "default_max_auto_jobs": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Max Auto Jobs"
+          },
+          "log_level": {
+            "anyOf": [
+              {
+                "pattern": "^(debug|info|warning|error)$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log Level"
+          },
+          "metrics_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metrics Enabled"
+          },
+          "min_free_disk_percent": {
+            "anyOf": [
+              {
+                "maximum": 99.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Free Disk Percent"
+          },
+          "playback_completion_threshold_percent": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Playback Completion Threshold Percent"
+          },
+          "quarantine_retention_days": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quarantine Retention Days"
+          },
+          "recommendation_performer_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Performer Weight"
+          },
+          "recommendation_popularity_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Popularity Weight"
+          },
+          "recommendation_quality_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Quality Weight"
+          },
+          "recommendation_recency_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Recency Weight"
+          },
+          "recommendation_studio_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Studio Weight"
+          },
+          "recommendation_tag_weight": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Tag Weight"
+          },
+          "request_search_max_age_days": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Search Max Age Days"
+          },
+          "transcode_max_hw_sessions": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcode Max Hw Sessions"
+          },
+          "transcode_max_per_user": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcode Max Per User"
+          },
+          "transcode_max_sw_sessions": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcode Max Sw Sessions"
+          },
+          "user_event_retention_days": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Event Retention Days"
+          }
+        },
+        "title": "RuntimeSettingsWrite",
+        "type": "object"
+      },
+      "SearchEstimateResponse": {
+        "properties": {
+          "confidence": {
+            "$ref": "#/components/schemas/Confidence"
+          },
+          "high_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "High Seconds"
+          },
+          "low_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Low Seconds"
+          }
+        },
+        "required": [
+          "low_seconds",
+          "high_seconds",
+          "confidence"
+        ],
+        "title": "SearchEstimateResponse",
+        "type": "object"
+      },
+      "SearchMatchKind": {
+        "enum": [
+          "new",
+          "present",
+          "upgrade"
+        ],
+        "title": "SearchMatchKind",
+        "type": "string"
+      },
+      "SearchMatchResponse": {
+        "properties": {
+          "breakdown": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Breakdown",
+            "type": "object"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SearchMatchKind"
+          },
+          "media_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Id"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          }
+        },
+        "required": [
+          "kind",
+          "media_id",
+          "score",
+          "breakdown"
+        ],
+        "title": "SearchMatchResponse",
         "type": "object"
       },
       "SetupCompleteResponse": {
@@ -1221,6 +4097,46 @@
         "title": "SetupCompleteResponse",
         "type": "object"
       },
+      "SetupPathValidationResponse": {
+        "properties": {
+          "same_filesystem_as_downloads": {
+            "title": "Same Filesystem As Downloads",
+            "type": "boolean"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warning"
+          }
+        },
+        "required": [
+          "same_filesystem_as_downloads",
+          "warning"
+        ],
+        "title": "SetupPathValidationResponse",
+        "type": "object"
+      },
+      "SetupPathValidationWrite": {
+        "properties": {
+          "library_path": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Library Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "library_path"
+        ],
+        "title": "SetupPathValidationWrite",
+        "type": "object"
+      },
       "SetupWrite": {
         "properties": {
           "library_path": {
@@ -1248,6 +4164,21 @@
           "library_path"
         ],
         "title": "SetupWrite",
+        "type": "object"
+      },
+      "TagCorrectionWrite": {
+        "properties": {
+          "name": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "TagCorrectionWrite",
         "type": "object"
       },
       "TranscodeFailureResponse": {
@@ -1445,6 +4376,151 @@
         "title": "TranscodeSessionResponse",
         "type": "object"
       },
+      "TranscodeStartResponse": {
+        "properties": {
+          "playlist_url": {
+            "title": "Playlist Url",
+            "type": "string"
+          },
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "playlist_url"
+        ],
+        "title": "TranscodeStartResponse",
+        "type": "object"
+      },
+      "UserEventResponse": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "event_type": {
+            "$ref": "#/components/schemas/UserEventType"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "media_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Id"
+          },
+          "subject_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Id"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "id",
+          "event_type",
+          "media_id",
+          "value",
+          "subject_id",
+          "created_at"
+        ],
+        "title": "UserEventResponse",
+        "type": "object"
+      },
+      "UserEventType": {
+        "enum": [
+          "search",
+          "view",
+          "play",
+          "progress",
+          "completed",
+          "favourite",
+          "unfavourite",
+          "request",
+          "not_interested",
+          "hide_tag",
+          "hide_performer"
+        ],
+        "title": "UserEventType",
+        "type": "string"
+      },
+      "UserEventWrite": {
+        "properties": {
+          "event_type": {
+            "$ref": "#/components/schemas/UserEventType"
+          },
+          "media_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Id"
+          },
+          "subject_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Id"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "event_type"
+        ],
+        "title": "UserEventWrite",
+        "type": "object"
+      },
       "UserRole": {
         "enum": [
           "admin",
@@ -1596,6 +4672,139 @@
           }
         },
         "summary": "Revoke Api Key",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/api/account/events": {
+      "post": {
+        "operationId": "account_record_account_event",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserEventWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserEventResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Account Event",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/api/account/oidc": {
+      "get": {
+        "operationId": "account_list_oidc_identities",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OidcIdentityResponse"
+                  },
+                  "title": "Response Account List Oidc Identities",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Oidc Identities",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/api/account/oidc/{identity_id}": {
+      "delete": {
+        "operationId": "account_unlink_oidc_identity",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "identity_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Identity Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unlink Oidc Identity",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/api/account/storage": {
+      "get": {
+        "operationId": "account_read_daily_storage_usage",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyStorageUsageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Daily Storage Usage",
         "tags": [
           "account"
         ]
@@ -1800,6 +5009,57 @@
           }
         },
         "summary": "Delete Download Client",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "operationId": "admin_update_download_client",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DownloadClientUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadClientResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Download Client",
         "tags": [
           "admin"
         ]
@@ -2277,6 +5537,697 @@
         ]
       }
     },
+    "/api/admin/performance": {
+      "get": {
+        "description": "Show both measured and unknown inputs so estimate confidence is explainable.",
+        "operationId": "admin_list_performance_inputs",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PerformanceInputResponse"
+                  },
+                  "title": "Response Admin List Performance Inputs",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Performance Inputs",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/quality/custom-formats": {
+      "get": {
+        "operationId": "admin_list_custom_formats",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CustomFormatResponse"
+                  },
+                  "title": "Response Admin List Custom Formats",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Custom Formats",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "admin_create_custom_format",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomFormatWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomFormatResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Custom Format",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/quality/custom-formats/{format_id}": {
+      "delete": {
+        "operationId": "admin_delete_custom_format",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "format_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Format Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Custom Format",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "operationId": "admin_update_custom_format",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "format_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Format Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomFormatWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomFormatResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Custom Format",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/quality/definitions": {
+      "get": {
+        "operationId": "admin_list_quality_definitions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QualityDefinitionResponse"
+                  },
+                  "title": "Response Admin List Quality Definitions",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Quality Definitions",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/quality/preview": {
+      "post": {
+        "operationId": "admin_preview_quality_decision",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QualityPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityPreviewResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Quality Decision",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/quality/profiles": {
+      "get": {
+        "operationId": "admin_list_quality_profiles",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QualityProfileResponse"
+                  },
+                  "title": "Response Admin List Quality Profiles",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Quality Profiles",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "admin_create_quality_profile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QualityProfileWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Quality Profile",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/quality/profiles/{profile_id}": {
+      "delete": {
+        "operationId": "admin_delete_quality_profile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profile_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Profile Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Quality Profile",
+        "tags": [
+          "admin"
+        ]
+      },
+      "get": {
+        "operationId": "admin_read_quality_profile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profile_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Profile Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Quality Profile",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "operationId": "admin_update_quality_profile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profile_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Profile Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QualityProfileWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Quality Profile",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/quarantine": {
+      "get": {
+        "operationId": "admin_list_quarantine_items",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QuarantineItemResponse"
+                  },
+                  "title": "Response Admin List Quarantine Items",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Quarantine Items",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/quarantine/bulk/approve": {
+      "post": {
+        "operationId": "admin_approve_bulk_quarantine_items",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkApprovalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkApprovalResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Approve Bulk Quarantine Items",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/quarantine/bulk/preview": {
+      "post": {
+        "operationId": "admin_preview_bulk_approval",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkPreviewResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Bulk Approval",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/quarantine/items/{item_id}/approve": {
+      "post": {
+        "operationId": "admin_approve_quarantine_item",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuarantineApproval"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Approve Quarantine Item",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/quarantine/items/{item_id}/reject": {
+      "post": {
+        "operationId": "admin_reject_quarantine_item",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reject Quarantine Item",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/settings": {
+      "get": {
+        "operationId": "admin_read_settings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeSettings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Settings",
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "admin_write_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuntimeSettingsWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeSettings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Write Settings",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/admin/transcode/capabilities": {
       "get": {
         "operationId": "admin_capabilities",
@@ -2585,6 +6536,207 @@
         ]
       }
     },
+    "/api/auth/oidc/callback": {
+      "get": {
+        "operationId": "auth_oidc_callback",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": true,
+            "schema": {
+              "title": "State",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Oidc Callback",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/oidc/{provider_id}/link": {
+      "get": {
+        "operationId": "auth_oidc_link",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "307": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Oidc Link",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/oidc/{provider_id}/login": {
+      "get": {
+        "operationId": "auth_oidc_login",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "307": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Oidc Login",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/events": {
       "get": {
         "operationId": "events_events",
@@ -2617,6 +6769,105 @@
         "summary": "Dependency Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/library": {
+      "get": {
+        "operationId": "library_browse_library",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 48,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryPageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Browse Library",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/media/{media_id}": {
+      "get": {
+        "operationId": "library_media_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaDetailResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Media Detail",
+        "tags": [
+          "library"
         ]
       }
     },
@@ -2776,6 +7027,79 @@
         ]
       }
     },
+    "/api/media/{media_id}/poster": {
+      "get": {
+        "operationId": "library_poster",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Poster",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/media/{media_id}/sprite": {
+      "get": {
+        "description": "Serve the generated contact sheet only for an existing active item.",
+        "operationId": "library_sprite",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sprite",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/api/media/{media_id}/stream": {
       "get": {
         "operationId": "playback_stream",
@@ -2844,6 +7168,537 @@
         "summary": "Stream",
         "tags": [
           "playback"
+        ]
+      }
+    },
+    "/api/media/{media_id}/tags": {
+      "post": {
+        "operationId": "library_correct_tag",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagCorrectionWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetailTag"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Correct Tag",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/monitors": {
+      "get": {
+        "operationId": "monitors_list_monitors",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MonitorResponse"
+                  },
+                  "title": "Response Monitors List Monitors",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Monitors",
+        "tags": [
+          "monitors"
+        ]
+      },
+      "post": {
+        "operationId": "monitors_create_monitor",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MonitorCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonitorResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Create Monitor",
+        "tags": [
+          "monitors"
+        ]
+      }
+    },
+    "/api/monitors/{monitor_id}": {
+      "delete": {
+        "operationId": "monitors_delete_monitor",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "monitor_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Monitor Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Monitor",
+        "tags": [
+          "monitors"
+        ]
+      },
+      "patch": {
+        "operationId": "monitors_update_monitor",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "monitor_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Monitor Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MonitorUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonitorResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Update Monitor",
+        "tags": [
+          "monitors"
+        ]
+      }
+    },
+    "/api/monitors/{monitor_id}/backlog-search": {
+      "post": {
+        "description": "Queue a fresh search for one monitor without waiting for its daily slot.",
+        "operationId": "monitors_trigger_backlog_search",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "monitor_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Monitor Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Trigger Backlog Search",
+        "tags": [
+          "monitors"
+        ]
+      }
+    },
+    "/api/notifications": {
+      "get": {
+        "operationId": "notifications_list_notifications",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "unread",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Unread",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationResponse"
+                  },
+                  "title": "Response Notifications List Notifications",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Notifications",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/notifications/preferences": {
+      "get": {
+        "operationId": "notifications_list_preferences",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationPreferenceResponse"
+                  },
+                  "title": "Response Notifications List Preferences",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "summary": "List Preferences",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/notifications/preferences/{kind}": {
+      "put": {
+        "operationId": "notifications_set_preference",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/NotificationKind"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationPreferenceWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferenceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Set Preference",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/notifications/read-all": {
+      "post": {
+        "operationId": "notifications_mark_all_read",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "summary": "Mark All Read",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/notifications/{notification_id}/read": {
+      "post": {
+        "operationId": "notifications_mark_read",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "notification_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Notification Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mark Read",
+        "tags": [
+          "notifications"
         ]
       }
     },
@@ -2963,6 +7818,1031 @@
         "summary": "Report Progress",
         "tags": [
           "playback"
+        ]
+      }
+    },
+    "/api/queue": {
+      "get": {
+        "description": "List queue jobs with deterministic sorting and current priority-based ETAs.",
+        "operationId": "queue_list_queue",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "download_client_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Download Client Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/QueueSort",
+              "default": "priority"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Queue",
+        "tags": [
+          "queue"
+        ]
+      }
+    },
+    "/api/recommendations": {
+      "get": {
+        "operationId": "recommendations_list_recommendations",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RecommendationResponse"
+                  },
+                  "title": "Response Recommendations List Recommendations",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Recommendations",
+        "tags": [
+          "recommendations"
+        ]
+      }
+    },
+    "/api/recommendations/profile": {
+      "delete": {
+        "description": "Remove the user's signals so the next refresh starts from an empty profile.",
+        "operationId": "recommendations_reset_recommendation_profile",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Reset Recommendation Profile",
+        "tags": [
+          "recommendations"
+        ]
+      }
+    },
+    "/api/recommendations/{media_id}/feedback": {
+      "post": {
+        "operationId": "recommendations_record_recommendation_feedback",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecommendationFeedbackWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Recommendation Feedback",
+        "tags": [
+          "recommendations"
+        ]
+      }
+    },
+    "/api/requests": {
+      "get": {
+        "operationId": "requests_list_requests",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RequestStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RequestResponse"
+                  },
+                  "title": "Response Requests List Requests",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Requests",
+        "tags": [
+          "requests"
+        ]
+      },
+      "post": {
+        "operationId": "requests_create_request",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Create Request",
+        "tags": [
+          "requests"
+        ]
+      }
+    },
+    "/api/requests/{request_id}/cancel": {
+      "post": {
+        "operationId": "requests_cancel_request",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "summary": "Cancel Request",
+        "tags": [
+          "requests"
+        ]
+      }
+    },
+    "/api/requests/{request_id}/grab": {
+      "post": {
+        "description": "Revalidate one cached release and submit it exactly once.",
+        "operationId": "requests_grab_release",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrabWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrabResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "summary": "Grab Release",
+        "tags": [
+          "requests"
+        ]
+      }
+    },
+    "/api/requests/{request_id}/pause": {
+      "post": {
+        "operationId": "requests_pause_request",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "summary": "Pause Request",
+        "tags": [
+          "requests"
+        ]
+      }
+    },
+    "/api/requests/{request_id}/priority": {
+      "patch": {
+        "operationId": "requests_change_priority",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPriorityWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "summary": "Change Priority",
+        "tags": [
+          "requests"
+        ]
+      }
+    },
+    "/api/requests/{request_id}/resume": {
+      "post": {
+        "operationId": "requests_resume_request",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "summary": "Resume Request",
+        "tags": [
+          "requests"
+        ]
+      }
+    },
+    "/api/requests/{request_id}/retry": {
+      "post": {
+        "operationId": "requests_retry_request",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retry Request",
+        "tags": [
+          "requests"
+        ]
+      }
+    },
+    "/api/search/indexers": {
+      "post": {
+        "description": "Queue a user's external fan-out without delaying the local search response.",
+        "operationId": "search_start_indexer_search",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IndexerSearchWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexerSearchStartResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Indexer Search",
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/api/search/indexers/{search_id}": {
+      "get": {
+        "description": "Read one user's progressive indexer search with stable, shared filters.",
+        "operationId": "search_indexer_search_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "search_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Search Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "quality",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Quality"
+            }
+          },
+          {
+            "in": "query",
+            "name": "minimum_size_bytes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Minimum Size Bytes"
+            }
+          },
+          {
+            "in": "query",
+            "name": "maximum_size_bytes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Maximum Size Bytes"
+            }
+          },
+          {
+            "in": "query",
+            "name": "maximum_age_days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 36500,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Maximum Age Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "indexer_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Indexer Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "protocol",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 32,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Protocol"
+            }
+          },
+          {
+            "in": "query",
+            "name": "minimum_seeders",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Minimum Seeders"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ExternalSearchSort",
+              "default": "relevance"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexerSearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Indexer Search Status",
+        "tags": [
+          "search"
         ]
       }
     },
@@ -3095,6 +8975,58 @@
                 }
               ],
               "title": "Maximum Duration Seconds"
+            }
+          },
+          {
+            "in": "query",
+            "name": "minimum_size_bytes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Minimum Size Bytes"
+            }
+          },
+          {
+            "in": "query",
+            "name": "maximum_size_bytes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Maximum Size Bytes"
+            }
+          },
+          {
+            "in": "query",
+            "name": "maximum_age_days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 36500,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Maximum Age Days"
             }
           },
           {
@@ -3239,6 +9171,136 @@
         ]
       }
     },
+    "/api/setup/validate-library-path": {
+      "post": {
+        "operationId": "setup_validate_library_path",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetupPathValidationWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupPathValidationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Validate Library Path",
+        "tags": [
+          "setup"
+        ]
+      }
+    },
+    "/api/transcode/media/{media_id}/sessions": {
+      "post": {
+        "operationId": "transcode_start_session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscodeStartResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Session",
+        "tags": [
+          "transcode"
+        ]
+      }
+    },
+    "/api/transcode/sessions/{session_id}": {
+      "delete": {
+        "operationId": "transcode_stop_session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stop Session",
+        "tags": [
+          "transcode"
+        ]
+      }
+    },
     "/api/transcode/sessions/{session_id}/heartbeat": {
       "post": {
         "operationId": "transcode_heartbeat",
@@ -3290,6 +9352,56 @@
           }
         },
         "summary": "Heartbeat",
+        "tags": [
+          "transcode"
+        ]
+      }
+    },
+    "/api/transcode/sessions/{session_id}/hls/{asset}": {
+      "get": {
+        "operationId": "transcode_hls_asset",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset",
+            "required": true,
+            "schema": {
+              "title": "Asset",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Hls Asset",
         "tags": [
           "transcode"
         ]

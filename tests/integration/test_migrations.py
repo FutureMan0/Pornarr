@@ -123,6 +123,32 @@ def test_local_search_uses_its_trigram_index_within_200ms(clean_database: None) 
     assert plan["Execution Time"] < 200
 
 
+def test_entity_name_trigram_indexes_tolerate_typos(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        performer_id = uuid4()
+        tag_id = uuid4()
+        connection.execute(
+            "INSERT INTO performers (id, name, normalized_name, metadata) VALUES (%s, %s, %s, %s)",
+            (performer_id, "Alice Example", "alice example", "{}"),
+        )
+        connection.execute(
+            "INSERT INTO tags (id, name, normalized_name, metadata) VALUES (%s, %s, %s, %s)",
+            (tag_id, "Outdoor", "outdoor", "{}"),
+        )
+        connection.execute("SELECT set_config('pg_trgm.similarity_threshold', '0.2', true)")
+        performer = connection.execute(
+            "SELECT id FROM performers WHERE normalized_name %% %s", ("alise example",)
+        ).fetchone()
+        tag = connection.execute(
+            "SELECT id FROM tags WHERE normalized_name %% %s", ("outdor",)
+        ).fetchone()
+
+    assert performer == (performer_id,)
+    assert tag == (tag_id,)
+
+
 def test_filter_migration_seeds_one_disabled_global_profile(clean_database: None) -> None:
     assert _alembic("upgrade", "head").returncode == 0
 
@@ -182,6 +208,153 @@ def test_deleting_a_user_removes_its_filter_profile(clean_database: None) -> Non
         connection.commit()
 
     assert remaining == (0,)
+
+
+def test_deleting_a_monitored_performer_removes_its_monitor(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        user_id = str(uuid4())
+        performer_id = str(uuid4())
+        monitor_id = str(uuid4())
+        profile = connection.execute("SELECT id FROM quality_profiles WHERE is_default").fetchone()
+        assert profile is not None
+        connection.execute(
+            "INSERT INTO users (id, username, password_hash) VALUES (%s, %s, %s)",
+            (user_id, "monitor-owner", "not-a-real-password"),
+        )
+        connection.execute(
+            "INSERT INTO performers (id, name, normalized_name, metadata) "
+            "VALUES (%s, %s, %s, '{}'::jsonb)",
+            (performer_id, "Example Performer", "example performer"),
+        )
+        connection.execute(
+            "INSERT INTO monitors (id, user_id, kind, performer_id, quality_profile_id) "
+            "VALUES (%s, %s, %s, %s, %s)",
+            (monitor_id, user_id, "performer", performer_id, profile[0]),
+        )
+        connection.execute("DELETE FROM performers WHERE id = %s", (performer_id,))
+        remaining = connection.execute(
+            "SELECT count(*) FROM monitors WHERE id = %s", (monitor_id,)
+        ).fetchone()
+        connection.commit()
+
+    assert remaining == (0,)
+
+
+def test_indexer_rss_marker_is_available_after_upgrade(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        marker_column = connection.execute(
+            """SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'indexers' AND column_name = 'last_rss_guid'"""
+        ).fetchone()
+
+    assert marker_column == ("last_rss_guid",)
+
+
+def test_request_migration_flags_automatic_work_and_prioritizes_manual_requests(
+    clean_database: None,
+) -> None:
+    assert _alembic("upgrade", "0036").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        user_id = str(uuid4())
+        connection.execute(
+            "INSERT INTO users (id, username, password_hash) VALUES (%s, %s, %s)",
+            (user_id, "request-owner", "not-a-real-password"),
+        )
+        connection.execute(
+            "INSERT INTO requests (id, user_id, query, status, priority) VALUES (%s, %s, %s, %s, %s)",
+            (str(uuid4()), user_id, "Manual request", "searching", 50),
+        )
+        connection.commit()
+
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        request = connection.execute(
+            "SELECT priority, is_automatic FROM requests WHERE user_id = %s", (user_id,)
+        ).fetchone()
+
+    assert request == (80, False)
+
+
+def test_user_event_upgrade_preserves_completion_and_cascades_with_its_user(
+    clean_database: None,
+) -> None:
+    assert _alembic("upgrade", "0030").returncode == 0
+    user_id = "3ea5562a-3c8d-4ea2-8f2d-f0a6c6b11825"
+    media_id = "db5f12e7-9835-47a8-a5b2-c8412432d5d0"
+    event_id = "d1f20f59-9179-49e4-ae0b-c79f9d1a2faf"
+    with psycopg.connect(_psycopg_url()) as connection:
+        connection.execute(
+            "INSERT INTO users (id, username, password_hash) VALUES (%s, %s, %s)",
+            (user_id, "event-owner", "not-a-real-password"),
+        )
+        connection.execute(
+            "INSERT INTO media (id, title, normalized_title) VALUES (%s, %s, %s)",
+            (media_id, "Example", "example"),
+        )
+        connection.execute(
+            """INSERT INTO user_events (id, user_id, media_id, event_type)
+            VALUES (%s, %s, %s, %s)""",
+            (event_id, user_id, media_id, "playback.completed"),
+        )
+        connection.commit()
+
+    result = _alembic("upgrade", "head")
+    assert result.returncode == 0, result.stderr
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        migrated = connection.execute(
+            "SELECT event_type, value, subject_id FROM user_events WHERE id = %s", (event_id,)
+        ).fetchone()
+        connection.execute(
+            "INSERT INTO user_events (id, user_id, event_type) VALUES (%s, %s, %s)",
+            ("838751e7-bae4-43cc-9796-bce1b36169fe", user_id, "search"),
+        )
+        indexes = connection.execute(
+            "SELECT indexname FROM pg_indexes WHERE tablename = 'user_events'"
+        ).fetchall()
+        connection.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        remaining = connection.execute("SELECT count(*) FROM user_events").fetchone()
+        connection.commit()
+
+    assert migrated == ("completed", None, None)
+    assert "ix_user_events_user_id_created_at" in {name for (name,) in indexes}
+    assert remaining == (0,)
+
+
+def test_user_preferences_are_indexed_and_removed_with_their_user(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+    user_id = "e20bc013-7619-45d9-8dfa-f1a6b75debd0"
+    with psycopg.connect(_psycopg_url()) as connection:
+        connection.execute(
+            "INSERT INTO users (id, username, password_hash) VALUES (%s, %s, %s)",
+            (user_id, "preference-owner", "not-a-real-password"),
+        )
+        connection.execute(
+            """INSERT INTO user_preferences (user_id, axis, subject, raw_score, score)
+            VALUES (%s, %s, %s, %s, %s)""",
+            (user_id, "tag", "example-tag", 8, 1),
+        )
+        connection.execute("INSERT INTO user_preference_states (user_id) VALUES (%s)", (user_id,))
+        indexes = connection.execute(
+            "SELECT indexname FROM pg_indexes WHERE tablename = 'user_preferences'"
+        ).fetchall()
+        connection.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        remaining = connection.execute(
+            """SELECT
+                (SELECT count(*) FROM user_preferences),
+                (SELECT count(*) FROM user_preference_states)"""
+        ).fetchone()
+        connection.commit()
+
+    assert "ix_user_preferences_user_id_axis_score" in {name for (name,) in indexes}
+    assert remaining == (0, 0)
 
 
 def test_media_files_reject_two_active_rows_for_one_medium(clean_database: None) -> None:
@@ -328,6 +501,91 @@ def test_removing_download_client_and_job_preserves_history(clean_database: None
         "failed",
         "download failed",
     )
+
+
+def test_performance_measurements_use_the_expected_metric_vocabulary(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        metrics = connection.execute(
+            "SELECT unnest(enum_range(NULL::performance_metric))::text"
+        ).fetchall()
+
+    assert metrics == [
+        ("download_speed",),
+        ("post_processing_seconds_per_gib",),
+        ("import_seconds_per_gib",),
+        ("disk_write_speed",),
+    ]
+
+
+def test_automation_migration_backfills_disabled_rules(clean_database: None) -> None:
+    assert _alembic("upgrade", "0017").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        user_id = "07262e37-b9e9-48b4-9a51-b1f81a0b0131"
+        connection.execute(
+            "INSERT INTO users (id, username, password_hash) VALUES (%s, %s, %s)",
+            (user_id, "automation-owner", "not-a-real-password"),
+        )
+        connection.commit()
+
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        rule = connection.execute(
+            """SELECT enabled, daily_download_limit_gb, max_concurrent_jobs, max_downloads_per_day
+            FROM automation_rules WHERE user_id = %s""",
+            (user_id,),
+        ).fetchone()
+
+    assert rule == (False, 10, 2, 3)
+
+
+def test_request_survives_download_job_deletion(clean_database: None) -> None:
+    assert _alembic("upgrade", "head").returncode == 0
+
+    with psycopg.connect(_psycopg_url()) as connection:
+        user_id = "8471c197-3db3-476f-9127-38d4d1ae5dcb"
+        client_id = "d94b20e7-0502-456a-b6da-fba4e6bf0e4a"
+        job_id = "ee337e00-eef6-4b1f-b7ca-9ce4d2a4b690"
+        request_id = "de649d41-9adb-4f60-9ebc-8a4e6a9e4f75"
+        connection.execute(
+            "INSERT INTO users (id, username, password_hash) VALUES (%s, %s, %s)",
+            (user_id, "request-owner", "not-a-real-password"),
+        )
+        connection.execute(
+            "INSERT INTO download_clients (id, name, protocol, implementation, host, port, url_base, credentials, health) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (
+                client_id,
+                "client",
+                "torrent",
+                "qbittorrent",
+                "client.example",
+                8080,
+                "",
+                "ciphertext",
+                "healthy",
+            ),
+        )
+        connection.execute(
+            "INSERT INTO download_jobs (id, download_client_id, client_name, protocol, release_guid, status) "
+            "VALUES (%s, %s, %s, %s, %s, %s)",
+            (job_id, client_id, "client", "torrent", "release", "queued"),
+        )
+        connection.execute(
+            "INSERT INTO requests (id, user_id, query, status, priority, download_job_id) "
+            "VALUES (%s, %s, %s, %s, %s, %s)",
+            (request_id, user_id, "Example", "queued", 50, job_id),
+        )
+        connection.execute("DELETE FROM download_jobs WHERE id = %s", (job_id,))
+        request = connection.execute(
+            "SELECT status, download_job_id FROM requests WHERE id = %s", (request_id,)
+        ).fetchone()
+        connection.commit()
+
+    assert request == ("queued", None)
 
 
 def test_autogenerate_reports_no_drift(clean_database: None) -> None:

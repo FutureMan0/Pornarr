@@ -17,6 +17,13 @@ class NewznabAdapter(TorznabAdapter):
         releases = parse_results(
             await self._request(base_url, api_key, {"t": "search", "q": query})
         )
+        return self._with_api_key(releases, api_key)
+
+    async def rss(self, *, base_url: str, api_key: str) -> list[Release]:
+        return self._with_api_key(await super().rss(base_url=base_url, api_key=api_key), api_key)
+
+    @staticmethod
+    def _with_api_key(releases: list[Release], api_key: str) -> list[Release]:
         return [
             replace(release, download_url=with_api_key(release.download_url, api_key))
             for release in releases

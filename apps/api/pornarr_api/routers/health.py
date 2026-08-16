@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
 
@@ -27,6 +28,7 @@ class HealthReport(BaseModel):
     redis: ComponentHealth
     worker: ComponentHealth
     filesystem: ComponentHealth
+    backup: ComponentHealth | None = None
 
 
 async def _database(request: Request) -> ComponentHealth:
@@ -76,6 +78,28 @@ def _filesystem(paths: tuple[Path, ...], minimum_free_percent: int) -> Component
     return ComponentHealth(status="healthy")
 
 
+def _backup(path: Path, max_age_hours: int | None) -> ComponentHealth | None:
+    if max_age_hours is None:
+        return None
+    try:
+        newest = max(
+            (backup.stat().st_mtime for backup in path.glob("*.dump") if backup.is_file()),
+            default=None,
+        )
+    except OSError:
+        return ComponentHealth(status="unhealthy", detail="backup directory is unavailable")
+    if newest is None:
+        return ComponentHealth(status="unhealthy", detail="backup dump is missing")
+    age = datetime.now(UTC) - datetime.fromtimestamp(newest, UTC)
+    if age > timedelta(hours=max_age_hours):
+        return ComponentHealth(
+            status="unhealthy", detail=f"latest backup is older than {max_age_hours} hours"
+        )
+    return ComponentHealth(
+        status="healthy", detail=f"latest backup is {int(age.total_seconds() // 60)} minutes old"
+    )
+
+
 @router.get("/health", response_model=HealthReport)
 async def dependency_health(request: Request) -> JSONResponse:
     settings = request.app.state.settings
@@ -93,14 +117,25 @@ async def dependency_health(request: Request) -> JSONResponse:
         ),
         settings.min_free_disk_percent,
     )
+    backup = _backup(settings.backup_path, settings.backup_max_age_hours)
     status = "healthy"
     if database.status == "unhealthy" or filesystem.status == "unhealthy":
         status = "unhealthy"
-    elif redis.status == "unhealthy" or worker.status == "unhealthy":
+    elif (
+        redis.status == "unhealthy"
+        or worker.status == "unhealthy"
+        or (backup is not None and backup.status == "unhealthy")
+    ):
         status = "degraded"
     report = HealthReport(
-        status=status, database=database, redis=redis, worker=worker, filesystem=filesystem
+        status=status,
+        database=database,
+        redis=redis,
+        worker=worker,
+        filesystem=filesystem,
+        backup=backup,
     )
     return JSONResponse(
-        status_code=503 if status == "unhealthy" else 200, content=report.model_dump()
+        status_code=503 if status == "unhealthy" else 200,
+        content=report.model_dump(exclude_none=True),
     )

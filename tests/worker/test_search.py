@@ -68,6 +68,9 @@ class Adapter:
             raise RuntimeError
         return [Release("one", "Example", None, None, None, None, ())]
 
+    async def rss(self, *, base_url: str, api_key: str) -> list[Release]:
+        return await self.search(base_url=base_url, api_key=api_key, query="")
+
 
 async def test_results_are_progressive_and_one_timeout_does_not_block_others() -> None:
     redis = Redis()
@@ -88,8 +91,16 @@ async def test_results_are_progressive_and_one_timeout_does_not_block_others() -
     assert state.statuses == {"fast": "completed", "broken": "failed", "slow": "timed_out"}
     assert state.results["fast"][0]["title"] == "Example"
     assert "download_url" not in state.results["fast"][0]
-    assert redis.events[0][0] == "indexer.search.completed"
+    assert redis.events[0][0] == "search.result_added"
     assert redis.events[0][1]["indexer_id"] == "fast"
+    assert redis.events[-1] == (
+        "search.completed",
+        {
+            "search_id": "search-1",
+            "statuses": state.statuses,
+            "cancelled": False,
+        },
+    )
     assert (await read_search_state(redis, "search-1")) == state
 
 
@@ -123,7 +134,14 @@ async def test_cancelling_a_search_job_stops_pending_requests(monkeypatch) -> No
     assert state == result
     assert state.statuses == {"slow": "cancelled"}
     assert adapter.cancelled is True
-    assert redis.events[-1] == ("indexer.search.cancelled", {"search_id": "search-2"})
+    assert redis.events[-1] == (
+        "search.completed",
+        {
+            "search_id": "search-2",
+            "statuses": {"slow": "cancelled"},
+            "cancelled": True,
+        },
+    )
 
 
 async def test_unhealthy_indexers_are_reported_without_a_request() -> None:
@@ -140,14 +158,22 @@ async def test_unhealthy_indexers_are_reported_without_a_request() -> None:
     assert state.statuses == {"unhealthy": "unhealthy"}
     assert redis.events == [
         (
-            "indexer.search.completed",
+            "search.result_added",
             {
                 "search_id": "search-3",
                 "indexer_id": "unhealthy",
                 "status": "unhealthy",
                 "results": [],
             },
-        )
+        ),
+        (
+            "search.completed",
+            {
+                "search_id": "search-3",
+                "statuses": {"unhealthy": "unhealthy"},
+                "cancelled": False,
+            },
+        ),
     ]
 
 

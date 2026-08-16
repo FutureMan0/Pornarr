@@ -1,0 +1,507 @@
+{
+  "app": {
+    "name": "Pornarr"
+  },
+  "monitors": {
+    "title": "Monitore",
+    "loading": "Monitore werden geladen",
+    "enabled": "Aktiv",
+    "disabled": "Deaktiviert",
+    "enable": "Aktivieren",
+    "disable": "Deaktivieren",
+    "search": "Jetzt suchen"
+  },
+  "recommendations": {
+    "title": "Empfehlungen",
+    "loading": "Empfehlungen werden geladen",
+    "empty": "Sieh dir Medien an und bewerte sie. Deine Empfehlungen erscheinen dann hier.",
+    "reason": "Empfohlen, weil dir gefiel: {{values}}",
+    "notInterested": "Nicht interessiert"
+  },
+  "queue": {
+    "title": "Downloads",
+    "loading": "Downloads werden geladen",
+    "priority": "Priorität {{value}}",
+    "speed": "{{value}} Bytes/s",
+    "speedUnknown": "Geschwindigkeit nicht verfügbar",
+    "estimate": "Geschätzt {{low}}–{{high}} Sekunden ({{confidence}} Konfidenz)",
+    "estimateUnknown": "Keine Schätzung verfügbar",
+    "failure": "Download fehlgeschlagen: {{error}}. Prüfe den Download-Client und wiederhole die Anfrage."
+  },
+  "requests": {
+    "title": "Anfragen",
+    "intro": "Verfolge jede Anfrage von der Suche bis in deine Bibliothek.",
+    "loading": "Anfragen werden geladen",
+    "empty": "Noch keine Anfragen.",
+    "cancel": "Abbrechen",
+    "retry": "Erneut versuchen",
+    "history": "Anfrageverlauf",
+    "priority": "Priorität {{value}}",
+    "status": {
+      "searching": "Suche läuft",
+      "results_found": "Ergebnisse gefunden",
+      "queued": "In Warteschlange",
+      "downloading": "Wird geladen",
+      "processing": "Wird verarbeitet",
+      "available": "Verfügbar",
+      "failed": "Fehlgeschlagen",
+      "not_found": "Nicht gefunden",
+      "monitoring": "Überwachung",
+      "cancelled": "Abgebrochen"
+    }
+  },
+  "player": {
+    "label": "Player für {{title}}",
+    "unavailable": "Dieses Video kann derzeit nicht wiedergegeben werden."
+  },
+  "login": {
+    "subtitle": "Melde dich an, um fortzufahren.",
+    "username": "Benutzername",
+    "password": "Passwort",
+    "submit": "Anmelden"
+  },
+  "setup": {
+    "checking": "Einrichtung wird geprüft",
+    "progress": "Schritt {{current}} von {{total}}",
+    "progressLabel": "Einrichtungsfortschritt",
+    "stepNumber": "Schritt {{number}}",
+    "steps": {
+      "account": "Admin-Konto",
+      "library": "Bibliothekspfad",
+      "filters": "Inhaltsfilter",
+      "metadata": "Metadaten",
+      "summary": "Zusammenfassung"
+    },
+    "next": "Weiter",
+    "back": "Zurück",
+    "account": {
+      "title": "Pornarr einrichten",
+      "body": "Erstelle das Administrationskonto für diese Instanz.",
+      "username": "Benutzername",
+      "usernameRequired": "Gib einen Administrations-Benutzernamen ein.",
+      "password": "Passwort",
+      "passwordTooWeak": "Verwende mindestens 12 Zeichen aus zwei Zeichentypen.",
+      "strength": {
+        "weak": "Passwortstärke: schwach",
+        "fair": "Passwortstärke: ausreichend",
+        "strong": "Passwortstärke: stark"
+      }
+    },
+    "library": {
+      "title": "Bibliothekspfad wählen",
+      "body": "Pornarr speichert importierte Medien in diesem Ordner.",
+      "path": "Bibliothekspfad",
+      "pathRequired": "Gib einen Bibliothekspfad ein.",
+      "crossFilesystem": "Diese Bibliothek liegt auf einem anderen Dateisystem als die Downloads. Beim Import werden Dateien kopiert statt per Hardlink verknüpft.",
+      "continueWithCopy": "Mit Kopier-Importen fortfahren"
+    },
+    "filters": {
+      "title": "Inhaltsfilter prüfen",
+      "body": "Alle Filter beginnen ausgeschaltet. Du kannst Regeln nach der Einrichtung konfigurieren, ohne bereits importierte Medien zu ändern.",
+      "listLabel": "Inhaltsfilter, die ausgeschaltet beginnen",
+      "off": "Aus",
+      "rules": {
+        "term": {
+          "title": "Wörter und Phrasen",
+          "body": "Hält Medien zurück, deren Titel oder Beschreibung einer später hinzugefügten Regel entspricht."
+        },
+        "tag": {
+          "title": "Tags",
+          "body": "Hält Medien mit einem später ausgewählten Tag zurück."
+        },
+        "performer": {
+          "title": "Darstellende Personen",
+          "body": "Hält Medien mit einer später ausgewählten Person zurück."
+        },
+        "minimumConfidence": {
+          "title": "Sicherheit der Metadaten",
+          "body": "Hält Medien zurück, deren Metadaten-Treffer unter einen später gewählten Grenzwert fallen."
+        },
+        "unknownPerformerAge": {
+          "title": "Unbekanntes Alter von Personen",
+          "body": "Hält Medien zurück, wenn das Alter einer zugeordneten Person nicht bekannt ist."
+        },
+        "unknownFileType": {
+          "title": "Unbekannter Dateityp",
+          "body": "Hält Medien zurück, wenn der importierte Dateityp nicht erkannt wird."
+        }
+      }
+    },
+    "metadata": {
+      "title": "Metadatenanbieter",
+      "body": "Externe Metadatenanbieter sind optional. Pornarr kann ohne einen solchen Anbieter starten.",
+      "skipped": "Während dieser Einrichtung wird kein Metadatenanbieter konfiguriert.",
+      "skipAction": "Vorerst überspringen"
+    },
+    "summary": {
+      "title": "Einrichtung prüfen",
+      "body": "Prüfe diese Auswahl, bevor die Instanz erstellt wird.",
+      "account": "Administration",
+      "library": "Bibliothekspfad",
+      "filters": "Inhaltsfilter",
+      "filtersOff": "Alle Filter beginnen ausgeschaltet",
+      "metadata": "Metadatenanbieter",
+      "metadataSkipped": "Kein Anbieter konfiguriert"
+    },
+    "complete": {
+      "action": "Einrichtung abschließen",
+      "title": "Einrichtung abgeschlossen",
+      "body": "Die Instanz ist bereit. Melde dich mit dem Administrationskonto an, um fortzufahren.",
+      "signIn": "Anmelden"
+    }
+  },
+  "session": {
+    "checking": "Sitzung wird geprüft",
+    "unavailableTitle": "Sitzung konnte nicht geprüft werden",
+    "retry": "Erneut versuchen"
+  },
+  "shell": {
+    "skipToContent": "Zum Inhalt springen"
+  },
+  "nav": {
+    "primary": "Hauptnavigation",
+    "navigation": "Navigation",
+    "close": "Schließen",
+    "closeNavigation": "Navigation schließen",
+    "library": "Bibliothek",
+    "requests": "Anfragen",
+    "downloads": "Downloads",
+    "settings": "Einstellungen"
+  },
+  "search": {
+    "label": "Suche",
+    "placeholder": "Suchen",
+    "title": "Suche",
+    "intro": "Treffer aus der lokalen Bibliothek erscheinen zuerst. Indexer-Ergebnisse folgen, sobald die einzelnen Quellen antworten.",
+    "query": "Titel suchen",
+    "searching": "Suche läuft…",
+    "grab": "Abrufen",
+    "filters": {
+      "quality": "Qualität",
+      "anyQuality": "Alle Qualitäten",
+      "minimumSize": "Mindestgröße (Bytes)",
+      "maximumSize": "Maximalgröße (Bytes)",
+      "indexer": "Indexer-ID",
+      "protocol": "Protokoll",
+      "anyProtocol": "Alle Protokolle",
+      "torrent": "Torrent",
+      "usenet": "Usenet",
+      "minimumSeeders": "Mindestanzahl Seeder",
+      "age": "Maximales Alter",
+      "anyAge": "Jedes Alter",
+      "day": "Letzter Tag",
+      "week": "Letzte Woche",
+      "month": "Letzter Monat",
+      "sort": "Sortierung"
+    },
+    "sort": {
+      "relevance": "Relevanz",
+      "age": "Neueste",
+      "size": "Größte",
+      "quality": "Höchste Qualität",
+      "seeders": "Meiste Seeder",
+      "estimatedTime": "Schnellste Schätzung"
+    },
+    "columns": {
+      "title": "Titel",
+      "studio": "Studio",
+      "indexer": "Indexer",
+      "quality": "Qualität",
+      "size": "Größe",
+      "age": "Alter",
+      "seeders": "Seeder",
+      "score": "Wertung",
+      "time": "Zeit",
+      "action": "Aktion"
+    },
+    "local": {
+      "title": "In deiner Bibliothek",
+      "notSearched": "Gib einen Titel ein, um deine lokale Bibliothek zu durchsuchen.",
+      "loading": "Lokale Treffer werden geladen",
+      "empty": "Keine passenden Bibliothekseinträge. Indexer könnten dennoch einen Release finden."
+    },
+    "external": {
+      "title": "Von Indexern",
+      "notSearched": "Indexer-Ergebnisse erscheinen nach einer Suche.",
+      "empty": "Noch kein Indexer hat einen passenden Release geliefert.",
+      "indexerStatus": "Indexer-Suchstatus"
+    },
+    "status": {
+      "pending": "Wartet",
+      "completed": "Abgeschlossen",
+      "cached": "Zwischengespeichert",
+      "failed": "Fehlgeschlagen",
+      "timedOut": "Zeitüberschreitung",
+      "unhealthy": "Nicht verfügbar",
+      "cancelled": "Abgebrochen"
+    },
+    "match": {
+      "present": "In Bibliothek",
+      "upgrade": "Upgrade",
+      "scoreBreakdown": "Titel {{title}}, Attribute {{attributes}}, Indexer-Zuverlässigkeit {{reliability}}"
+    }
+  },
+  "account": {
+    "menu": "Konto",
+    "signOut": "Abmelden",
+    "signOutEverywhere": "Überall abmelden"
+  },
+  "activity": {
+    "title": "Aktivität",
+    "idle": "Derzeit wird nichts übertragen.",
+    "hint": "Downloads, Importe und ihre Geschwindigkeiten erscheinen hier, sobald sie starten."
+  },
+  "locale": {
+    "label": "Sprache"
+  },
+  "screen": {
+    "notBuilt": "Diese Seite ist noch nicht gebaut.",
+    "notFoundTitle": "Nicht gefunden",
+    "notFoundBody": "Unter dieser Adresse gibt es nichts. Wähle ein Ziel aus der Navigation.",
+    "forbiddenTitle": "Nicht erlaubt",
+    "forbiddenBody": "Dein Konto darf das nicht öffnen. Die Administration dieser Instanz kann das ändern.",
+    "backToLibrary": "Zur Bibliothek"
+  },
+  "connection": {
+    "offlineTitle": "Offline",
+    "offlineBody": "Dieses Gerät hat keine Netzwerkverbindung. Die Seite aktualisiert sich selbst, sobald sie zurück ist.",
+    "reconnectingTitle": "Verbindung wird wiederhergestellt",
+    "reconnectingBody": "Die Live-Verbindung zum Server ist abgerissen. Sie wird neu aufgebaut; du musst nichts tun."
+  },
+  "events": {
+    "downloadCompleted": "Ein Download ist fertig.",
+    "downloadFailed": "Ein Download ist fehlgeschlagen.",
+    "importCompleted": "Ein Import ist fertig.",
+    "mediaAvailable": "Neue Medien sind verfügbar."
+  },
+  "format": {
+    "unknown": "Unbekannt"
+  },
+  "quarantine": {
+    "title": "Quarantäne prüfen",
+    "intro": "Prüfe die Belege, bevor eine zurückgehaltene Datei in die Bibliothek gelangt. Korrekturen werden für spätere Treffer mit demselben Quelltitel gespeichert.",
+    "loading": "Quarantäne-Dateien werden geladen",
+    "emptyTitle": "Nichts muss geprüft werden",
+    "emptyBody": "Dateien, die eine Entscheidung brauchen, erscheinen hier mit den passenden Belegen.",
+    "emptyAction": "Zur Bibliothek",
+    "reasons": "Prüfgründe",
+    "reasonHint": "Wähle einen Grund, um die betroffenen Dateien gemeinsam zu prüfen.",
+    "reason": {
+      "low_confidence": "Niedrige Sicherheit",
+      "filter_rule": "Passende Filterregel",
+      "unexpected_file_type": "Unerwarteter Dateityp",
+      "contradictory_duplicate": "Widersprüchliches Duplikat",
+      "unknown": "Anderer Grund"
+    },
+    "reasonWithCount": {
+      "low_confidence": "Niedrige Sicherheit ({{count}})",
+      "filter_rule": "Passende Filterregel ({{count}})",
+      "unexpected_file_type": "Unerwarteter Dateityp ({{count}})",
+      "contradictory_duplicate": "Widersprüchliches Duplikat ({{count}})",
+      "unknown": "Anderer Grund ({{count}})"
+    },
+    "selectReasonWithCount": "Alle {{count}} Dateien für die Sammelfreigabe auswählen",
+    "previewBulkWithCount": "Freigabe von {{count}} Dateien prüfen",
+    "reviewing": "Datei wird geprüft",
+    "createdAt": "Zurückgehalten seit {{date}}",
+    "itemsInReason": "Dateien für diesen Grund",
+    "selectItem": "{{title}} für die Sammelfreigabe auswählen",
+    "matchedRules": "Passende Regeln und Sicherheit",
+    "confidenceActual": "Sicherheit",
+    "confidenceMinimum": "Erforderliches Minimum",
+    "noEvidence": "Es wurden keine weiteren Belege gespeichert.",
+    "previewFrames": "Vorschaubilder",
+    "previewUnavailable": "Für diesen Import wurden keine Vorschaubilder bereitgestellt.",
+    "previewFrame": "Vorschaubild {{number}}",
+    "extractedMetadata": "Extrahierte Metadaten",
+    "noMetadata": "Es wurden keine Metadaten extrahiert.",
+    "technicalDetails": "Technische Details",
+    "noTechnicalDetails": "Es wurden keine technischen Details gespeichert.",
+    "correction": "Vor der Freigabe korrigieren",
+    "correctionHint": "Nur geänderte Werte werden gesendet und für zukünftige Treffer mit demselben Quelltitel gespeichert.",
+    "fields": {
+      "title": "Titel",
+      "studio": "Studio",
+      "releaseDate": "Erscheinungsdatum",
+      "quality": "Qualität"
+    },
+    "paths": "Gespeicherte Dateipfade",
+    "originalPath": "Ursprünglicher Download-Pfad",
+    "quarantinePath": "Quarantäne-Pfad",
+    "approve": "Freigeben",
+    "correctAndApprove": "Korrigieren und freigeben",
+    "reject": "Ablehnen und löschen",
+    "bulkPreview": "Sammelfreigabe bestätigen",
+    "bulkPreviewHint": "Diese {{count}} Dateien werden ohne Metadatenänderung freigegeben.",
+    "bulkItems": "Für die Sammelfreigabe ausgewählte Dateien",
+    "cancelBulk": "Abbrechen",
+    "confirmBulkWithCount": "{{count}} Dateien freigeben"
+  },
+  "quality": {
+    "title": "Qualitätsprofile",
+    "intro": "Lege fest, welche Qualitäten und Release-Eigenschaften diese Instanz akzeptiert. Die Vorschau nutzt die noch nicht gespeicherten Editorwerte, sodass jeder Score und jede Regel vor dem Speichern erklärt wird.",
+    "loading": "Qualitätsprofile werden geladen",
+    "profiles": "Qualitätsprofile",
+    "profileHint": "Monitore und Anfragen können diese Profile auswählen.",
+    "newProfile": "Neues Profil",
+    "default": "Standard",
+    "profileEditor": "Profil bearbeiten",
+    "profileEditorHint": "Sortiere Qualitäten nach Präferenz. Ziehe Zeilen oder nutze die Schaltflächen, damit dieselbe Reihenfolge per Tastatur funktioniert.",
+    "profileName": "Profilname",
+    "defaultProfile": "Als Standardprofil verwenden",
+    "deleteProfile": "Profil löschen",
+    "allowedQualities": "Erlaubte Qualitäten",
+    "orderHint": "Die erste Zeile ist die niedrigste Präferenz; spätere Qualitäten sind höherwertig.",
+    "qualityDetails": "{{resolution}} · {{source}} · Score {{weight}}",
+    "moveUp": "{{name}} nach oben verschieben",
+    "moveDown": "{{name}} nach unten verschieben",
+    "removeQuality": "{{name}} aus diesem Profil entfernen",
+    "up": "Hoch",
+    "down": "Runter",
+    "remove": "Entfernen",
+    "addQuality": "Qualität hinzufügen",
+    "chooseQuality": "Qualität auswählen",
+    "cutoff": "Upgrade-Grenze",
+    "minimumScore": "Minimaler Gesamtscore",
+    "cutoffHint": "Nachdem {{quality}} erreicht ist, wird eine vorhandene Datei nicht automatisch durch ein Release mit höherem Score ersetzt.",
+    "saveProfile": "Profil speichern",
+    "customFormats": "Benutzerdefinierte Formate",
+    "customFormatsHint": "Vergib für verständliche Release-Eigenschaften einen Score. Erforderliche Regeln gelten zusammen; bei optionalen Regeln genügt ein passender Treffer.",
+    "addFormat": "Benutzerdefiniertes Format hinzufügen",
+    "noFormatsTitle": "Noch keine benutzerdefinierten Formate",
+    "noFormatsBody": "Füge ein Format hinzu, um eine Release-Eigenschaft aufzuwerten oder abzuwerten.",
+    "formatName": "Formatname",
+    "score": "Score",
+    "scoreFor": "Score für {{name}}",
+    "newFormat": "neues Format",
+    "conditions": "Bedingungen",
+    "conditionsHint": "Wähle verständliche Release-Eigenschaften, eine Operation und einen Wert. Zum Beispiel: Codec ist hevc.",
+    "conditionField": "Release-Eigenschaft",
+    "conditionOperator": "Treffer",
+    "conditionValue": "Wert",
+    "conditionRequired": "Erforderlich",
+    "conditionNegate": "Trifft nicht zu",
+    "removeCondition": "Bedingung entfernen",
+    "addCondition": "Bedingung hinzufügen",
+    "saveFormats": "Benutzerdefinierte Formate speichern",
+    "preview": "Release-Vorschau",
+    "previewHint": "Füge einen Release-Namen ein, um erkannte Qualität, passende benutzerdefinierte Formate, Score und Entscheidung ohne Dokumentation zu sehen.",
+    "releaseName": "Release-Name",
+    "releaseNamePlaceholder": "Example.Scene.2025.1080p.WEB-DL.x265.PROPER",
+    "previewDecision": "Entscheidung prüfen",
+    "detectedQuality": "Erkannte Qualität",
+    "previewScore": "Gesamtscore",
+    "matchedFormats": "Passende benutzerdefinierte Formate",
+    "noMatchedFormats": "Zu diesem Release passen keine benutzerdefinierten Formate.",
+    "matchedFormat": "{{name}}: {{score}}",
+    "fields": {
+      "title": "Release-Name",
+      "codec": "Codec",
+      "source": "Quelle",
+      "size": "Größe",
+      "indexer": "Indexer",
+      "protocol": "Protokoll",
+      "flags": "Release-Flags",
+      "resolution": "Auflösung"
+    },
+    "operators": {
+      "equals": "ist",
+      "contains": "enthält",
+      "greater_than": "ist größer als",
+      "less_than": "ist kleiner als"
+    },
+    "verdict": {
+      "grab": "Dieses Release laden",
+      "upgrade": "Vorhandene Datei upgraden",
+      "reject": "Dieses Release nicht laden"
+    },
+    "reason": {
+      "not_in_profile": "Die erkannte Qualität ist in diesem Profil nicht erlaubt.",
+      "below_minimum_score": "Der Gesamtscore liegt unter dem erforderlichen Minimum dieses Profils.",
+      "no_existing_file": "Es gibt keine vorhandene Datei; dieses Release kann geladen werden.",
+      "not_an_upgrade": "Die vorhandene Datei hat denselben oder einen besseren Score.",
+      "cutoff_met": "Die vorhandene Datei hat die Upgrade-Grenze dieses Profils bereits erreicht.",
+      "upgrade_available": "Das Release hat einen höheren Score als die vorhandene Datei und die Upgrade-Grenze ist noch nicht erreicht.",
+      "quality_not_detected": "Aus diesem Release-Namen konnte keine erlaubte Qualität erkannt werden."
+    }
+  },
+  "library": {
+    "title": "Bibliothek",
+    "loading": "Bibliothek wird geladen…",
+    "empty": "Deine Bibliothek ist leer. Konfiguriere einen Stammordner und scanne ihn, um Medien hinzuzufügen."
+  },
+  "media": {
+    "loading": "Medium wird geladen…",
+    "confidence": "Metadaten-Konfidenz: {{value}}",
+    "unknown": "unbekannt",
+    "play": "Abspielen",
+    "unavailable": "Wiedergabe nicht verfügbar",
+    "tags": "Tags",
+    "correctTag": "Tag korrigieren",
+    "addTag": "Korrigierten Tag hinzufügen",
+    "file": "Datei",
+    "path": "Pfad",
+    "technical": "Technische Informationen"
+  },
+  "errors": {
+    "INVALID_CREDENTIALS": "Benutzername und Passwort passen nicht zusammen.",
+    "NOT_AUTHENTICATED": "Deine Sitzung ist abgelaufen. Melde dich erneut an.",
+    "FORBIDDEN": "Dein Konto darf das nicht.",
+    "CSRF_FAILED": "Diese Anfrage konnte nicht verifiziert werden. Lade die Seite neu und versuche es erneut.",
+    "LOGIN_RATE_LIMITED": "Zu viele Anmeldeversuche. Warte eine Minute und versuche es erneut.",
+    "OIDC_DISCOVERY_FAILED": "Dieser Identitätsanbieter war nicht erreichbar oder hat etwas Unbrauchbares geantwortet.",
+    "WEB_ASSETS_MISSING": "Die Oberflächendateien fehlen in dieser Installation.",
+    "NOT_IMPLEMENTED": "Das ist noch nicht gebaut.",
+    "CONFIGURATION_INVALID": "Diese Instanz ist falsch konfiguriert. Sieh im Server-Log nach.",
+    "DECRYPTION_FAILED": "Gespeicherte Zugangsdaten konnten nicht gelesen werden. Das Anwendungsgeheimnis passt nicht zu dem, mit dem sie gespeichert wurden.",
+    "QUALITY_CONFIGURATION_INVALID": "Dieses Qualitätsprofil oder benutzerdefinierte Format ist ungültig. Prüfe gewählte Qualitäten, Grenze und Namen.",
+    "QUALITY_PROFILE_IN_USE": "Dieses Qualitätsprofil wird noch von der Anwendung benötigt und kann nicht gelöscht werden.",
+    "SETUP_REQUIRED": "Schließe die Einrichtung dieser Instanz ab, bevor du die Anwendung verwendest.",
+    "SETUP_ALREADY_COMPLETED": "Diese Instanz wurde bereits eingerichtet.",
+    "SETUP_PATH_INVALID": "Dieser Bibliothekspfad ist nicht verfügbar, kein Ordner oder nicht beschreibbar.",
+    "BAD_REQUEST": "Mit dieser Anfrage konnte der Server nichts anfangen.",
+    "NOT_FOUND": "Das gibt es nicht, oder nicht mehr.",
+    "METHOD_NOT_ALLOWED": "Diese Aktion ist unter dieser Adresse nicht verfügbar.",
+    "CONFLICT": "Das steht im Konflikt mit etwas, das bereits existiert.",
+    "PAYLOAD_TOO_LARGE": "Das ist zu groß zum Senden.",
+    "VALIDATION_FAILED": "Ein Teil der Eingabe ist ungültig. Prüfe die markierten Felder.",
+    "RATE_LIMITED": "Zu viele Anfragen. Warte einen Moment und versuche es erneut.",
+    "INTERNAL_ERROR": "Auf dem Server ist ein Problem aufgetreten. Sieh im Server-Log nach.",
+    "SERVICE_UNAVAILABLE": "Der Server ist noch nicht bereit. Versuche es gleich noch einmal.",
+    "NETWORK_UNREACHABLE": "Der Server war nicht erreichbar. Prüfe, ob er läuft.",
+    "unknown": "Etwas ist schiefgelaufen ({{code}}).",
+    "generic": "Etwas ist schiefgelaufen. Versuche es erneut.",
+    "brokenTitle": "Diese Seite konnte nicht dargestellt werden.",
+    "brokenStep": "Versuche es noch einmal. Wenn es weiter passiert, lade die Seite neu und nenne die Adresse, auf der du warst.",
+    "retry": "Erneut versuchen"
+  },
+  "errorSteps": {
+    "INVALID_CREDENTIALS": "Prüfe Benutzername und Passwort und melde dich erneut an.",
+    "NOT_AUTHENTICATED": "Melde dich erneut an, um dort weiterzumachen, wo du aufgehört hast.",
+    "FORBIDDEN": "Frage die Administration dieser Instanz nach Zugriff oder kehre zur Bibliothek zurück.",
+    "CSRF_FAILED": "Lade die Seite neu und wiederhole die Aktion.",
+    "LOGIN_RATE_LIMITED": "Warte eine Minute und versuche es erneut.",
+    "OIDC_DISCOVERY_FAILED": "Prüfe die Adresse des Anbieters in den Einstellungen und versuche es erneut.",
+    "WEB_ASSETS_MISSING": "Baue oder installiere das Anwendungs-Image neu.",
+    "NOT_IMPLEMENTED": "Wähle ein anderes Ziel aus der Navigation.",
+    "CONFIGURATION_INVALID": "Korrigiere die im Server-Log genannten Einstellungen und starte den Server neu.",
+    "DECRYPTION_FAILED": "Stelle das ursprüngliche Anwendungsgeheimnis wieder her oder gib die Zugangsdaten erneut ein.",
+    "QUALITY_CONFIGURATION_INVALID": "Prüfe gewählte Qualitäten, Grenze und Namen und speichere erneut.",
+    "QUALITY_PROFILE_IN_USE": "Wähle zuerst ein anderes Standardprofil oder verschiebe die Monitore in ein anderes Profil.",
+    "SETUP_REQUIRED": "Schließe zuerst die Einrichtungsschritte ab.",
+    "SETUP_ALREADY_COMPLETED": "Melde dich mit dem bereits vorhandenen Administrationskonto an.",
+    "SETUP_PATH_INVALID": "Wähle einen vorhandenen Ordner, den Pornarr lesen und beschreiben kann.",
+    "BAD_REQUEST": "Ändere das Gesendete und versuche es noch einmal.",
+    "NOT_FOUND": "Wähle ein Ziel aus der Navigation.",
+    "METHOD_NOT_ALLOWED": "Gehe zurück und wähle eine andere Aktion.",
+    "CONFLICT": "Öffne das, was bereits existiert, oder wähle einen anderen Namen.",
+    "PAYLOAD_TOO_LARGE": "Sende etwas Kleineres.",
+    "VALIDATION_FAILED": "Korrigiere die markierten Felder und sende erneut.",
+    "RATE_LIMITED": "Warte einen Moment und versuche es erneut.",
+    "INTERNAL_ERROR": "Versuche es erneut. Wenn es weiter passiert, sieh im Server-Log nach.",
+    "SERVICE_UNAVAILABLE": "Warte, bis der Server hochgefahren ist, und versuche es erneut.",
+    "NETWORK_UNREACHABLE": "Prüfe, ob der Server läuft und erreichbar ist, und versuche es erneut.",
+    "unknown": "Versuche es erneut und nenne diesen Code, wenn es weiter passiert.",
+    "generic": "Versuche es erneut. Wenn es weiter passiert, lade die Seite neu."
+  }
+}

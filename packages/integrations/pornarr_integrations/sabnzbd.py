@@ -55,6 +55,7 @@ class SabnzbdJob:
     eta_seconds: int | None
     error: str | None
     post_processing_seconds: int | None
+    output_path: str | None
 
 
 def map_sabnzbd_queue_state(value: str) -> DownloadState:
@@ -91,6 +92,7 @@ def parse_queue(payload: Mapping[str, object]) -> list[SabnzbdJob]:
             eta_seconds=_duration(_string(slot, "timeleft")),
             error=None,
             post_processing_seconds=None,
+            output_path=None,
         )
         for slot in slots
     ]
@@ -110,6 +112,7 @@ def parse_history_slot(payload: Mapping[str, object]) -> SabnzbdJob:
         eta_seconds=None,
         error=failure or None,
         post_processing_seconds=_integer(payload, "postproc_time"),
+        output_path=_optional_string(payload, "storage"),
     )
 
 
@@ -216,6 +219,7 @@ class SabnzbdAdapter:
                 download_speed_bytes=job.download_speed_bytes,
                 estimated_seconds=job.eta_seconds,
                 error=job.error,
+                output_path=job.output_path,
             )
             for job in [*queue, *history]
         ]
@@ -229,6 +233,26 @@ class SabnzbdAdapter:
         self, *, host: str, port: int, url_base: str, credentials: str, client_job_id: str
     ) -> None:
         await self._control(host, port, url_base, credentials, "resume", client_job_id)
+
+    async def set_priority(
+        self,
+        *,
+        host: str,
+        port: int,
+        url_base: str,
+        credentials: str,
+        client_job_id: str,
+        priority: int,
+    ) -> None:
+        await self._control(
+            host,
+            port,
+            url_base,
+            credentials,
+            "priority",
+            client_job_id,
+            value2=_queue_priority(priority),
+        )
 
     async def delete(
         self,
@@ -248,6 +272,19 @@ class SabnzbdAdapter:
             "delete",
             client_job_id,
             del_files="1" if delete_files else "0",
+        )
+
+    async def cancel(
+        self, *, host: str, port: int, url_base: str, credentials: str, client_job_id: str
+    ) -> None:
+        """Remove a cancelled request's incomplete SABnzbd job and files."""
+        await self.delete(
+            host=host,
+            port=port,
+            url_base=url_base,
+            credentials=credentials,
+            client_job_id=client_job_id,
+            delete_files=True,
         )
 
     async def _add(
@@ -331,9 +368,20 @@ class SabnzbdAdapter:
 def _add_options(category: str | None, priority: int, paused: bool) -> dict[str, str]:
     return {
         "cat": category or "*",
-        "priority": "-2" if paused else str(priority),
+        "priority": "-2" if paused else _queue_priority(priority),
         "pp": "2",
     }
+
+
+def _queue_priority(priority: int) -> str:
+    """Map Pornarr's five request levels onto SABnzbd's four native levels."""
+    if priority >= 100:
+        return "2"
+    if priority >= 80:
+        return "1"
+    if priority >= 60:
+        return "0"
+    return "-1"
 
 
 def _api_url(host: str, port: int, url_base: str) -> str:
@@ -350,6 +398,15 @@ def _api_key(credentials: str) -> str:
 
 def _string(payload: Mapping[str, object], key: str) -> str:
     value = payload.get(key)
+    if not isinstance(value, str):
+        raise SabnzbdProtocolError(f"SABnzbd field {key!r} must be a string.")
+    return value
+
+
+def _optional_string(payload: Mapping[str, object], key: str) -> str | None:
+    value = payload.get(key)
+    if value is None:
+        return None
     if not isinstance(value, str):
         raise SabnzbdProtocolError(f"SABnzbd field {key!r} must be a string.")
     return value

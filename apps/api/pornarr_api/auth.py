@@ -13,7 +13,7 @@ from typing import Annotated
 from uuid import UUID
 
 from argon2 import PasswordHasher
-from argon2.exceptions import VerificationError
+from argon2.exceptions import InvalidHashError, VerificationError
 from fastapi import Depends, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,6 +31,7 @@ SESSION_TTL_SECONDS = 7 * 24 * 60 * 60
 API_KEY_PREFIX_LENGTH = 12
 LOGIN_ATTEMPT_LIMIT = 6
 LOGIN_ATTEMPT_WINDOW_SECONDS = 15 * 60
+PASSWORDLESS_PASSWORD_HASH = "!"
 
 _UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 _password_hasher = PasswordHasher()
@@ -75,8 +76,12 @@ def hash_password(password: str) -> str:
 def verify_password(password_hash: str, password: str) -> bool:
     try:
         return _password_hasher.verify(password_hash, password)
-    except VerificationError:
+    except (InvalidHashError, VerificationError):
         return False
+
+
+def has_local_password(user: User) -> bool:
+    return user.password_hash != PASSWORDLESS_PASSWORD_HASH
 
 
 def session_key(token: str) -> str:
@@ -255,7 +260,8 @@ async def enforce_csrf(request: Request) -> None:
     """Require a session-bound double-submit token on every unsafe API request."""
     if (
         request.method not in _UNSAFE_METHODS
-        or request.url.path in {"/api/auth/login", "/api/setup/complete"}
+        or request.url.path
+        in {"/api/auth/login", "/api/setup/validate-library-path", "/api/setup/complete"}
         or request.headers.get("X-Api-Key")
     ):
         return

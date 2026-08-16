@@ -123,7 +123,7 @@ async def test_adds_url_and_nzb_file_with_category_priority_and_pause() -> None:
             **connection,
             url="https://indexer.example/release.nzb",
             category="pornarr",
-            priority=1,
+            priority=80,
             paused=False,
         )
         == NZO_ID
@@ -134,7 +134,7 @@ async def test_adds_url_and_nzb_file_with_category_priority_and_pause() -> None:
             nzb_file=b"<nzb></nzb>",
             filename="release.nzb",
             category="pornarr",
-            priority=1,
+            priority=80,
             paused=True,
         )
         == NZO_ID
@@ -164,6 +164,7 @@ async def test_reads_queue_and_history() -> None:
         "status": "Extracting",
         "postproc_time": 19,
         "fail_message": "",
+        "storage": "/data/usenet/release",
     }
     requests: list[httpx.Request] = []
 
@@ -193,6 +194,7 @@ async def test_reads_one_batched_poll_for_queue_and_history() -> None:
         "status": "Completed",
         "postproc_time": 19,
         "fail_message": "",
+        "storage": "/data/usenet/release",
     }
     requests: list[httpx.Request] = []
 
@@ -213,6 +215,7 @@ async def test_reads_one_batched_poll_for_queue_and_history() -> None:
 
     assert [job.client_job_id for job in jobs] == [NZO_ID, "history-job"]
     assert jobs[1].state is DownloadState.COMPLETED
+    assert jobs[1].output_path == "/data/usenet/release"
     assert [request.url.params["mode"] for request in requests] == ["queue", "history"]
 
 
@@ -228,8 +231,10 @@ async def test_controls_and_history_phases_keep_repair_and_import_distinct() -> 
 
     await adapter.pause(**connection, client_job_id=NZO_ID)
     await adapter.resume(**connection, client_job_id=NZO_ID)
+    await adapter.set_priority(**connection, client_job_id=NZO_ID, priority=100)
     await adapter.delete(**connection, client_job_id=NZO_ID, delete_files=False)
     await adapter.delete(**connection, client_job_id=NZO_ID, delete_files=True)
+    await adapter.cancel(**connection, client_job_id=NZO_ID)
 
     repair = parse_history_slot(
         {
@@ -275,9 +280,25 @@ async def test_controls_and_history_phases_keep_repair_and_import_distinct() -> 
             "output": "json",
             "apikey": API_KEY,
             "mode": "queue",
+            "name": "priority",
+            "value": NZO_ID,
+            "value2": "2",
+        },
+        {
+            "output": "json",
+            "apikey": API_KEY,
+            "mode": "queue",
             "name": "delete",
             "value": NZO_ID,
             "del_files": "0",
+        },
+        {
+            "output": "json",
+            "apikey": API_KEY,
+            "mode": "queue",
+            "name": "delete",
+            "value": NZO_ID,
+            "del_files": "1",
         },
         {
             "output": "json",

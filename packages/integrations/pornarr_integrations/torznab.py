@@ -33,6 +33,11 @@ class TorznabAdapter:
     async def search(self, *, base_url: str, api_key: str, query: str) -> list[Release]:
         return parse_results(await self._request(base_url, api_key, {"t": "search", "q": query}))
 
+    async def rss(self, *, base_url: str, api_key: str) -> list[Release]:
+        """Fetch the indexer's unfiltered RSS feed without a search term."""
+
+        return parse_results(await self._request(base_url, api_key, {"t": "search"}))
+
     async def _request(self, base_url: str, api_key: str, params: dict[str, str]) -> str:
         try:
             async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS) as client:

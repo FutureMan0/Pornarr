@@ -27,8 +27,9 @@ administrator sees and controls the whole instance.
 ## Requirements
 
 Docker with the Compose plugin, one filesystem for downloads and library, and
-optionally a GPU for transcoding. See [deployment](docs/operations/deployment.md) —
-in particular the one-mount rule, which is the thing most setups get wrong.
+optionally a GPU for transcoding. Start with the
+[installation guide](docs/operations/installation.md); it covers the one-mount
+rule, GPU passthrough, reverse proxies, upgrades, and common failures.
 
 ## Documentation
 

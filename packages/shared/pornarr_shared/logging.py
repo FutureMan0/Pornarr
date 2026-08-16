@@ -10,11 +10,16 @@ redaction layer everything else logs through.
 
 from __future__ import annotations
 
+import json
 import logging
 import re
+from contextvars import ContextVar, Token
+from datetime import UTC, datetime
 from typing import Any, ClassVar
 
 REDACTED = "***"
+_request_id: ContextVar[str] = ContextVar("request_id", default="-")
+_job_id: ContextVar[str | None] = ContextVar("job_id", default=None)
 
 # Matches `key=value`, `key: value` and `"key": "value"` for sensitive names, in
 # whatever quoting a formatter happened to produce.
@@ -25,6 +30,7 @@ _SENSITIVE_KEY = (
     r"(?:api[_-]?key|apikey|password|passwd|secret|token|"
     r"client[_-]?secret|cookie|session[_-]?id)"
 )
+_PREFERENCE = re.compile(r"\b(?:media[_-]?)?preferences?\b", re.IGNORECASE)
 # Each pattern carries its own replacement. Inferring the replacement from the
 # group count is how the value ends up back in the output: in `key=value` the
 # second group IS the secret, while in a JSON pair it is the closing quote.
@@ -54,6 +60,8 @@ _PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
 
 def redact(text: str) -> str:
     """Replace anything that looks like a credential with a placeholder."""
+    if _PREFERENCE.search(text):
+        return REDACTED
     result = text
     for pattern, replacement in _PATTERNS:
         result = pattern.sub(replacement, result)
@@ -110,3 +118,53 @@ def install_redaction(logger: logging.Logger | None = None) -> None:
     for handler in target.handlers:
         if not any(isinstance(existing, RedactingFilter) for existing in handler.filters):
             handler.addFilter(redactor)
+
+
+def current_request_id() -> str:
+    return _request_id.get()
+
+
+def set_request_id(value: str) -> Token[str]:
+    return _request_id.set(value)
+
+
+def reset_request_id(token: Token[str]) -> None:
+    _request_id.reset(token)
+
+
+def current_job_id() -> str | None:
+    return _job_id.get()
+
+
+def set_job_id(value: str) -> Token[str | None]:
+    return _job_id.set(value)
+
+
+def reset_job_id(token: Token[str | None]) -> None:
+    _job_id.reset(token)
+
+
+class JsonFormatter(logging.Formatter):
+    """Machine-readable records with request correlation and no implicit extras."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        payload = {
+            "timestamp": datetime.now(UTC).isoformat(),
+            "level": record.levelname.lower(),
+            "logger": record.name,
+            "message": RedactingFilter()._scrub(record.getMessage()),
+            "request_id": current_request_id(),
+            "job_id": current_job_id(),
+        }
+        return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+
+
+def configure_logging(level: str) -> None:
+    """Apply the current runtime level and structured formatter to root handlers."""
+    root = logging.getLogger()
+    root.setLevel(level.upper())
+    if not root.handlers:
+        root.addHandler(logging.StreamHandler())
+    for handler in root.handlers:
+        handler.setFormatter(JsonFormatter())
+    install_redaction(root)
