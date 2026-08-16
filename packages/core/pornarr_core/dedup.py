@@ -1,12 +1,16 @@
-"""Pure exact and conservative fuzzy duplicate detection."""
+"""Conservative cross-indexer release grouping."""
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from difflib import SequenceMatcher
 from enum import StrEnum
 
+from pornarr_integrations.indexers import Release
+
+_WORDS = re.compile(r"[^a-z0-9]+")
 _TITLE_SIMILARITY_THRESHOLD = 0.85
 _MAX_DATE_DISTANCE_DAYS = 2
 _MAX_DURATION_DIFFERENCE = 0.05
@@ -42,62 +46,116 @@ class DuplicateDecision:
 
 
 def detect_duplicate(incoming: MediaCandidate, existing: MediaCandidate) -> DuplicateDecision:
-    """Classify an exact duplicate, fuzzy upgrade candidate or distinct media."""
+    """Preserve conservative import duplicate classification."""
     if incoming.oshash and incoming.oshash == existing.oshash:
         return DuplicateDecision(
             DuplicateClassification.DUPLICATE, frozenset({DuplicateSignal.OSHASH})
         )
-
     signals = frozenset(
         signal
         for signal, matches in (
-            (DuplicateSignal.TITLE, _title_matches(incoming.title, existing.title)),
-            (DuplicateSignal.STUDIO, _studio_matches(incoming.studio, existing.studio)),
+            (
+                DuplicateSignal.TITLE,
+                SequenceMatcher(None, incoming.title.casefold(), existing.title.casefold()).ratio()
+                > _TITLE_SIMILARITY_THRESHOLD,
+            ),
+            (
+                DuplicateSignal.STUDIO,
+                bool(
+                    incoming.studio
+                    and existing.studio
+                    and incoming.studio.strip().casefold() == existing.studio.strip().casefold()
+                ),
+            ),
             (
                 DuplicateSignal.RELEASE_DATE,
-                _date_matches(incoming.release_date, existing.release_date),
+                bool(
+                    incoming.release_date
+                    and existing.release_date
+                    and abs((incoming.release_date - existing.release_date).days)
+                    <= _MAX_DATE_DISTANCE_DAYS
+                ),
             ),
             (
                 DuplicateSignal.DURATION,
-                _duration_matches(incoming.duration_seconds, existing.duration_seconds),
+                bool(
+                    incoming.duration_seconds
+                    and existing.duration_seconds
+                    and abs(incoming.duration_seconds - existing.duration_seconds)
+                    / max(incoming.duration_seconds, existing.duration_seconds)
+                    <= _MAX_DURATION_DIFFERENCE
+                ),
             ),
         )
         if matches
     )
-    fuzzy_signals = {
+    expected = {
         DuplicateSignal.TITLE,
         DuplicateSignal.STUDIO,
         DuplicateSignal.RELEASE_DATE,
         DuplicateSignal.DURATION,
     }
-    classification = (
+    return DuplicateDecision(
         DuplicateClassification.UPGRADE_CANDIDATE
-        if signals == fuzzy_signals
-        else DuplicateClassification.DISTINCT
-    )
-    return DuplicateDecision(classification, signals)
-
-
-def _title_matches(incoming: str, existing: str) -> bool:
-    return (
-        SequenceMatcher(None, incoming.casefold(), existing.casefold()).ratio()
-        > _TITLE_SIMILARITY_THRESHOLD
+        if signals == expected
+        else DuplicateClassification.DISTINCT,
+        signals,
     )
 
 
-def _studio_matches(incoming: str | None, existing: str | None) -> bool:
-    return (
-        bool(incoming and existing) and incoming.strip().casefold() == existing.strip().casefold()
+@dataclass(frozen=True, slots=True)
+class IndexedRelease:
+    indexer_id: str
+    priority: int
+    release: Release
+
+
+@dataclass(frozen=True, slots=True)
+class ReleaseGroup:
+    primary: IndexedRelease
+    alternates: tuple[IndexedRelease, ...]
+
+
+def deduplicate(
+    releases: list[IndexedRelease], *, size_tolerance: float = 0.03
+) -> list[ReleaseGroup]:
+    """Keep the highest-priority complete release and retain safe alternates."""
+    groups: list[list[IndexedRelease]] = []
+    for candidate in releases:
+        for group in groups:
+            if _same_release(candidate.release, group[0].release, size_tolerance):
+                group.append(candidate)
+                break
+        else:
+            groups.append([candidate])
+    return [
+        ReleaseGroup(primary=ordered[0], alternates=tuple(ordered[1:]))
+        for group in groups
+        if (ordered := sorted(group, key=_rank))
+    ]
+
+
+def _rank(candidate: IndexedRelease) -> tuple[int, int, int, str]:
+    release = candidate.release
+    completeness = sum(
+        value is not None for value in (release.download_url, release.size, release.published_at)
     )
+    return (candidate.priority, -completeness, -(release.seeders or 0), release.guid)
 
 
-def _date_matches(incoming: date | None, existing: date | None) -> bool:
-    return (
-        bool(incoming and existing) and abs((incoming - existing).days) <= _MAX_DATE_DISTANCE_DAYS
-    )
-
-
-def _duration_matches(incoming: float | None, existing: float | None) -> bool:
-    if not incoming or not existing:
+def _same_release(left: Release, right: Release, tolerance: float) -> bool:
+    if left.info_hash and right.info_hash:
+        return left.info_hash.casefold() == right.info_hash.casefold()
+    if _title(left.title) != _title(right.title) or left.size is None or right.size is None:
         return False
-    return abs(incoming - existing) / max(incoming, existing) <= _MAX_DURATION_DIFFERENCE
+    if abs(left.size - right.size) > max(left.size, right.size) * tolerance:
+        return False
+    return _age_close(left.published_at, right.published_at)
+
+
+def _title(value: str) -> str:
+    return _WORDS.sub("", value.casefold())
+
+
+def _age_close(left: datetime | None, right: datetime | None) -> bool:
+    return left is None or right is None or abs((left - right).total_seconds()) <= 24 * 60 * 60

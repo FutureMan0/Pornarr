@@ -95,19 +95,21 @@ export function useIndexerSearch(
   });
 }
 
-export function useGrabRelease(): UseMutationResult<void, ApiRequestError, ExternalSearchItem> {
+export type GrabTarget = { readonly item: ExternalSearchItem; readonly releaseId: string };
+
+export function useGrabRelease(): UseMutationResult<void, ApiRequestError, GrabTarget> {
   const queryClient = useQueryClient();
-  return useMutation<void, ApiRequestError, ExternalSearchItem>({
-    mutationFn: async (release) => {
+  return useMutation<void, ApiRequestError, GrabTarget>({
+    mutationFn: async ({ item, releaseId }) => {
       const request = await getApiClient().POST("/api/requests", {
-        body: { query: release.title, selected_release_guid: release.guid, priority: 50 },
+        body: { query: item.title, selected_release_guid: item.guid, priority: 50 },
       });
       if (request.error !== undefined || request.data === undefined) {
         throw apiFailure(request.error, request.response);
       }
       const grab = await getApiClient().POST("/api/requests/{request_id}/grab", {
         params: { path: { request_id: request.data.id } },
-        body: { release_id: release.id },
+        body: { release_id: releaseId },
       });
       if (grab.error !== undefined || grab.data === undefined)
         throw apiFailure(grab.error, grab.response);

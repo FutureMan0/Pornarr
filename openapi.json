@@ -818,8 +818,40 @@
         "title": "ErrorResponse",
         "type": "object"
       },
+      "ExternalSearchAlternate": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "indexer_id": {
+            "format": "uuid",
+            "title": "Indexer Id",
+            "type": "string"
+          },
+          "indexer_name": {
+            "title": "Indexer Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "indexer_id",
+          "indexer_name"
+        ],
+        "title": "ExternalSearchAlternate",
+        "type": "object"
+      },
       "ExternalSearchItem": {
         "properties": {
+          "alternates": {
+            "items": {
+              "$ref": "#/components/schemas/ExternalSearchAlternate"
+            },
+            "title": "Alternates",
+            "type": "array"
+          },
           "estimate": {
             "$ref": "#/components/schemas/SearchEstimateResponse"
           },

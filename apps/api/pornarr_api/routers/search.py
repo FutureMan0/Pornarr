@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from pornarr_api.auth import database_session, get_current_user
+from pornarr_core.dedup import IndexedRelease, deduplicate
 from pornarr_core.eta import Confidence, Protocol, search_estimate, unknown
 from pornarr_core.filters import (
     ContentCandidate,
@@ -49,6 +50,7 @@ from pornarr_db.models.statistics import PerformanceMetric
 from pornarr_db.models.user import User
 from pornarr_db.release_cache import normalize_release_title
 from pornarr_db.statistics import rolling_average
+from pornarr_integrations.indexers import Release
 from pornarr_shared.events import publish_event
 from pornarr_shared.jobs import (
     INDEXER_QUEUE,
@@ -138,6 +140,13 @@ class ExternalSearchItem(BaseModel):
     seeders: int | None
     estimate: SearchEstimateResponse
     match: SearchMatchResponse
+    alternates: list[ExternalSearchAlternate] = Field(default_factory=list)
+
+
+class ExternalSearchAlternate(BaseModel):
+    id: UUID
+    indexer_id: UUID
+    indexer_name: str
 
 
 class IndexerSearchState(BaseModel):
@@ -360,7 +369,55 @@ async def _external_items(
             minimum_seeders=minimum_seeders,
         )
     ]
-    return sorted(filtered, key=lambda item: _external_sort_key(item, state.query, sort))
+    by_release_id = {item.id: item for item in filtered}
+    release_by_key = {(str(release.indexer_id), release.guid): release for release in releases}
+    groups = deduplicate(
+        [
+            IndexedRelease(
+                indexer_id=str(release.indexer_id),
+                priority=indexers[release.indexer_id].priority,
+                release=_cached_release(release),
+            )
+            for release in releases
+            if release.id in by_release_id and release.indexer_id in indexers
+        ]
+    )
+    deduplicated: list[ExternalSearchItem] = []
+    for group in groups:
+        primary_release = release_by_key[(group.primary.indexer_id, group.primary.release.guid)]
+        primary = by_release_id[primary_release.id]
+        primary.alternates = [
+            ExternalSearchAlternate(
+                id=release.id,
+                indexer_id=release.indexer_id,
+                indexer_name=indexers[release.indexer_id].name,
+            )
+            for alternate in group.alternates
+            if (release := release_by_key.get((alternate.indexer_id, alternate.release.guid)))
+            is not None
+        ]
+        deduplicated.append(primary)
+    return sorted(deduplicated, key=lambda item: _external_sort_key(item, state.query, sort))
+
+
+def _cached_release(release: ReleaseCache) -> Release:
+    return Release(
+        guid=release.guid,
+        title=release.title,
+        details_url=release.details_url,
+        download_url=release.download_url,
+        published_at=release.published_at,
+        size=release.size,
+        categories=tuple(release.categories),
+        seeders=release.seeders,
+        peers=release.peers,
+        info_hash=release.info_hash,
+        magnet_url=release.magnet_url,
+        groups=tuple(release.groups),
+        poster=release.poster,
+        parts=release.parts,
+        password_protected=release.password_protected,
+    )
 
 
 def _release_keys(results: dict[str, list[dict[str, object]]]) -> set[tuple[UUID, str]]:
