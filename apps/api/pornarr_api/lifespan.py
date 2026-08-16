@@ -13,6 +13,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 
 import redis.asyncio as redis
+from arq.connections import RedisSettings, create_pool
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -52,6 +53,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await dispose_engine()
         raise
     app.state.redis = redis.from_url(settings.redis_url, decode_responses=True)
+    # A second client, for the job queue.
+    #
+    # It cannot be the one above. That one decodes responses to `str`, which is
+    # right for the session store and every other value the API reads back as
+    # text; arq stores job payloads as packed bytes and a decoding client
+    # corrupts them on the way out. `ArqRedis` is a `Redis` subclass, so the
+    # temptation is to use one object for both — the encoding is what makes
+    # that impossible, not the API surface.
+    app.state.queue = await create_pool(RedisSettings.from_dsn(settings.redis_url))
     app.state.hardware_capabilities = detect_hardware_capabilities(
         requested=settings.transcode_hwaccel
     )
@@ -73,5 +83,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # than as an error.
         await app.state.redis.aclose()
         await app.state.redis.connection_pool.disconnect()
+        await app.state.queue.aclose()
+        await app.state.queue.connection_pool.disconnect()
         await dispose_engine()
         logger.info("api stopped")

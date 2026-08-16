@@ -22,6 +22,25 @@ from pornarr_db.models.user import User, UserRole
 from tests.api.test_app import build_settings
 
 
+class MemoryQueue:
+    """The job queue, recorded rather than run.
+
+    A separate object from `MemoryRedis` because it is a separate client in the
+    application: the session store decodes to `str`, arq needs bytes, and the
+    two cannot be one connection. Keeping them apart here means a test that
+    exercises an enqueue path has to say so, instead of quietly attaching
+    `enqueue_job` to the session client — which is how the API came to call a
+    method its Redis object never had.
+    """
+
+    def __init__(self) -> None:
+        self.jobs: list[tuple[str, tuple[object, ...], dict[str, object]]] = []
+
+    async def enqueue_job(self, function: str, *args: object, **kwargs: object) -> object:
+        self.jobs.append((function, args, kwargs))
+        return None
+
+
 class MemoryRedis:
     """The small Redis surface authentication uses in the fast suite."""
 
