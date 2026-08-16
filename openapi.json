@@ -712,6 +712,87 @@
         "title": "DownloadClientResponse",
         "type": "object"
       },
+      "DownloadClientUpdate": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "credentials": {
+            "format": "password",
+            "title": "Credentials",
+            "type": "string",
+            "writeOnly": true
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "host": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Host",
+            "type": "string"
+          },
+          "implementation": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Implementation",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "port": {
+            "maximum": 65535.0,
+            "minimum": 1.0,
+            "title": "Port",
+            "type": "integer"
+          },
+          "priority": {
+            "default": 0,
+            "title": "Priority",
+            "type": "integer"
+          },
+          "protocol": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Protocol",
+            "type": "string"
+          },
+          "remove_completed": {
+            "default": false,
+            "title": "Remove Completed",
+            "type": "boolean"
+          },
+          "url_base": {
+            "default": "",
+            "title": "Url Base",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "protocol",
+          "implementation",
+          "host",
+          "port",
+          "credentials"
+        ],
+        "title": "DownloadClientUpdate",
+        "type": "object"
+      },
       "DownloadClientWrite": {
         "properties": {
           "category": {
@@ -4928,6 +5009,57 @@
           }
         },
         "summary": "Delete Download Client",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "operationId": "admin_update_download_client",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DownloadClientUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadClientResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Download Client",
         "tags": [
           "admin"
         ]

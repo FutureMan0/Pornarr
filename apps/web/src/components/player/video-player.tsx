@@ -17,7 +17,10 @@ async function responseJson<T>(url: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export function VideoPlayer({ mediaId, title }: { readonly mediaId: string; readonly title: string }) {
+export function VideoPlayer({
+  mediaId,
+  title,
+}: { readonly mediaId: string; readonly title: string }) {
   const { t } = useTranslation();
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
@@ -32,10 +35,10 @@ export function VideoPlayer({ mediaId, title }: { readonly mediaId: string; read
         const info = await responseJson<PlaybackInfo>(`/api/media/${mediaId}/playback-info`);
         const source = info.direct_play
           ? `/api/media/${mediaId}/stream`
-          : (await responseJson<TranscodeSession>(`/api/transcode/media/${mediaId}/sessions`, {
+          : await responseJson<TranscodeSession>(`/api/transcode/media/${mediaId}/sessions`, {
               method: "POST",
               headers: csrfHeaders(),
-            }));
+            });
         if (cancelled || video.current === null) return;
         if (typeof source === "string") {
           video.current.src = source;
@@ -94,7 +97,10 @@ export function VideoPlayer({ mediaId, title }: { readonly mediaId: string; read
       method: "POST",
       headers: { "Content-Type": "application/json", ...csrfHeaders() },
       credentials: "same-origin",
-      body: JSON.stringify({ position_seconds: element.currentTime, duration_seconds: element.duration }),
+      body: JSON.stringify({
+        position_seconds: element.currentTime,
+        duration_seconds: element.duration,
+      }),
       keepalive: true,
     });
   }
@@ -110,7 +116,7 @@ export function VideoPlayer({ mediaId, title }: { readonly mediaId: string; read
         onTimeUpdate={reportProgress}
         onEnded={reportProgress}
       >
-        <track kind="subtitles" />
+        <track kind="captions" />
       </video>
     </section>
   );

@@ -53,7 +53,9 @@ class RecommendationFeedbackWrite(BaseModel):
         raise ValueError("event type must be not_interested, hide_tag, or hide_performer")
 
 
-def recommendation_response(candidate: RecommendationCandidate, title: str) -> RecommendationResponse:
+def recommendation_response(
+    candidate: RecommendationCandidate, title: str
+) -> RecommendationResponse:
     return RecommendationResponse(
         media_id=candidate.media_id,
         title=title,
@@ -86,7 +88,12 @@ async def list_recommendations(user: CurrentUser, session: Session) -> list[Reco
         .order_by(RecommendationCandidate.score.desc(), RecommendationCandidate.id)
     )
     items = list(candidates)
-    titles = {media.id: media.title for media in await session.scalars(select(Media).where(Media.id.in_([item.media_id for item in items])))}
+    titles = {
+        media.id: media.title
+        for media in await session.scalars(
+            select(Media).where(Media.id.in_([item.media_id for item in items]))
+        )
+    }
     return [recommendation_response(candidate, titles[candidate.media_id]) for candidate in items]
 
 

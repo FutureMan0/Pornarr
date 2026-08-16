@@ -150,7 +150,8 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        /** Update Download Client */
+        put: operations["admin_update_download_client"];
         post?: never;
         /** Delete Download Client */
         delete: operations["admin_delete_download_client"];
@@ -1760,6 +1761,46 @@ export interface components {
             /** Url Base */
             url_base: string;
         };
+        /** DownloadClientUpdate */
+        DownloadClientUpdate: {
+            /** Category */
+            category?: string | null;
+            /**
+             * Credentials
+             * Format: password
+             */
+            credentials: string;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Host */
+            host: string;
+            /** Implementation */
+            implementation: string;
+            /** Name */
+            name: string;
+            /** Port */
+            port: number;
+            /**
+             * Priority
+             * @default 0
+             */
+            priority: number;
+            /** Protocol */
+            protocol: string;
+            /**
+             * Remove Completed
+             * @default false
+             */
+            remove_completed: boolean;
+            /**
+             * Url Base
+             * @default
+             */
+            url_base: string;
+        };
         /** DownloadClientWrite */
         DownloadClientWrite: {
             /** Category */
@@ -3322,6 +3363,41 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadClientResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_update_download_client: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DownloadClientUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

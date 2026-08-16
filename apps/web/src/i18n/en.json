@@ -2,10 +2,54 @@
   "app": {
     "name": "Pornarr"
   },
-  "monitors": { "title": "Monitors", "loading": "Loading monitors", "enabled": "Enabled", "disabled": "Disabled", "enable": "Enable", "disable": "Disable", "search": "Search now" },
-  "recommendations": { "title": "Recommendations", "loading": "Loading recommendations", "empty": "Watch and rate some media first. Your recommendations will appear here.", "reason": "Recommended because you liked: {{values}}", "notInterested": "Not interested" },
-  "queue": { "title": "Downloads", "loading": "Loading downloads", "priority": "Priority {{value}}", "speed": "{{value}} bytes/s", "speedUnknown": "Speed unavailable", "estimate": "Estimated {{low}}–{{high}} seconds ({{confidence}} confidence)", "estimateUnknown": "No estimate available", "failure": "Download failed: {{error}}. Check the download client and retry the request." },
-  "requests": { "title": "Requests", "intro": "Follow each request from search to your library.", "loading": "Loading requests", "empty": "No requests yet.", "cancel": "Cancel", "retry": "Try again", "history": "Request history", "priority": "Priority {{value}}", "status": { "searching": "Searching", "results_found": "Results found", "queued": "Queued", "downloading": "Downloading", "processing": "Processing", "available": "Available", "failed": "Failed", "not_found": "Not found", "monitoring": "Monitoring", "cancelled": "Cancelled" } },
+  "monitors": {
+    "title": "Monitors",
+    "loading": "Loading monitors",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "enable": "Enable",
+    "disable": "Disable",
+    "search": "Search now"
+  },
+  "recommendations": {
+    "title": "Recommendations",
+    "loading": "Loading recommendations",
+    "empty": "Watch and rate some media first. Your recommendations will appear here.",
+    "reason": "Recommended because you liked: {{values}}",
+    "notInterested": "Not interested"
+  },
+  "queue": {
+    "title": "Downloads",
+    "loading": "Loading downloads",
+    "priority": "Priority {{value}}",
+    "speed": "{{value}} bytes/s",
+    "speedUnknown": "Speed unavailable",
+    "estimate": "Estimated {{low}}–{{high}} seconds ({{confidence}} confidence)",
+    "estimateUnknown": "No estimate available",
+    "failure": "Download failed: {{error}}. Check the download client and retry the request."
+  },
+  "requests": {
+    "title": "Requests",
+    "intro": "Follow each request from search to your library.",
+    "loading": "Loading requests",
+    "empty": "No requests yet.",
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "history": "Request history",
+    "priority": "Priority {{value}}",
+    "status": {
+      "searching": "Searching",
+      "results_found": "Results found",
+      "queued": "Queued",
+      "downloading": "Downloading",
+      "processing": "Processing",
+      "available": "Available",
+      "failed": "Failed",
+      "not_found": "Not found",
+      "monitoring": "Monitoring",
+      "cancelled": "Cancelled"
+    }
+  },
   "player": {
     "label": "Player for {{title}}",
     "unavailable": "This video cannot be played right now."

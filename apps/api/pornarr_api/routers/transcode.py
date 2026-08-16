@@ -228,14 +228,21 @@ async def start_session(
     if media_file is None:
         raise HTTPException(status_code=404)
     source = Path(media_file.path).resolve()
-    if not source.is_relative_to(request.app.state.settings.library_path.resolve()) or not source.is_file():
+    if (
+        not source.is_relative_to(request.app.state.settings.library_path.resolve())
+        or not source.is_file()
+    ):
         raise HTTPException(status_code=404)
 
     registry = get_registry(request)
-    capabilities = getattr(request.app.state, "hardware_capabilities", HardwareCapabilities((), (), ()))
+    capabilities = getattr(
+        request.app.state, "hardware_capabilities", HardwareCapabilities((), (), ())
+    )
     limits = TranscodeLimits.from_settings(request.app.state.settings, capabilities)
     mode = await registry.select_mode(user.id, limits)
-    capability = capabilities.methods[0] if mode.value == "hardware" and capabilities.methods else None
+    capability = (
+        capabilities.methods[0] if mode.value == "hardware" and capabilities.methods else None
+    )
     if mode.value == "hardware" and capability is None:
         limits = TranscodeLimits(0, limits.software, limits.per_user)
         mode = await registry.select_mode(user.id, limits)

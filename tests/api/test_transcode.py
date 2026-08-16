@@ -106,7 +106,9 @@ async def test_only_the_session_owner_can_heartbeat(app, client, tmp_path: Path)
     assert heartbeat.status_code == 403
 
 
-async def test_owner_can_read_hls_assets_and_stop_their_session(app, client, tmp_path: Path) -> None:
+async def test_owner_can_read_hls_assets_and_stop_their_session(
+    app, client, tmp_path: Path
+) -> None:
     from pornarr_media.sessions import TranscodeSessionRegistry
 
     app.state.settings = app.state.settings.model_copy(update={"data_path": tmp_path})

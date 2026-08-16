@@ -73,7 +73,11 @@ export function MediaDetailRoute() {
         })}{" "}
         · {media.metadata_source}
       </p>
-      {media.playable ? <VideoPlayer mediaId={media.id} title={media.title} /> : <p>{t("media.unavailable")}</p>}
+      {media.playable ? (
+        <VideoPlayer mediaId={media.id} title={media.title} />
+      ) : (
+        <p>{t("media.unavailable")}</p>
+      )}
       <section>
         <h2 className="text-lg text-ink">{t("media.tags")}</h2>
         <ul className="flex flex-wrap gap-2">
