@@ -17,6 +17,9 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
+import { useNavCounts } from "./nav-counts";
+import { SidebarBrand, SidebarIdentity } from "./sidebar-identity";
+
 export type SidebarLayout = "full" | "rail" | "drawer";
 
 export interface NavItem {
@@ -82,6 +85,8 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
   const { t } = useTranslation();
   const drawerRef = useRef<HTMLDivElement>(null);
   const isDrawer = layout === "drawer";
+  const isRail = layout === "rail";
+  const counts = useNavCounts();
 
   // An overlay covers what the reader was reading, so focus moves into it and
   // stays until it closes. Returning focus afterwards belongs to the caller,
@@ -148,32 +153,51 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
         </button>
       ) : null}
 
-      <ul className="flex flex-col gap-1">
-        {NAV_ITEMS.map((item) => (
-          <li key={item.id}>
-            <NavLink
-              to={item.path}
-              onClick={isDrawer ? onClose : undefined}
-              className={({ isActive }) =>
-                cx(
-                  "text-sm",
-                  "flex items-center gap-3 rounded-md px-2 py-2 text-ink-muted",
-                  "transition-colors duration-[var(--duration-fast)] ease-out",
-                  "hover:bg-surface-3 hover:text-ink",
-                  layout === "rail" && "justify-center",
-                  isActive && "bg-[var(--primary-weak)] text-ink",
-                )
-              }
-            >
-              <NavIcon id={item.id} label={t(`nav.${item.id}`)} />
-              {/* The rail keeps the label for assistive technology; only the
-                  pixels go away. */}
-              <span className={layout === "rail" ? "visually-hidden" : undefined}>
-                {t(`nav.${item.id}`)}
-              </span>
-            </NavLink>
-          </li>
-        ))}
+      <SidebarBrand compact={isRail} />
+      <SidebarIdentity compact={isRail} />
+
+      <ul className="flex flex-col gap-0.5">
+        {NAV_ITEMS.map((item) => {
+          const label = t(`nav.${item.id}`);
+          const count = counts[item.id];
+          return (
+            <li key={item.id}>
+              <NavLink
+                to={item.path}
+                onClick={isDrawer ? onClose : undefined}
+                className={({ isActive }) =>
+                  cx(
+                    "text-sm",
+                    "flex items-center gap-2 rounded-md px-2 py-2 text-ink-muted",
+                    "transition-colors duration-[var(--duration-fast)] ease-out",
+                    "hover:bg-surface-3 hover:text-ink",
+                    isRail && "justify-center",
+                    // Accent as a line, not a flood: a wash at 14% and the
+                    // accent's light step for the label, which is the step that
+                    // clears body contrast. The 500 step would not.
+                    isActive &&
+                      "bg-[color-mix(in_oklch,var(--primary)_14%,transparent)] text-[var(--pa-accent-300)]",
+                  )
+                }
+              >
+                <NavIcon id={item.id} label={label} />
+                {/* The rail keeps the label for assistive technology; only the
+                    pixels go away. */}
+                <span className={isRail ? "visually-hidden" : undefined}>{label}</span>
+                {count === undefined ? null : (
+                  <span
+                    className={cx(
+                      "text-2xs tabular-nums text-ink-muted",
+                      isRail ? "visually-hidden" : "ml-auto",
+                    )}
+                  >
+                    {count}
+                  </span>
+                )}
+              </NavLink>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );
