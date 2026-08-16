@@ -62,7 +62,8 @@ async def test_library_browses_active_media_with_user_progress(app, client: Asyn
             "resolution": None,
             "position_seconds": 10,
             "progress_duration_seconds": 60,
-            "completed": False,
-            "poster_url": f"/api/media/{media.id}/poster",
+                "completed": False,
+                "poster_url": f"/api/media/{media.id}/poster",
+                "sprite_url": f"/api/media/{media.id}/sprite",
         }
     ]

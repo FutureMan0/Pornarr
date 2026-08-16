@@ -1417,6 +1417,17 @@
             ],
             "title": "Resolution"
           },
+          "sprite_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sprite Url"
+          },
           "studio": {
             "anyOf": [
               {
@@ -1444,7 +1455,8 @@
           "position_seconds",
           "progress_duration_seconds",
           "completed",
-          "poster_url"
+          "poster_url",
+          "sprite_url"
         ],
         "title": "LibraryItemResponse",
         "type": "object"
@@ -6601,6 +6613,43 @@
           }
         },
         "summary": "Poster",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/media/{media_id}/sprite": {
+      "get": {
+        "description": "Serve the generated contact sheet only for an existing active item.",
+        "operationId": "library_sprite",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sprite",
         "tags": [
           "library"
         ]

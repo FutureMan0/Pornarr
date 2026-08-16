@@ -851,6 +851,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/media/{media_id}/sprite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sprite
+         * @description Serve the generated contact sheet only for an existing active item.
+         */
+        get: operations["library_sprite"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/media/{media_id}/stream": {
         parameters: {
             query?: never;
@@ -1924,6 +1944,8 @@ export interface components {
             release_date: string | null;
             /** Resolution */
             resolution: string | null;
+            /** Sprite Url */
+            sprite_url: string | null;
             /** Studio */
             studio: string | null;
             /** Title */
@@ -4648,6 +4670,35 @@ export interface operations {
         };
     };
     library_poster: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    library_sprite: {
         parameters: {
             query?: never;
             header?: never;
