@@ -3096,10 +3096,15 @@
           "score": {
             "title": "Score",
             "type": "number"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
           }
         },
         "required": [
           "media_id",
+          "title",
           "score",
           "reason",
           "model_version",

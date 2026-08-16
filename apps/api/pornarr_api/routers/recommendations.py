@@ -15,6 +15,7 @@ from pornarr_api.auth import database_session, get_current_user
 from pornarr_core.scoring import RecommendationWeights
 from pornarr_db.events import record_user_event
 from pornarr_db.models.entities import Performer, Tag
+from pornarr_db.models.media import Media
 from pornarr_db.models.playback import UserEvent, UserEventType
 from pornarr_db.models.preferences import UserPreference, UserPreferenceState
 from pornarr_db.models.recommendation import RecommendationCandidate
@@ -30,6 +31,7 @@ Session = Annotated[AsyncSession, Depends(database_session)]
 
 class RecommendationResponse(BaseModel):
     media_id: UUID
+    title: str
     score: float
     reason: dict[str, object]
     model_version: str
@@ -51,9 +53,10 @@ class RecommendationFeedbackWrite(BaseModel):
         raise ValueError("event type must be not_interested, hide_tag, or hide_performer")
 
 
-def recommendation_response(candidate: RecommendationCandidate) -> RecommendationResponse:
+def recommendation_response(candidate: RecommendationCandidate, title: str) -> RecommendationResponse:
     return RecommendationResponse(
         media_id=candidate.media_id,
+        title=title,
         score=candidate.score,
         reason=candidate.reason_json,
         model_version=candidate.model_version,
@@ -82,7 +85,9 @@ async def list_recommendations(user: CurrentUser, session: Session) -> list[Reco
         )
         .order_by(RecommendationCandidate.score.desc(), RecommendationCandidate.id)
     )
-    return [recommendation_response(candidate) for candidate in candidates]
+    items = list(candidates)
+    titles = {media.id: media.title for media in await session.scalars(select(Media).where(Media.id.in_([item.media_id for item in items])))}
+    return [recommendation_response(candidate, titles[candidate.media_id]) for candidate in items]
 
 
 @router.post("/{media_id}/feedback", status_code=204)
