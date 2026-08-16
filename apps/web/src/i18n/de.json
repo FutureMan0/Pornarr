@@ -373,6 +373,11 @@
       "quality_not_detected": "Aus diesem Release-Namen konnte keine erlaubte Qualität erkannt werden."
     }
   },
+  "library": {
+    "title": "Bibliothek",
+    "loading": "Bibliothek wird geladen…",
+    "empty": "Deine Bibliothek ist leer. Konfiguriere einen Stammordner und scanne ihn, um Medien hinzuzufügen."
+  },
   "errors": {
     "INVALID_CREDENTIALS": "Benutzername und Passwort passen nicht zusammen.",
     "NOT_AUTHENTICATED": "Deine Sitzung ist abgelaufen. Melde dich erneut an.",
