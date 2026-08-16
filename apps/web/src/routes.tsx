@@ -20,6 +20,7 @@ import { ForbiddenRoute, NotFoundRoute } from "./errors/route-errors";
 import { QuarantineReviewRoute } from "./routes/admin/quarantine/quarantine-review-route";
 import { LibraryRoute } from "./routes/library/library-route";
 import { MediaDetailRoute } from "./routes/media/media-detail-route";
+import { MonitorsRoute } from "./routes/monitors/monitors-route";
 import { RequestsRoute } from "./routes/requests/requests-route";
 import { RecommendationsRoute } from "./routes/recommendations/recommendations-route";
 import { QueueRoute } from "./routes/queue/queue-route";
@@ -66,6 +67,7 @@ export const appRoutes: RouteObject[] = [
               { path: "settings", element: <Navigate to="/settings/quality" replace /> },
               { path: "settings/quality", element: <QualityProfilesRoute /> },
               { path: "search", element: <SearchRoute /> },
+              { path: "monitors", element: <MonitorsRoute /> },
               { path: "requests", element: <RequestsRoute /> },
               { path: "recommendations", element: <RecommendationsRoute /> },
               { path: "downloads", element: <QueueRoute /> },
