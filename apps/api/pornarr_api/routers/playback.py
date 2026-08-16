@@ -132,6 +132,7 @@ async def playback_info(
 
 
 class PlaybackProgressWrite(BaseModel):
+    device_label: Annotated[str | None, Field(max_length=64)] = None
     position_seconds: Annotated[float, Field(ge=0)]
     duration_seconds: Annotated[float, Field(gt=0)]
 
@@ -143,6 +144,7 @@ class PlaybackProgressWrite(BaseModel):
 
 
 class PlaybackProgressResponse(BaseModel):
+    device_label: str | None
     media_id: UUID
     position_seconds: float
     duration_seconds: float
@@ -151,6 +153,7 @@ class PlaybackProgressResponse(BaseModel):
 
 def progress_response(progress: PlaybackProgress) -> PlaybackProgressResponse:
     return PlaybackProgressResponse(
+        device_label=progress.device_label,
         media_id=progress.media_id,
         position_seconds=progress.position_seconds,
         duration_seconds=progress.duration_seconds,
@@ -195,11 +198,16 @@ async def report_progress(
             duration_seconds=payload.duration_seconds,
             completed=reached_threshold,
             completed_at=datetime.now(UTC) if reached_threshold else None,
+            device_label=payload.device_label,
         )
         session.add(progress)
     else:
         progress.position_seconds = payload.position_seconds
         progress.duration_seconds = payload.duration_seconds
+        # Only overwrite when the client actually names itself, or picking a
+        # title up on a device that does not would blank the label.
+        if payload.device_label is not None:
+            progress.device_label = payload.device_label
         if reached_threshold and not progress.completed:
             progress.completed = True
             progress.completed_at = datetime.now(UTC)
@@ -238,3 +246,51 @@ async def continue_watching(user: CurrentUser, session: Session) -> list[Playbac
         .order_by(PlaybackProgress.updated_at.desc())
     )
     return [progress_response(item) for item in progress]
+
+
+class PlayingOnResponse(BaseModel):
+    """One device this account currently has a transcode running on."""
+
+    session_id: UUID
+    media_id: UUID
+    media_title: str
+    device_label: str | None
+    mode: str
+    hardware: bool
+    started_at: datetime
+
+
+@progress_router.get("/sessions/mine", response_model=list[PlayingOnResponse])
+async def my_sessions(
+    request: Request, user: CurrentUser, session: Session
+) -> list[PlayingOnResponse]:
+    """What "Playing on" reads: this account's live transcodes.
+
+    Direct play deliberately does not appear. A direct-playing client streams
+    the file without asking the server to keep any session state, so there is
+    nothing here to report — the absence of a row for a device *is* the signal
+    that it is not transcoding, and inventing a record would mean tracking
+    playback the server otherwise has no reason to know about.
+    """
+    registry = getattr(request.app.state, "transcode_sessions", None)
+    if registry is None:
+        return []
+    mine = [active for active in await registry.active_sessions() if active.user_id == user.id]
+    titles = {
+        media.id: media.title
+        for media in await session.scalars(
+            select(Media).where(Media.id.in_({active.media_id for active in mine}))
+        )
+    }
+    return [
+        PlayingOnResponse(
+            session_id=active.id,
+            media_id=active.media_id,
+            media_title=titles.get(active.media_id, ""),
+            device_label=active.device_label,
+            mode=active.mode,
+            hardware=active.hardware,
+            started_at=active.created_at,
+        )
+        for active in sorted(mine, key=lambda active: active.created_at, reverse=True)
+    ]

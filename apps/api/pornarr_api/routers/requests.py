@@ -129,6 +129,10 @@ class RequestCreate(BaseModel):
     query: Annotated[str, Field(min_length=1, max_length=512)]
     selected_release_guid: Annotated[str | None, Field(max_length=1024)] = None
     priority: Annotated[int, Field(ge=0, le=USER_REQUEST_PRIORITY)] = USER_REQUEST_PRIORITY
+    # Which library the result should land in. Null means the requester's own,
+    # which is what every existing client sends. Only an administrator may aim
+    # an import at somebody else's shelf — see `resolve_target_owner`.
+    target_owner_id: UUID | None = None
 
     @field_validator("query")
     @classmethod
@@ -614,3 +618,22 @@ async def cancel_request(
     await cancel_download_if_present(http_request, session, request)
     await session.flush()
     return request_response(request, await request_history(session, request.id))
+
+
+async def resolve_target_owner(
+    session: AsyncSession, requester: User, target_owner_id: UUID | None
+) -> UUID:
+    """Where an approved request should deposit its media.
+
+    A guest may only fill their own library. Letting one guest push titles into
+    another's would turn a private library into a shared inbox, which is the
+    opposite of what the setting is for.
+    """
+    if target_owner_id is None or target_owner_id == requester.id:
+        return requester.id
+    if requester.role is not UserRole.ADMIN:
+        raise HTTPException(status_code=403)
+    target = await session.get(User, target_owner_id)
+    if target is None or not target.is_active:
+        raise HTTPException(status_code=404)
+    return target_owner_id
