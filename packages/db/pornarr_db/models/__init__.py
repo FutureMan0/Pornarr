@@ -60,6 +60,7 @@ from pornarr_db.models.social import (
 from pornarr_db.models.statistics import PerformanceMeasurement, PerformanceMetric
 from pornarr_db.models.storage import DailyStorageUsage
 from pornarr_db.models.user import User, UserRole
+from pornarr_db.models.watchlist import WatchlistEntry
 
 __all__ = [
     "AuditLog",
@@ -133,4 +134,5 @@ __all__ = [
     "UserPreference",
     "UserPreferenceState",
     "UserRole",
+    "WatchlistEntry",
 ]

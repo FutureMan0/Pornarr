@@ -10,9 +10,15 @@ import "@pornarr/ui/tokens.css";
 import "@pornarr/ui/utilities.css";
 import "./styles.css";
 
+import { applyStoredTheme } from "@pornarr/ui";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app";
+
+// Ahead of React on purpose. The accent lives on an attribute of <html>, and
+// setting it from a component would render one paint in the default accent and
+// then visibly swap.
+applyStoredTheme();
 
 const container = document.getElementById("root");
 if (container === null) {

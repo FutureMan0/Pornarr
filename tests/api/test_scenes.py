@@ -120,9 +120,9 @@ async def test_re_analysis_replaces_the_index_rather_than_appending(
     body = (await client.get(f"/api/media/{media.id}/scenes")).json()
 
     assert written == 1
-    assert body["scenes"] == [
-        {"ordinal": 0, "start_seconds": 0.0, "end_seconds": 60.0, "duration_seconds": 60.0}
-    ]
+    assert [
+        {key: value for key, value in scene.items() if key != "id"} for scene in body["scenes"]
+    ] == [{"ordinal": 0, "start_seconds": 0.0, "end_seconds": 60.0, "duration_seconds": 60.0}]
 
 
 def test_markers_are_declared_to_die_with_their_file() -> None:

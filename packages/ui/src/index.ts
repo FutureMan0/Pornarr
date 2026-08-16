@@ -15,6 +15,15 @@
 export const PACKAGE_ROLE = "ui" as const;
 
 export { cx } from "./lib/cx";
+export {
+  applyStoredTheme,
+  DEFAULT_THEME,
+  isTheme,
+  setTheme,
+  storedTheme,
+  type Theme,
+  THEMES,
+} from "./theme";
 
 export { Badge, BADGE_STATUSES, type BadgeProps, type BadgeStatus } from "./components/badge";
 export { Button, type ButtonProps } from "./components/button";

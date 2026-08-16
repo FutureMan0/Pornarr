@@ -46,6 +46,10 @@ class QuarantineItemResponse(BaseModel):
 
 
 class QuarantineApproval(BaseModel):
+    # Whose library the approved title joins. Null keeps it in the shared pool,
+    # which is where everything lands on a server that never turned private
+    # libraries on.
+    target_owner_id: UUID | None = None
     title: Annotated[str | None, Field(min_length=1, max_length=512)] = None
     studio: Annotated[str | None, Field(max_length=256)] = None
     release_date: date | None = None
@@ -190,6 +194,7 @@ async def _approve_item(
         media = Media(
             title=title,
             normalized_title=title.casefold(),
+            owner_id=payload.target_owner_id,
             studio=studio,
             release_date=release_date,
             confidence=_metadata_float(metadata, "confidence"),

@@ -508,8 +508,15 @@
       "CommentResponse": {
         "properties": {
           "author": {
-            "title": "Author",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author"
           },
           "body": {
             "title": "Body",
@@ -537,8 +544,8 @@
             "title": "Id",
             "type": "string"
           },
-          "is_yours": {
-            "title": "Is Yours",
+          "is_own": {
+            "title": "Is Own",
             "type": "boolean"
           },
           "likes": {
@@ -578,7 +585,7 @@
           "stars",
           "likes",
           "you_liked",
-          "is_yours",
+          "is_own",
           "created_at",
           "edited_at"
         ],
@@ -1351,6 +1358,27 @@
         "title": "ExternalSearchSort",
         "type": "string"
       },
+      "GenerateShortsWrite": {
+        "description": "How many clips to cut, and how long each should be.",
+        "properties": {
+          "maximum": {
+            "default": 5,
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Maximum",
+            "type": "integer"
+          },
+          "seconds": {
+            "default": 60.0,
+            "exclusiveMinimum": 0.0,
+            "maximum": 300.0,
+            "title": "Seconds",
+            "type": "number"
+          }
+        },
+        "title": "GenerateShortsWrite",
+        "type": "object"
+      },
       "GrabResponse": {
         "properties": {
           "download_job_id": {
@@ -1842,6 +1870,21 @@
             ],
             "title": "Quality"
           },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "rating_count": {
+            "title": "Rating Count",
+            "type": "integer"
+          },
           "release_date": {
             "anyOf": [
               {
@@ -1903,7 +1946,9 @@
           "progress_duration_seconds",
           "completed",
           "poster_url",
-          "sprite_url"
+          "sprite_url",
+          "rating",
+          "rating_count"
         ],
         "title": "LibraryItemResponse",
         "type": "object"
@@ -1954,6 +1999,10 @@
             "title": "Id",
             "type": "string"
           },
+          "in_my_library": {
+            "title": "In My Library",
+            "type": "boolean"
+          },
           "performers": {
             "items": {
               "type": "string"
@@ -1971,6 +2020,21 @@
               }
             ],
             "title": "Quality"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "rating_count": {
+            "title": "Rating Count",
+            "type": "integer"
           },
           "release_date": {
             "anyOf": [
@@ -2028,6 +2092,7 @@
         },
         "required": [
           "id",
+          "in_my_library",
           "title",
           "studio",
           "release_date",
@@ -2037,7 +2102,9 @@
           "duration_seconds",
           "performers",
           "tags",
-          "relevance"
+          "relevance",
+          "rating",
+          "rating_count"
         ],
         "title": "LocalSearchItem",
         "type": "object"
@@ -2092,6 +2159,56 @@
         "title": "LoginRequest",
         "type": "object"
       },
+      "MarkerPatch": {
+        "properties": {
+          "end_seconds": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Seconds"
+          },
+          "start_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Seconds"
+          }
+        },
+        "title": "MarkerPatch",
+        "type": "object"
+      },
+      "MarkerWrite": {
+        "properties": {
+          "end_seconds": {
+            "exclusiveMinimum": 0.0,
+            "title": "End Seconds",
+            "type": "number"
+          },
+          "start_seconds": {
+            "minimum": 0.0,
+            "title": "Start Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "start_seconds",
+          "end_seconds"
+        ],
+        "title": "MarkerWrite",
+        "type": "object"
+      },
       "MediaDetailResponse": {
         "properties": {
           "bitrate": {
@@ -2144,9 +2261,25 @@
             "title": "Id",
             "type": "string"
           },
+          "in_my_library": {
+            "title": "In My Library",
+            "type": "boolean"
+          },
           "metadata_source": {
             "title": "Metadata Source",
             "type": "string"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
           },
           "path": {
             "title": "Path",
@@ -2162,6 +2295,21 @@
           "playable": {
             "title": "Playable",
             "type": "boolean"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "rating_count": {
+            "title": "Rating Count",
+            "type": "integer"
           },
           "release_date": {
             "anyOf": [
@@ -2214,6 +2362,8 @@
         },
         "required": [
           "id",
+          "owner_id",
+          "in_my_library",
           "title",
           "studio",
           "release_date",
@@ -2221,6 +2371,8 @@
           "metadata_source",
           "performers",
           "tags",
+          "rating",
+          "rating_count",
           "path",
           "size",
           "codecs",
@@ -2248,8 +2400,15 @@
       "ModeratedCommentResponse": {
         "properties": {
           "author": {
-            "title": "Author",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author"
           },
           "body": {
             "title": "Body",
@@ -2277,8 +2436,8 @@
             "title": "Id",
             "type": "string"
           },
-          "is_yours": {
-            "title": "Is Yours",
+          "is_own": {
+            "title": "Is Own",
             "type": "boolean"
           },
           "likes": {
@@ -2326,7 +2485,7 @@
           "stars",
           "likes",
           "you_liked",
-          "is_yours",
+          "is_own",
           "created_at",
           "edited_at",
           "media_title",
@@ -2749,6 +2908,17 @@
             "title": "Completed",
             "type": "boolean"
           },
+          "device_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Label"
+          },
           "duration_seconds": {
             "title": "Duration Seconds",
             "type": "number"
@@ -2764,6 +2934,7 @@
           }
         },
         "required": [
+          "device_label",
           "media_id",
           "position_seconds",
           "duration_seconds",
@@ -2774,6 +2945,18 @@
       },
       "PlaybackProgressWrite": {
         "properties": {
+          "device_label": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Label"
+          },
           "duration_seconds": {
             "exclusiveMinimum": 0.0,
             "title": "Duration Seconds",
@@ -2790,6 +2973,60 @@
           "duration_seconds"
         ],
         "title": "PlaybackProgressWrite",
+        "type": "object"
+      },
+      "PlayingOnResponse": {
+        "description": "One device this account currently has a transcode running on.",
+        "properties": {
+          "device_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Label"
+          },
+          "hardware": {
+            "title": "Hardware",
+            "type": "boolean"
+          },
+          "media_id": {
+            "format": "uuid",
+            "title": "Media Id",
+            "type": "string"
+          },
+          "media_title": {
+            "title": "Media Title",
+            "type": "string"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          },
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "media_id",
+          "media_title",
+          "device_label",
+          "mode",
+          "hardware",
+          "started_at"
+        ],
+        "title": "PlayingOnResponse",
         "type": "object"
       },
       "ProfileResponse": {
@@ -3322,6 +3559,18 @@
             ],
             "title": "Studio"
           },
+          "target_owner_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Owner Id"
+          },
           "title": {
             "anyOf": [
               {
@@ -3682,6 +3931,10 @@
             "title": "Expires At",
             "type": "string"
           },
+          "match_score": {
+            "title": "Match Score",
+            "type": "integer"
+          },
           "media_id": {
             "format": "uuid",
             "title": "Media Id",
@@ -3696,6 +3949,13 @@
             "title": "Reason",
             "type": "object"
           },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
           "score": {
             "title": "Score",
             "type": "number"
@@ -3709,7 +3969,9 @@
           "media_id",
           "title",
           "score",
+          "match_score",
           "reason",
+          "reasons",
           "model_version",
           "expires_at"
         ],
@@ -3742,6 +4004,18 @@
               }
             ],
             "title": "Selected Release Guid"
+          },
+          "target_owner_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Owner Id"
           }
         },
         "required": [
@@ -3964,6 +4238,10 @@
       "RuntimeSettings": {
         "description": "Resolved values with attributes callers can use directly.",
         "properties": {
+          "anonymous_social": {
+            "title": "Anonymous Social",
+            "type": "boolean"
+          },
           "audit_retention_days": {
             "anyOf": [
               {
@@ -4039,9 +4317,29 @@
             "title": "Playback Completion Threshold Percent",
             "type": "integer"
           },
+          "pooled_search": {
+            "title": "Pooled Search",
+            "type": "boolean"
+          },
+          "private_libraries": {
+            "title": "Private Libraries",
+            "type": "boolean"
+          },
           "quarantine_retention_days": {
             "title": "Quarantine Retention Days",
             "type": "integer"
+          },
+          "recommendation_hide_finished": {
+            "title": "Recommendation Hide Finished",
+            "type": "boolean"
+          },
+          "recommendation_include_friend_picks": {
+            "title": "Recommendation Include Friend Picks",
+            "type": "boolean"
+          },
+          "recommendation_include_shorts": {
+            "title": "Recommendation Include Shorts",
+            "type": "boolean"
           },
           "recommendation_performer_weight": {
             "title": "Recommendation Performer Weight",
@@ -4066,6 +4364,10 @@
           "recommendation_tag_weight": {
             "title": "Recommendation Tag Weight",
             "type": "number"
+          },
+          "recommendation_use_ratings": {
+            "title": "Recommendation Use Ratings",
+            "type": "boolean"
           },
           "request_search_max_age_days": {
             "title": "Request Search Max Age Days",
@@ -4137,6 +4439,13 @@
           "recommendation_recency_weight",
           "recommendation_popularity_weight",
           "request_search_max_age_days",
+          "private_libraries",
+          "pooled_search",
+          "anonymous_social",
+          "recommendation_use_ratings",
+          "recommendation_include_friend_picks",
+          "recommendation_hide_finished",
+          "recommendation_include_shorts",
           "log_level",
           "metrics_enabled"
         ],
@@ -4147,6 +4456,17 @@
         "additionalProperties": false,
         "description": "Partial update validated before values are persisted.",
         "properties": {
+          "anonymous_social": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anonymous Social"
+          },
           "audit_retention_days": {
             "anyOf": [
               {
@@ -4351,6 +4671,28 @@
             ],
             "title": "Playback Completion Threshold Percent"
           },
+          "pooled_search": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pooled Search"
+          },
+          "private_libraries": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Private Libraries"
+          },
           "quarantine_retention_days": {
             "anyOf": [
               {
@@ -4362,6 +4704,39 @@
               }
             ],
             "title": "Quarantine Retention Days"
+          },
+          "recommendation_hide_finished": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Hide Finished"
+          },
+          "recommendation_include_friend_picks": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Include Friend Picks"
+          },
+          "recommendation_include_shorts": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Include Shorts"
           },
           "recommendation_performer_weight": {
             "anyOf": [
@@ -4434,6 +4809,17 @@
               }
             ],
             "title": "Recommendation Tag Weight"
+          },
+          "recommendation_use_ratings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Use Ratings"
           },
           "request_search_max_age_days": {
             "anyOf": [
@@ -4544,6 +4930,11 @@
             "title": "End Seconds",
             "type": "number"
           },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
           "ordinal": {
             "title": "Ordinal",
             "type": "integer"
@@ -4554,6 +4945,7 @@
           }
         },
         "required": [
+          "id",
           "ordinal",
           "start_seconds",
           "end_seconds",
@@ -4930,6 +5322,18 @@
             "title": "Id",
             "type": "string"
           },
+          "marker_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marker Id"
+          },
           "media_id": {
             "format": "uuid",
             "title": "Media Id",
@@ -4937,6 +5341,11 @@
           },
           "media_title": {
             "title": "Media Title",
+            "type": "string"
+          },
+          "parent_media_id": {
+            "format": "uuid",
+            "title": "Parent Media Id",
             "type": "string"
           },
           "source": {
@@ -4954,6 +5363,8 @@
         "required": [
           "id",
           "media_id",
+          "parent_media_id",
+          "marker_id",
           "media_title",
           "title",
           "start_seconds",
@@ -4966,10 +5377,21 @@
         "title": "ShortResponse",
         "type": "object"
       },
+      "ShortSort": {
+        "enum": [
+          "trending",
+          "newest",
+          "top",
+          "duration"
+        ],
+        "title": "ShortSort",
+        "type": "string"
+      },
       "ShortSource": {
         "enum": [
           "marker",
-          "manual"
+          "manual",
+          "hotspot"
         ],
         "title": "ShortSource",
         "type": "string"
@@ -5375,6 +5797,45 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "WatchlistItemResponse": {
+        "properties": {
+          "added_at": {
+            "format": "date-time",
+            "title": "Added At",
+            "type": "string"
+          },
+          "media_id": {
+            "format": "uuid",
+            "title": "Media Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "media_id",
+          "title",
+          "added_at"
+        ],
+        "title": "WatchlistItemResponse",
+        "type": "object"
+      },
+      "WatchlistWrite": {
+        "properties": {
+          "media_id": {
+            "format": "uuid",
+            "title": "Media Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "media_id"
+        ],
+        "title": "WatchlistWrite",
         "type": "object"
       }
     }
@@ -5789,6 +6250,22 @@
         "parameters": [
           {
             "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CommentState"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "in": "query",
             "name": "reported_only",
             "required": false,
             "schema": {
@@ -5855,7 +6332,6 @@
     },
     "/api/admin/comments/{comment_id}": {
       "patch": {
-        "description": "Resolving a comment clears its reports: the queue must be able to empty.",
         "operationId": "admin_set_comment_state",
         "parameters": [
           {
@@ -5912,6 +6388,114 @@
           }
         },
         "summary": "Set Comment State",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/comments/{comment_id}/hide": {
+      "post": {
+        "description": "Withhold a comment from everyone but its author and the administrators.",
+        "operationId": "admin_hide_comment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "comment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Comment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModeratedCommentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Hide Comment",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/comments/{comment_id}/resolve": {
+      "post": {
+        "description": "Leave the comment standing and take it off the queue.",
+        "operationId": "admin_resolve_comment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "comment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Comment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModeratedCommentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resolve Comment",
         "tags": [
           "admin"
         ]
@@ -8583,6 +9167,24 @@
               "title": "Offset",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "rating_gte",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 5,
+                  "minimum": 1,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rating Gte"
+            }
           }
         ],
         "responses": {
@@ -8795,6 +9397,198 @@
         "summary": "Create Comment",
         "tags": [
           "comments"
+        ]
+      }
+    },
+    "/api/media/{media_id}/markers": {
+      "post": {
+        "description": "Append a marker by hand, after the ones detection produced.\n\nOrdinals are positions in the index, not identifiers, so a manual marker\ntakes the next one rather than being inserted in time order — renumbering\nevery later marker would invalidate the ids clips point at.",
+        "operationId": "scenes_create_marker",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkerWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SceneResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Create Marker",
+        "tags": [
+          "scenes"
+        ]
+      }
+    },
+    "/api/media/{media_id}/markers/{marker_id}": {
+      "delete": {
+        "description": "Clips cut from this marker keep working; their `marker_id` becomes null.",
+        "operationId": "scenes_delete_marker",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "marker_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Marker Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Marker",
+        "tags": [
+          "scenes"
+        ]
+      },
+      "patch": {
+        "operationId": "scenes_update_marker",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "marker_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Marker Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkerPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SceneResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Update Marker",
+        "tags": [
+          "scenes"
         ]
       }
     },
@@ -9874,6 +10668,32 @@
         ]
       }
     },
+    "/api/playback/sessions/mine": {
+      "get": {
+        "description": "What \"Playing on\" reads: this account's live transcodes.\n\nDirect play deliberately does not appear. A direct-playing client streams\nthe file without asking the server to keep any session state, so there is\nnothing here to report — the absence of a row for a device *is* the signal\nthat it is not transcoding, and inventing a record would mean tracking\nplayback the server otherwise has no reason to know about.",
+        "operationId": "playback_my_sessions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlayingOnResponse"
+                  },
+                  "title": "Response Playback My Sessions",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Sessions",
+        "tags": [
+          "playback"
+        ]
+      }
+    },
     "/api/playback/{media_id}/progress": {
       "get": {
         "operationId": "playback_playback_progress",
@@ -10107,6 +10927,139 @@
           }
         },
         "summary": "Reset Recommendation Profile",
+        "tags": [
+          "recommendations"
+        ]
+      }
+    },
+    "/api/recommendations/send": {
+      "post": {
+        "description": "Hand a title to someone with a note. They are told who sent it.",
+        "operationId": "recommendations_send_recommendation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Send Recommendation",
+        "tags": [
+          "recommendations"
+        ]
+      }
+    },
+    "/api/recommendations/sent-to-me": {
+      "get": {
+        "description": "The one place in the product where another person is named.\n\nEverything else is anonymous under `anonymous_social`; a hand-picked\nrecommendation is worthless without knowing whose taste it was.",
+        "operationId": "recommendations_sent_to_me",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "unseen_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Unseen Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SendResponse"
+                  },
+                  "title": "Response Recommendations Sent To Me",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sent To Me",
         "tags": [
           "recommendations"
         ]
@@ -11178,6 +12131,24 @@
           },
           {
             "in": "query",
+            "name": "rating_gte",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 5,
+                  "minimum": 1,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rating Gte"
+            }
+          },
+          {
+            "in": "query",
             "name": "sort",
             "required": false,
             "schema": {
@@ -11663,8 +12634,18 @@
     },
     "/api/shorts": {
       "get": {
+        "description": "Trending is recent watching, not all-time rating.\n\nA clip cut yesterday that everyone opened should lead over one from March\nwith a slightly better average, so trending counts progress events on the\nparent title within the window rather than sorting by score.",
         "operationId": "shorts_list_shorts",
         "parameters": [
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ShortSort",
+              "default": "trending"
+            }
+          },
           {
             "in": "query",
             "name": "limit",
@@ -11716,6 +12697,84 @@
           }
         },
         "summary": "List Shorts",
+        "tags": [
+          "shorts"
+        ]
+      }
+    },
+    "/api/shorts/media/{media_id}/generate": {
+      "post": {
+        "description": "Cut clips at the detected scene boundaries of a title.\n\nOne clip per marker, in order, skipping any that would overlap a clip that\nalready exists — so this never disturbs a cut placed by hand, and never\nre-cuts a marker it has already covered.\n\n`maximum` bounds one call rather than the title: calling again picks up at\nthe first uncovered marker, so a long film can be worked through a few\nclips at a time instead of producing a hundred in one press.\n\nA marker is a boundary, not a length: the clip runs from the boundary for\nthe requested duration or to the end of the scene, whichever is shorter, so\na five-second shot does not become a minute of the following one.",
+        "operationId": "shorts_generate_from_markers",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateShortsWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ShortResponse"
+                  },
+                  "title": "Response Shorts Generate From Markers",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generate From Markers",
         "tags": [
           "shorts"
         ]
@@ -11956,6 +13015,120 @@
         "summary": "Hls Asset",
         "tags": [
           "transcode"
+        ]
+      }
+    },
+    "/api/watchlist": {
+      "get": {
+        "operationId": "watchlist_list_watchlist",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WatchlistItemResponse"
+                  },
+                  "title": "Response Watchlist List Watchlist",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Watchlist",
+        "tags": [
+          "watchlist"
+        ]
+      },
+      "post": {
+        "description": "Idempotent: adding something already queued is not an error.",
+        "operationId": "watchlist_add_to_watchlist",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchlistWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add To Watchlist",
+        "tags": [
+          "watchlist"
+        ]
+      }
+    },
+    "/api/watchlist/{media_id}": {
+      "delete": {
+        "operationId": "watchlist_remove_from_watchlist",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove From Watchlist",
+        "tags": [
+          "watchlist"
         ]
       }
     }

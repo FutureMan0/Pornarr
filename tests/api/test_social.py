@@ -96,9 +96,11 @@ async def test_a_missing_title_is_404_rather_than_an_orphan_rating(
     assert response.status_code == 404
 
 
-async def test_a_comment_carries_its_author_display_name_and_their_stars(
+async def test_a_comment_is_anonymous_by_default_but_carries_the_stars(
     app: FastAPI, client: AsyncClient
 ) -> None:
+    """Anonymity is enforced here, not in the client: no name is ever sent."""
+
     await _signed_in(app, client, "alice")
     media = await _media(app)
     await client.patch(
@@ -116,10 +118,10 @@ async def test_a_comment_carries_its_author_display_name_and_their_stars(
 
     assert created.status_code == 201
     body = created.json()
-    assert body["author"] == "Mira"
+    assert body["author"] is None
     assert body["body"] == "Looks great on the TV."
     assert body["stars"] == 4
-    assert body["is_yours"] is True
+    assert body["is_own"] is True
     assert body["likes"] == 0
 
 
@@ -269,7 +271,7 @@ async def test_hiding_a_comment_withholds_it_from_others_but_not_its_author(
     assert [row["state"] for row in author.json()] == ["hidden"]
 
 
-async def test_a_short_must_stay_under_a_minute_and_only_an_admin_creates_one(
+async def test_a_short_must_stay_within_the_clip_length_and_only_an_admin_creates_one(
     app: FastAPI, client: AsyncClient
 ) -> None:
     media = await _media(app)
@@ -293,7 +295,7 @@ async def test_a_short_must_stay_under_a_minute_and_only_an_admin_creates_one(
             "media_id": str(media.id),
             "title": "whole scene",
             "start_seconds": 0,
-            "end_seconds": 61,
+            "end_seconds": 301,
         },
         headers=csrf_headers(client),
     )

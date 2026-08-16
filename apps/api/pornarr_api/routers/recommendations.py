@@ -7,11 +7,13 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import database_session, get_current_user
+from pornarr_api.errors import ErrorResponse
+from pornarr_api.routers.sends import SendCreate, SendResponse, list_received, send_media
 from pornarr_core.scoring import RecommendationWeights
 from pornarr_db.events import record_user_event
 from pornarr_db.models.entities import Performer, Tag
@@ -33,7 +35,14 @@ class RecommendationResponse(BaseModel):
     media_id: UUID
     title: str
     score: float
+    # The same number as `score`, expressed the way the feed prints it: the
+    # design shows "94% match", and rounding in the client would drift between
+    # the web app and anything else that reads this.
+    match_score: int
     reason: dict[str, object]
+    # The card lists its reasons as sentences. `reason` keeps the raw signal
+    # weights the recommender produced; `reasons` is what a person reads.
+    reasons: list[str]
     model_version: str
     expires_at: datetime
 
@@ -53,6 +62,34 @@ class RecommendationFeedbackWrite(BaseModel):
         raise ValueError("event type must be not_interested, hide_tag, or hide_performer")
 
 
+# How a raw signal name reads on a card. Anything not listed falls back to the
+# key itself rather than being dropped, so a new signal shows up as soon as the
+# recommender produces it instead of waiting for this table to be updated.
+_REASON_LABELS = {
+    "tag": "Tags you keep watching",
+    "performer": "A performer you follow",
+    "studio": "A studio you finish",
+    "quality": "Matches the quality you prefer",
+    "recency": "New to the library",
+    "popularity": "Watched across the server",
+    "rating": "Rated highly here",
+}
+
+
+def reason_sentences(reason: dict[str, object]) -> list[str]:
+    """Turn the recommender's signal weights into what the card prints.
+
+    Strongest first, and only signals that actually contributed: a reason with
+    zero weight explains nothing and would just make every card look the same.
+    """
+    weighted = [
+        (key, float(value))
+        for key, value in reason.items()
+        if isinstance(value, (int, float)) and float(value) > 0
+    ]
+    return [_REASON_LABELS.get(key, key) for key, _ in sorted(weighted, key=lambda item: -item[1])]
+
+
 def recommendation_response(
     candidate: RecommendationCandidate, title: str
 ) -> RecommendationResponse:
@@ -60,7 +97,9 @@ def recommendation_response(
         media_id=candidate.media_id,
         title=title,
         score=candidate.score,
+        match_score=max(0, min(100, round(candidate.score * 100))),
         reason=candidate.reason_json,
+        reasons=reason_sentences(candidate.reason_json),
         model_version=candidate.model_version,
         expires_at=candidate.expires_at,
     )
@@ -144,3 +183,43 @@ async def reset_recommendation_profile(user: CurrentUser, session: Session) -> N
 
     for model in (RecommendationCandidate, UserPreference, UserPreferenceState, UserEvent):
         await session.execute(delete(model).where(model.user_id == user.id))
+
+
+# The design puts "Recommend to a friend" and "Sent to you" inside the feed, so
+# the feed is where they are addressed from. The storage and the rules live in
+# `sends.py`; these are the same operations under the path the screens use, not
+# a second implementation.
+
+
+@router.post(
+    "/send",
+    response_model=SendResponse,
+    status_code=201,
+    responses={
+        404: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
+    },
+)
+async def send_recommendation(
+    payload: SendCreate, user: CurrentUser, session: Session
+) -> SendResponse:
+    """Hand a title to someone with a note. They are told who sent it."""
+
+    return await send_media(payload, user, session)
+
+
+@router.get("/sent-to-me", response_model=list[SendResponse])
+async def sent_to_me(
+    user: CurrentUser,
+    session: Session,
+    unseen_only: bool = False,
+    limit: Annotated[int, Field(ge=1, le=100)] = 50,
+    offset: Annotated[int, Field(ge=0)] = 0,
+) -> list[SendResponse]:
+    """The one place in the product where another person is named.
+
+    Everything else is anonymous under `anonymous_social`; a hand-picked
+    recommendation is worthless without knowing whose taste it was.
+    """
+    return await list_received(user, session, unseen_only, limit, offset)
