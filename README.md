@@ -4,8 +4,9 @@ Self-hosted, multi-user adult media platform. Searches your local library and yo
 indexers in one query, hands releases to your download client, imports and categorizes
 the result, plays it back, and learns what to suggest next.
 
-> Status: pre-alpha. Nothing here is usable yet. See the
-> [milestones](https://github.com/FutureMan0/Pornarr/milestones) for what exists.
+> Status: pre-release. See the
+> [milestones](https://github.com/FutureMan0/Pornarr/milestones) for the current
+> delivery status and supported release line.
 
 ## What it does
 
