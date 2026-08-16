@@ -30,6 +30,7 @@ from pornarr_api.routers.admin_quality import router as admin_quality_router
 from pornarr_api.routers.admin_quarantine import router as admin_quarantine_router
 from pornarr_api.routers.admin_settings import router as admin_settings_router
 from pornarr_api.routers.auth import router as auth_router
+from pornarr_api.routers.automation import router as automation_router
 from pornarr_api.routers.auth_oidc import router as auth_oidc_router
 from pornarr_api.routers.events import router as events_router
 from pornarr_api.routers.health import router as health_router
@@ -71,6 +72,7 @@ def stable_operation_id(route: APIRoute) -> str:
 
 api_router = APIRouter(prefix=API_PREFIX, dependencies=[Depends(enforce_csrf)])
 api_router.include_router(auth_router)
+api_router.include_router(automation_router)
 api_router.include_router(auth_oidc_router)
 api_router.include_router(account_router)
 api_router.include_router(account_oidc_router)

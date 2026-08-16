@@ -801,6 +801,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/automation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Automation */
+        get: operations["automation_read_automation"];
+        /** Write Automation */
+        put: operations["automation_write_automation"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/automation/kill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Kill Automation */
+        post: operations["automation_kill_automation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events": {
         parameters: {
             query?: never;
@@ -1625,6 +1660,112 @@ export interface components {
             source: string;
             /** Target */
             target: string | null;
+        };
+        /** AutomationDecisionResponse */
+        AutomationDecisionResponse: {
+            /** Action */
+            action: string;
+            /** Context */
+            context: {
+                [key: string]: unknown;
+            };
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Target */
+            target: string | null;
+        };
+        /** AutomationResponse */
+        AutomationResponse: {
+            /** Allowed Qualities */
+            allowed_qualities?: string[];
+            /** Blocked Performers */
+            blocked_performers?: string[];
+            /** Blocked Tags */
+            blocked_tags?: string[];
+            /**
+             * Daily Download Limit Gb
+             * @default 10
+             */
+            daily_download_limit_gb: number;
+            /** Decisions */
+            decisions: components["schemas"]["AutomationDecisionResponse"][];
+            /**
+             * Enabled
+             * @default false
+             */
+            enabled: boolean;
+            /**
+             * Max Concurrent Jobs
+             * @default 2
+             */
+            max_concurrent_jobs: number;
+            /**
+             * Max Downloads Per Day
+             * @default 3
+             */
+            max_downloads_per_day: number;
+            /**
+             * Minimum Score
+             * @default 0
+             */
+            minimum_score: number;
+            usage: components["schemas"]["AutomationUsageResponse"];
+        };
+        /**
+         * AutomationRuleWrite
+         * @description The complete user-owned automation policy.
+         */
+        AutomationRuleWrite: {
+            /** Allowed Qualities */
+            allowed_qualities?: string[];
+            /** Blocked Performers */
+            blocked_performers?: string[];
+            /** Blocked Tags */
+            blocked_tags?: string[];
+            /**
+             * Daily Download Limit Gb
+             * @default 10
+             */
+            daily_download_limit_gb: number;
+            /**
+             * Enabled
+             * @default false
+             */
+            enabled: boolean;
+            /**
+             * Max Concurrent Jobs
+             * @default 2
+             */
+            max_concurrent_jobs: number;
+            /**
+             * Max Downloads Per Day
+             * @default 3
+             */
+            max_downloads_per_day: number;
+            /**
+             * Minimum Score
+             * @default 0
+             */
+            minimum_score: number;
+        };
+        /** AutomationUsageResponse */
+        AutomationUsageResponse: {
+            /** Download Count */
+            download_count: number;
+            /** Downloaded Bytes */
+            downloaded_bytes: number;
+            /** Reserved Bytes */
+            reserved_bytes: number;
+            /** Reserved Download Count */
+            reserved_download_count: number;
         };
         /** BulkApprovalRequest */
         BulkApprovalRequest: {
@@ -4956,6 +5097,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    automation_read_automation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationResponse"];
+                };
+            };
+        };
+    };
+    automation_write_automation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AutomationRuleWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    automation_kill_automation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationResponse"];
                 };
             };
         };
