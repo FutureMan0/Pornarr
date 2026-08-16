@@ -7,11 +7,12 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import database_session, get_current_user
+from pornarr_db.models.entities import MediaPerformer, MediaTag, Performer, Tag
 from pornarr_db.models.media import Media, MediaFile
 from pornarr_db.models.playback import PlaybackProgress
 from pornarr_db.models.user import User
@@ -40,6 +41,34 @@ class LibraryItemResponse(BaseModel):
 class LibraryPageResponse(BaseModel):
     items: list[LibraryItemResponse]
     next_offset: int | None
+
+
+class DetailTag(BaseModel):
+    name: str
+    confidence: float
+    source: str
+
+
+class MediaDetailResponse(BaseModel):
+    id: UUID
+    title: str
+    studio: str | None
+    release_date: str | None
+    confidence: float | None
+    metadata_source: str
+    performers: list[str]
+    tags: list[DetailTag]
+    path: str
+    size: int
+    codecs: dict[str, object] | None
+    resolution: str | None
+    bitrate: int | None
+    duration_seconds: float | None
+    playable: bool
+
+
+class TagCorrectionWrite(BaseModel):
+    name: str = Field(min_length=1, max_length=256)
 
 
 @router.get("", response_model=LibraryPageResponse)
@@ -107,6 +136,83 @@ async def poster(
     if not path.is_file():
         raise HTTPException(status_code=404)
     return FileResponse(path, headers={"Cache-Control": "private, max-age=3600"})
+
+
+@media_router.get("/{media_id}", response_model=MediaDetailResponse)
+async def media_detail(media_id: UUID, _: CurrentUser, session: Session) -> MediaDetailResponse:
+    row = await session.execute(
+        select(Media, MediaFile)
+        .join(MediaFile, (MediaFile.media_id == Media.id) & MediaFile.is_active.is_(True))
+        .where(Media.id == media_id)
+    )
+    result = row.one_or_none()
+    if result is None:
+        raise HTTPException(status_code=404)
+    media, file = result
+    performers = list(
+        (
+            await session.scalars(
+                select(Performer.name)
+                .join(MediaPerformer)
+                .where(MediaPerformer.media_id == media_id)
+            )
+        ).all()
+    )
+    tags = list(
+        (
+            await session.execute(
+                select(Tag.name, MediaTag.confidence, MediaTag.source)
+                .join(MediaTag)
+                .where(MediaTag.media_id == media_id)
+            )
+        ).tuples()
+    )
+    return MediaDetailResponse(
+        id=media.id,
+        title=media.title,
+        studio=media.studio,
+        release_date=media.release_date.isoformat() if media.release_date else None,
+        confidence=media.confidence,
+        metadata_source="import",
+        performers=performers,
+        tags=[
+            DetailTag(name=name, confidence=confidence, source=source)
+            for name, confidence, source in tags
+        ],
+        path=file.path,
+        size=file.size,
+        codecs=file.codecs,
+        resolution=file.resolution,
+        bitrate=file.bitrate,
+        duration_seconds=file.duration_seconds,
+        playable=not file.is_missing,
+    )
+
+
+@media_router.post("/{media_id}/tags", response_model=DetailTag, status_code=201)
+async def correct_tag(
+    media_id: UUID, payload: TagCorrectionWrite, _: CurrentUser, session: Session
+) -> DetailTag:
+    if await session.get(Media, media_id) is None:
+        raise HTTPException(status_code=404)
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=422)
+    normalized = name.casefold()
+    tag = await session.scalar(select(Tag).where(Tag.normalized_name == normalized))
+    if tag is None:
+        tag = Tag(name=name, normalized_name=normalized)
+        session.add(tag)
+        await session.flush()
+    assignment = await session.scalar(
+        select(MediaTag).where(
+            MediaTag.media_id == media_id, MediaTag.tag_id == tag.id, MediaTag.source == "manual"
+        )
+    )
+    if assignment is None:
+        session.add(MediaTag(media_id=media_id, tag_id=tag.id, confidence=1, source="manual"))
+    await session.flush()
+    return DetailTag(name=tag.name, confidence=1, source="manual")
 
 
 @media_router.get("/{media_id}/sprite", response_class=FileResponse)

@@ -573,6 +573,29 @@
         "title": "DailyStorageUsageResponse",
         "type": "object"
       },
+      "DetailTag": {
+        "properties": {
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "confidence",
+          "source"
+        ],
+        "title": "DetailTag",
+        "type": "object"
+      },
       "DirectPlayReason": {
         "enum": [
           "container_unknown",
@@ -1643,6 +1666,146 @@
           "password"
         ],
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "MediaDetailResponse": {
+        "properties": {
+          "bitrate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bitrate"
+          },
+          "codecs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Codecs"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "metadata_source": {
+            "title": "Metadata Source",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "performers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Performers",
+            "type": "array"
+          },
+          "playable": {
+            "title": "Playable",
+            "type": "boolean"
+          },
+          "release_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Date"
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          },
+          "studio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Studio"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/DetailTag"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "studio",
+          "release_date",
+          "confidence",
+          "metadata_source",
+          "performers",
+          "tags",
+          "path",
+          "size",
+          "codecs",
+          "resolution",
+          "bitrate",
+          "duration_seconds",
+          "playable"
+        ],
+        "title": "MediaDetailResponse",
         "type": "object"
       },
       "MediaSort": {
@@ -3847,6 +4010,21 @@
           "library_path"
         ],
         "title": "SetupWrite",
+        "type": "object"
+      },
+      "TagCorrectionWrite": {
+        "properties": {
+          "name": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "TagCorrectionWrite",
         "type": "object"
       },
       "TranscodeFailureResponse": {
@@ -6426,6 +6604,49 @@
         ]
       }
     },
+    "/api/media/{media_id}": {
+      "get": {
+        "operationId": "library_media_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaDetailResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Media Detail",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/api/media/{media_id}/playback-info": {
       "get": {
         "operationId": "playback_playback_info",
@@ -6723,6 +6944,59 @@
         "summary": "Stream",
         "tags": [
           "playback"
+        ]
+      }
+    },
+    "/api/media/{media_id}/tags": {
+      "post": {
+        "operationId": "library_correct_tag",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagCorrectionWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetailTag"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Correct Tag",
+        "tags": [
+          "library"
         ]
       }
     },

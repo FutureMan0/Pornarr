@@ -19,6 +19,7 @@ import { RequireAuth } from "./auth/require-auth";
 import { ForbiddenRoute, NotFoundRoute } from "./errors/route-errors";
 import { QuarantineReviewRoute } from "./routes/admin/quarantine/quarantine-review-route";
 import { LibraryRoute } from "./routes/library/library-route";
+import { MediaDetailRoute } from "./routes/media/media-detail-route";
 import { SearchRoute } from "./routes/search/search-route";
 import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles-route";
 import { SetupGate } from "./routes/setup/setup-gate";
@@ -63,6 +64,7 @@ export const appRoutes: RouteObject[] = [
               { path: "settings/quality", element: <QualityProfilesRoute /> },
               { path: "search", element: <SearchRoute /> },
               { path: "library", element: <LibraryRoute /> },
+              { path: "library/:mediaId", element: <MediaDetailRoute /> },
               ...NAV_ITEMS.filter((item) => item.id !== "settings" && item.id !== "library").map(
                 (item) => ({
                   path: item.path.slice(1),

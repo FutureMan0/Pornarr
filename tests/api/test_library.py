@@ -12,7 +12,7 @@ from pornarr_db.models.media import Media, MediaFile
 from pornarr_db.models.playback import PlaybackProgress
 from pornarr_db.models.user import User
 from tests.api.test_app import build_settings
-from tests.api.test_auth import MemoryRedis, create_user, login
+from tests.api.test_auth import MemoryRedis, create_user, csrf_headers, login
 
 
 @pytest.fixture
@@ -62,8 +62,17 @@ async def test_library_browses_active_media_with_user_progress(app, client: Asyn
             "resolution": None,
             "position_seconds": 10,
             "progress_duration_seconds": 60,
-                "completed": False,
-                "poster_url": f"/api/media/{media.id}/poster",
-                "sprite_url": f"/api/media/{media.id}/sprite",
+            "completed": False,
+            "poster_url": f"/api/media/{media.id}/poster",
+            "sprite_url": f"/api/media/{media.id}/sprite",
         }
     ]
+    correction = await client.post(
+        f"/api/media/{media.id}/tags", json={"name": "Verified"}, headers=csrf_headers(client)
+    )
+    assert correction.status_code == 201
+    assert correction.json() == {"name": "Verified", "confidence": 1, "source": "manual"}
+    detail = await client.get(f"/api/media/{media.id}")
+    assert detail.status_code == 200
+    assert detail.json()["tags"] == [correction.json()]
+    assert detail.json()["path"] == "/data/library/sample.mp4"

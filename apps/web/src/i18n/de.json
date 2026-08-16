@@ -378,6 +378,19 @@
     "loading": "Bibliothek wird geladen…",
     "empty": "Deine Bibliothek ist leer. Konfiguriere einen Stammordner und scanne ihn, um Medien hinzuzufügen."
   },
+  "media": {
+    "loading": "Medium wird geladen…",
+    "confidence": "Metadaten-Konfidenz: {{value}}",
+    "unknown": "unbekannt",
+    "play": "Abspielen",
+    "unavailable": "Wiedergabe nicht verfügbar",
+    "tags": "Tags",
+    "correctTag": "Tag korrigieren",
+    "addTag": "Korrigierten Tag hinzufügen",
+    "file": "Datei",
+    "path": "Pfad",
+    "technical": "Technische Informationen"
+  },
   "errors": {
     "INVALID_CREDENTIALS": "Benutzername und Passwort passen nicht zusammen.",
     "NOT_AUTHENTICATED": "Deine Sitzung ist abgelaufen. Melde dich erneut an.",
