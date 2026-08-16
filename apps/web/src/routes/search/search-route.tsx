@@ -7,12 +7,14 @@ import { useSearchParams } from "react-router-dom";
 import { Numeric, useFormat } from "../../i18n/format";
 import { messageForError } from "../../lib/api-error";
 import { usePageTitle } from "../../shell/page-title";
+import { FacetSidebar } from "./facet-sidebar";
 import {
   type ExternalSearchItem,
   type SearchFilters,
   useGrabRelease,
   useIndexerSearch,
   useLocalSearch,
+  useSearchFacets,
   useStartIndexerSearch,
 } from "./search";
 
@@ -35,6 +37,7 @@ export function SearchRoute() {
   const deferredQuery = useDebouncedValue(query.trim());
   const filters = useMemo(() => readFilters(params), [params]);
   const localSearch = useLocalSearch(deferredQuery, filters);
+  const facets = useSearchFacets(deferredQuery, filters);
   const startIndexerSearch = useStartIndexerSearch();
   const start = startIndexerSearch.mutate;
   const [searchId, setSearchId] = useState<string | null>(null);
@@ -45,6 +48,24 @@ export function SearchRoute() {
     if (deferredQuery === "") return;
     start(deferredQuery, { onSuccess: setSearchId });
   }, [deferredQuery, start]);
+
+  /** Selecting the value already on clears it; see the note in the sidebar. */
+  const toggleFacet = (key: string, value: string): void => {
+    setValue(key, params.get(key) === value ? "" : value);
+  };
+
+  const clearFacets = (): void => {
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        for (const key of ["studio", "quality", "duration", "rating_gte", "tag"]) {
+          next.delete(key);
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  };
 
   const setValue = (key: string, value: string): void => {
     setParams(
@@ -155,7 +176,19 @@ export function SearchRoute() {
         />
       </form>
 
-      <LocalResults query={deferredQuery} search={localSearch} />
+      {/* The sidebar beside the results, as the design lays it out; stacked
+          below the breakpoint, where a 15rem column would leave the table
+          nothing to be wide in. */}
+      <div className="grid gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
+        <FacetSidebar
+          facets={facets.data}
+          filters={filters}
+          onToggle={toggleFacet}
+          onClearAll={clearFacets}
+        />
+        <LocalResults query={deferredQuery} search={localSearch} facets={facets.data} />
+      </div>
+
       <ExternalResults
         query={deferredQuery}
         search={indexerSearch}
@@ -169,7 +202,12 @@ export function SearchRoute() {
 function LocalResults({
   query,
   search,
-}: { readonly query: string; readonly search: ReturnType<typeof useLocalSearch> }) {
+  facets,
+}: {
+  readonly query: string;
+  readonly search: ReturnType<typeof useLocalSearch>;
+  readonly facets: ReturnType<typeof useSearchFacets>["data"];
+}) {
   const { t } = useTranslation();
   const format = useFormat();
   return (
@@ -178,6 +216,16 @@ function LocalResults({
         <h2 id="local-results-heading" className="text-lg text-ink">
           {t("search.local.title")}
         </h2>
+        {/* "86 of 3,268" — what the filters kept, out of what the search
+            reached. `capped` says the second number is a floor, not a total,
+            and the sentence changes rather than the number quietly lying. */}
+        {facets === undefined ? null : (
+          <span className="text-xs text-ink-muted">
+            {facets.capped
+              ? t("search.local.countCapped", { matched: facets.matched, total: facets.total })
+              : t("search.local.count", { matched: facets.matched, total: facets.total })}
+          </span>
+        )}
         {search.isFetching ? (
           <span className="text-xs text-ink-muted">{t("search.searching")}</span>
         ) : null}
@@ -514,6 +562,10 @@ function readFilters(params: URLSearchParams): SearchFilters {
   const sort = params.get("sort");
   return {
     quality: value(params, "quality"),
+    studio: value(params, "studio"),
+    tag: value(params, "tag"),
+    duration: value(params, "duration"),
+    ratingFloor: numberValue(params, "rating_gte"),
     minimumSize: numberValue(params, "minimum_size"),
     maximumSize: numberValue(params, "maximum_size"),
     maximumAgeDays: numberValue(params, "maximum_age_days"),
@@ -535,7 +587,13 @@ function value(params: URLSearchParams, key: string): string | undefined {
   return params.get(key) || undefined;
 }
 function numberValue(params: URLSearchParams, key: string): number | undefined {
-  const parsed = Number(params.get(key));
+  // A parameter that is not there is not zero. `Number(null)` is 0, which is
+  // finite and non-negative, so the obvious version turns every absent numeric
+  // filter into an explicit zero — harmless for a size floor, and a rejected
+  // request for a rating floor, which the API requires to be at least 1.
+  const raw = params.get(key);
+  if (raw === null || raw.trim() === "") return undefined;
+  const parsed = Number(raw);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
 function useDebouncedValue(value: string): string {

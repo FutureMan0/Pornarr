@@ -229,7 +229,9 @@
       "title": "In deiner Bibliothek",
       "notSearched": "Gib einen Titel ein, um deine lokale Bibliothek zu durchsuchen.",
       "loading": "Lokale Treffer werden geladen",
-      "empty": "Keine passenden Bibliothekseinträge. Indexer könnten dennoch einen Release finden."
+      "empty": "Keine passenden Bibliothekseinträge. Indexer könnten dennoch einen Release finden.",
+      "count": "{{matched}} von {{total}}",
+      "countCapped": "{{matched}} von mehr als {{total}}"
     },
     "external": {
       "title": "Von Indexern",
@@ -250,6 +252,29 @@
       "present": "In Bibliothek",
       "upgrade": "Upgrade",
       "scoreBreakdown": "Titel {{title}}, Attribute {{attributes}}, Indexer-Zuverlässigkeit {{reliability}}"
+    },
+    "facets": {
+      "active": "Aktiv",
+      "remove": "Diesen Filter entfernen",
+      "clearAll": "Alle entfernen",
+      "group": {
+        "studio": "Studio",
+        "resolution": "Auflösung",
+        "duration": "Länge",
+        "rating": "Bewertung",
+        "tag": "Tags"
+      },
+      "duration": {
+        "under_10": "Unter 10 Min.",
+        "10_20": "10–20 Min.",
+        "20_40": "20–40 Min.",
+        "over_40": "Über 40 Min."
+      },
+      "rating": {
+        "floor_one": "Ab {{count}} Stern",
+        "floor_other": "Ab {{count}} Sternen",
+        "unrated": "Noch nicht bewertet"
+      }
     }
   },
   "account": {

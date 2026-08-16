@@ -229,7 +229,9 @@
       "title": "In your library",
       "notSearched": "Enter a title to search your local library.",
       "loading": "Loading local results",
-      "empty": "No matching library items. Indexer results may still find a release."
+      "empty": "No matching library items. Indexer results may still find a release.",
+      "count": "{{matched}} of {{total}}",
+      "countCapped": "{{matched}} of more than {{total}}"
     },
     "external": {
       "title": "From indexers",
@@ -250,6 +252,29 @@
       "present": "In library",
       "upgrade": "Upgrade",
       "scoreBreakdown": "Title {{title}}, attributes {{attributes}}, indexer reliability {{reliability}}"
+    },
+    "facets": {
+      "active": "Active",
+      "remove": "Remove this filter",
+      "clearAll": "Clear all",
+      "group": {
+        "studio": "Studio",
+        "resolution": "Resolution",
+        "duration": "Duration",
+        "rating": "Rating",
+        "tag": "Tags"
+      },
+      "duration": {
+        "under_10": "Under 10 min",
+        "10_20": "10–20 min",
+        "20_40": "20–40 min",
+        "over_40": "Over 40 min"
+      },
+      "rating": {
+        "floor_one": "{{count}} star and up",
+        "floor_other": "{{count}} stars and up",
+        "unrated": "Not yet rated"
+      }
     }
   },
   "account": {

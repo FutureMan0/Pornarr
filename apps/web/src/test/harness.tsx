@@ -102,13 +102,25 @@ export function createTestQueryClient(): QueryClient {
 
 export interface RenderAppResult extends RenderResult {
   readonly queryClient: QueryClient;
+  /**
+   * The memory router, so a test can read where the application went. Screens
+   * that keep state in the address — search filters, above all — are asserting
+   * something real about being bookmarkable, and `window.location` never moves
+   * under a memory router.
+   */
+  readonly router: ReturnType<typeof createMemoryRouter>;
 }
 
 export function renderApp(initialEntry = "/"): RenderAppResult {
   const queryClient = createTestQueryClient();
   const router = createMemoryRouter(appRoutes, { initialEntries: [initialEntry] });
   const result = render(<AppProviders queryClient={queryClient} router={router} />);
-  return Object.assign(result, { queryClient });
+  return Object.assign(result, { queryClient, router });
+}
+
+/** The query string the application is currently on. */
+export function currentParams(router: ReturnType<typeof createMemoryRouter>): URLSearchParams {
+  return new URLSearchParams(router.state.location.search);
 }
 
 /**
