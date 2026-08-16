@@ -14,8 +14,10 @@ test.describe("authenticated navigation and screens", () => {
 
   test("can navigate to search and input query", async ({ page }) => {
     await page.goto("/search");
-    await expect(page.getByRole("heading", { name: "Search" })).toBeVisible();
-    await expect(page.getByPlaceholder(/Search library and indexers|Search/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Search", level: 1 })).toBeVisible();
+    // Scoped to the page: the shell's top bar carries a search box with the
+    // same placeholder, and an unscoped locator matches both.
+    await expect(page.getByRole("main").getByPlaceholder(/Search/i)).toBeVisible();
     await expectNoAccessibilityViolations(page);
   });
 
@@ -33,13 +35,17 @@ test.describe("authenticated navigation and screens", () => {
 
   test("can navigate to downloads / activity queue", async ({ page }) => {
     await page.goto("/downloads");
-    await expect(page.getByRole("heading", { name: "Activity" })).toBeVisible();
+    // The screen is titled Downloads. "Activity" is the top bar's live-status
+    // control, which is present on every screen and proves nothing here.
+    await expect(page.getByRole("heading", { name: "Downloads", level: 1 })).toBeVisible();
     await expectNoAccessibilityViolations(page);
   });
 
   test("can navigate to settings / quality profiles", async ({ page }) => {
     await page.goto("/settings/quality");
-    await expect(page.getByRole("heading", { name: "Quality profiles" })).toBeVisible();
+    // The page title and the profile list share a name, so this has to say
+    // which one it means rather than matching both.
+    await expect(page.getByRole("heading", { name: "Quality profiles", level: 1 })).toBeVisible();
     await expectNoAccessibilityViolations(page);
   });
 
