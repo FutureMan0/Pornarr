@@ -156,7 +156,13 @@
     "retry": "Erneut versuchen"
   },
   "shell": {
-    "skipToContent": "Zum Inhalt springen"
+    "skipToContent": "Zum Inhalt springen",
+    "brand": "Pornarr",
+    "scope": "LOKAL",
+    "role": {
+      "admin": "Admin",
+      "guest": "Gast"
+    }
   },
   "nav": {
     "primary": "Hauptnavigation",
