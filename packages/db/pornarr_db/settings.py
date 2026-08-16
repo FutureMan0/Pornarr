@@ -41,6 +41,13 @@ _RUNTIME_SETTING_FIELDS = frozenset(
         "recommendation_popularity_weight",
         "request_search_max_age_days",
         "log_level",
+        "private_libraries",
+        "pooled_search",
+        "anonymous_social",
+        "recommendation_use_ratings",
+        "recommendation_include_friend_picks",
+        "recommendation_hide_finished",
+        "recommendation_include_shorts",
         "metrics_enabled",
     }
 )
@@ -76,6 +83,13 @@ class RuntimeSettings(BaseModel):
     recommendation_recency_weight: float
     recommendation_popularity_weight: float
     request_search_max_age_days: int
+    private_libraries: bool
+    pooled_search: bool
+    anonymous_social: bool
+    recommendation_use_ratings: bool
+    recommendation_include_friend_picks: bool
+    recommendation_hide_finished: bool
+    recommendation_include_shorts: bool
     log_level: str
     metrics_enabled: bool
 
@@ -119,6 +133,13 @@ class RuntimeSettingsWrite(BaseModel):
     recommendation_popularity_weight: float | None = Field(default=None, ge=0)
     request_search_max_age_days: int | None = Field(default=None, ge=1)
     log_level: str | None = Field(default=None, pattern="^(debug|info|warning|error)$")
+    private_libraries: bool | None = None
+    pooled_search: bool | None = None
+    anonymous_social: bool | None = None
+    recommendation_use_ratings: bool | None = None
+    recommendation_include_friend_picks: bool | None = None
+    recommendation_hide_finished: bool | None = None
+    recommendation_include_shorts: bool | None = None
     metrics_enabled: bool | None = None
 
     @field_validator(

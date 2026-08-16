@@ -16,7 +16,9 @@
       "test-results",
       "graphify-out",
       ".codegraph",
-      "docs/design/mockups"
+      "docs/design/mockups",
+      "docs/design/pornarr-ui",
+      ".claude"
     ]
   },
   "formatter": {

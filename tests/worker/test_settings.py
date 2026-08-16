@@ -51,9 +51,11 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "dispatch_rss_sync",
         "dispatch_backlog_searches",
         "dispatch_perceptual_hashes",
+        "generate_automatic_shorts_job",
     ]
     assert [job.name for job in settings.TranscodeWorkerSettings.functions] == [
         "generate_preview_sprite_job",
+        "generate_preview_and_scenes_job",
         "generate_artwork_job",
         "regenerate_library_artwork_job",
         "generate_perceptual_hash_job",
@@ -82,6 +84,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "dispatch_rss_sync",
         "dispatch_backlog_searches",
         "dispatch_perceptual_hashes",
+        "generate_automatic_shorts_job",
         "scan",
         "quarantine_job",
         "upgrade_media_file_job",
@@ -113,7 +116,12 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "dispatch_due_request_searches",
         "dispatch_rss_sync",
         "dispatch_backlog_searches",
+        "generate_automatic_shorts_job",
     ]
+    assert (
+        cron_jobs["generate_automatic_shorts_job"].hour,
+        cron_jobs["generate_automatic_shorts_job"].minute,
+    ) == (3, 15)
     assert cron_jobs["download_poll"].second == set(range(0, 60, 5))
     assert cron_jobs["watch_download_files"].second == {0, 30}
     assert cron_jobs["dispatch_rss_sync"].minute == {0, 15, 30, 45}

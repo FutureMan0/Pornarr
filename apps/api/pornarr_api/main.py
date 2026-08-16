@@ -31,6 +31,9 @@ from pornarr_api.routers.admin_quarantine import router as admin_quarantine_rout
 from pornarr_api.routers.admin_settings import router as admin_settings_router
 from pornarr_api.routers.auth import router as auth_router
 from pornarr_api.routers.auth_oidc import router as auth_oidc_router
+from pornarr_api.routers.collections import router as collections_router
+from pornarr_api.routers.comments import admin_router as admin_comments_router
+from pornarr_api.routers.comments import router as comments_router
 from pornarr_api.routers.events import router as events_router
 from pornarr_api.routers.health import router as health_router
 from pornarr_api.routers.library import media_router as library_media_router
@@ -40,14 +43,21 @@ from pornarr_api.routers.monitors import router as monitors_router
 from pornarr_api.routers.notifications import router as notifications_router
 from pornarr_api.routers.playback import progress_router as playback_progress_router
 from pornarr_api.routers.playback import router as playback_router
+from pornarr_api.routers.profile import router as profile_router
 from pornarr_api.routers.queue import router as queue_router
+from pornarr_api.routers.ratings import router as ratings_router
 from pornarr_api.routers.recommendations import router as recommendations_router
 from pornarr_api.routers.requests import router as requests_router
+from pornarr_api.routers.scenes import router as scenes_router
 from pornarr_api.routers.search import router as search_router
+from pornarr_api.routers.sends import router as sends_router
 from pornarr_api.routers.setup import router as setup_router
+from pornarr_api.routers.shorts import admin_router as admin_shorts_router
+from pornarr_api.routers.shorts import router as shorts_router
 from pornarr_api.routers.stream import router as stream_router
 from pornarr_api.routers.transcode import admin_router as admin_transcode_router
 from pornarr_api.routers.transcode import router as transcode_router
+from pornarr_api.routers.watchlist import router as watchlist_router
 from pornarr_api.setup import SetupMiddleware
 from pornarr_api.spa import mount_spa
 from pornarr_integrations.qbittorrent import QbittorrentAdapter
@@ -84,6 +94,8 @@ api_router.include_router(admin_audit_router)
 api_router.include_router(admin_indexers_router)
 api_router.include_router(admin_library_router)
 api_router.include_router(admin_settings_router)
+api_router.include_router(admin_comments_router)
+api_router.include_router(admin_shorts_router)
 api_router.include_router(events_router)
 api_router.include_router(health_router)
 api_router.include_router(library_router)
@@ -101,6 +113,14 @@ api_router.include_router(setup_router)
 api_router.include_router(stream_router)
 api_router.include_router(transcode_router)
 api_router.include_router(admin_transcode_router)
+api_router.include_router(profile_router)
+api_router.include_router(ratings_router)
+api_router.include_router(comments_router)
+api_router.include_router(shorts_router)
+api_router.include_router(sends_router)
+api_router.include_router(collections_router)
+api_router.include_router(scenes_router)
+api_router.include_router(watchlist_router)
 
 
 def create_app(

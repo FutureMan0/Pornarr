@@ -76,6 +76,20 @@ class Settings(BaseSettings):
     auto_download_size_weight: float = Field(default=0.05, ge=0)
     auto_download_duplicate_risk_weight: float = Field(default=0.10, ge=0)
     auto_download_expected_download_time_weight: float = Field(default=0.05, ge=0)
+
+    # Household-scope switches. Defaults keep a fresh server behaving exactly as
+    # it did before these existed: one shared library, pooled search, and social
+    # activity without attribution.
+    private_libraries: bool = False
+    pooled_search: bool = True
+    anonymous_social: bool = True
+
+    # Feed tuning, mirrored by the per-user toggles the design shows.
+    recommendation_use_ratings: bool = True
+    recommendation_include_friend_picks: bool = True
+    recommendation_hide_finished: bool = True
+    recommendation_include_shorts: bool = True
+
     recommendation_tag_weight: float = Field(default=0.30, ge=0)
     recommendation_performer_weight: float = Field(default=0.25, ge=0)
     recommendation_studio_weight: float = Field(default=0.15, ge=0)

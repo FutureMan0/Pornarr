@@ -90,6 +90,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/account/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Profile */
+        get: operations["account_read_profile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Write Profile */
+        patch: operations["account_write_profile"];
+        trace?: never;
+    };
     "/api/account/storage": {
         parameters: {
             query?: never;
@@ -118,6 +136,83 @@ export interface paths {
         get: operations["admin_list_audit_log"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Moderation Queue
+         * @description Reported first, then newest — the order the A6 screen reads in.
+         */
+        get: operations["admin_list_moderation_queue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/comments/{comment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set Comment State */
+        patch: operations["admin_set_comment_state"];
+        trace?: never;
+    };
+    "/api/admin/comments/{comment_id}/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide Comment
+         * @description Withhold a comment from everyone but its author and the administrators.
+         */
+        post: operations["admin_hide_comment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/comments/{comment_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve Comment
+         * @description Leave the comment standing and take it off the queue.
+         */
+        post: operations["admin_resolve_comment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -563,6 +658,40 @@ export interface paths {
         patch: operations["admin_write_settings"];
         trace?: never;
     };
+    "/api/admin/shorts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Short */
+        post: operations["admin_create_short"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/shorts/{short_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Short */
+        delete: operations["admin_delete_short"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/transcode/capabilities": {
         parameters: {
             query?: never;
@@ -767,6 +896,135 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Collections
+         * @description Your shelves by default; `shared=true` adds the ones others opened up.
+         */
+        get: operations["collections_list_collections"];
+        put?: never;
+        /** Create Collection */
+        post: operations["collections_create_collection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/collections/{collection_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Collection */
+        get: operations["collections_read_collection"];
+        put?: never;
+        post?: never;
+        /** Delete Collection */
+        delete: operations["collections_delete_collection"];
+        options?: never;
+        head?: never;
+        /** Update Collection */
+        patch: operations["collections_update_collection"];
+        trace?: never;
+    };
+    "/api/collections/{collection_id}/items/{media_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Add Item
+         * @description Idempotent: adding a title already on the shelf changes nothing.
+         */
+        put: operations["collections_add_item"];
+        post?: never;
+        /** Remove Item */
+        delete: operations["collections_remove_item"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comments/{comment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Comment */
+        delete: operations["comments_delete_comment"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit Comment
+         * @description Only the author edits. An administrator can hide or delete, never rewrite.
+         *
+         *     Putting words in someone's mouth is a different power from moderation, and
+         *     the audit trail would not show it.
+         */
+        patch: operations["comments_edit_comment"];
+        trace?: never;
+    };
+    "/api/comments/{comment_id}/like": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Like Comment
+         * @description Idempotent: a double-tap must not become a second like.
+         */
+        put: operations["comments_like_comment"];
+        post?: never;
+        /** Unlike Comment */
+        delete: operations["comments_unlike_comment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comments/{comment_id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Comment
+         * @description 202, and never a count: the reporter learns nothing about other reports.
+         *
+         *     Reporting twice updates the reason rather than stacking, so a single reader
+         *     cannot make a remark look widely objected to.
+         */
+        post: operations["comments_report_comment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events": {
         parameters: {
             query?: never;
@@ -835,6 +1093,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/media/{media_id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Comments
+         * @description Hidden comments stay visible to their author and to administrators.
+         *
+         *     Silently vanishing a remark teaches the author nothing; the state is part of
+         *     the response so the client can mark it as withheld.
+         */
+        get: operations["comments_list_comments"];
+        put?: never;
+        /** Create Comment */
+        post: operations["comments_create_comment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/media/{media_id}/markers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Marker
+         * @description Append a marker by hand, after the ones detection produced.
+         *
+         *     Ordinals are positions in the index, not identifiers, so a manual marker
+         *     takes the next one rather than being inserted in time order — renumbering
+         *     every later marker would invalidate the ids clips point at.
+         */
+        post: operations["scenes_create_marker"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/media/{media_id}/markers/{marker_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Marker
+         * @description Clips cut from this marker keep working; their `marker_id` becomes null.
+         */
+        delete: operations["scenes_delete_marker"];
+        options?: never;
+        head?: never;
+        /** Update Marker */
+        patch: operations["scenes_update_marker"];
+        trace?: never;
+    };
     "/api/media/{media_id}/playback-info": {
         parameters: {
             query?: never;
@@ -861,6 +1188,48 @@ export interface paths {
         };
         /** Poster */
         get: operations["library_poster"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/media/{media_id}/rating": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Rating */
+        get: operations["ratings_read_rating"];
+        /**
+         * Set Rating
+         * @description Set-or-replace, so re-rating from a second tab cannot collide.
+         */
+        put: operations["ratings_set_rating"];
+        post?: never;
+        /**
+         * Clear Rating
+         * @description Idempotent: withdrawing a rating you never gave is not an error.
+         */
+        delete: operations["ratings_clear_rating"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/media/{media_id}/scenes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Scenes */
+        get: operations["scenes_read_scenes"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1081,6 +1450,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/playback/sessions/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Sessions
+         * @description What "Playing on" reads: this account's live transcodes.
+         *
+         *     Direct play deliberately does not appear. A direct-playing client streams
+         *     the file without asking the server to keep any session state, so there is
+         *     nothing here to report — the absence of a row for a device *is* the signal
+         *     that it is not transcoding, and inventing a record would mean tracking
+         *     playback the server otherwise has no reason to know about.
+         */
+        get: operations["playback_my_sessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/playback/{media_id}/progress": {
         parameters: {
             query?: never;
@@ -1151,6 +1546,49 @@ export interface paths {
          * @description Remove the user's signals so the next refresh starts from an empty profile.
          */
         delete: operations["recommendations_reset_recommendation_profile"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recommendations/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Recommendation
+         * @description Hand a title to someone with a note. They are told who sent it.
+         */
+        post: operations["recommendations_send_recommendation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recommendations/sent-to-me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sent To Me
+         * @description The one place in the product where another person is named.
+         *
+         *     Everything else is anonymous under `anonymous_social`; a hand-picked
+         *     recommendation is worthless without knowing whose taste it was.
+         */
+        get: operations["recommendations_sent_to_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1353,6 +1791,97 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Media */
+        post: operations["sends_send_media"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sends/received": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Received */
+        get: operations["sends_list_received"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sends/sent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Sent
+         * @description Your outbox without read receipts: `seen_at` is blanked for the sender.
+         */
+        get: operations["sends_list_sent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sends/{send_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Send
+         * @description Either party can remove it: the recipient dismisses, the sender withdraws.
+         */
+        delete: operations["sends_delete_send"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sends/{send_id}/seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark Seen */
+        post: operations["sends_mark_seen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/setup/complete": {
         parameters: {
             query?: never;
@@ -1398,6 +1927,79 @@ export interface paths {
         put?: never;
         /** Validate Library Path */
         post: operations["setup_validate_library_path"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shorts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Shorts
+         * @description Trending is recent watching, not all-time rating.
+         *
+         *     A clip cut yesterday that everyone opened should lead over one from March
+         *     with a slightly better average, so trending counts progress events on the
+         *     parent title within the window rather than sorting by score.
+         */
+        get: operations["shorts_list_shorts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shorts/media/{media_id}/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate From Markers
+         * @description Cut clips at the detected scene boundaries of a title.
+         *
+         *     One clip per marker, in order, skipping any that would overlap a clip that
+         *     already exists — so this never disturbs a cut placed by hand, and never
+         *     re-cuts a marker it has already covered.
+         *
+         *     `maximum` bounds one call rather than the title: calling again picks up at
+         *     the first uncovered marker, so a long film can be worked through a few
+         *     clips at a time instead of producing a hundred in one press.
+         *
+         *     A marker is a boundary, not a length: the clip runs from the boundary for
+         *     the requested duration or to the end of the scene, whichever is shorter, so
+         *     a five-second shot does not become a minute of the following one.
+         */
+        post: operations["shorts_generate_from_markers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shorts/{short_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Short */
+        get: operations["shorts_read_short"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1467,6 +2069,44 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/watchlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Watchlist */
+        get: operations["watchlist_list_watchlist"];
+        put?: never;
+        /**
+         * Add To Watchlist
+         * @description Idempotent: adding something already queued is not an error.
+         */
+        post: operations["watchlist_add_to_watchlist"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/watchlist/{media_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove From Watchlist */
+        delete: operations["watchlist_remove_from_watchlist"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1593,6 +2233,137 @@ export interface components {
             codec: string;
             /** Maximum Tested Resolution */
             maximum_tested_resolution: string;
+        };
+        /** CollectionCreate */
+        CollectionCreate: {
+            /** Name */
+            name: string;
+            /** @default private */
+            visibility: components["schemas"]["CollectionVisibility"];
+        };
+        /** CollectionDetailResponse */
+        CollectionDetailResponse: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Yours */
+            is_yours: boolean;
+            /** Item Count */
+            item_count: number;
+            /** Items */
+            items: components["schemas"]["CollectionItemResponse"][];
+            /** Name */
+            name: string;
+            /** Owner */
+            owner: string;
+            visibility: components["schemas"]["CollectionVisibility"];
+        };
+        /** CollectionItemResponse */
+        CollectionItemResponse: {
+            /**
+             * Added At
+             * Format: date-time
+             */
+            added_at: string;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Media Title */
+            media_title: string;
+        };
+        /** CollectionResponse */
+        CollectionResponse: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Yours */
+            is_yours: boolean;
+            /** Item Count */
+            item_count: number;
+            /** Name */
+            name: string;
+            /** Owner */
+            owner: string;
+            visibility: components["schemas"]["CollectionVisibility"];
+        };
+        /** CollectionUpdate */
+        CollectionUpdate: {
+            /** Name */
+            name?: string | null;
+            visibility?: components["schemas"]["CollectionVisibility"] | null;
+        };
+        /**
+         * CollectionVisibility
+         * @enum {string}
+         */
+        CollectionVisibility: "private" | "shared";
+        /** CommentReportWrite */
+        CommentReportWrite: {
+            /** Reason */
+            reason?: string | null;
+        };
+        /** CommentResponse */
+        CommentResponse: {
+            /** Author */
+            author: string | null;
+            /** Body */
+            body: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Edited At */
+            edited_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Own */
+            is_own: boolean;
+            /** Likes */
+            likes: number;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Stars */
+            stars: number | null;
+            state: components["schemas"]["CommentState"];
+            /** You Liked */
+            you_liked: boolean;
+        };
+        /**
+         * CommentState
+         * @enum {string}
+         */
+        CommentState: "open" | "answered" | "hidden";
+        /** CommentStateWrite */
+        CommentStateWrite: {
+            state: components["schemas"]["CommentState"];
+        };
+        /** CommentWrite */
+        CommentWrite: {
+            /** Body */
+            body: string;
         };
         /** ComponentHealth */
         ComponentHealth: {
@@ -1908,6 +2679,22 @@ export interface components {
          * @enum {string}
          */
         ExternalSearchSort: "relevance" | "age" | "size" | "quality" | "seeders" | "estimated_time";
+        /**
+         * GenerateShortsWrite
+         * @description How many clips to cut, and how long each should be.
+         */
+        GenerateShortsWrite: {
+            /**
+             * Maximum
+             * @default 5
+             */
+            maximum: number;
+            /**
+             * Seconds
+             * @default 60
+             */
+            seconds: number;
+        };
         /** GrabResponse */
         GrabResponse: {
             /**
@@ -2092,6 +2879,10 @@ export interface components {
             progress_duration_seconds: number | null;
             /** Quality */
             quality: string | null;
+            /** Rating */
+            rating: number | null;
+            /** Rating Count */
+            rating_count: number;
             /** Release Date */
             release_date: string | null;
             /** Resolution */
@@ -2119,10 +2910,16 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** In My Library */
+            in_my_library: boolean;
             /** Performers */
             performers: string[];
             /** Quality */
             quality: string | null;
+            /** Rating */
+            rating: number | null;
+            /** Rating Count */
+            rating_count: number;
             /** Release Date */
             release_date: string | null;
             /** Relevance */
@@ -2155,6 +2952,20 @@ export interface components {
             /** Username */
             username: string;
         };
+        /** MarkerPatch */
+        MarkerPatch: {
+            /** End Seconds */
+            end_seconds?: number | null;
+            /** Start Seconds */
+            start_seconds?: number | null;
+        };
+        /** MarkerWrite */
+        MarkerWrite: {
+            /** End Seconds */
+            end_seconds: number;
+            /** Start Seconds */
+            start_seconds: number;
+        };
         /** MediaDetailResponse */
         MediaDetailResponse: {
             /** Bitrate */
@@ -2172,14 +2983,22 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** In My Library */
+            in_my_library: boolean;
             /** Metadata Source */
             metadata_source: string;
+            /** Owner Id */
+            owner_id: string | null;
             /** Path */
             path: string;
             /** Performers */
             performers: string[];
             /** Playable */
             playable: boolean;
+            /** Rating */
+            rating: number | null;
+            /** Rating Count */
+            rating_count: number;
             /** Release Date */
             release_date: string | null;
             /** Resolution */
@@ -2198,6 +3017,43 @@ export interface components {
          * @enum {string}
          */
         MediaSort: "relevance" | "age" | "date_added" | "title" | "size" | "quality" | "duration";
+        /** ModeratedCommentResponse */
+        ModeratedCommentResponse: {
+            /** Author */
+            author: string | null;
+            /** Body */
+            body: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Edited At */
+            edited_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Own */
+            is_own: boolean;
+            /** Likes */
+            likes: number;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Media Title */
+            media_title: string;
+            /** Reports */
+            reports: number;
+            /** Stars */
+            stars: number | null;
+            state: components["schemas"]["CommentState"];
+            /** You Liked */
+            you_liked: boolean;
+        };
         /** MonitorCreate */
         MonitorCreate: {
             /**
@@ -2344,6 +3200,8 @@ export interface components {
         PlaybackProgressResponse: {
             /** Completed */
             completed: boolean;
+            /** Device Label */
+            device_label: string | null;
             /** Duration Seconds */
             duration_seconds: number;
             /**
@@ -2356,10 +3214,56 @@ export interface components {
         };
         /** PlaybackProgressWrite */
         PlaybackProgressWrite: {
+            /** Device Label */
+            device_label?: string | null;
             /** Duration Seconds */
             duration_seconds: number;
             /** Position Seconds */
             position_seconds: number;
+        };
+        /**
+         * PlayingOnResponse
+         * @description One device this account currently has a transcode running on.
+         */
+        PlayingOnResponse: {
+            /** Device Label */
+            device_label: string | null;
+            /** Hardware */
+            hardware: boolean;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Media Title */
+            media_title: string;
+            /** Mode */
+            mode: string;
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+        };
+        /** ProfileResponse */
+        ProfileResponse: {
+            /** Author Name */
+            author_name: string;
+            /** Display Name */
+            display_name: string | null;
+            role: components["schemas"]["UserRole"];
+            /** Username */
+            username: string;
+        };
+        /** ProfileWrite */
+        ProfileWrite: {
+            /** Display Name */
+            display_name: string | null;
         };
         /** ProviderResponse */
         ProviderResponse: {
@@ -2548,6 +3452,8 @@ export interface components {
             release_date?: string | null;
             /** Studio */
             studio?: string | null;
+            /** Target Owner Id */
+            target_owner_id?: string | null;
             /** Title */
             title?: string | null;
         };
@@ -2636,6 +3542,29 @@ export interface components {
          * @enum {string}
          */
         QueueSort: "priority" | "created_at" | "status";
+        /** RatingSummaryResponse */
+        RatingSummaryResponse: {
+            /** Average */
+            average: number | null;
+            /** Breakdown */
+            breakdown: {
+                [key: string]: number;
+            };
+            /** Count */
+            count: number;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Your Stars */
+            your_stars: number | null;
+        };
+        /** RatingWrite */
+        RatingWrite: {
+            /** Stars */
+            stars: number;
+        };
         /** RecommendationFeedbackWrite */
         RecommendationFeedbackWrite: {
             event_type: components["schemas"]["UserEventType"];
@@ -2649,6 +3578,8 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+            /** Match Score */
+            match_score: number;
             /**
              * Media Id
              * Format: uuid
@@ -2660,6 +3591,8 @@ export interface components {
             reason: {
                 [key: string]: unknown;
             };
+            /** Reasons */
+            reasons: string[];
             /** Score */
             score: number;
             /** Title */
@@ -2676,6 +3609,8 @@ export interface components {
             query: string;
             /** Selected Release Guid */
             selected_release_guid?: string | null;
+            /** Target Owner Id */
+            target_owner_id?: string | null;
         };
         /** RequestHistoryResponse */
         RequestHistoryResponse: {
@@ -2756,6 +3691,8 @@ export interface components {
          * @description Resolved values with attributes callers can use directly.
          */
         RuntimeSettings: {
+            /** Anonymous Social */
+            anonymous_social: boolean;
             /** Audit Retention Days */
             audit_retention_days: number | null;
             /** Auto Download Duplicate Risk Weight */
@@ -2790,8 +3727,18 @@ export interface components {
             min_free_disk_percent: number;
             /** Playback Completion Threshold Percent */
             playback_completion_threshold_percent: number;
+            /** Pooled Search */
+            pooled_search: boolean;
+            /** Private Libraries */
+            private_libraries: boolean;
             /** Quarantine Retention Days */
             quarantine_retention_days: number;
+            /** Recommendation Hide Finished */
+            recommendation_hide_finished: boolean;
+            /** Recommendation Include Friend Picks */
+            recommendation_include_friend_picks: boolean;
+            /** Recommendation Include Shorts */
+            recommendation_include_shorts: boolean;
             /** Recommendation Performer Weight */
             recommendation_performer_weight: number;
             /** Recommendation Popularity Weight */
@@ -2804,6 +3751,8 @@ export interface components {
             recommendation_studio_weight: number;
             /** Recommendation Tag Weight */
             recommendation_tag_weight: number;
+            /** Recommendation Use Ratings */
+            recommendation_use_ratings: boolean;
             /** Request Search Max Age Days */
             request_search_max_age_days: number;
             /** Transcode Max Hw Sessions */
@@ -2820,6 +3769,8 @@ export interface components {
          * @description Partial update validated before values are persisted.
          */
         RuntimeSettingsWrite: {
+            /** Anonymous Social */
+            anonymous_social?: boolean | null;
             /** Audit Retention Days */
             audit_retention_days?: number | null;
             /** Auto Download Duplicate Risk Weight */
@@ -2854,8 +3805,18 @@ export interface components {
             min_free_disk_percent?: number | null;
             /** Playback Completion Threshold Percent */
             playback_completion_threshold_percent?: number | null;
+            /** Pooled Search */
+            pooled_search?: boolean | null;
+            /** Private Libraries */
+            private_libraries?: boolean | null;
             /** Quarantine Retention Days */
             quarantine_retention_days?: number | null;
+            /** Recommendation Hide Finished */
+            recommendation_hide_finished?: boolean | null;
+            /** Recommendation Include Friend Picks */
+            recommendation_include_friend_picks?: boolean | null;
+            /** Recommendation Include Shorts */
+            recommendation_include_shorts?: boolean | null;
             /** Recommendation Performer Weight */
             recommendation_performer_weight?: number | null;
             /** Recommendation Popularity Weight */
@@ -2868,6 +3829,8 @@ export interface components {
             recommendation_studio_weight?: number | null;
             /** Recommendation Tag Weight */
             recommendation_tag_weight?: number | null;
+            /** Recommendation Use Ratings */
+            recommendation_use_ratings?: boolean | null;
             /** Request Search Max Age Days */
             request_search_max_age_days?: number | null;
             /** Transcode Max Hw Sessions */
@@ -2878,6 +3841,34 @@ export interface components {
             transcode_max_sw_sessions?: number | null;
             /** User Event Retention Days */
             user_event_retention_days?: number | null;
+        };
+        /** SceneIndexResponse */
+        SceneIndexResponse: {
+            /** Media File Id */
+            media_file_id: string | null;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Scenes */
+            scenes: components["schemas"]["SceneResponse"][];
+        };
+        /** SceneResponse */
+        SceneResponse: {
+            /** Duration Seconds */
+            duration_seconds: number;
+            /** End Seconds */
+            end_seconds: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Ordinal */
+            ordinal: number;
+            /** Start Seconds */
+            start_seconds: number;
         };
         /** SearchEstimateResponse */
         SearchEstimateResponse: {
@@ -2903,6 +3894,49 @@ export interface components {
             media_id: string | null;
             /** Score */
             score: number | null;
+        };
+        /** SendCreate */
+        SendCreate: {
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Note */
+            note?: string | null;
+            /**
+             * Recipient Id
+             * Format: uuid
+             */
+            recipient_id: string;
+        };
+        /** SendResponse */
+        SendResponse: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Media Title */
+            media_title: string;
+            /** Note */
+            note: string | null;
+            /** Recipient */
+            recipient: string | null;
+            /** Seen At */
+            seen_at: string | null;
+            /** Sender */
+            sender: string | null;
         };
         /** SetupCompleteResponse */
         SetupCompleteResponse: {
@@ -2937,6 +3971,67 @@ export interface components {
             /** Username */
             username: string;
         };
+        /** ShortCreate */
+        ShortCreate: {
+            /** End Seconds */
+            end_seconds: number;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** @default manual */
+            source: components["schemas"]["ShortSource"];
+            /** Start Seconds */
+            start_seconds: number;
+            /** Title */
+            title: string;
+        };
+        /** ShortResponse */
+        ShortResponse: {
+            /** Average Stars */
+            average_stars: number | null;
+            /** Comment Count */
+            comment_count: number;
+            /** Duration Seconds */
+            duration_seconds: number;
+            /** End Seconds */
+            end_seconds: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Marker Id */
+            marker_id: string | null;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Media Title */
+            media_title: string;
+            /**
+             * Parent Media Id
+             * Format: uuid
+             */
+            parent_media_id: string;
+            source: components["schemas"]["ShortSource"];
+            /** Start Seconds */
+            start_seconds: number;
+            /** Title */
+            title: string;
+        };
+        /**
+         * ShortSort
+         * @enum {string}
+         */
+        ShortSort: "trending" | "newest" | "top" | "duration";
+        /**
+         * ShortSource
+         * @enum {string}
+         */
+        ShortSource: "marker" | "manual" | "hotspot";
         /** TagCorrectionWrite */
         TagCorrectionWrite: {
             /** Name */
@@ -3091,6 +4186,29 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** WatchlistItemResponse */
+        WatchlistItemResponse: {
+            /**
+             * Added At
+             * Format: date-time
+             */
+            added_at: string;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Title */
+            title: string;
+        };
+        /** WatchlistWrite */
+        WatchlistWrite: {
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
         };
     };
     responses: never;
@@ -3274,6 +4392,59 @@ export interface operations {
             };
         };
     };
+    account_read_profile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileResponse"];
+                };
+            };
+        };
+    };
+    account_write_profile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     account_read_daily_storage_usage: {
         parameters: {
             query?: never;
@@ -3315,6 +4486,164 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuditLogResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_moderation_queue: {
+        parameters: {
+            query?: {
+                state?: components["schemas"]["CommentState"] | null;
+                reported_only?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModeratedCommentResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_set_comment_state: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentStateWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModeratedCommentResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_hide_comment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModeratedCommentResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_resolve_comment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModeratedCommentResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4356,6 +5685,95 @@ export interface operations {
             };
         };
     };
+    admin_create_short: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShortCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShortResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_delete_short: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                short_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     admin_capabilities: {
         parameters: {
             query?: never;
@@ -4792,6 +6210,509 @@ export interface operations {
             };
         };
     };
+    collections_list_collections: {
+        parameters: {
+            query?: {
+                shared?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    collections_create_collection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    collections_read_collection: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                collection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    collections_delete_collection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    collections_update_collection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    collections_add_item: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collection_id: string;
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    collections_remove_item: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collection_id: string;
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    comments_delete_comment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    comments_edit_comment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    comments_like_comment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    comments_unlike_comment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    comments_report_comment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentReportWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     events_events: {
         parameters: {
             query?: never;
@@ -4835,6 +6756,7 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
+                rating_gte?: number | null;
             };
             header?: never;
             path?: never;
@@ -4889,6 +6811,221 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    comments_list_comments: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    comments_create_comment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    scenes_create_marker: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkerWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SceneResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    scenes_delete_marker: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+                marker_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scenes_update_marker: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+                marker_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkerPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SceneResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -4965,6 +7102,170 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ratings_read_rating: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingSummaryResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ratings_set_rating: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RatingWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingSummaryResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    ratings_clear_rating: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingSummaryResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scenes_read_scenes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SceneIndexResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -5499,6 +7800,26 @@ export interface operations {
             };
         };
     };
+    playback_my_sessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayingOnResponse"][];
+                };
+            };
+        };
+    };
     playback_playback_progress: {
         parameters: {
             query?: never;
@@ -5635,6 +7956,90 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    recommendations_send_recommendation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    recommendations_sent_to_me: {
+        parameters: {
+            query?: {
+                unseen_only?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };
@@ -6241,6 +8646,7 @@ export interface operations {
                 minimum_size_bytes?: number | null;
                 maximum_size_bytes?: number | null;
                 maximum_age_days?: number | null;
+                rating_gte?: number | null;
                 sort?: components["schemas"]["MediaSort"];
                 cursor?: string | null;
                 limit?: number;
@@ -6258,6 +8664,200 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LocalSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sends_send_media: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    sends_list_received: {
+        parameters: {
+            query?: {
+                unseen_only?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sends_list_sent: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sends_delete_send: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                send_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sends_mark_seen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                send_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Validation Error */
@@ -6373,6 +8973,132 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    shorts_list_shorts: {
+        parameters: {
+            query?: {
+                sort?: components["schemas"]["ShortSort"];
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShortResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shorts_generate_from_markers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateShortsWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShortResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shorts_read_short: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                short_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShortResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -6503,6 +9229,104 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    watchlist_list_watchlist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchlistItemResponse"][];
+                };
+            };
+        };
+    };
+    watchlist_add_to_watchlist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchlistWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    watchlist_remove_from_watchlist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Validation Error */
