@@ -581,6 +581,17 @@
       "newest": "Neueste",
       "top": "Bestbewertet",
       "duration": "Kürzeste"
+    },
+    "player": {
+      "position": "Clip {{index}} von {{total}}",
+      "keys": "Leertaste pausiert · Pfeiltasten wechseln den Clip",
+      "previous": "Vorheriger Clip",
+      "next": "Nächster Clip",
+      "cutFrom": "Ausschnitt aus",
+      "at": "bei {{time}}",
+      "upNext": "Als Nächstes",
+      "queueEmpty": "Sonst ist noch nichts im Feed.",
+      "aboutTitle": "Bewertung und Kommentare gehören zum ganzen Titel, nicht zu diesem Clip."
     }
   },
   "collections": {

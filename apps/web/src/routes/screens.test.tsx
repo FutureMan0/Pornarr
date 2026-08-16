@@ -66,7 +66,7 @@ describe("the shorts feed", () => {
     await waitFor(() => expect(sorts).toContain("top"));
   });
 
-  test("a clip links back to the title it was cut from", async () => {
+  test("a clip opens the player rather than dead-ending in the grid", async () => {
     server.use(
       http.get("/api/shorts", () =>
         HttpResponse.json([
@@ -91,8 +91,9 @@ describe("the shorts feed", () => {
 
     const link = await screen.findByRole("link", { name: /the good bit/ });
 
-    // An excerpt with no way back to its source is a dead end.
-    expect(link.getAttribute("href")).toBe("/library/m-9");
+    // The way back to the full title is on the player, where the timestamp
+    // gives it somewhere to land. A grid tile has no room to say "at 15:11".
+    expect(link.getAttribute("href")).toBe("/shorts/s-1");
   });
 });
 

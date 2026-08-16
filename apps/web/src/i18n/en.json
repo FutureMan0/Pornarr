@@ -581,6 +581,17 @@
       "newest": "Newest",
       "top": "Top rated",
       "duration": "Shortest"
+    },
+    "player": {
+      "position": "Clip {{index}} of {{total}}",
+      "keys": "Space pauses · arrow keys move between clips",
+      "previous": "Previous clip",
+      "next": "Next clip",
+      "cutFrom": "Cut from",
+      "at": "at {{time}}",
+      "upNext": "Up next",
+      "queueEmpty": "Nothing else in the feed yet.",
+      "aboutTitle": "Ratings and comments belong to the full title, not to this clip."
     }
   },
   "collections": {

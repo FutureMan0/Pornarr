@@ -31,6 +31,7 @@ import { SearchRoute } from "./routes/search/search-route";
 import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles-route";
 import { SetupGate } from "./routes/setup/setup-gate";
 import { SetupRoute } from "./routes/setup/setup-route";
+import { ShortsPlayerRoute } from "./routes/shorts/shorts-player-route";
 import { ShortsRoute } from "./routes/shorts/shorts-route";
 import { WatchlistRoute } from "./routes/watchlist/watchlist-route";
 import { AppShell } from "./shell/app-shell";
@@ -79,6 +80,7 @@ export const appRoutes: RouteObject[] = [
               { path: "feed", element: <FeedRoute /> },
               { path: "continue", element: <ContinueRoute /> },
               { path: "shorts", element: <ShortsRoute /> },
+              { path: "shorts/:shortId", element: <ShortsPlayerRoute /> },
               { path: "collections", element: <CollectionsRoute /> },
               { path: "collections/:collectionId", element: <CollectionDetailRoute /> },
               { path: "watchlist", element: <WatchlistRoute /> },

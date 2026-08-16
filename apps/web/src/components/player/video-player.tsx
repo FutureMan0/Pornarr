@@ -17,10 +17,26 @@ async function responseJson<T>(url: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export function VideoPlayer({
-  mediaId,
-  title,
-}: { readonly mediaId: string; readonly title: string }) {
+export interface Clip {
+  readonly startSeconds: number;
+  readonly endSeconds: number;
+}
+
+export interface VideoPlayerProps {
+  readonly mediaId: string;
+  readonly title: string;
+  /**
+   * Play only part of the title. The stream is the whole file — a short is a
+   * pair of timestamps into it, not a second copy — so the player seeks in and
+   * stops at the end rather than asking the server for a cut.
+   */
+  readonly clip?: Clip | undefined;
+  /** Portrait for shorts, which are shot that way and letterbox otherwise. */
+  readonly portrait?: boolean | undefined;
+  readonly onEnded?: (() => void) | undefined;
+}
+
+export function VideoPlayer({ mediaId, title, clip, portrait, onEnded }: VideoPlayerProps) {
   const { t } = useTranslation();
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
@@ -88,8 +104,34 @@ export function VideoPlayer({
     return () => window.clearInterval(timer);
   }, []);
 
+  /**
+   * Keep a clip inside its bounds.
+   *
+   * Seeking on `loadedmetadata` rather than immediately: a seek before the
+   * media knows its duration is silently dropped, and the clip then plays from
+   * the top of the film.
+   */
+  function enterClip() {
+    const element = video.current;
+    if (element === null || clip === undefined) return;
+    if (element.currentTime < clip.startSeconds) element.currentTime = clip.startSeconds;
+  }
+
+  function stopAtClipEnd() {
+    const element = video.current;
+    if (element === null || clip === undefined) return;
+    if (element.currentTime >= clip.endSeconds) {
+      element.pause();
+      onEnded?.();
+    }
+  }
+
   function reportProgress() {
     const element = video.current;
+    // A clip is not the film. Reporting its offset would put a two-hour title
+    // in "continue watching" at the fifteen-minute mark because someone
+    // watched forty seconds of it in the shorts feed.
+    if (clip !== undefined) return;
     if (element === null || !Number.isFinite(element.duration) || element.duration <= 0) return;
     if (element.currentTime - lastProgress.current < 10 && !element.ended) return;
     lastProgress.current = element.currentTime;
@@ -110,11 +152,18 @@ export function VideoPlayer({
     <section aria-label={t("player.label", { title })} className="bg-black">
       <video
         ref={video}
-        className="aspect-video w-full"
+        className={portrait === true ? "aspect-[9/16] h-full w-full" : "aspect-video w-full"}
         controls
         playsInline
-        onTimeUpdate={reportProgress}
-        onEnded={reportProgress}
+        onLoadedMetadata={enterClip}
+        onTimeUpdate={() => {
+          stopAtClipEnd();
+          reportProgress();
+        }}
+        onEnded={() => {
+          reportProgress();
+          onEnded?.();
+        }}
       >
         <track kind="captions" />
       </video>

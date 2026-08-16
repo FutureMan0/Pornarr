@@ -100,9 +100,10 @@ export function ShortsRoute(): JSX.Element {
                   commentCount={short.comment_count}
                   seed={seedFrom(short.id)}
                   action={(content) => (
-                    // Back to the full title, which is what `parent_media_id`
-                    // is carried for.
-                    <Link to={`/library/${short.parent_media_id}`} className="block rounded-md">
+                    // Into the player. The way back to the full title is on
+                    // that screen, where the timestamp gives it somewhere to
+                    // land — a grid tile has no room to say "at 15:11".
+                    <Link to={`/shorts/${short.id}`} className="block rounded-md">
                       {content}
                     </Link>
                   )}
