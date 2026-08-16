@@ -1,57 +1,82 @@
 # Design
 
-Visual reference for the web client. [`DESIGN.md`](../../DESIGN.md) at the repository
-root is authoritative: it defines the tokens, and where anything here disagrees with
-it, it wins. These files show what those tokens look like assembled into screens.
+Visual reference for the web client, and the component library the screens were
+drawn with.
 
 | Path | What it is |
 |---|---|
-| [previews/](previews/) | Full-frame renders — the fastest way to see the design without a checkout |
-| [mockups/](mockups/) | The interactive mockups, exported from the design tool |
-| [`../../assets/`](../../assets/) | Brand marks and favicons, the source files the client ships |
+| [previews/](previews/) | Full-frame renders, one PNG per screen — the fastest way to see the design without a checkout |
+| [mockups/](mockups/) | The interactive canvas, exported from the design tool |
+| [pornarr-ui/](pornarr-ui/) | The same design as working React components, with the rules it encodes written down |
+| [brand/](brand/) | Logo and favicons, at the sizes the client ships |
+
+Delivered 2026-08-16. `mockups/` and `previews/` were replaced wholesale by that
+delivery rather than merged, because both are generated output.
+
+## Which of these is authoritative
+
+Neither `DESIGN.md` nor this folder is authoritative on its own any more, and it is
+worth being blunt about where they disagree rather than discovering it mid-build:
+
+- **`DESIGN.md` says "There is no rating bar."** The delivered screens have ratings on
+  the tile, the row, the detail and an entire admin screen (A6). The design moved; the
+  prose did not.
+- **`DESIGN.md` specifies neutral surfaces with zero chroma**, so that posters are the
+  only saturated thing on screen. The delivered token set uses a tinted ground stack
+  (`#14111b` … `#40374f` in rose) and drives placeholder artwork from an accent-relative
+  hue.
+- **The delivered set ships two accents**, rose and amber, switched by `data-theme`.
+  `DESIGN.md` describes one.
+
+Treat `pornarr-ui/` as the current intent and `DESIGN.md` as the standing constraints
+it has to satisfy — chiefly the contrast floor, which is enforced by
+`packages/ui/src/contrast.test.ts` and is not negotiable.
 
 ## Previews
 
-GitHub does not render HTML from a repository, so the two renders below are the only
-way to see the design in the browser tab you are already in.
+One render per screen. The identifiers match the sections of the mockup canvas.
 
-| Render | Screens |
+| Group | Screens |
 |---|---|
-| [desktop-shorts.png](previews/desktop-shorts.png) | B7 — the Shorts feed on desktop: sidebar, top bar, centred vertical clip, comments and Up next |
-| [mobile-screens.png](previews/mobile-screens.png) | D1–D4 — Library, Shorts, Now playing, Settings |
+| A1–A6 | Admin: dashboard, scan and import, queue, tags, settings, ratings and comments |
+| B1–B8 | Desktop: library, search, detail and player, collections, join, shorts grid, shorts player, feed |
+| C1–C9 | Mobile web: library, player, filter sheet, shorts, login, first setup, admin, queue, feed |
+| D1–D4 | iOS: library, shorts, now playing, server |
 
 ## Mockups
 
-`mockups/Ponarr.dc.html` is the full canvas: every screen, laid out side by side with
-its identifier and a one-line note. The four `Ponarr*.dc.html` files beside it are
-single components pulled out of that canvas — sidebar, top bar, thumbnail, related row.
+`mockups/Ponarr.dc.html` is the full canvas: every screen side by side with its
+identifier and a one-line note. The `Ponarr*.dc.html` files beside it are single
+components pulled out of it.
 
-Open any of them directly from a checkout; they need no build step. They do fetch the
+Open any of them directly from a checkout; they need no build step. They fetch the
 Phosphor icon font from unpkg.com, so icons are missing offline — nothing else is.
 
-The export is committed **verbatim**, including its own `assets/` copy of the two logo
+The export is committed **verbatim**, including its own `assets/` copy of the logo
 files and the generated `_ds/nocturne-<uuid>/` directory name. Neither is tidied up on
-purpose: re-exporting from the design tool then stays a clean drop-in replacement
-instead of a merge. Treat everything under `mockups/` as generated — change the design
-in the tool and re-export, never by hand.
+purpose: re-exporting then stays a clean drop-in replacement instead of a merge. Treat
+everything under `mockups/` as generated — change the design in the tool and
+re-export, never by hand.
 
-Two parts of the export are not committed: the canvas thumbnail, and the `uploads/`
-staging folder, whose contents are either duplicates of `assets/` or intermediate crops
-of the two renders above.
+## Component library
+
+`pornarr-ui/` is the design as React components on a Vite dev server, with a
+`Showcase.jsx` catalogue of every one of them. Its `README.md` is the most useful
+document in this folder: it states the rules the components encode, which the PNGs can
+only imply.
+
+```bash
+cd docs/design/pornarr-ui && npm install && npm run dev
+```
+
+It is **reference, not a dependency**. The application's component package is
+`packages/ui`, which is TypeScript with CSS modules and a contrast test; this one is
+JSX with a global stylesheet. Porting happens by moving values and rules across, not by
+importing it — see `packages/ui/src/tokens.css`, where the delivered token set now
+lives alongside the existing one.
 
 ## Design system
 
-`mockups/_ds/nocturne-<uuid>/` is the **Nocturne** system the mockups were built on —
-one `styles.css` carrying the tokens and a component layer, with `readme.md` explaining
-the intent behind them. It is a useful reference for spacing, elevation and interaction
-states when implementing `packages/ui`.
-
-It is a reference, not the contract. Two divergences to know about before copying
-values out of it:
-
-- Nocturne ships a blurple accent (`#9184d9`). The mockups override it to the Pornarr
-  pink (`#d9629f`), which is what `DESIGN.md` specifies as `--primary`
-  (`oklch(0.62 0.180 340)`). Take the pink.
-- The brand mark runs a more saturated gradient (`#ee0083` → `#ff4fc2`) than the
-  interface accent. That is deliberate — a logo is not a UI surface — and neither value
-  should be pulled into the token sheet.
+`mockups/_ds/nocturne-<uuid>/` is the **Nocturne** system the mockups were built on.
+It is upstream of `pornarr-ui/`, and where the two disagree, `pornarr-ui/` is the later
+word.

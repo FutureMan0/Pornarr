@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-167c3630-4a16-4056-855f-ba15d3f3fc74/styles.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<script src="_ds/nocturne-167c3630-4a16-4056-855f-ba15d3f3fc74/_ds_bundle.js"></script>
+<link rel="stylesheet" href="theme-rose.css">
+<link rel="stylesheet" href="theme-amber.css">
+</helmet>
+<div style="width:300px;flex:none;display:flex;flex-direction:column;gap:22px;padding:28px 24px;background:var(--pa-bg-0);box-shadow:inset -1px 0 0 rgba(236,238,244,0.06)">
+  <img class="pa-logo" src="assets/logo-text.png" alt="Pornarr" style="height:24px;width:auto;align-self:flex-start">
+  <div style="display:flex;flex-direction:column;gap:5px">
+    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--pa-text-muted)">First run</div>
+    <div style="font-size:12px;color:var(--pa-text-muted);text-wrap:pretty">Six decisions. Nothing is written to disk until the scan starts.</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:2px">
+    <sc-for list="{{ steps }}" as="s" hint-placeholder-count="5">
+      <div style="{{ s.rowStyle }}">
+        <span style="{{ s.markStyle }}"><i class="{{ s.icon }}" style="font-size:12px"></i></span>
+        <span style="display:flex;flex-direction:column;min-width:0">
+          <span style="font-size:13px">{{ s.title }}</span>
+          <span style="font-size:11px;color:var(--pa-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.sub }}</span>
+        </span>
+      </div>
+    </sc-for>
+  </div>
+  <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px">
+    <div style="height:3px;border-radius:2px;background:var(--pa-bg-3);overflow:hidden"><span style="display:block;height:100%;width:{{ pct }};background:var(--pa-accent-500)"></span></div>
+    <div style="display:flex;font-size:11px;color:var(--pa-text-muted)"><span>{{ pctLabel }}</span><span style="margin-left:auto">LAN only</span></div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:300,&quot;height&quot;:760},&quot;step&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:1,&quot;min&quot;:1,&quot;max&quot;:5,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const current = Number(this.props.step || 1);
+    const rows = [
+      ['Owner account', 'the first and only admin'],
+      ['Root folders', 'validated before they are saved'],
+      ['Quality', 'what counts as good enough'],
+      ['Connections', 'indexers and download client'],
+      ['Access', 'sign-in, invites, house rules'],
+      ['First scan', 'and what needs review']
+    ];
+    return {
+      pct: Math.round(current / rows.length * 100) + '%',
+      pctLabel: 'Step ' + current + ' of ' + rows.length,
+      steps: rows.map(([title, sub], i) => {
+        const n = i + 1;
+        const done = n < current, on = n === current;
+        return {
+          title, sub,
+          icon: done ? 'ph-fill ph-check' : (on ? 'ph-fill ph-circle' : 'ph ph-circle'),
+          rowStyle: 'display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:8px;color:' +
+            (on ? 'var(--pa-text)' : (done ? 'var(--pa-text-dim)' : 'var(--pa-text-muted)')) +
+            (on ? ';background:var(--pa-bg-2);box-shadow:inset 0 0 0 1px rgba(236,238,244,0.08)' : ''),
+          markStyle: 'width:22px;height:22px;flex:none;border-radius:50%;display:grid;place-items:center;color:' +
+            (done || on ? 'var(--pa-accent-300)' : 'var(--pa-text-faint)') +
+            (done || on ? ';background:var(--pa-accent-800)' : ';box-shadow:inset 0 0 0 1px rgba(236,238,244,0.14)')
+        };
+      })
+    };
+  }
+}
+
+</script>
+</body>
+</html>

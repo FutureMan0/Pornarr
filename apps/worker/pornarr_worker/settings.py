@@ -20,6 +20,7 @@ from pornarr_shared.jobs import (
 )
 from pornarr_worker.artwork import ARTWORK_JOB, LIBRARY_ARTWORK_JOB
 from pornarr_worker.cleanup import cleanup_transcodes
+from pornarr_worker.jobs.auto_shorts import AUTOMATIC_SHORTS_JOB
 from pornarr_worker.jobs.automation import AUTOMATION_EXECUTION_JOB
 from pornarr_worker.jobs.backlog_search import BACKLOG_SEARCH_DISPATCH_JOB, BACKLOG_SEARCH_JOB
 from pornarr_worker.jobs.download_poll import DOWNLOAD_POLL_JOB
@@ -36,6 +37,7 @@ from pornarr_worker.jobs.rss_sync import RSS_SYNC_DISPATCH_JOB, RSS_SYNC_JOB
 from pornarr_worker.jobs.scan import SCAN_JOB
 from pornarr_worker.jobs.storage import REFRESH_STORAGE_JOB
 from pornarr_worker.jobs.upgrade import UPGRADE_MEDIA_FILE_JOB
+from pornarr_worker.scenes import PREVIEW_AND_SCENES_JOB
 from pornarr_worker.search import RELEASE_CACHE_CLEANUP_JOB, SEARCH_INDEXERS_JOB
 from pornarr_worker.sprites import SPRITE_JOB
 
@@ -70,6 +72,7 @@ class WorkerSettings:
         RSS_SYNC_DISPATCH_JOB,
         BACKLOG_SEARCH_DISPATCH_JOB,
         PERCEPTUAL_HASH_DISPATCH_JOB,
+        AUTOMATIC_SHORTS_JOB,
     ]
     queue_name: ClassVar = DEFAULT_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
@@ -103,7 +106,13 @@ class ImportWorkerSettings:
 class TranscodeWorkerSettings:
     """Worker dedicated to FFmpeg work so it cannot starve other queues."""
 
-    functions: ClassVar = [SPRITE_JOB, ARTWORK_JOB, LIBRARY_ARTWORK_JOB, PERCEPTUAL_HASH_JOB]
+    functions: ClassVar = [
+        SPRITE_JOB,
+        PREVIEW_AND_SCENES_JOB,
+        ARTWORK_JOB,
+        LIBRARY_ARTWORK_JOB,
+        PERCEPTUAL_HASH_JOB,
+    ]
     queue_name: ClassVar = TRANSCODE_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
     job_timeout: ClassVar = JOB_TIMEOUT_SECONDS
@@ -233,6 +242,16 @@ class SchedulerSettings:
             name=BACKLOG_SEARCH_DISPATCH_JOB.name,
             minute=set(range(0, 60)),
             run_at_startup=True,
+            max_tries=JOB_MAX_TRIES,
+        ),
+        cron(
+            AUTOMATIC_SHORTS_JOB.coroutine,
+            name=AUTOMATIC_SHORTS_JOB.name,
+            # After the recommendation refresh, so both read the same night's
+            # events, and inside the same quiet window as the rest of the
+            # nightly analysis.
+            hour=3,
+            minute=15,
             max_tries=JOB_MAX_TRIES,
         ),
     ]

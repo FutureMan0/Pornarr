@@ -59,6 +59,11 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           enable-cache: true
       - run: uv sync --all-packages --dev
+      # The media tests guard themselves on `which("ffmpeg")` and were therefore
+      # skipping in every run: sprite tiling and scene detection are both ffmpeg
+      # filter graphs whose only real verification never executed. See #307.
+      - name: FFmpeg for the media tests
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Lint
         run: uv run ruff check .
       - name: Format

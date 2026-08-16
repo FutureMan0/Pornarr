@@ -12,10 +12,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import database_session, get_current_user
+from pornarr_api.ratings_summary import rating_filter, rating_summaries
+from pornarr_api.scoping import library_scope, owns
 from pornarr_db.models.entities import MediaPerformer, MediaTag, Performer, Tag
 from pornarr_db.models.media import Media, MediaFile
 from pornarr_db.models.playback import PlaybackProgress
 from pornarr_db.models.user import User
+from pornarr_db.settings import get_runtime_settings
 
 router = APIRouter(prefix="/library", tags=["library"])
 media_router = APIRouter(prefix="/media", tags=["library"])
@@ -36,6 +39,8 @@ class LibraryItemResponse(BaseModel):
     completed: bool
     poster_url: str
     sprite_url: str | None
+    rating: float | None
+    rating_count: int
 
 
 class LibraryPageResponse(BaseModel):
@@ -51,6 +56,11 @@ class DetailTag(BaseModel):
 
 class MediaDetailResponse(BaseModel):
     id: UUID
+    # Whose library this belongs to; null is the shared pool. Present on the
+    # detail because the owner needs to see it, absent from search because a
+    # pooled hit must not tell you whose copy it is.
+    owner_id: UUID | None
+    in_my_library: bool
     title: str
     studio: str | None
     release_date: str | None
@@ -58,6 +68,8 @@ class MediaDetailResponse(BaseModel):
     metadata_source: str
     performers: list[str]
     tags: list[DetailTag]
+    rating: float | None
+    rating_count: int
     path: str
     size: int
     codecs: dict[str, object] | None
@@ -73,24 +85,37 @@ class TagCorrectionWrite(BaseModel):
 
 @router.get("", response_model=LibraryPageResponse)
 async def browse_library(
+    request: Request,
     user: CurrentUser,
     session: Session,
     limit: Annotated[int, Query(ge=1, le=100)] = 48,
     offset: Annotated[int, Query(ge=0)] = 0,
+    rating_gte: Annotated[float | None, Query(ge=1, le=5)] = None,
 ) -> LibraryPageResponse:
+    settings = await get_runtime_settings(session, request.app.state.settings)
+    statement = (
+        select(Media, MediaFile, PlaybackProgress)
+        .join(MediaFile, (MediaFile.media_id == Media.id) & MediaFile.is_active.is_(True))
+        .outerjoin(
+            PlaybackProgress,
+            (PlaybackProgress.media_id == Media.id) & (PlaybackProgress.user_id == user.id),
+        )
+    )
+    scope = library_scope(user, settings)
+    if scope is not None:
+        statement = statement.where(scope)
+    if rating_gte is not None:
+        # A subquery rather than a join, so the page size still comes from the
+        # outer statement and pagination stays in the database.
+        statement = statement.where(Media.id.in_(rating_filter(rating_gte)))
     rows = list(
         await session.execute(
-            select(Media, MediaFile, PlaybackProgress)
-            .join(MediaFile, (MediaFile.media_id == Media.id) & MediaFile.is_active.is_(True))
-            .outerjoin(
-                PlaybackProgress,
-                (PlaybackProgress.media_id == Media.id) & (PlaybackProgress.user_id == user.id),
-            )
-            .order_by(Media.updated_at.desc(), Media.id.desc())
+            statement.order_by(Media.updated_at.desc(), Media.id.desc())
             .offset(offset)
             .limit(limit + 1)
         )
     )
+    ratings = await rating_summaries(session, [row[0].id for row in rows])
 
     def item(
         media: Media, file: MediaFile, progress: PlaybackProgress | None
@@ -103,6 +128,8 @@ async def browse_library(
             duration_seconds=file.duration_seconds,
             quality=file.quality,
             resolution=file.resolution,
+            rating=ratings.get(media.id, (None, 0))[0],
+            rating_count=ratings.get(media.id, (None, 0))[1],
             position_seconds=progress.position_seconds if progress else None,
             progress_duration_seconds=progress.duration_seconds if progress else None,
             completed=progress.completed if progress else False,
@@ -139,7 +166,7 @@ async def poster(
 
 
 @media_router.get("/{media_id}", response_model=MediaDetailResponse)
-async def media_detail(media_id: UUID, _: CurrentUser, session: Session) -> MediaDetailResponse:
+async def media_detail(media_id: UUID, user: CurrentUser, session: Session) -> MediaDetailResponse:
     row = await session.execute(
         select(Media, MediaFile)
         .join(MediaFile, (MediaFile.media_id == Media.id) & MediaFile.is_active.is_(True))
@@ -167,8 +194,11 @@ async def media_detail(media_id: UUID, _: CurrentUser, session: Session) -> Medi
             )
         ).tuples()
     )
+    rating, rating_count = (await rating_summaries(session, [media.id])).get(media.id, (None, 0))
     return MediaDetailResponse(
         id=media.id,
+        owner_id=media.owner_id,
+        in_my_library=owns(media, user),
         title=media.title,
         studio=media.studio,
         release_date=media.release_date.isoformat() if media.release_date else None,
@@ -186,6 +216,8 @@ async def media_detail(media_id: UUID, _: CurrentUser, session: Session) -> Medi
         bitrate=file.bitrate,
         duration_seconds=file.duration_seconds,
         playable=not file.is_missing,
+        rating=rating,
+        rating_count=rating_count,
     )
 
 

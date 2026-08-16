@@ -55,6 +55,7 @@ class TranscodeSession:
     hardware: bool
     process_id: int
     created_at: datetime
+    device_label: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -145,6 +146,7 @@ class TranscodeSessionRegistry:
         transcode: RunningTranscode,
         *,
         hardware: bool = False,
+        device_label: str | None = None,
     ) -> TranscodeSession:
         if transcode.process.pid is None:
             raise ValueError("A transcode process must be running before it can be registered")
@@ -156,6 +158,7 @@ class TranscodeSessionRegistry:
             hardware=hardware,
             process_id=transcode.process.pid,
             created_at=datetime.now(UTC),
+            device_label=device_label,
         )
         await self._redis.set(
             session_key(session_id), _serialize(session), ex=SESSION_RECORD_TTL_SECONDS
@@ -292,6 +295,7 @@ def _serialize(session: TranscodeSession) -> str:
             "hardware": session.hardware,
             "process_id": session.process_id,
             "created_at": session.created_at.isoformat(),
+            "device_label": session.device_label,
         }
     )
 
@@ -319,6 +323,8 @@ def _deserialize(stored: str | None) -> TranscodeSession | None:
             hardware=hardware,
             process_id=process_id,
             created_at=datetime.fromisoformat(data["created_at"]),
+            # Absent on records written before device labels existed.
+            device_label=data.get("device_label"),
         )
     except (KeyError, TypeError, ValueError, json.JSONDecodeError):
         return None

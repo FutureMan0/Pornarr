@@ -1,9 +1,14 @@
 """Comments on a title, their likes, and the administrator's moderation queue.
 
 Visibility follows the design's privacy note: comments are visible to everyone
-signed in to the server. What is *not* shared is who reported what — a report
-is only ever visible to an administrator, so flagging a neighbour's remark does
-not turn into a household argument.
+signed in to the server. Who wrote them is not. With `anonymous_social` on —
+the default — the response carries no author at all, only `is_own`, so the
+anonymity is a property of the API rather than something a client is trusted
+to respect. A frontend cannot leak a name it was never sent.
+
+What is never shared either way is who reported what: a report reaches an
+administrator and nobody else, so flagging a neighbour's remark does not turn
+into a household argument.
 
 Each comment carries its author's rating for the same title, because the
 mockups show stars beside every remark and fetching them separately would mean
@@ -16,7 +21,7 @@ from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,6 +34,7 @@ from pornarr_api.routers.ratings import media_or_404
 from pornarr_db.models.media import Media
 from pornarr_db.models.social import Comment, CommentLike, CommentReport, CommentState, Rating
 from pornarr_db.models.user import User, UserRole
+from pornarr_db.settings import get_runtime_settings
 
 router = APIRouter(tags=["comments"])
 admin_router = APIRouter(prefix="/admin/comments", tags=["admin"])
@@ -69,13 +75,16 @@ class CommentStateWrite(BaseModel):
 class CommentResponse(BaseModel):
     id: UUID
     media_id: UUID
-    author: str
+    # Present only when the server is configured to attribute comments. Under
+    # the default `anonymous_social` it is absent, and `is_own` is all a client
+    # gets — enough to show an edit button, not enough to identify anyone.
+    author: str | None
     body: str
     state: CommentState
     stars: int | None
     likes: int
     you_liked: bool
-    is_yours: bool
+    is_own: bool
     created_at: datetime
     edited_at: datetime | None
 
@@ -138,22 +147,32 @@ async def _decorate(
 
 
 def comment_response(
-    comment: Comment, viewer: User, extra: tuple[int, bool, int | None, str]
+    comment: Comment,
+    viewer: User,
+    extra: tuple[int, bool, int | None, str],
+    *,
+    attributed: bool = False,
 ) -> CommentResponse:
     likes, you_liked, stars, author = extra
     return CommentResponse(
         id=comment.id,
         media_id=comment.media_id,
-        author=author,
+        author=author if attributed else None,
         body=comment.body,
         state=comment.state,
         stars=stars,
         likes=likes,
         you_liked=you_liked,
-        is_yours=comment.user_id == viewer.id,
+        is_own=comment.user_id == viewer.id,
         created_at=comment.created_at,
         edited_at=comment.edited_at,
     )
+
+
+async def attribution_allowed(request: Request, session: AsyncSession) -> bool:
+    """Whether this server attaches names to comments at all."""
+    settings = await get_runtime_settings(session, request.app.state.settings)
+    return not settings.anonymous_social
 
 
 async def comment_or_404(session: AsyncSession, comment_id: UUID) -> Comment:
@@ -170,6 +189,7 @@ async def comment_or_404(session: AsyncSession, comment_id: UUID) -> Comment:
 )
 async def list_comments(
     media_id: UUID,
+    request: Request,
     user: CurrentUser,
     session: Session,
     limit: Annotated[int, Field(ge=1, le=MAXIMUM_PAGE_SIZE)] = 50,
@@ -192,7 +212,11 @@ async def list_comments(
         )
     )
     extras = await _decorate(session, comments, user)
-    return [comment_response(comment, user, extras[comment.id]) for comment in comments]
+    attributed = await attribution_allowed(request, session)
+    return [
+        comment_response(comment, user, extras[comment.id], attributed=attributed)
+        for comment in comments
+    ]
 
 
 @router.post(
@@ -202,14 +226,16 @@ async def list_comments(
     responses={404: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
 )
 async def create_comment(
-    media_id: UUID, payload: CommentWrite, user: CurrentUser, session: Session
+    media_id: UUID, payload: CommentWrite, request: Request, user: CurrentUser, session: Session
 ) -> CommentResponse:
     await media_or_404(session, media_id)
     comment = Comment(user_id=user.id, media_id=media_id, body=payload.body)
     session.add(comment)
     await session.flush()
     extras = await _decorate(session, [comment], user)
-    return comment_response(comment, user, extras[comment.id])
+    return comment_response(
+        comment, user, extras[comment.id], attributed=await attribution_allowed(request, session)
+    )
 
 
 @router.patch(
@@ -222,7 +248,7 @@ async def create_comment(
     },
 )
 async def edit_comment(
-    comment_id: UUID, payload: CommentWrite, user: CurrentUser, session: Session
+    comment_id: UUID, payload: CommentWrite, request: Request, user: CurrentUser, session: Session
 ) -> CommentResponse:
     """Only the author edits. An administrator can hide or delete, never rewrite.
 
@@ -236,7 +262,9 @@ async def edit_comment(
     comment.edited_at = datetime.now(UTC)
     await session.flush()
     extras = await _decorate(session, [comment], user)
-    return comment_response(comment, user, extras[comment.id])
+    return comment_response(
+        comment, user, extras[comment.id], attributed=await attribution_allowed(request, session)
+    )
 
 
 @router.delete(
@@ -309,8 +337,10 @@ async def report_comment(
 
 @admin_router.get("", response_model=list[ModeratedCommentResponse])
 async def list_moderation_queue(
+    request: Request,
     admin: Admin,
     session: Session,
+    state: CommentState | None = None,
     reported_only: bool = False,
     limit: Annotated[int, Field(ge=1, le=MAXIMUM_PAGE_SIZE)] = 50,
     offset: Annotated[int, Field(ge=0)] = 0,
@@ -327,6 +357,8 @@ async def list_moderation_queue(
         .join(Media, Media.id == Comment.media_id)
         .outerjoin(reports, reports.c.comment_id == Comment.id)
     )
+    if state is not None:
+        statement = statement.where(Comment.state == state)
     if reported_only:
         statement = statement.where(reports.c.reports > 0)
     rows = list(
@@ -340,14 +372,41 @@ async def list_moderation_queue(
     )
     comments = [row[0] for row in rows]
     extras = await _decorate(session, comments, admin)
+    # The moderation queue is the one place a name is useful: an administrator
+    # deciding on a report needs to know whether one person wrote all six.
+    attributed = True
     return [
         ModeratedCommentResponse(
-            **comment_response(comment, admin, extras[comment.id]).model_dump(),
+            **comment_response(
+                comment, admin, extras[comment.id], attributed=attributed
+            ).model_dump(),
             media_title=title,
             reports=report_count,
         )
         for comment, title, report_count in rows
     ]
+
+
+async def _apply_state(
+    session: AsyncSession, comment_id: UUID, admin: User, state: CommentState
+) -> ModeratedCommentResponse:
+    """Resolving a comment clears its reports: the queue must be able to empty."""
+
+    comment = await comment_or_404(session, comment_id)
+    comment.state = state
+    if state is not CommentState.OPEN:
+        for report in await session.scalars(
+            select(CommentReport).where(CommentReport.comment_id == comment_id)
+        ):
+            await session.delete(report)
+    await session.flush()
+    media = await session.get(Media, comment.media_id)
+    extras = await _decorate(session, [comment], admin)
+    return ModeratedCommentResponse(
+        **comment_response(comment, admin, extras[comment.id], attributed=True).model_dump(),
+        media_title=media.title if media is not None else "",
+        reports=0,
+    )
 
 
 @admin_router.patch(
@@ -358,20 +417,30 @@ async def list_moderation_queue(
 async def set_comment_state(
     comment_id: UUID, payload: CommentStateWrite, admin: Admin, session: Session
 ) -> ModeratedCommentResponse:
-    """Resolving a comment clears its reports: the queue must be able to empty."""
+    return await _apply_state(session, comment_id, admin, payload.state)
 
-    comment = await comment_or_404(session, comment_id)
-    comment.state = payload.state
-    if payload.state is not CommentState.OPEN:
-        for report in await session.scalars(
-            select(CommentReport).where(CommentReport.comment_id == comment_id)
-        ):
-            await session.delete(report)
-    await session.flush()
-    media = await session.get(Media, comment.media_id)
-    extras = await _decorate(session, [comment], admin)
-    return ModeratedCommentResponse(
-        **comment_response(comment, admin, extras[comment.id]).model_dump(),
-        media_title=media.title if media is not None else "",
-        reports=0,
-    )
+
+@admin_router.post(
+    "/{comment_id}/hide",
+    response_model=ModeratedCommentResponse,
+    responses={404: {"model": ErrorResponse}},
+)
+async def hide_comment(
+    comment_id: UUID, admin: Admin, session: Session
+) -> ModeratedCommentResponse:
+    """Withhold a comment from everyone but its author and the administrators."""
+
+    return await _apply_state(session, comment_id, admin, CommentState.HIDDEN)
+
+
+@admin_router.post(
+    "/{comment_id}/resolve",
+    response_model=ModeratedCommentResponse,
+    responses={404: {"model": ErrorResponse}},
+)
+async def resolve_comment(
+    comment_id: UUID, admin: Admin, session: Session
+) -> ModeratedCommentResponse:
+    """Leave the comment standing and take it off the queue."""
+
+    return await _apply_state(session, comment_id, admin, CommentState.ANSWERED)
