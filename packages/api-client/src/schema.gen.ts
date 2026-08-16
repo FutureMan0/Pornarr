@@ -817,6 +817,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/media/{media_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Media Detail */
+        get: operations["library_media_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/media/{media_id}/playback-info": {
         parameters: {
             query?: never;
@@ -882,6 +899,23 @@ export interface paths {
         get: operations["playback_stream"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/media/{media_id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Correct Tag */
+        post: operations["library_correct_tag"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1627,6 +1661,15 @@ export interface components {
             /** Reserved Download Count */
             reserved_download_count: number;
         };
+        /** DetailTag */
+        DetailTag: {
+            /** Confidence */
+            confidence: number;
+            /** Name */
+            name: string;
+            /** Source */
+            source: string;
+        };
         /**
          * DirectPlayReason
          * @enum {string}
@@ -2002,6 +2045,44 @@ export interface components {
             password: string;
             /** Username */
             username: string;
+        };
+        /** MediaDetailResponse */
+        MediaDetailResponse: {
+            /** Bitrate */
+            bitrate: number | null;
+            /** Codecs */
+            codecs: {
+                [key: string]: unknown;
+            } | null;
+            /** Confidence */
+            confidence: number | null;
+            /** Duration Seconds */
+            duration_seconds: number | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Metadata Source */
+            metadata_source: string;
+            /** Path */
+            path: string;
+            /** Performers */
+            performers: string[];
+            /** Playable */
+            playable: boolean;
+            /** Release Date */
+            release_date: string | null;
+            /** Resolution */
+            resolution: string | null;
+            /** Size */
+            size: number;
+            /** Studio */
+            studio: string | null;
+            /** Tags */
+            tags: components["schemas"]["DetailTag"][];
+            /** Title */
+            title: string;
         };
         /**
          * MediaSort
@@ -2738,6 +2819,11 @@ export interface components {
             password: string;
             /** Username */
             username: string;
+        };
+        /** TagCorrectionWrite */
+        TagCorrectionWrite: {
+            /** Name */
+            name: string;
         };
         /** TranscodeFailureResponse */
         TranscodeFailureResponse: {
@@ -4614,6 +4700,37 @@ export interface operations {
             };
         };
     };
+    library_media_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     playback_playback_info: {
         parameters: {
             query?: {
@@ -4772,6 +4889,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    library_correct_tag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagCorrectionWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailTag"];
                 };
             };
             /** @description Validation Error */

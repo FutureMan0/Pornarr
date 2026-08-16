@@ -378,6 +378,19 @@
     "loading": "Loading library…",
     "empty": "Your library is empty. Configure a root folder and scan it to add media."
   },
+  "media": {
+    "loading": "Loading media…",
+    "confidence": "Metadata confidence: {{value}}",
+    "unknown": "unknown",
+    "play": "Play",
+    "unavailable": "Playback unavailable",
+    "tags": "Tags",
+    "correctTag": "Correct tag",
+    "addTag": "Add corrected tag",
+    "file": "File",
+    "path": "Path",
+    "technical": "Technical information"
+  },
   "errors": {
     "INVALID_CREDENTIALS": "That username and password do not match.",
     "NOT_AUTHENTICATED": "Your session has ended. Sign in again.",

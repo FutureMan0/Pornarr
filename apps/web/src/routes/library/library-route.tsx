@@ -2,6 +2,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 type Item = {
   id: string;
@@ -118,7 +119,8 @@ function MediaCard({ item }: { readonly item: Item }) {
   const [preview, setPreview] = useState(false);
   const source = preview && item.sprite_url ? item.sprite_url : item.poster_url;
   return (
-    <article
+    <Link
+      to={`/library/${item.id}`}
       className="overflow-hidden border border-border bg-surface"
       onPointerEnter={() => setPreview(true)}
       onPointerLeave={() => setPreview(false)}
@@ -142,6 +144,6 @@ function MediaCard({ item }: { readonly item: Item }) {
         </p>
         <p className="text-xs text-ink-muted">{item.quality ?? item.resolution ?? "—"}</p>
       </div>
-    </article>
+    </Link>
   );
 }
