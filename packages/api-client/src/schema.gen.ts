@@ -800,6 +800,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/library": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Browse Library */
+        get: operations["library_browse_library"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/media/{media_id}/playback-info": {
         parameters: {
             query?: never;
@@ -809,6 +826,23 @@ export interface paths {
         };
         /** Playback Info */
         get: operations["playback_playback_info"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/media/{media_id}/poster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Poster */
+        get: operations["library_poster"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1867,6 +1901,41 @@ export interface components {
             protocol: string;
         };
         JsonValue: unknown;
+        /** LibraryItemResponse */
+        LibraryItemResponse: {
+            /** Completed */
+            completed: boolean;
+            /** Duration Seconds */
+            duration_seconds: number | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Position Seconds */
+            position_seconds: number | null;
+            /** Poster Url */
+            poster_url: string;
+            /** Progress Duration Seconds */
+            progress_duration_seconds: number | null;
+            /** Quality */
+            quality: string | null;
+            /** Release Date */
+            release_date: string | null;
+            /** Resolution */
+            resolution: string | null;
+            /** Studio */
+            studio: string | null;
+            /** Title */
+            title: string;
+        };
+        /** LibraryPageResponse */
+        LibraryPageResponse: {
+            /** Items */
+            items: components["schemas"]["LibraryItemResponse"][];
+            /** Next Offset */
+            next_offset: number | null;
+        };
         /** LocalSearchItem */
         LocalSearchItem: {
             /** Duration Seconds */
@@ -4491,6 +4560,38 @@ export interface operations {
             };
         };
     };
+    library_browse_library: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryPageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     playback_playback_info: {
         parameters: {
             query?: {
@@ -4542,6 +4643,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    library_poster: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
