@@ -2,6 +2,7 @@
   "app": {
     "name": "Pornarr"
   },
+  "queue": { "title": "Downloads", "loading": "Downloads werden geladen", "priority": "Priorität {{value}}", "speed": "{{value}} Bytes/s", "speedUnknown": "Geschwindigkeit nicht verfügbar", "estimate": "Geschätzt {{low}}–{{high}} Sekunden ({{confidence}} Konfidenz)", "estimateUnknown": "Keine Schätzung verfügbar", "failure": "Download fehlgeschlagen: {{error}}. Prüfe den Download-Client und wiederhole die Anfrage." },
   "requests": { "title": "Anfragen", "intro": "Verfolge jede Anfrage von der Suche bis in deine Bibliothek.", "loading": "Anfragen werden geladen", "empty": "Noch keine Anfragen.", "cancel": "Abbrechen", "retry": "Erneut versuchen", "history": "Anfrageverlauf", "priority": "Priorität {{value}}", "status": { "searching": "Suche läuft", "results_found": "Ergebnisse gefunden", "queued": "In Warteschlange", "downloading": "Wird geladen", "processing": "Wird verarbeitet", "available": "Verfügbar", "failed": "Fehlgeschlagen", "not_found": "Nicht gefunden", "monitoring": "Überwachung", "cancelled": "Abgebrochen" } },
   "player": {
     "label": "Player für {{title}}",

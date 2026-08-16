@@ -21,6 +21,7 @@ import { QuarantineReviewRoute } from "./routes/admin/quarantine/quarantine-revi
 import { LibraryRoute } from "./routes/library/library-route";
 import { MediaDetailRoute } from "./routes/media/media-detail-route";
 import { RequestsRoute } from "./routes/requests/requests-route";
+import { QueueRoute } from "./routes/queue/queue-route";
 import { SearchRoute } from "./routes/search/search-route";
 import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles-route";
 import { SetupGate } from "./routes/setup/setup-gate";
@@ -65,6 +66,7 @@ export const appRoutes: RouteObject[] = [
               { path: "settings/quality", element: <QualityProfilesRoute /> },
               { path: "search", element: <SearchRoute /> },
               { path: "requests", element: <RequestsRoute /> },
+              { path: "downloads", element: <QueueRoute /> },
               { path: "library", element: <LibraryRoute /> },
               { path: "library/:mediaId", element: <MediaDetailRoute /> },
               ...NAV_ITEMS.filter((item) => item.id !== "settings" && item.id !== "library").map(
