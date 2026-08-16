@@ -63,7 +63,7 @@ class ShortCreate(BaseModel):
         return stripped
 
     @model_validator(mode="after")
-    def within_a_minute(self) -> ShortCreate:
+    def within_clip_length(self) -> ShortCreate:
         if self.end_seconds <= self.start_seconds:
             raise ValueError("end_seconds must be after start_seconds")
         if self.end_seconds - self.start_seconds > MAXIMUM_SHORT_SECONDS:

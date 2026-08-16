@@ -20,6 +20,7 @@ from pornarr_shared.jobs import (
 )
 from pornarr_worker.artwork import ARTWORK_JOB, LIBRARY_ARTWORK_JOB
 from pornarr_worker.cleanup import cleanup_transcodes
+from pornarr_worker.jobs.auto_shorts import AUTOMATIC_SHORTS_JOB
 from pornarr_worker.jobs.automation import AUTOMATION_EXECUTION_JOB
 from pornarr_worker.jobs.backlog_search import BACKLOG_SEARCH_DISPATCH_JOB, BACKLOG_SEARCH_JOB
 from pornarr_worker.jobs.download_poll import DOWNLOAD_POLL_JOB
@@ -71,6 +72,7 @@ class WorkerSettings:
         RSS_SYNC_DISPATCH_JOB,
         BACKLOG_SEARCH_DISPATCH_JOB,
         PERCEPTUAL_HASH_DISPATCH_JOB,
+        AUTOMATIC_SHORTS_JOB,
     ]
     queue_name: ClassVar = DEFAULT_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
@@ -240,6 +242,16 @@ class SchedulerSettings:
             name=BACKLOG_SEARCH_DISPATCH_JOB.name,
             minute=set(range(0, 60)),
             run_at_startup=True,
+            max_tries=JOB_MAX_TRIES,
+        ),
+        cron(
+            AUTOMATIC_SHORTS_JOB.coroutine,
+            name=AUTOMATIC_SHORTS_JOB.name,
+            # After the recommendation refresh, so both read the same night's
+            # events, and inside the same quiet window as the rest of the
+            # nightly analysis.
+            hour=3,
+            minute=15,
             max_tries=JOB_MAX_TRIES,
         ),
     ]

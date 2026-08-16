@@ -35,10 +35,14 @@ from pornarr_db.base import Base, TimestampMixin
 
 MINIMUM_STARS = 1
 MAXIMUM_STARS = 5
-# A short is a clip, not an episode. The design calls them "vertical clips under
-# a minute", and the cap keeps an operator from turning the feed into a second
-# library by hand.
-MAXIMUM_SHORT_SECONDS = 60.0
+# The design calls shorts "vertical clips under a minute", and one minute is
+# still the length they are cut at. The cap is five times that because a hot
+# passage — as opposed to a hot moment — is worth keeping whole, and a clip is
+# still a clip at five minutes. Beyond it the feed would become a second
+# library.
+MAXIMUM_SHORT_SECONDS = 300.0
+# What an automatic cut reaches for unless the watched region is wide.
+DEFAULT_SHORT_SECONDS = 60.0
 
 
 def _enum_values(enum: type[StrEnum]) -> list[str]:
@@ -54,6 +58,10 @@ class CommentState(StrEnum):
 class ShortSource(StrEnum):
     MARKER = "marker"
     MANUAL = "manual"
+    # Cut from where the household actually watches, not from a scene boundary
+    # or by hand. Kept distinct so an administrator can tell the automatic ones
+    # apart and delete them wholesale if the feed goes wrong.
+    HOTSPOT = "hotspot"
 
 
 class CollectionVisibility(StrEnum):
@@ -162,7 +170,7 @@ class Short(TimestampMixin, Base):
         CheckConstraint("start_seconds >= 0", name="start_not_negative"),
         CheckConstraint("end_seconds > start_seconds", name="end_after_start"),
         CheckConstraint(
-            f"end_seconds - start_seconds <= {MAXIMUM_SHORT_SECONDS}", name="under_a_minute"
+            f"end_seconds - start_seconds <= {MAXIMUM_SHORT_SECONDS}", name="within_clip_length"
         ),
     )
 

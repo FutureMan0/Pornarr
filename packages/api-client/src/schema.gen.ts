@@ -3669,7 +3669,7 @@ export interface components {
          * ShortSource
          * @enum {string}
          */
-        ShortSource: "marker" | "manual";
+        ShortSource: "marker" | "manual" | "hotspot";
         /** TagCorrectionWrite */
         TagCorrectionWrite: {
             /** Name */

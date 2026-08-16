@@ -269,7 +269,7 @@ async def test_hiding_a_comment_withholds_it_from_others_but_not_its_author(
     assert [row["state"] for row in author.json()] == ["hidden"]
 
 
-async def test_a_short_must_stay_under_a_minute_and_only_an_admin_creates_one(
+async def test_a_short_must_stay_within_the_clip_length_and_only_an_admin_creates_one(
     app: FastAPI, client: AsyncClient
 ) -> None:
     media = await _media(app)
@@ -293,7 +293,7 @@ async def test_a_short_must_stay_under_a_minute_and_only_an_admin_creates_one(
             "media_id": str(media.id),
             "title": "whole scene",
             "start_seconds": 0,
-            "end_seconds": 61,
+            "end_seconds": 301,
         },
         headers=csrf_headers(client),
     )
