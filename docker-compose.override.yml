@@ -22,7 +22,7 @@ services:
     build:
       context: .
       target: development
-    command: worker --watch
+    command: worker --watch /app
     environment:
       APP_ENV: development
       LOG_LEVEL: debug
@@ -36,7 +36,7 @@ services:
     build:
       context: .
       target: development
-    command: worker import --watch
+    command: worker import --watch /app
     environment:
       APP_ENV: development
       LOG_LEVEL: debug
@@ -48,7 +48,7 @@ services:
     build:
       context: .
       target: development
-    command: worker transcode --watch
+    command: worker transcode --watch /app
     environment:
       APP_ENV: development
       LOG_LEVEL: debug
@@ -60,7 +60,7 @@ services:
     build:
       context: .
       target: development
-    command: worker indexer --watch
+    command: worker indexer --watch /app
     environment:
       APP_ENV: development
       LOG_LEVEL: debug
@@ -84,7 +84,7 @@ services:
     working_dir: /app
     environment:
       COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
-      VITE_API_URL: http://localhost:8000
+      VITE_API_URL: http://api:8000
     command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @pornarr/web run dev --host"
     volumes:
       - .:/app

@@ -10,6 +10,7 @@ dependencies = [
     "pornarr-integrations",
     "pornarr-media",
     "pornarr-shared",
+    "watchfiles>=1.2,<2",
 ]
 
 [build-system]

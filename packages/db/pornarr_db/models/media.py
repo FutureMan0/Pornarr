@@ -16,6 +16,7 @@ from sqlalchemy import (
     Index,
     Integer,
     String,
+    UniqueConstraint,
     Uuid,
     func,
     text,
@@ -89,6 +90,7 @@ class MediaFile(TimestampMixin, Base):
         Integer, nullable=False, default=0, server_default="0"
     )
     oshash: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    perceptual_hash: Mapped[str | None] = mapped_column(String(16), index=True, nullable=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )
@@ -111,3 +113,19 @@ class MediaFileHistory(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+
+class DuplicateCandidate(TimestampMixin, Base):
+    """A non-destructive perceptual match awaiting human review."""
+
+    __tablename__ = "duplicate_candidates"
+    __table_args__ = (UniqueConstraint("media_file_id", "candidate_file_id"),)
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    media_file_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("media_files.id", ondelete="CASCADE"), nullable=False
+    )
+    candidate_file_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("media_files.id", ondelete="CASCADE"), nullable=False
+    )
+    hamming_distance: Mapped[int] = mapped_column(Integer, nullable=False)

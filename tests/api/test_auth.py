@@ -28,9 +28,13 @@ class MemoryRedis:
     def __init__(self) -> None:
         self.values: dict[str, str] = {}
         self.members: defaultdict[str, set[str]] = defaultdict(set)
+        self.events: list[dict[str, str]] = []
 
     async def get(self, key: str) -> str | None:
         return self.values.get(key)
+
+    async def getdel(self, key: str) -> str | None:
+        return self.values.pop(key, None)
 
     async def set(self, key: str, value: str, *, ex: int) -> bool:
         self.values[key] = value
@@ -69,6 +73,13 @@ class MemoryRedis:
     async def sscan_iter(self, key: str) -> AsyncIterator[str]:
         for value in tuple(self.members[key]):
             yield value
+
+    async def xadd(self, _: str, fields: dict[str, str]) -> str:
+        self.events.append(fields)
+        return f"{len(self.events)}-0"
+
+    async def publish(self, _: str, __: str) -> int:
+        return 1
 
 
 @pytest.fixture

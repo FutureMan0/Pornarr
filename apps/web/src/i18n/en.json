@@ -2,11 +2,153 @@
   "app": {
     "name": "Pornarr"
   },
+  "monitors": {
+    "title": "Monitors",
+    "loading": "Loading monitors",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "enable": "Enable",
+    "disable": "Disable",
+    "search": "Search now"
+  },
+  "recommendations": {
+    "title": "Recommendations",
+    "loading": "Loading recommendations",
+    "empty": "Watch and rate some media first. Your recommendations will appear here.",
+    "reason": "Recommended because you liked: {{values}}",
+    "notInterested": "Not interested"
+  },
+  "queue": {
+    "title": "Downloads",
+    "loading": "Loading downloads",
+    "priority": "Priority {{value}}",
+    "speed": "{{value}} bytes/s",
+    "speedUnknown": "Speed unavailable",
+    "estimate": "Estimated {{low}}–{{high}} seconds ({{confidence}} confidence)",
+    "estimateUnknown": "No estimate available",
+    "failure": "Download failed: {{error}}. Check the download client and retry the request."
+  },
+  "requests": {
+    "title": "Requests",
+    "intro": "Follow each request from search to your library.",
+    "loading": "Loading requests",
+    "empty": "No requests yet.",
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "history": "Request history",
+    "priority": "Priority {{value}}",
+    "status": {
+      "searching": "Searching",
+      "results_found": "Results found",
+      "queued": "Queued",
+      "downloading": "Downloading",
+      "processing": "Processing",
+      "available": "Available",
+      "failed": "Failed",
+      "not_found": "Not found",
+      "monitoring": "Monitoring",
+      "cancelled": "Cancelled"
+    }
+  },
+  "player": {
+    "label": "Player for {{title}}",
+    "unavailable": "This video cannot be played right now."
+  },
   "login": {
     "subtitle": "Sign in to continue.",
     "username": "Username",
     "password": "Password",
     "submit": "Sign in"
+  },
+  "setup": {
+    "checking": "Checking setup",
+    "progress": "Step {{current}} of {{total}}",
+    "progressLabel": "Setup progress",
+    "stepNumber": "Step {{number}}",
+    "steps": {
+      "account": "Admin account",
+      "library": "Library path",
+      "filters": "Content filters",
+      "metadata": "Metadata",
+      "summary": "Summary"
+    },
+    "next": "Continue",
+    "back": "Back",
+    "account": {
+      "title": "Set up Pornarr",
+      "body": "Create the administrator account for this instance.",
+      "username": "Username",
+      "usernameRequired": "Enter an administrator username.",
+      "password": "Password",
+      "passwordTooWeak": "Use at least 12 characters from two character types.",
+      "strength": {
+        "weak": "Password strength: weak",
+        "fair": "Password strength: fair",
+        "strong": "Password strength: strong"
+      }
+    },
+    "library": {
+      "title": "Choose the library path",
+      "body": "Pornarr stores imported media in this folder.",
+      "path": "Library path",
+      "pathRequired": "Enter a library path.",
+      "crossFilesystem": "This library is on a different filesystem from downloads. Imports will copy instead of hardlinking.",
+      "continueWithCopy": "Continue with copy imports"
+    },
+    "filters": {
+      "title": "Review content filters",
+      "body": "Every filter starts off. You can configure rules after setup without changing what is already imported.",
+      "listLabel": "Content filters that start off",
+      "off": "Off",
+      "rules": {
+        "term": {
+          "title": "Words and phrases",
+          "body": "Blocks media whose title or description matches a rule you add later."
+        },
+        "tag": {
+          "title": "Tags",
+          "body": "Blocks media carrying a tag you choose later."
+        },
+        "performer": {
+          "title": "Performers",
+          "body": "Blocks media featuring a performer you choose later."
+        },
+        "minimumConfidence": {
+          "title": "Metadata confidence",
+          "body": "Holds media whose metadata match falls below a threshold you choose later."
+        },
+        "unknownPerformerAge": {
+          "title": "Unknown performer age",
+          "body": "Holds media when a matched performer’s age is not known."
+        },
+        "unknownFileType": {
+          "title": "Unknown file type",
+          "body": "Holds media when the imported file type is not recognised."
+        }
+      }
+    },
+    "metadata": {
+      "title": "Metadata providers",
+      "body": "External metadata providers are optional. Pornarr can start without one.",
+      "skipped": "No metadata provider will be configured during this setup.",
+      "skipAction": "Skip for now"
+    },
+    "summary": {
+      "title": "Review setup",
+      "body": "Check these choices before creating the instance.",
+      "account": "Administrator",
+      "library": "Library path",
+      "filters": "Content filters",
+      "filtersOff": "All filters start off",
+      "metadata": "Metadata providers",
+      "metadataSkipped": "No provider configured"
+    },
+    "complete": {
+      "action": "Complete setup",
+      "title": "Setup complete",
+      "body": "The instance is ready. Sign in with the administrator account to continue.",
+      "signIn": "Sign in"
+    }
   },
   "session": {
     "checking": "Checking your session",
@@ -28,7 +170,76 @@
   },
   "search": {
     "label": "Search",
-    "placeholder": "Search"
+    "placeholder": "Search",
+    "title": "Search",
+    "intro": "Local library matches appear first. Indexer results arrive as each source responds.",
+    "query": "Find a title",
+    "searching": "Searching…",
+    "grab": "Grab",
+    "filters": {
+      "quality": "Quality",
+      "anyQuality": "Any quality",
+      "minimumSize": "Minimum size (bytes)",
+      "maximumSize": "Maximum size (bytes)",
+      "indexer": "Indexer ID",
+      "protocol": "Protocol",
+      "anyProtocol": "Any protocol",
+      "torrent": "Torrent",
+      "usenet": "Usenet",
+      "minimumSeeders": "Minimum seeders",
+      "age": "Maximum age",
+      "anyAge": "Any age",
+      "day": "Past day",
+      "week": "Past week",
+      "month": "Past month",
+      "sort": "Sort"
+    },
+    "sort": {
+      "relevance": "Relevance",
+      "age": "Newest",
+      "size": "Largest",
+      "quality": "Highest quality",
+      "seeders": "Most seeders",
+      "estimatedTime": "Fastest estimate"
+    },
+    "columns": {
+      "title": "Title",
+      "studio": "Studio",
+      "indexer": "Indexer",
+      "quality": "Quality",
+      "size": "Size",
+      "age": "Age",
+      "seeders": "Seeders",
+      "score": "Score",
+      "time": "Time",
+      "action": "Action"
+    },
+    "local": {
+      "title": "In your library",
+      "notSearched": "Enter a title to search your local library.",
+      "loading": "Loading local results",
+      "empty": "No matching library items. Indexer results may still find a release."
+    },
+    "external": {
+      "title": "From indexers",
+      "notSearched": "Indexer results will appear after you search.",
+      "empty": "No indexer has returned a matching release yet.",
+      "indexerStatus": "Indexer search status"
+    },
+    "status": {
+      "pending": "Waiting",
+      "completed": "Completed",
+      "cached": "Cached",
+      "failed": "Failed",
+      "timedOut": "Timed out",
+      "unhealthy": "Unavailable",
+      "cancelled": "Cancelled"
+    },
+    "match": {
+      "present": "In library",
+      "upgrade": "Upgrade",
+      "scoreBreakdown": "Title {{title}}, attributes {{attributes}}, indexer reliability {{reliability}}"
+    }
   },
   "account": {
     "menu": "Account",
@@ -66,6 +277,172 @@
   "format": {
     "unknown": "Unknown"
   },
+  "quarantine": {
+    "title": "Quarantine review",
+    "intro": "Review the evidence before a withheld file enters the library. Corrections are retained for later matches of the same source title.",
+    "loading": "Loading quarantine items",
+    "emptyTitle": "Nothing needs review",
+    "emptyBody": "Files that need a decision appear here with their matching evidence.",
+    "emptyAction": "Go to the library",
+    "reasons": "Reasons for review",
+    "reasonHint": "Choose a reason to review its affected files together.",
+    "reason": {
+      "low_confidence": "Low confidence",
+      "filter_rule": "Matched filter rule",
+      "unexpected_file_type": "Unexpected file type",
+      "contradictory_duplicate": "Contradictory duplicate",
+      "unknown": "Other reason"
+    },
+    "reasonWithCount": {
+      "low_confidence": "Low confidence ({{count}})",
+      "filter_rule": "Matched filter rule ({{count}})",
+      "unexpected_file_type": "Unexpected file type ({{count}})",
+      "contradictory_duplicate": "Contradictory duplicate ({{count}})",
+      "unknown": "Other reason ({{count}})"
+    },
+    "selectReasonWithCount": "Select all {{count}} files for bulk approval",
+    "previewBulkWithCount": "Preview approval for {{count}} files",
+    "reviewing": "Reviewing file",
+    "createdAt": "Held since {{date}}",
+    "itemsInReason": "Files for this reason",
+    "selectItem": "Select {{title}} for bulk approval",
+    "matchedRules": "Matched rules and confidence",
+    "confidenceActual": "Confidence",
+    "confidenceMinimum": "Required minimum",
+    "noEvidence": "No additional evidence was recorded.",
+    "previewFrames": "Preview frames",
+    "previewUnavailable": "No preview frames were supplied with this import.",
+    "previewFrame": "Preview frame {{number}}",
+    "extractedMetadata": "Extracted metadata",
+    "noMetadata": "No metadata was extracted.",
+    "technicalDetails": "Technical details",
+    "noTechnicalDetails": "No technical details were recorded.",
+    "correction": "Correct before approval",
+    "correctionHint": "Only changed values are sent and become a correction for future matching source titles.",
+    "fields": {
+      "title": "Title",
+      "studio": "Studio",
+      "releaseDate": "Release date",
+      "quality": "Quality"
+    },
+    "paths": "Stored file paths",
+    "originalPath": "Original download path",
+    "quarantinePath": "Quarantine path",
+    "approve": "Approve",
+    "correctAndApprove": "Correct and approve",
+    "reject": "Reject and delete",
+    "bulkPreview": "Confirm bulk approval",
+    "bulkPreviewHint": "These {{count}} files will be approved without metadata changes.",
+    "bulkItems": "Files selected for bulk approval",
+    "cancelBulk": "Cancel",
+    "confirmBulkWithCount": "Approve {{count}} files"
+  },
+  "quality": {
+    "title": "Quality profiles",
+    "intro": "Set the qualities and release properties this instance accepts. Previewing uses the unsaved editor values, so every score and rule is explained before it is stored.",
+    "loading": "Loading quality profiles",
+    "profiles": "Quality profiles",
+    "profileHint": "Profiles can be selected by monitors and requests.",
+    "newProfile": "New profile",
+    "default": "Default",
+    "profileEditor": "Profile editor",
+    "profileEditorHint": "Order qualities by preference. Drag rows or use the buttons so the same order works with a keyboard.",
+    "profileName": "Profile name",
+    "defaultProfile": "Use as default profile",
+    "deleteProfile": "Delete profile",
+    "allowedQualities": "Allowed qualities",
+    "orderHint": "The first row is the least preferred; later qualities are higher quality.",
+    "qualityDetails": "{{resolution}} · {{source}} · score {{weight}}",
+    "moveUp": "Move {{name}} up",
+    "moveDown": "Move {{name}} down",
+    "removeQuality": "Remove {{name}} from this profile",
+    "up": "Up",
+    "down": "Down",
+    "remove": "Remove",
+    "addQuality": "Add quality",
+    "chooseQuality": "Choose a quality",
+    "cutoff": "Upgrade cutoff",
+    "minimumScore": "Minimum total score",
+    "cutoffHint": "After {{quality}} has been reached, an existing file is not automatically replaced by a higher-scoring release.",
+    "saveProfile": "Save profile",
+    "customFormats": "Custom formats",
+    "customFormatsHint": "Give human-readable release properties a score. Conditions are evaluated together for required rules; optional rules match when any one applies.",
+    "addFormat": "Add custom format",
+    "noFormatsTitle": "No custom formats yet",
+    "noFormatsBody": "Add a format to reward or penalize a release property.",
+    "formatName": "Format name",
+    "score": "Score",
+    "scoreFor": "Score for {{name}}",
+    "newFormat": "new format",
+    "conditions": "Conditions",
+    "conditionsHint": "Choose familiar release properties, an operation and a value. For example: Codec equals hevc.",
+    "conditionField": "Release property",
+    "conditionOperator": "Match",
+    "conditionValue": "Value",
+    "conditionRequired": "Required",
+    "conditionNegate": "Does not match",
+    "removeCondition": "Remove condition",
+    "addCondition": "Add condition",
+    "saveFormats": "Save custom formats",
+    "preview": "Release preview",
+    "previewHint": "Paste a release name to see the detected quality, matching custom formats, score and decision without consulting documentation.",
+    "releaseName": "Release name",
+    "releaseNamePlaceholder": "Example.Scene.2025.1080p.WEB-DL.x265.PROPER",
+    "previewDecision": "Preview decision",
+    "detectedQuality": "Detected quality",
+    "previewScore": "Total score",
+    "matchedFormats": "Matched custom formats",
+    "noMatchedFormats": "No custom formats matched this release.",
+    "matchedFormat": "{{name}}: {{score}}",
+    "fields": {
+      "title": "Release name",
+      "codec": "Codec",
+      "source": "Source",
+      "size": "Size",
+      "indexer": "Indexer",
+      "protocol": "Protocol",
+      "flags": "Release flags",
+      "resolution": "Resolution"
+    },
+    "operators": {
+      "equals": "is",
+      "contains": "contains",
+      "greater_than": "is greater than",
+      "less_than": "is less than"
+    },
+    "verdict": {
+      "grab": "Grab this release",
+      "upgrade": "Upgrade the existing file",
+      "reject": "Do not grab this release"
+    },
+    "reason": {
+      "not_in_profile": "The detected quality is not allowed by this profile.",
+      "below_minimum_score": "The total score is below this profile's required minimum.",
+      "no_existing_file": "No existing file is available, so this release can be grabbed.",
+      "not_an_upgrade": "The existing file has an equal or better score.",
+      "cutoff_met": "The existing file has already reached this profile's cutoff quality.",
+      "upgrade_available": "The release scores higher than the existing file and the cutoff has not been reached.",
+      "quality_not_detected": "No allowed quality could be detected from this release name."
+    }
+  },
+  "library": {
+    "title": "Library",
+    "loading": "Loading library…",
+    "empty": "Your library is empty. Configure a root folder and scan it to add media."
+  },
+  "media": {
+    "loading": "Loading media…",
+    "confidence": "Metadata confidence: {{value}}",
+    "unknown": "unknown",
+    "play": "Play",
+    "unavailable": "Playback unavailable",
+    "tags": "Tags",
+    "correctTag": "Correct tag",
+    "addTag": "Add corrected tag",
+    "file": "File",
+    "path": "Path",
+    "technical": "Technical information"
+  },
   "errors": {
     "INVALID_CREDENTIALS": "That username and password do not match.",
     "NOT_AUTHENTICATED": "Your session has ended. Sign in again.",
@@ -77,6 +454,11 @@
     "NOT_IMPLEMENTED": "That is not built yet.",
     "CONFIGURATION_INVALID": "This instance is misconfigured. Check the server log.",
     "DECRYPTION_FAILED": "A stored credential could not be read. The application secret does not match the one it was saved with.",
+    "QUALITY_CONFIGURATION_INVALID": "This quality profile or custom format is not valid. Check the selected qualities, cutoff and names.",
+    "QUALITY_PROFILE_IN_USE": "This quality profile is still required by the application and cannot be deleted.",
+    "SETUP_REQUIRED": "Finish setting up this instance before using the application.",
+    "SETUP_ALREADY_COMPLETED": "This instance has already been configured.",
+    "SETUP_PATH_INVALID": "That library path is unavailable, not a folder, or cannot be written to.",
     "BAD_REQUEST": "That request was not something the server could use.",
     "NOT_FOUND": "That does not exist, or no longer does.",
     "METHOD_NOT_ALLOWED": "That action is not available on this address.",
@@ -104,6 +486,11 @@
     "NOT_IMPLEMENTED": "Pick another destination from the navigation.",
     "CONFIGURATION_INVALID": "Correct the settings named in the server log, then restart the server.",
     "DECRYPTION_FAILED": "Restore the original application secret, or enter the credential again.",
+    "QUALITY_CONFIGURATION_INVALID": "Check the selected qualities, cutoff and names, then save again.",
+    "QUALITY_PROFILE_IN_USE": "Choose another default profile or move the monitors to another profile first.",
+    "SETUP_REQUIRED": "Finish the setup steps before using the application.",
+    "SETUP_ALREADY_COMPLETED": "Sign in with the administrator account that already exists.",
+    "SETUP_PATH_INVALID": "Choose an existing folder that Pornarr can read and write.",
     "BAD_REQUEST": "Change what was sent and try once more.",
     "NOT_FOUND": "Pick a destination from the navigation.",
     "METHOD_NOT_ALLOWED": "Go back and choose a different action.",

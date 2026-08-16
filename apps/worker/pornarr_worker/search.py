@@ -26,7 +26,7 @@ from pornarr_integrations.indexers import Release, SearchIndexerAdapter
 from pornarr_integrations.newznab import NewznabAdapter
 from pornarr_integrations.torznab import TorznabAdapter
 from pornarr_shared.events import publish_event
-from pornarr_shared.jobs import job
+from pornarr_shared.jobs import indexer_search_state_key, job
 
 INDEXER_SEARCH_TIMEOUT_SECONDS = 10
 RELEASE_CACHE_TTL = timedelta(hours=24)
@@ -40,6 +40,7 @@ class SearchTarget:
     adapter: SearchIndexerAdapter | None
     skip_status: str | None = None
     cached_releases: list[Release] | None = None
+    last_rss_guid: str | None = None
 
 
 @dataclass(slots=True)
@@ -56,7 +57,7 @@ SearchResultCallback = Callable[[str, str, list[Release] | None, Exception | Non
 
 
 def search_state_key(search_id: str) -> str:
-    return f"pornarr:indexer-search:{search_id}"
+    return indexer_search_state_key(search_id)
 
 
 async def read_search_state(redis: Any, search_id: str) -> SearchState | None:
@@ -97,7 +98,7 @@ async def run_search(
             await _store(redis, state)
             await publish_event(
                 redis,
-                "indexer.search.completed",
+                "search.result_added",
                 {
                     "search_id": search_id,
                     "indexer_id": target_id,
@@ -106,6 +107,16 @@ async def run_search(
                 },
                 user_id=user_id,
             )
+        await publish_event(
+            redis,
+            "search.completed",
+            {
+                "search_id": search_id,
+                "statuses": state.statuses,
+                "cancelled": False,
+            },
+            user_id=user_id,
+        )
     except asyncio.CancelledError:
         for task in tasks:
             task.cancel()
@@ -116,7 +127,14 @@ async def run_search(
                 state.statuses[target_id] = "cancelled"
         await _store(redis, state)
         await publish_event(
-            redis, "indexer.search.cancelled", {"search_id": search_id}, user_id=user_id
+            redis,
+            "search.completed",
+            {
+                "search_id": search_id,
+                "statuses": state.statuses,
+                "cancelled": True,
+            },
+            user_id=user_id,
         )
         raise
     return state
@@ -165,6 +183,7 @@ async def configured_targets(redis: Any) -> list[SearchTarget]:
                     base_url=indexer.base_url,
                     api_key=indexer.api_key,
                     adapter=ADAPTERS.get(indexer.implementation),
+                    last_rss_guid=indexer.last_rss_guid,
                 )
             )
     return targets
@@ -213,6 +232,8 @@ async def record_search_outcome(
     status: str,
     releases: list[Release] | None,
     error: Exception | None,
+    *,
+    last_rss_guid: str | None = None,
 ) -> None:
     """Persist one actual query's health and aggregate statistics."""
     if status in {IndexerHealth.UNHEALTHY.value, "unavailable", "cached"}:
@@ -226,6 +247,8 @@ async def record_search_outcome(
         if status == "completed":
             if releases is not None:
                 await cache_releases(session, indexer.id, releases)
+            if last_rss_guid is not None:
+                indexer.last_rss_guid = last_rss_guid
             indexer.health = (await CircuitBreaker(redis).record_success(indexer_id)).value
             indexer.health_reason = None
             indexer.last_error = None

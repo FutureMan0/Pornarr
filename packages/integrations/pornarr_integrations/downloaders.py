@@ -37,6 +37,7 @@ class DownloadClientJob:
     download_speed_bytes: int | None
     estimated_seconds: int | None
     error: str | None = None
+    output_path: str | None = None
 
 
 class DownloadClientAdapter(Protocol):
@@ -54,3 +55,89 @@ class DownloadClientPollingAdapter(Protocol):
         url_base: str,
         credentials: str,
     ) -> list[DownloadClientJob]: ...
+
+
+class DownloadClientCancellationAdapter(Protocol):
+    """The one client operation a request cancellation needs."""
+
+    async def cancel(
+        self,
+        *,
+        host: str,
+        port: int,
+        url_base: str,
+        credentials: str,
+        client_job_id: str,
+    ) -> None: ...
+
+
+class DownloadClientControlAdapter(Protocol):
+    """Pause and resume individual download-client jobs."""
+
+    async def pause(
+        self,
+        *,
+        host: str,
+        port: int,
+        url_base: str,
+        credentials: str,
+        client_job_id: str,
+    ) -> None: ...
+
+    async def resume(
+        self,
+        *,
+        host: str,
+        port: int,
+        url_base: str,
+        credentials: str,
+        client_job_id: str,
+    ) -> None: ...
+
+
+class DownloadClientPriorityAdapter(Protocol):
+    """Set a numeric priority when the download client supports one."""
+
+    async def set_priority(
+        self,
+        *,
+        host: str,
+        port: int,
+        url_base: str,
+        credentials: str,
+        client_job_id: str,
+        priority: int,
+    ) -> None: ...
+
+
+class TorrentSubmissionAdapter(Protocol):
+    """A torrent client operation used when accepting a cached release."""
+
+    async def add_magnet(
+        self,
+        *,
+        host: str,
+        port: int,
+        url_base: str,
+        credentials: str,
+        magnet: str,
+        category: str | None,
+        paused: bool,
+    ) -> None: ...
+
+
+class UsenetSubmissionAdapter(Protocol):
+    """A Usenet client operation used when accepting a cached release."""
+
+    async def add_url(
+        self,
+        *,
+        host: str,
+        port: int,
+        url_base: str,
+        credentials: str,
+        url: str,
+        category: str | None,
+        priority: int,
+        paused: bool,
+    ) -> str: ...

@@ -1,0 +1,10 @@
+{
+  "data": {
+    "queryStudios": {
+      "studios": [
+        { "id": "studio-42", "name": "Example Studio" },
+        { "id": "studio-ignored", "name": "Example Studio Network" }
+      ]
+    }
+  }
+}

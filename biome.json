@@ -4,6 +4,7 @@
     "ignore": [
       "dist",
       "node_modules",
+      ".pnpm-store",
       "**/*.gen.ts",
       "openapi.json",
       ".venv",

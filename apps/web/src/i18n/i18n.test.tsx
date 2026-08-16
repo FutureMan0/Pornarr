@@ -75,10 +75,10 @@ describe("switching locale", () => {
     renderApp("/library");
     const user = userEvent.setup();
 
-    // English first: the navigation, the heading and the placeholder body.
+    // English first: navigation, heading and the library loading state.
     expect(await screen.findByRole("navigation", { name: en.nav.primary })).toBeTruthy();
     expect(screen.getByRole("heading", { name: en.nav.library })).toBeTruthy();
-    expect(screen.getByText(en.screen.notBuilt)).toBeTruthy();
+    expect(screen.getByText(en.library.loading)).toBeTruthy();
     expect(screen.getByRole("button", { name: en.activity.title })).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: en.locale.label }));
@@ -90,9 +90,9 @@ describe("switching locale", () => {
       expect(screen.getByRole("navigation", { name: de.nav.primary })).toBeTruthy(),
     );
     expect(screen.getByRole("heading", { name: de.nav.library })).toBeTruthy();
-    expect(screen.getByText(de.screen.notBuilt)).toBeTruthy();
+    expect(await screen.findByText(de.library.empty)).toBeTruthy();
     expect(screen.getByRole("button", { name: de.activity.title })).toBeTruthy();
-    expect(screen.queryByText(en.screen.notBuilt)).toBeNull();
+    expect(screen.queryByText(en.library.empty)).toBeNull();
   });
 
   test("changes the login screen", async () => {

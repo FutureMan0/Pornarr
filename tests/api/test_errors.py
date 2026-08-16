@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
+import logging
 from collections.abc import AsyncIterator
+from io import StringIO
 
 import pytest
 from fastapi import APIRouter, FastAPI, HTTPException
@@ -10,6 +13,7 @@ from pydantic import BaseModel
 from pornarr_api.main import create_app
 from pornarr_api.middleware import current_request_id
 from pornarr_shared.errors import PornarrError
+from pornarr_shared.logging import JsonFormatter
 from tests.api.test_app import build_settings
 
 
@@ -105,6 +109,29 @@ async def test_a_route_registered_after_create_app_is_reachable(client: AsyncCli
     response = await client.get("/api/http-error")
     assert response.status_code != 200
     assert response.headers["content-type"].startswith("application/json")
+
+
+async def test_request_completion_log_carries_the_request_identifier(client: AsyncClient) -> None:
+    stream = StringIO()
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(JsonFormatter())
+    request_logger = logging.getLogger("pornarr_api.middleware")
+    previous_level = request_logger.level
+    previous_propagate = request_logger.propagate
+    request_logger.addHandler(handler)
+    request_logger.setLevel(logging.INFO)
+    request_logger.propagate = False
+    try:
+        response = await client.get("/api/http-error", headers={"X-Request-Id": "trace-123"})
+    finally:
+        request_logger.removeHandler(handler)
+        request_logger.setLevel(previous_level)
+        request_logger.propagate = previous_propagate
+
+    assert response.headers["X-Request-Id"] == "trace-123"
+    event = json.loads(stream.getvalue())
+    assert event["request_id"] == "trace-123"
+    assert event["message"] == "request completed: GET /api/http-error 403"
 
 
 async def test_valid_payload_still_works(client: AsyncClient) -> None:

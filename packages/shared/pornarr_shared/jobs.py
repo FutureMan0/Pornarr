@@ -11,10 +11,14 @@ from typing import Any
 
 from arq.worker import Function, Retry, func
 
+from pornarr_shared.logging import reset_job_id, set_job_id
+
 DEFAULT_QUEUE = "pornarr:default"
 IMPORT_QUEUE = "pornarr:import"
 TRANSCODE_QUEUE = "pornarr:transcode"
 INDEXER_QUEUE = "pornarr:indexer"
+BACKLOG_SEARCH_JOB_NAME = "backlog_search"
+INDEXER_SEARCH_JOB_NAME = "search_indexers"
 
 JOB_TIMEOUT_SECONDS = 300
 JOB_MAX_TRIES = 3
@@ -23,6 +27,12 @@ JOB_COMPLETION_WAIT_SECONDS = 30
 WORKER_HEALTH_KEY = f"{DEFAULT_QUEUE}:health-check"
 
 JobCoroutine = Callable[..., Awaitable[Any]]
+
+
+def indexer_search_state_key(search_id: str) -> str:
+    """Return the Redis key for one user's transient indexer-search state."""
+
+    return f"pornarr:indexer-search:{search_id}"
 
 
 def job_key(function: str, *args: object, queue: str, **kwargs: object) -> str:
@@ -79,6 +89,8 @@ def job(
 
     @wraps(coroutine)
     async def retrying_coroutine(context: dict[str, Any], *args: object, **kwargs: object) -> Any:
+        job_id = context.get("job_id")
+        token = set_job_id(job_id) if isinstance(job_id, str) else None
         try:
             return await coroutine(context, *args, **kwargs)
         except asyncio.CancelledError:
@@ -89,5 +101,8 @@ def job(
             raise
         except Exception:
             raise Retry(defer=retry_delay_seconds(int(context["job_try"]))) from None
+        finally:
+            if token is not None:
+                reset_job_id(token)
 
     return func(retrying_coroutine, timeout=timeout, max_tries=max_tries)

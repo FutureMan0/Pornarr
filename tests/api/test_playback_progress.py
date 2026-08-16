@@ -23,10 +23,12 @@ async def _media(app, title: str) -> Media:
     return media
 
 
-async def _report(client: AsyncClient, media: Media, position_seconds: float) -> dict[str, object]:
+async def _report(
+    client: AsyncClient, media: Media, position_seconds: float, duration_seconds: float = 100
+) -> dict[str, object]:
     response = await client.post(
         f"/api/playback/{media.id}/progress",
-        json={"position_seconds": position_seconds, "duration_seconds": 100},
+        json={"position_seconds": position_seconds, "duration_seconds": duration_seconds},
         headers=csrf_headers(client),
     )
     assert response.status_code == 200
@@ -80,7 +82,15 @@ async def test_completion_is_recorded_once_and_continue_watching_is_ordered_by_r
         events = list(await session.scalars(select(UserEvent)))
         await session.commit()
 
-    assert [event.event_type for event in events] == ["playback.completed"]
+    assert [event.event_type for event in events] == [
+        "play",
+        "progress",
+        "progress",
+        "completed",
+        "progress",
+        "play",
+        "progress",
+    ]
     continue_watching = await client.get("/api/playback/continue-watching")
     assert continue_watching.status_code == 200
     assert [item["media_id"] for item in continue_watching.json()] == [
@@ -113,3 +123,16 @@ async def test_completion_uses_the_configured_threshold(app, client) -> None:
 
     assert (await _report(client, media, 74.9))["completed"] is False
     assert (await _report(client, media, 75))["completed"] is True
+
+
+async def test_progress_event_uses_percent_not_playback_seconds(app, client) -> None:
+    media = await _media(app, "Example")
+    user = await create_user(app)
+    await login(client, user.username, "correct horse battery staple")
+
+    await _report(client, media, 90, duration_seconds=180)
+
+    async with AsyncSession(app.state.engine) as session:
+        event = await session.scalar(select(UserEvent).where(UserEvent.event_type == "progress"))
+    assert event is not None
+    assert event.value == 50

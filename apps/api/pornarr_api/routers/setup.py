@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import database_session, hash_password
 from pornarr_api.errors import ErrorResponse
+from pornarr_db.models.automation import AutomationRule
 from pornarr_db.models.filters import (
     ContentFilterProfile,
     ContentFilterRule,
@@ -49,6 +50,15 @@ class SetupWrite(BaseModel):
     library_path: Annotated[str, Field(min_length=1, max_length=1024)]
 
 
+class SetupPathValidationWrite(BaseModel):
+    library_path: Annotated[str, Field(min_length=1, max_length=1024)]
+
+
+class SetupPathValidationResponse(BaseModel):
+    same_filesystem_as_downloads: bool
+    warning: str | None
+
+
 class SetupCompleteResponse(BaseModel):
     username: str
     same_filesystem_as_downloads: bool
@@ -58,6 +68,26 @@ class SetupCompleteResponse(BaseModel):
 @router.get("/status")
 async def setup_status(session: Session) -> dict[str, bool]:
     return {"configured": await session.scalar(select(User.id).limit(1)) is not None}
+
+
+@router.post(
+    "/validate-library-path", response_model=SetupPathValidationResponse, responses=SETUP_ERRORS
+)
+async def validate_library_path(
+    payload: SetupPathValidationWrite, request: Request, session: Session
+) -> SetupPathValidationResponse:
+    if await session.scalar(select(User.id).limit(1)) is not None:
+        raise SetupAlreadyCompletedError("The instance has already been configured.")
+    _, _, same_filesystem = _validate_library_path(
+        payload.library_path, request.app.state.settings.data_path
+    )
+    warning = (
+        None if same_filesystem else "different filesystem from downloads; imports cannot hardlink"
+    )
+    return SetupPathValidationResponse(
+        same_filesystem_as_downloads=same_filesystem,
+        warning=warning,
+    )
 
 
 @router.post(
@@ -74,7 +104,7 @@ async def complete_setup(
     if await session.scalar(select(User.id).limit(1)) is not None:
         raise SetupAlreadyCompletedError("The instance has already been configured.")
     path, free_space_bytes, same_filesystem = _validate_library_path(
-        payload.library_path, request.app.state.settings.torrents_path
+        payload.library_path, request.app.state.settings.data_path
     )
     if profile is None:
         profile = ContentFilterProfile(scope=FilterProfileScope.GLOBAL)
@@ -89,6 +119,8 @@ async def complete_setup(
         role=UserRole.ADMIN,
     )
     session.add(admin)
+    await session.flush()
+    session.add(AutomationRule(user_id=admin.id))
     session.add(RootFolder(path=str(path), enabled=True, free_space_bytes=free_space_bytes))
     warning = (
         None if same_filesystem else "different filesystem from downloads; imports cannot hardlink"
@@ -100,7 +132,7 @@ async def complete_setup(
     )
 
 
-def _validate_library_path(value: str, torrents_path: Path) -> tuple[Path, int, bool]:
+def _validate_library_path(value: str, data_path: Path) -> tuple[Path, int, bool]:
     try:
         path = Path(value).expanduser().resolve(strict=True)
     except OSError as exc:
@@ -114,7 +146,7 @@ def _validate_library_path(value: str, torrents_path: Path) -> tuple[Path, int, 
             "The library path must be readable and writable.", reason="not_accessible"
         )
     try:
-        return path, shutil.disk_usage(path).free, path.stat().st_dev == torrents_path.stat().st_dev
+        return path, shutil.disk_usage(path).free, path.stat().st_dev == data_path.stat().st_dev
     except OSError as exc:
         raise SetupPathInvalidError(
             "The library path is unavailable.", reason="unavailable"

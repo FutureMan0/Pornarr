@@ -32,9 +32,13 @@
   --color-primary-weak: var(--primary-weak);
 
   --color-success: var(--success);
+  --color-success-weak: var(--success-weak);
   --color-warning: var(--warning);
+  --color-warning-weak: var(--warning-weak);
   --color-danger: var(--danger);
+  --color-danger-weak: var(--danger-weak);
   --color-info: var(--info);
+  --color-info-weak: var(--info-weak);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);

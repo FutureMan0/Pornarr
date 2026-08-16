@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
+        env_ignore_empty=True,
         extra="ignore",
         frozen=True,
     )
@@ -45,6 +46,8 @@ class Settings(BaseSettings):
     redis_url: str
 
     data_path: Path = Path("/data")
+    backup_path: Path = Path("/backups")
+    backup_max_age_hours: int | None = Field(default=None, ge=1)
 
     base_path: str = ""
 
@@ -57,15 +60,36 @@ class Settings(BaseSettings):
 
     playback_completion_threshold_percent: int = Field(default=90, ge=1, le=100)
     audit_retention_days: int | None = Field(default=None, ge=1)
+    user_event_retention_days: int | None = Field(default=365, ge=1)
+    quarantine_retention_days: int = Field(default=30, ge=1)
 
     min_free_disk_percent: int = Field(default=15, ge=0, le=99)
     default_daily_download_limit_gb: int = Field(default=10, ge=0)
     default_max_auto_jobs: int = Field(default=2, ge=0)
+    default_max_auto_downloads_per_day: int = Field(default=3, ge=0)
     default_auto_downloads_enabled: bool = False
+    auto_download_recommendation_weight: float = Field(default=0.30, ge=0)
+    auto_download_metadata_weight: float = Field(default=0.15, ge=0)
+    auto_download_release_weight: float = Field(default=0.15, ge=0)
+    auto_download_indexer_reliability_weight: float = Field(default=0.10, ge=0)
+    auto_download_recency_weight: float = Field(default=0.10, ge=0)
+    auto_download_size_weight: float = Field(default=0.05, ge=0)
+    auto_download_duplicate_risk_weight: float = Field(default=0.10, ge=0)
+    auto_download_expected_download_time_weight: float = Field(default=0.05, ge=0)
+    recommendation_tag_weight: float = Field(default=0.30, ge=0)
+    recommendation_performer_weight: float = Field(default=0.25, ge=0)
+    recommendation_studio_weight: float = Field(default=0.15, ge=0)
+    recommendation_quality_weight: float = Field(default=0.10, ge=0)
+    recommendation_recency_weight: float = Field(default=0.10, ge=0)
+    recommendation_popularity_weight: float = Field(default=0.10, ge=0)
+    request_max_active_per_user: int = Field(default=10, ge=0)
+    request_search_max_age_days: int = Field(default=90, ge=1)
+    rss_sync_interval_minutes: int = Field(default=15, ge=1, le=60)
 
     oidc_allow_private_issuers: bool = False
 
     log_level: Literal["debug", "info", "warning", "error"] = "info"
+    metrics_enabled: bool = False
 
     @field_validator("app_secret")
     @classmethod
@@ -88,6 +112,13 @@ class Settings(BaseSettings):
         """
         stripped = value.strip().strip("/")
         return f"/{stripped}" if stripped else ""
+
+    @field_validator("rss_sync_interval_minutes")
+    @classmethod
+    def _rss_sync_interval_divides_an_hour(cls, value: int) -> int:
+        if 60 % value:
+            raise ValueError("RSS_SYNC_INTERVAL_MINUTES must divide 60")
+        return value
 
     # Derived paths. Downloads and library must share one filesystem or
     # hardlinking fails; see docs/operations/deployment.md.

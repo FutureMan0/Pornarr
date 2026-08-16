@@ -1,0 +1,21 @@
+{
+  "data": [
+    {
+      "id": "tpdb-scene-123",
+      "title": "TPDB-only Scene",
+      "date": "2024-02-14",
+      "site": { "id": 42, "uuid": "tpdb-site-42", "name": "Example Studio" },
+      "performers": [
+        { "id": "tpdb-performer-7", "name": "Alice Example" },
+        { "id": "tpdb-performer-7", "name": "Alice Example" },
+        { "id": "tpdb-performer-8", "name": "Bob Example" }
+      ],
+      "tags": [
+        { "id": 2, "uuid": "tpdb-tag-2", "name": "Outdoor" },
+        { "id": 2, "uuid": "tpdb-tag-2", "name": "Outdoor" },
+        { "id": 3, "uuid": "tpdb-tag-3", "name": "HD" }
+      ]
+    }
+  ],
+  "meta": { "current_page": 1, "last_page": 1 }
+}

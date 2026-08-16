@@ -10,9 +10,12 @@ htmlcov/
 
 # Node
 node_modules/
+.pnpm-store/
 dist/
 .vite/
 *.tsbuildinfo
+playwright-report/
+test-results/
 
 # Environment
 .env

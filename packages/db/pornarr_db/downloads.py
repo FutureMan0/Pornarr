@@ -26,3 +26,24 @@ async def is_release_blocked(
         )
         is not None
     )
+
+
+async def block_release(
+    session: AsyncSession, release_guid: str, *, blocked_until: datetime, reason: str
+) -> BlockedRelease:
+    """Record a temporary release block, extending but never shortening an existing one."""
+    blocked = await session.scalar(
+        select(BlockedRelease).where(BlockedRelease.release_guid == release_guid).with_for_update()
+    )
+    if blocked is None:
+        blocked = BlockedRelease(
+            release_guid=release_guid,
+            blocked_until=blocked_until,
+            reason=reason,
+        )
+        session.add(blocked)
+        return blocked
+    if blocked.blocked_until < blocked_until:
+        blocked.blocked_until = blocked_until
+    blocked.reason = reason
+    return blocked

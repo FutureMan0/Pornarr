@@ -56,4 +56,6 @@ def test_search_filters_and_sorting_are_composed_in_one_statement() -> None:
         assert table in rendered
     assert "quality" in rendered
     assert "duration_seconds" in rendered
+    assert "performers.normalized_name %%" in rendered
+    assert "tags.normalized_name %%" in rendered
     assert "ORDER BY media_files.size DESC" in rendered
