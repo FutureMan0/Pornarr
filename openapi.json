@@ -2941,11 +2941,23 @@
           "position_seconds": {
             "title": "Position Seconds",
             "type": "number"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           }
         },
         "required": [
           "device_label",
           "media_id",
+          "title",
           "position_seconds",
           "duration_seconds",
           "completed"

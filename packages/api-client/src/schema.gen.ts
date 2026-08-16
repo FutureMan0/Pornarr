@@ -3215,6 +3215,8 @@ export interface components {
             media_id: string;
             /** Position Seconds */
             position_seconds: number;
+            /** Title */
+            title: string | null;
         };
         /** PlaybackProgressWrite */
         PlaybackProgressWrite: {
