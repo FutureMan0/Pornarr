@@ -48,6 +48,7 @@ from pornarr_api.routers.queue import router as queue_router
 from pornarr_api.routers.ratings import router as ratings_router
 from pornarr_api.routers.recommendations import router as recommendations_router
 from pornarr_api.routers.requests import router as requests_router
+from pornarr_api.routers.scenes import router as scenes_router
 from pornarr_api.routers.search import router as search_router
 from pornarr_api.routers.sends import router as sends_router
 from pornarr_api.routers.setup import router as setup_router
@@ -117,6 +118,7 @@ api_router.include_router(comments_router)
 api_router.include_router(shorts_router)
 api_router.include_router(sends_router)
 api_router.include_router(collections_router)
+api_router.include_router(scenes_router)
 
 
 def create_app(

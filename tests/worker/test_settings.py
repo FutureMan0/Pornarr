@@ -54,6 +54,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
     ]
     assert [job.name for job in settings.TranscodeWorkerSettings.functions] == [
         "generate_preview_sprite_job",
+        "generate_preview_and_scenes_job",
         "generate_artwork_job",
         "regenerate_library_artwork_job",
         "generate_perceptual_hash_job",

@@ -1139,6 +1139,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/media/{media_id}/scenes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Scenes */
+        get: operations["scenes_read_scenes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/media/{media_id}/sprite": {
         parameters: {
             query?: never;
@@ -3479,6 +3496,29 @@ export interface components {
             transcode_max_sw_sessions?: number | null;
             /** User Event Retention Days */
             user_event_retention_days?: number | null;
+        };
+        /** SceneIndexResponse */
+        SceneIndexResponse: {
+            /** Media File Id */
+            media_file_id: string | null;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Scenes */
+            scenes: components["schemas"]["SceneResponse"][];
+        };
+        /** SceneResponse */
+        SceneResponse: {
+            /** Duration Seconds */
+            duration_seconds: number;
+            /** End Seconds */
+            end_seconds: number;
+            /** Ordinal */
+            ordinal: number;
+            /** Start Seconds */
+            start_seconds: number;
         };
         /** SearchEstimateResponse */
         SearchEstimateResponse: {
@@ -6581,6 +6621,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RatingSummaryResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scenes_read_scenes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SceneIndexResponse"];
                 };
             };
             /** @description Not Found */

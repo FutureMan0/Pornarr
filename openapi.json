@@ -4499,6 +4499,69 @@
         "title": "RuntimeSettingsWrite",
         "type": "object"
       },
+      "SceneIndexResponse": {
+        "properties": {
+          "media_file_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media File Id"
+          },
+          "media_id": {
+            "format": "uuid",
+            "title": "Media Id",
+            "type": "string"
+          },
+          "scenes": {
+            "items": {
+              "$ref": "#/components/schemas/SceneResponse"
+            },
+            "title": "Scenes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "media_id",
+          "media_file_id",
+          "scenes"
+        ],
+        "title": "SceneIndexResponse",
+        "type": "object"
+      },
+      "SceneResponse": {
+        "properties": {
+          "duration_seconds": {
+            "title": "Duration Seconds",
+            "type": "number"
+          },
+          "end_seconds": {
+            "title": "End Seconds",
+            "type": "number"
+          },
+          "ordinal": {
+            "title": "Ordinal",
+            "type": "integer"
+          },
+          "start_seconds": {
+            "title": "Start Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "ordinal",
+          "start_seconds",
+          "end_seconds",
+          "duration_seconds"
+        ],
+        "title": "SceneResponse",
+        "type": "object"
+      },
       "SearchEstimateResponse": {
         "properties": {
           "confidence": {
@@ -9091,6 +9154,59 @@
         "summary": "Set Rating",
         "tags": [
           "ratings"
+        ]
+      }
+    },
+    "/api/media/{media_id}/scenes": {
+      "get": {
+        "operationId": "scenes_read_scenes",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SceneIndexResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Scenes",
+        "tags": [
+          "scenes"
         ]
       }
     },

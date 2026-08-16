@@ -7,6 +7,16 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from pornarr_media.scenes import (
+    DEFAULT_OPTIONS as DEFAULT_SCENE_OPTIONS,
+)
+from pornarr_media.scenes import (
+    Scene,
+    SceneDetectionOptions,
+    build_scene_filter,
+    read_scenes,
+)
+
 DEFAULT_INTERVAL_SECONDS = 10
 DEFAULT_TILE_WIDTH = 160
 DEFAULT_TILE_HEIGHT = 90
@@ -40,6 +50,14 @@ class PreviewSprite:
     vtt: Path
 
 
+@dataclass(frozen=True, slots=True)
+class PreviewAndScenes:
+    """Everything one decode of the file produced."""
+
+    preview: PreviewSprite
+    scenes: tuple[Scene, ...]
+
+
 DEFAULT_OPTIONS = PreviewSpriteOptions()
 
 
@@ -69,6 +87,60 @@ def generate_preview_sprite(
     return PreviewSprite(image=image, vtt=vtt)
 
 
+def generate_preview_and_scenes(
+    source: Path,
+    output_directory: Path,
+    *,
+    options: PreviewSpriteOptions = DEFAULT_OPTIONS,
+    scene_options: SceneDetectionOptions = DEFAULT_SCENE_OPTIONS,
+) -> PreviewAndScenes:
+    """Produce the preview and the scene index from one pass over the file."""
+    duration_seconds = _duration_seconds(source)
+    frame_count = math.ceil(duration_seconds / options.interval_seconds)
+    if frame_count <= 0:
+        raise ValueError("media duration must be greater than zero")
+
+    output_directory.mkdir(parents=True, exist_ok=True)
+    image = output_directory / "sprite.jpg"
+    vtt = output_directory / "sprite.vtt"
+    temporary_image = output_directory / ".sprite.tmp.jpg"
+    temporary_vtt = output_directory / ".sprite.tmp.vtt"
+    scene_metadata = output_directory / ".scenes.tmp.txt"
+    _run(
+        build_sprite_and_scene_command(
+            source,
+            temporary_image,
+            scene_metadata,
+            frame_count=frame_count,
+            options=options,
+            scene_options=scene_options,
+        )
+    )
+    scenes = read_scenes(scene_metadata, duration_seconds, options=scene_options)
+    temporary_vtt.write_text(
+        build_webvtt(duration_seconds=duration_seconds, image_name=image.name, options=options)
+    )
+    temporary_image.replace(image)
+    temporary_vtt.replace(vtt)
+    return PreviewAndScenes(preview=PreviewSprite(image=image, vtt=vtt), scenes=scenes)
+
+
+def try_generate_preview_and_scenes(
+    source: Path,
+    output_directory: Path,
+    *,
+    options: PreviewSpriteOptions = DEFAULT_OPTIONS,
+    scene_options: SceneDetectionOptions = DEFAULT_SCENE_OPTIONS,
+) -> PreviewAndScenes | None:
+    """Neither a preview nor a scene index is worth failing an import over."""
+    try:
+        return generate_preview_and_scenes(
+            source, output_directory, options=options, scene_options=scene_options
+        )
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return None
+
+
 def try_generate_preview_sprite(
     source: Path,
     output_directory: Path,
@@ -82,6 +154,14 @@ def try_generate_preview_sprite(
         return None
 
 
+def build_sprite_filter(*, frame_count: int, options: PreviewSpriteOptions) -> str:
+    rows = math.ceil(frame_count / options.columns)
+    return (
+        f"fps=1/{options.interval_seconds:g},scale={options.tile_width}:{options.tile_height},"
+        f"tile={options.columns}x{rows}:padding=0:margin=0"
+    )
+
+
 def build_sprite_command(
     source: Path,
     output: Path,
@@ -90,11 +170,6 @@ def build_sprite_command(
     options: PreviewSpriteOptions,
 ) -> list[str]:
     """Build one FFmpeg invocation that samples and tiles every preview frame."""
-    rows = math.ceil(frame_count / options.columns)
-    filter_graph = (
-        f"fps=1/{options.interval_seconds:g},scale={options.tile_width}:{options.tile_height},"
-        f"tile={options.columns}x{rows}:padding=0:margin=0"
-    )
     return [
         "ffmpeg",
         "-hide_banner",
@@ -105,10 +180,57 @@ def build_sprite_command(
         "-i",
         str(source),
         "-vf",
-        filter_graph,
+        build_sprite_filter(frame_count=frame_count, options=options),
         "-frames:v",
         "1",
         str(output),
+    ]
+
+
+def build_sprite_and_scene_command(
+    source: Path,
+    output: Path,
+    scene_metadata: Path,
+    *,
+    frame_count: int,
+    options: PreviewSpriteOptions,
+    scene_options: SceneDetectionOptions,
+) -> list[str]:
+    """Tile the preview and find the scene cuts from a single decode.
+
+    `split` hands the same decoded frames to both branches. Running detection
+    as its own invocation would decode the file a second time, and the decode
+    is the whole cost — the tiling and the frame comparison are rounding error
+    beside it.
+    """
+    graph = (
+        f"[0:v]split=2[preview][analysis];"
+        f"[preview]{build_sprite_filter(frame_count=frame_count, options=options)}[tiles];"
+        f"[analysis]{build_scene_filter(scene_options, scene_metadata)}[scenes]"
+    )
+    return [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-nostdin",
+        "-y",
+        "-i",
+        str(source),
+        "-filter_complex",
+        graph,
+        "-map",
+        "[tiles]",
+        "-frames:v",
+        "1",
+        str(output),
+        "-map",
+        "[scenes]",
+        "-an",
+        "-sn",
+        "-f",
+        "null",
+        "-",
     ]
 
 

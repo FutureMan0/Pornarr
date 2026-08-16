@@ -42,6 +42,7 @@ from pornarr_db.models.recommendation import RecommendationCandidate
 from pornarr_db.models.release import ReleaseCache
 from pornarr_db.models.request import Request, RequestHistory, RequestStatus
 from pornarr_db.models.root_folders import RootFolder
+from pornarr_db.models.scene_marker import SceneMarker
 from pornarr_db.models.settings import Setting
 from pornarr_db.models.social import (
     Collection,
@@ -119,6 +120,7 @@ __all__ = [
     "RequestHistory",
     "RequestStatus",
     "RootFolder",
+    "SceneMarker",
     "Setting",
     "Short",
     "ShortSource",

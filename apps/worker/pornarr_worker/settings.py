@@ -36,6 +36,7 @@ from pornarr_worker.jobs.rss_sync import RSS_SYNC_DISPATCH_JOB, RSS_SYNC_JOB
 from pornarr_worker.jobs.scan import SCAN_JOB
 from pornarr_worker.jobs.storage import REFRESH_STORAGE_JOB
 from pornarr_worker.jobs.upgrade import UPGRADE_MEDIA_FILE_JOB
+from pornarr_worker.scenes import PREVIEW_AND_SCENES_JOB
 from pornarr_worker.search import RELEASE_CACHE_CLEANUP_JOB, SEARCH_INDEXERS_JOB
 from pornarr_worker.sprites import SPRITE_JOB
 
@@ -103,7 +104,13 @@ class ImportWorkerSettings:
 class TranscodeWorkerSettings:
     """Worker dedicated to FFmpeg work so it cannot starve other queues."""
 
-    functions: ClassVar = [SPRITE_JOB, ARTWORK_JOB, LIBRARY_ARTWORK_JOB, PERCEPTUAL_HASH_JOB]
+    functions: ClassVar = [
+        SPRITE_JOB,
+        PREVIEW_AND_SCENES_JOB,
+        ARTWORK_JOB,
+        LIBRARY_ARTWORK_JOB,
+        PERCEPTUAL_HASH_JOB,
+    ]
     queue_name: ClassVar = TRANSCODE_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS
     job_timeout: ClassVar = JOB_TIMEOUT_SECONDS
