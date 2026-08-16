@@ -37,6 +37,7 @@ function apiError(code: string, status: number) {
 export const defaultHandlers = [
   http.get("/api/setup/status", () => HttpResponse.json({ configured: true })),
   http.get("/api/library", () => HttpResponse.json({ items: [], next_offset: null })),
+  http.get("/api/notifications", () => HttpResponse.json([])),
   http.get("/api/auth/me", () => apiError("NOT_AUTHENTICATED", 401)),
   http.post("/api/auth/login", async ({ request }) => {
     const body = (await request.json()) as { username?: string; password?: string };
