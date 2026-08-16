@@ -3,6 +3,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { VideoPlayer } from "../../components/player/video-player";
+import { CommentsPanel } from "./comments-panel";
+import { RatingPanel } from "./rating-panel";
+import { WatchlistToggle } from "./watchlist-toggle";
 
 type Tag = { name: string; confidence: number; source: string };
 type Detail = {
@@ -78,6 +81,16 @@ export function MediaDetailRoute() {
       ) : (
         <p>{t("media.unavailable")}</p>
       )}
+
+      <WatchlistToggle mediaId={media.id} />
+
+      {/* Rating and comments side by side on a wide screen, stacked below it.
+          They are the two halves of "what the household thinks" and reading one
+          without the other is half the picture. */}
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
+        <RatingPanel mediaId={media.id} />
+        <CommentsPanel mediaId={media.id} />
+      </div>
       <section>
         <h2 className="text-lg text-ink">{t("media.tags")}</h2>
         <ul className="flex flex-wrap gap-2">
