@@ -55,6 +55,16 @@ export function SetupRoute(): JSX.Element {
   const stepIndex = STEPS.indexOf(step);
   const strength = passwordStrength(password);
 
+  // A field that has become valid must stop showing its error, or the form
+  // tells the user their accepted input is wrong.
+  const clearAccountError = (field: "username" | "password"): void => {
+    setAccountError((current) => {
+      if (current[field] === undefined) return current;
+      const { [field]: _cleared, ...rest } = current;
+      return rest;
+    });
+  };
+
   useEffect(() => {
     if (previousStepRef.current !== undefined && previousStepRef.current !== step) {
       headingRef.current?.focus();
@@ -216,7 +226,10 @@ export function SetupRoute(): JSX.Element {
                 autoComplete="username"
                 value={username}
                 {...(accountError.username === undefined ? {} : { error: accountError.username })}
-                onChange={(event) => setUsername(event.target.value)}
+                onChange={(event) => {
+                  setUsername(event.target.value);
+                  if (event.target.value.trim() !== "") clearAccountError("username");
+                }}
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -230,7 +243,10 @@ export function SetupRoute(): JSX.Element {
                 autoComplete="new-password"
                 value={password}
                 {...(accountError.password === undefined ? {} : { error: accountError.password })}
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  if (passwordStrength(event.target.value) !== "weak") clearAccountError("password");
+                }}
               />
               <p className="text-sm text-ink-muted">{t(`setup.account.strength.${strength}`)}</p>
             </div>

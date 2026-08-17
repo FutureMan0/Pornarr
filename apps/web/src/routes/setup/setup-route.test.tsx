@@ -40,6 +40,25 @@ describe("first-run setup", () => {
     await reachLibraryStep(user);
   });
 
+  test("stops calling a field wrong once it is filled in correctly", async () => {
+    unconfiguredInstance();
+    renderApp("/setup");
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("Enter an administrator username.")).toBeTruthy();
+
+    await user.type(screen.getByLabelText("Username"), "ada");
+    await user.type(screen.getByLabelText("Password"), "Correct horse battery staple! 2026");
+
+    await waitFor(() => {
+      expect(screen.queryByText("Enter an administrator username.")).toBeNull();
+    });
+    expect(screen.queryByText("Use at least 12 characters from two character types.")).toBeNull();
+    expect(screen.getByLabelText("Username").getAttribute("aria-invalid")).toBeNull();
+    expect(screen.getByLabelText("Password").getAttribute("aria-invalid")).toBeNull();
+  });
+
   test("warns about copy imports before advancing past the library path", async () => {
     unconfiguredInstance();
     server.use(
