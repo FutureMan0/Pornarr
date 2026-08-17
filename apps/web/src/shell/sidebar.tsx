@@ -54,7 +54,11 @@ export const NAV_ITEMS = [
   { id: "collections", path: "/collections" },
   { id: "watchlist", path: "/watchlist" },
   { id: "requests", path: "/requests" },
-  { id: "downloads", path: "/downloads" },
+  // `/api/queue` and `/api/queue/summary` both require the admin role, so this
+  // screen answers a guest with 403 and nothing else. It sat in everyone's
+  // navigation until today, which is the same mistake the five entries above
+  // avoid by declaring it.
+  { id: "downloads", path: "/downloads", adminOnly: true },
   { id: "settings", path: "/settings" },
 ] as const satisfies readonly NavItem[];
 

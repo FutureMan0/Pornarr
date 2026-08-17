@@ -125,15 +125,25 @@
   --layout-sidebar-rail-width: 3.5rem;
   --layout-content-max-width: 100rem;
 
-  /* Radius. Cards top out at 12px; nothing here is rounder. */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-full: 999px;
+  /* Radius, aliased onto the delivered scale.
+   *
+   * The palette migration moved colour onto `--pa-*` and left geometry behind,
+   * so every surface in the application kept rendering at the pre-delivery
+   * 4/8/12 while the design was drawn at 5/8/14. That is small per corner and
+   * unmistakable across a screen — it is what "not quite finished" looks like.
+   *
+   * Aliased rather than replaced, so the names the components already use keep
+   * working and the delivered file stays the single source. */
+  --radius-sm: var(--pa-radius-sm);
+  --radius-md: var(--pa-radius);
+  --radius-lg: var(--pa-radius-lg);
+  --radius-full: var(--pa-radius-pill);
 
   /* Elevation is carried by surface lightness first. A shadow appears only on a
-     genuinely floating layer, and never on the same element as a 1px border. */
-  --shadow-floating: 0 2px 8px oklch(0 0 0 / 0.5);
+     genuinely floating layer, and never on the same element as a 1px border.
+     The delivered set pairs its shadow with a hairline ring, which is what
+     keeps a floating panel legible on a ground this dark. */
+  --shadow-floating: var(--pa-shadow-lg);
 
   /* Layers. No arbitrary values; nothing is 999 or 9999. */
   --z-dropdown: 100;
@@ -171,9 +181,9 @@
  *
  * Namespaced `--pa-*` and kept beside the existing tokens rather than replacing
  * them, because the two disagree on purpose and the swap is a screen-by-screen
- * migration, not a find-and-replace. Nothing consumes these yet; they are here
- * so that `contrast.test.ts` can hold them to the same floor as everything else
- * before a single component is built on them.
+ * migration, not a find-and-replace. The semantic layer at the top of this file
+ * now aliases onto these — colour, radius and elevation alike — so these are
+ * the values that reach the screen and `contrast.test.ts` measures them.
  *
  * Two differences worth knowing before using one set or the other:
  *

@@ -7,7 +7,7 @@
  * Mixing them is what turns a responsive shell into one component nobody wants
  * to touch.
  */
-import { cx } from "@pornarr/ui";
+import { Logo, LogoMark, cx } from "@pornarr/ui";
 import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -27,8 +27,10 @@ export interface SidebarIdentityProps {
 export function SidebarBrand({ compact }: SidebarIdentityProps): JSX.Element {
   const { t } = useTranslation();
   return (
-    <div className={cx("flex items-center gap-2 px-2 py-1", compact && "justify-center")}>
-      <span className="text-base font-medium text-ink">{t("shell.brand")}</span>
+    <div className={cx("flex items-center gap-2 px-2 py-2", compact && "justify-center")}>
+      {/* The rail is 56 pixels; the name does not survive it, and the mark is
+          the half that still identifies the server at that width. */}
+      {compact ? <LogoMark size={22} /> : <Logo name={t("shell.brand")} size={24} />}
       {compact ? null : (
         <span className="ml-auto text-2xs tracking-[0.12em] text-ink-muted">
           {t("shell.scope")}

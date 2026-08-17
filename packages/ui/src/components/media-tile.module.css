@@ -18,7 +18,9 @@
 .frame {
   position: relative;
   overflow: hidden;
-  aspect-ratio: 16 / 10;
+  /* Driven by the same custom property `Artwork` reads, so a poster and a
+     generated placeholder are the same shape for the same content. */
+  aspect-ratio: var(--art-ratio, 16 / 10);
   background: var(--surface);
 }
 

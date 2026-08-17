@@ -106,6 +106,28 @@
   font-weight: var(--text-xl-weight);
 }
 
+/**
+ * A panel.
+ *
+ * Every screen was assembling this by hand — `rounded-lg border border-border
+ * bg-surface-2 p-4 flex flex-col gap-2` repeated a dozen times, drifting a
+ * little each time. One utility means one answer to "what does a card look
+ * like", and means changing that answer is one edit rather than a search.
+ *
+ * The hairline comes from the delivered set. A 1px border and a shadow on the
+ * same element is the combination DESIGN.md rules out; `--pa-shadow-sm` is a
+ * ring, which is how the delivered surfaces separate from the ground.
+ */
+@utility card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  box-shadow: var(--pa-shadow-sm);
+}
+
 html,
 body,
 #root {

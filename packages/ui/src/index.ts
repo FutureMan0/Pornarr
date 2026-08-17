@@ -36,6 +36,7 @@ export {
   type EmptyStateProps,
 } from "./components/empty-state";
 export { Input, type InputProps } from "./components/input";
+export { Logo, LogoMark, type LogoProps, type WordmarkProps } from "./components/logo";
 export { MediaTile, type MediaTileProps } from "./components/media-tile";
 export { Menu, type MenuItem, type MenuProps } from "./components/menu";
 export { Select, type SelectProps } from "./components/select";

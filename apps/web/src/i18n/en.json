@@ -522,7 +522,22 @@
     "addTag": "Add corrected tag",
     "file": "File",
     "path": "Path",
-    "technical": "Technical information"
+    "technical": "Technical information",
+    "performers": "Performers",
+    "about": "About",
+    "studio": "Studio",
+    "released": "Released",
+    "runtime": "Runtime",
+    "quality": "Quality",
+    "size": "Size",
+    "added": "Added",
+    "pathHidden": "File location hidden by the owner",
+    "scenes": "Scene markers",
+    "noScenes": "No scenes detected yet.",
+    "resume": "Resume {{time}}",
+    "seeAll": "See all →",
+    "relatedFrom": "from tags, studio and performers",
+    "sceneLabel": "Scene {{index}}"
   },
   "errors": {
     "INVALID_CREDENTIALS": "That username and password do not match.",
@@ -619,8 +634,14 @@
       "at": "at {{time}}",
       "upNext": "Up next",
       "queueEmpty": "Nothing else in the feed yet.",
-      "aboutTitle": "Ratings and comments belong to the full title, not to this clip."
-    }
+      "aboutTitle": "Ratings and comments belong to the full title, not to this clip.",
+      "announce": "Clip {{index}} of {{total}}: {{title}}"
+    },
+    "save": "Save",
+    "saved": "Saved",
+    "browseAll": "Browse all →",
+    "backToFeed": "← Back to the feed",
+    "emptyHint": "Clips are cut from watch hotspots and scene markers, so they appear once the household has watched something."
   },
   "collections": {
     "title": "Collections",

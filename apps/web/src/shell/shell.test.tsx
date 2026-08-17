@@ -181,6 +181,27 @@ describe("who and where you are", () => {
     expect(nav.textContent).not.toContain("Admin");
   });
 
+  test("a guest is not offered Downloads, whose endpoints are admin-only", async () => {
+    let asked = false;
+    server.use(
+      http.get("/api/auth/me", () => HttpResponse.json({ ...TEST_USER, role: "user" })),
+      http.get("/api/queue", () => {
+        asked = true;
+        return HttpResponse.json([]);
+      }),
+    );
+    setViewportWidth(1280);
+    renderApp("/library");
+
+    const nav = await screen.findByRole("navigation", { name: "Primary" });
+
+    await waitFor(() => expect(nav.textContent).toContain("Guest"));
+    expect(nav.querySelector('a[href="/downloads"]')).toBeNull();
+    // And the badge behind it is not fetched either: a 403 on every screen to
+    // decide the number on an entry nobody can see.
+    expect(asked).toBe(false);
+  });
+
   test("the rail keeps the identity for readers after the pixels are gone", async () => {
     setViewportWidth(1279);
     renderApp("/library");

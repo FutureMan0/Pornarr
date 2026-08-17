@@ -266,13 +266,28 @@ async def seed(session: AsyncSession, library: Path) -> dict[str, int]:
         )
     counts["resuming"] = 5
 
+    # Named rather than derived. `title.split(" ")[0] + " — the good bit"` turned
+    # "The Long Way" into "The — the good bit", and eight clips whose names all
+    # end the same way tell a reader nothing about which one to watch — which is
+    # the one thing a shorts feed is for.
+    clip_names = (
+        "Opening minute",
+        "The rooftop",
+        "Second act",
+        "Kitchen scene",
+        "After the rain",
+        "The long take",
+        "Last five minutes",
+        "Closing shot",
+    )
+
     shorts = 0
     for index, item in enumerate(media[:8]):
         start = 300 + index * 90
         session.add(
             Short(
                 media_id=item.id,
-                title=f"{item.title.split(' ')[0]} — the good bit",
+                title=clip_names[index],
                 start_seconds=start,
                 end_seconds=start + 45 + index * 5,
                 source=ShortSource.MARKER if index % 2 else ShortSource.HOTSPOT,

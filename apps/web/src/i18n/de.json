@@ -522,7 +522,22 @@
     "addTag": "Korrigierten Tag hinzufügen",
     "file": "Datei",
     "path": "Pfad",
-    "technical": "Technische Informationen"
+    "technical": "Technische Informationen",
+    "performers": "Mitwirkende",
+    "about": "Über",
+    "studio": "Studio",
+    "released": "Erschienen",
+    "runtime": "Laufzeit",
+    "quality": "Qualität",
+    "size": "Größe",
+    "added": "Hinzugefügt",
+    "pathHidden": "Dateipfad von der Besitzerin verborgen",
+    "scenes": "Szenenmarken",
+    "noScenes": "Noch keine Szenen erkannt.",
+    "resume": "Fortsetzen bei {{time}}",
+    "seeAll": "Alle ansehen →",
+    "relatedFrom": "nach Tags, Studio und Mitwirkenden",
+    "sceneLabel": "Szene {{index}}"
   },
   "errors": {
     "INVALID_CREDENTIALS": "Benutzername und Passwort passen nicht zusammen.",
@@ -619,8 +634,14 @@
       "at": "bei {{time}}",
       "upNext": "Als Nächstes",
       "queueEmpty": "Sonst ist noch nichts im Feed.",
-      "aboutTitle": "Bewertung und Kommentare gehören zum ganzen Titel, nicht zu diesem Clip."
-    }
+      "aboutTitle": "Bewertung und Kommentare gehören zum ganzen Titel, nicht zu diesem Clip.",
+      "announce": "Clip {{index}} von {{total}}: {{title}}"
+    },
+    "save": "Merken",
+    "saved": "Gemerkt",
+    "browseAll": "Alle ansehen →",
+    "backToFeed": "← Zurück zum Feed",
+    "emptyHint": "Clips entstehen aus viel gesehenen Stellen und Szenenmarken — sie erscheinen, sobald im Haushalt etwas gesehen wurde."
   },
   "collections": {
     "title": "Sammlungen",

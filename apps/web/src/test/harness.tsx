@@ -154,3 +154,78 @@ export function setViewportWidth(width: number): void {
     value: matchMedia,
   });
 }
+
+/**
+ * jsdom has no IntersectionObserver and no `scrollIntoView`.
+ *
+ * The shorts feed uses both: the observer to name the pane on screen, and
+ * `scrollIntoView` to move between them. Rather than assert against a fake
+ * that pretends to observe, the stub hands back a `notify` — a test says which
+ * pane is in view, which is what a real scroll would have caused anyway.
+ */
+export interface ObserverHarness {
+  /** Report that the pane at this index is now on screen. */
+  readonly notify: (index: number) => void;
+  /** Indexes `scrollIntoView` was called on, oldest first. */
+  readonly scrolledTo: readonly number[];
+  readonly restore: () => void;
+}
+
+export function stubIntersectionObserver(): ObserverHarness {
+  const callbacks: IntersectionObserverCallback[] = [];
+  const observed: Element[] = [];
+  const scrolledTo: number[] = [];
+
+  class Stub implements IntersectionObserver {
+    readonly root = null;
+    readonly rootMargin = "";
+    readonly thresholds: readonly number[] = [];
+
+    constructor(callback: IntersectionObserverCallback) {
+      callbacks.push(callback);
+    }
+    observe(target: Element): void {
+      observed.push(target);
+    }
+    unobserve(): void {}
+    disconnect(): void {}
+    takeRecords(): IntersectionObserverEntry[] {
+      return [];
+    }
+  }
+
+  const previousObserver = globalThis.IntersectionObserver;
+  const previousScroll = Element.prototype.scrollIntoView;
+
+  Object.defineProperty(globalThis, "IntersectionObserver", {
+    configurable: true,
+    writable: true,
+    value: Stub,
+  });
+  Element.prototype.scrollIntoView = function scrollIntoView(this: Element): void {
+    const index = Number((this as HTMLElement).dataset?.index ?? "-1");
+    if (index >= 0) scrolledTo.push(index);
+  };
+
+  return {
+    notify: (index) => {
+      const target = observed.find(
+        (element) => (element as HTMLElement).dataset.index === String(index),
+      );
+      if (target === undefined) return;
+      const entry = { isIntersecting: true, target } as unknown as IntersectionObserverEntry;
+      for (const callback of callbacks) {
+        callback([entry], {} as IntersectionObserver);
+      }
+    },
+    scrolledTo,
+    restore: () => {
+      Object.defineProperty(globalThis, "IntersectionObserver", {
+        configurable: true,
+        writable: true,
+        value: previousObserver,
+      });
+      Element.prototype.scrollIntoView = previousScroll;
+    },
+  };
+}
