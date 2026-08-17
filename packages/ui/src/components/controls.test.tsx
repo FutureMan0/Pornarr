@@ -158,12 +158,7 @@ describe("Input", () => {
   });
 
   test("a leading glyph is decoration, never the field's name", () => {
-    render(
-      <Input
-        aria-label="Search"
-        leading={<svg data-testid="glyph" aria-hidden="true" />}
-      />,
-    );
+    render(<Input aria-label="Search" leading={<svg data-testid="glyph" aria-hidden="true" />} />);
 
     // A field that needs a picture to say what it is has a labelling problem
     // the picture will not fix, so the glyph is hidden and the label stands.
