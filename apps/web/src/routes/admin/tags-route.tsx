@@ -225,7 +225,9 @@ export function TagsRoute(): JSX.Element {
           {query.trim() === "" ? t("tags.empty") : t("tags.noMatches")}
         </p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="min-w-0 overflow-x-auto">
+          {/* `min-w-0` on the wrapper, not just here: without it the wrapper
+              stretches to the table and its own overflow never engages. */}
           <table className="w-full min-w-[36rem] text-sm">
             <thead className="text-left text-2xs uppercase tracking-[0.08em] text-ink-muted">
               <tr>

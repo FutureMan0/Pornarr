@@ -52,7 +52,9 @@ export function ConnectionPip({ state }: ConnectionPipProps): JSX.Element {
   return (
     <span className={`flex items-center gap-2 px-1 text-2xs ${appearance.text}`}>
       <span className={`size-[7px] flex-none rounded-full ${appearance.dot}`} aria-hidden="true" />
-      {t(appearance.labelKey)}
+      {/* The word carries the state — DESIGN.md forbids colour alone — so on a
+          phone it is hidden visually rather than removed. */}
+      <span className="sr-only sm:not-sr-only">{t(appearance.labelKey)}</span>
     </span>
   );
 }

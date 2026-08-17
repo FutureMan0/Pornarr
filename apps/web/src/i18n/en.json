@@ -719,7 +719,9 @@
     "activity": "Activity",
     "activityEmpty": "Nothing has happened yet.",
     "openQueue": "Queue →",
-    "storageNone": "No library folder yet"
+    "storageNone": "No library folder yet",
+    "recentlyAdded": "Recently added",
+    "openLibrary": "Open library →"
   },
   "moderation": {
     "title": "Ratings & comments",

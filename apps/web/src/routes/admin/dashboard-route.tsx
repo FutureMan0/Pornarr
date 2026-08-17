@@ -15,6 +15,7 @@
  * history, and only one of them would be the one an administrator is
  * accountable for.
  */
+import { MediaTile } from "@pornarr/ui";
 import { useQuery } from "@tanstack/react-query";
 import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,7 +24,12 @@ import { Link } from "react-router-dom";
 import { Numeric, useFormat } from "../../i18n/format";
 import { getApiClient } from "../../lib/api";
 import { apiFailure } from "../../lib/api-error";
+import { tileBlur, useArtVisible } from "../../lib/art-visibility";
+import { formatDuration, seedFrom } from "../../lib/format";
 import { usePageTitle } from "../../shell/page-title";
+
+/** How many of the newest titles the row shows. */
+const RECENT_LIMIT = 5;
 
 export function DashboardRoute(): JSX.Element {
   const { t } = useTranslation();
@@ -35,6 +41,18 @@ export function DashboardRoute(): JSX.Element {
       const { data, error, response } = await getApiClient().GET("/api/admin/overview");
       if (!data || error) throw apiFailure(error, response);
       return data;
+    },
+  });
+
+  const recent = useQuery({
+    queryKey: ["library", "recent"],
+    queryFn: async () => {
+      // The library endpoint already orders by most recently touched, so the
+      // first page is the answer; a separate "recent" endpoint would be a
+      // second ordering to keep in step with this one.
+      const response = await fetch(`/api/library?limit=${RECENT_LIMIT}`);
+      if (!response.ok) throw new Error();
+      return (await response.json()) as { items: RecentItem[] };
     },
   });
 
@@ -105,6 +123,26 @@ export function DashboardRoute(): JSX.Element {
           {t("dashboard.guestsHint")}
         </Card>
       </ul>
+
+      {recent.data === undefined || recent.data.items.length === 0 ? null : (
+        <section aria-labelledby="recent-heading" className="flex flex-col gap-3">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 id="recent-heading" className="text-sm text-ink">
+              {t("dashboard.recentlyAdded")}
+            </h2>
+            <Link to="/library" className="text-2xs text-ink-muted underline hover:text-ink">
+              {t("dashboard.openLibrary")}
+            </Link>
+          </div>
+          <ul className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-3">
+            {recent.data.items.map((item) => (
+              <li key={item.id}>
+                <RecentTile item={item} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <section aria-labelledby="health-heading" className="flex flex-col gap-3">
@@ -220,5 +258,52 @@ function Bar({
         <span className="block h-full bg-[var(--primary)]" style={{ width: `${percent}%` }} />
       </span>
     </li>
+  );
+}
+
+interface RecentItem {
+  readonly id: string;
+  readonly title: string;
+  readonly studio: string | null;
+  readonly duration_seconds: number | null;
+  readonly quality: string | null;
+  readonly resolution: string | null;
+  readonly rating: number | null;
+  readonly rating_count: number;
+  readonly tag_count: number;
+  readonly comment_count: number;
+}
+
+/**
+ * One newly added title. The same tile the library uses, and the same artwork
+ * control — a dashboard that ignores "art hidden" would reveal on the one
+ * screen most likely to be open when somebody walks past.
+ */
+function RecentTile({ item }: { readonly item: RecentItem }): JSX.Element {
+  const { t } = useTranslation();
+  const artVisible = useArtVisible();
+
+  return (
+    <MediaTile
+      title={item.title}
+      meta={item.studio ?? undefined}
+      resolution={item.quality ?? item.resolution ?? undefined}
+      duration={item.duration_seconds === null ? undefined : formatDuration(item.duration_seconds)}
+      rating={item.rating}
+      ratingLabel={
+        item.rating === null
+          ? t("library.rating.none")
+          : t("library.rating.value", { value: item.rating, count: item.rating_count })
+      }
+      tagCount={item.tag_count}
+      commentCount={item.comment_count}
+      seed={seedFrom(item.id)}
+      blur={tileBlur(artVisible)}
+      action={(content) => (
+        <Link to={`/library/${item.id}`} className="block rounded-md">
+          {content}
+        </Link>
+      )}
+    />
   );
 }

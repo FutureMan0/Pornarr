@@ -73,7 +73,7 @@ export function TopBar({
   };
 
   return (
-    <header className="sticky top-0 z-[var(--z-sticky)] flex items-center gap-4 border-b border-border bg-surface-2 px-4 py-3">
+    <header className="sticky top-0 z-[var(--z-sticky)] flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-surface-2 px-4 py-3">
       {layout === "drawer" ? (
         <div ref={triggerRef} className="contents">
           <button
@@ -94,7 +94,7 @@ export function TopBar({
           does there is nothing to render, and rendering the product name here
           instead would give every screen the same heading. */}
       {page === null ? null : (
-        <div className="flex min-w-[10.5rem] flex-none flex-col gap-px">
+        <div className="flex min-w-0 flex-none flex-col gap-px sm:min-w-[10.5rem]">
           <h1 className="text-lg leading-tight tracking-[-0.02em] text-ink">{page.title}</h1>
           {page.subtitle === undefined ? null : (
             <span className="text-2xs text-ink-muted">{page.subtitle}</span>
@@ -102,13 +102,14 @@ export function TopBar({
         </div>
       )}
 
-      {/* The element, not the role: `<search>` carries it natively. */}
-      <search className="min-w-0 max-w-[26rem] flex-1">
+      {/* Wraps to its own line on a phone rather than squeezing every control
+          into one row. Nothing is hidden at any width: a control that vanishes
+          below a breakpoint is a control somebody cannot find. */}
+      <search className="order-last w-full min-w-0 basis-full sm:order-none sm:w-auto sm:max-w-[26rem] sm:flex-1 sm:basis-auto">
         <form ref={searchFormRef} onSubmit={onSearchSubmit} className="relative">
           <label className="visually-hidden" htmlFor="global-search">
             {t("search.label")}
           </label>
-          <SearchIcon />
           <Input
             id="global-search"
             name="q"
@@ -116,12 +117,12 @@ export function TopBar({
             value={query}
             placeholder={t("search.placeholder")}
             onChange={(event) => setQuery(event.target.value)}
-            className="pl-8"
+            leading={<SearchIcon />}
           />
         </form>
       </search>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
         {/* Not a decorative eye: every tile in the application is blurred until
             this is pressed. The label states the current state rather than the
             action, which is what the design shows and what a screen reader
@@ -133,7 +134,13 @@ export function TopBar({
           className="flex items-center gap-2 rounded-md border border-border-control px-2 py-1 text-xs text-ink-muted transition-colors duration-[var(--duration-fast)] ease-out hover:bg-surface-3 hover:text-ink"
         >
           <EyeIcon open={artVisible} />
-          {artVisible ? t("artwork.shown") : t("artwork.hidden")}
+          {/* One element, not two: the words are hidden visually on a phone
+              and shown from `sm` up, while the accessible name is the same at
+              every width. Two spans toggled by breakpoint would put the label
+              in the accessibility tree twice wherever CSS has not loaded. */}
+          <span className="sr-only sm:not-sr-only">
+            {artVisible ? t("artwork.shown") : t("artwork.hidden")}
+          </span>
         </button>
 
         <StatusCluster />
@@ -186,7 +193,7 @@ function SearchIcon(): JSX.Element {
       viewBox="0 0 16 16"
       aria-hidden="true"
       focusable="false"
-      className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ink-muted"
+      className="size-3.5"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.5"

@@ -179,6 +179,9 @@ export function SearchRoute() {
       {/* The sidebar beside the results, as the design lays it out; stacked
           below the breakpoint, where a 15rem column would leave the table
           nothing to be wide in. */}
+      {/* `min-w-0` on the children, not just `minmax(0,1fr)` on the track: a
+          grid item defaults to `min-width: auto`, so the results table would
+          widen the column past the viewport however the track is declared. */}
       <div className="grid gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
         <FacetSidebar
           facets={facets.data}
@@ -186,7 +189,9 @@ export function SearchRoute() {
           onToggle={toggleFacet}
           onClearAll={clearFacets}
         />
-        <LocalResults query={deferredQuery} search={localSearch} facets={facets.data} />
+        <div className="min-w-0">
+          <LocalResults query={deferredQuery} search={localSearch} facets={facets.data} />
+        </div>
       </div>
 
       <ExternalResults
@@ -243,7 +248,7 @@ function LocalResults({
       ) : search.data?.items.length === 0 ? (
         <p className="text-sm text-ink-muted">{t("search.local.empty")}</p>
       ) : (
-        <div className="overflow-x-auto border border-border">
+        <div className="min-w-0 overflow-x-auto border border-border">
           <table className="w-full min-w-[44rem] text-sm">
             <thead className="bg-surface-2 text-left text-xs text-ink-muted">
               <tr>
@@ -322,7 +327,9 @@ function ExternalResults({
       ) : (
         <>
           <IndexerStatus statuses={search.data?.statuses ?? {}} names={names} />
-          <div className="overflow-x-auto border border-border">
+          {/* `min-w-0`: without it the wrapper stretches to the table and its
+              own overflow never engages. */}
+          <div className="min-w-0 overflow-x-auto border border-border">
             <table className="w-full min-w-[68rem] text-sm">
               <thead className="bg-surface-2 text-left text-xs text-ink-muted">
                 <tr>

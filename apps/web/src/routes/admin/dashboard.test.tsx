@@ -42,11 +42,30 @@ const OVERVIEW = {
   last_scan_at: "2026-08-16T20:00:00Z",
 };
 
-function stub(overview: object = OVERVIEW): void {
+const RECENT = {
+  id: "m-1",
+  title: "Aurora 214",
+  studio: "Northwind",
+  duration_seconds: 1445,
+  quality: "2160p",
+  resolution: "3840x2160",
+  rating: 4.5,
+  rating_count: 12,
+  tag_count: 9,
+  comment_count: 12,
+};
+
+function stub(overview: object = OVERVIEW, recent: object[] = [RECENT]): URL[] {
+  const libraryCalls: URL[] = [];
   server.use(
     http.get("/api/admin/overview", () => HttpResponse.json(overview)),
     http.get("/api/admin/audit", () => HttpResponse.json([])),
+    http.get("/api/library", ({ request }) => {
+      libraryCalls.push(new URL(request.url));
+      return HttpResponse.json({ items: recent, next_offset: null });
+    }),
   );
+  return libraryCalls;
 }
 
 describe("the dashboard", () => {
@@ -117,6 +136,37 @@ describe("the dashboard", () => {
     renderApp("/admin");
 
     expect(await screen.findByText("Nothing has happened yet.")).toBeTruthy();
+  });
+});
+
+describe("recently added", () => {
+  test("shows the newest titles and links into them", async () => {
+    stub();
+    renderApp("/admin");
+
+    const link = await screen.findByRole("link", { name: /Aurora 214/ });
+
+    expect(link.getAttribute("href")).toBe("/library/m-1");
+  });
+
+  test("asks the library rather than a second ordering of its own", async () => {
+    const calls = stub();
+    renderApp("/admin");
+
+    await screen.findByRole("link", { name: /Aurora 214/ });
+
+    // The library endpoint already orders by most recently touched. A separate
+    // "recent" endpoint would be a second ordering to keep in step with it.
+    await waitFor(() => expect(calls[0]?.searchParams.get("limit")).toBe("5"));
+  });
+
+  test("an empty library shows no row at all", async () => {
+    stub(OVERVIEW, []);
+    renderApp("/admin");
+
+    await screen.findByText("Metadata matched");
+
+    expect(screen.queryByText("Recently added")).toBeNull();
   });
 });
 

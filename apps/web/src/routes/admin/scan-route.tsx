@@ -143,7 +143,7 @@ export function ScanRoute(): JSX.Element {
 
   return (
     <div className="grid gap-6 xl:grid-cols-[24rem_minmax(0,1fr)]">
-      <div className="flex flex-col gap-6">
+      <div className="flex min-w-0 flex-col gap-6">
         <section aria-labelledby="folders-heading" className="flex flex-col gap-3">
           <h2 id="folders-heading" className="text-sm text-ink">
             {t("scan.folders")}
@@ -253,7 +253,7 @@ export function ScanRoute(): JSX.Element {
         )}
       </div>
 
-      <section aria-labelledby="log-heading" className="flex flex-col gap-3">
+      <section aria-labelledby="log-heading" className="flex min-w-0 flex-col gap-3">
         <div className="flex items-baseline justify-between gap-4">
           <h2 id="log-heading" className="text-sm text-ink">
             {t("scan.log")}
@@ -269,7 +269,7 @@ export function ScanRoute(): JSX.Element {
             // Polite and scoped to the log: a scan emits a line per file, and
             // an assertive region would talk over everything else on the page.
             aria-live="polite"
-            className="max-h-[32rem] overflow-y-auto rounded-md bg-surface-2 p-3 font-mono text-2xs"
+            className="max-h-[32rem] overflow-y-auto break-all rounded-md bg-surface-2 p-3 font-mono text-2xs"
           >
             {log.map((line) => (
               <li

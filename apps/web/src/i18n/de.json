@@ -719,7 +719,9 @@
     "activity": "Aktivität",
     "activityEmpty": "Bisher ist nichts passiert.",
     "openQueue": "Warteschlange →",
-    "storageNone": "Noch kein Bibliotheksordner"
+    "storageNone": "Noch kein Bibliotheksordner",
+    "recentlyAdded": "Zuletzt hinzugefügt",
+    "openLibrary": "Bibliothek öffnen →"
   },
   "moderation": {
     "title": "Bewertungen & Kommentare",
