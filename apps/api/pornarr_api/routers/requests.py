@@ -326,6 +326,8 @@ async def list_requests(
     status_code=201,
     responses={
         **_AUTHENTICATION_ERRORS,
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
         409: {"model": ErrorResponse},
         422: {"model": ErrorResponse},
     },
@@ -343,11 +345,20 @@ async def create_request(
         if active_count is not None and active_count >= maximum:
             raise RequestQuotaError("The active request quota has been reached.")
     runtime_settings = await get_runtime_settings(session, http_request.app.state.settings)
+    # Only an explicitly named target is recorded. Leaving it null keeps the
+    # shared pool the destination on a server that never turned private
+    # libraries on, which is where every request has landed so far.
+    target_owner_id = (
+        await resolve_target_owner(session, user, payload.target_owner_id)
+        if payload.target_owner_id is not None
+        else None
+    )
     return await _create_request(
         payload,
         user,
         session,
         request_search_max_age_days=runtime_settings.request_search_max_age_days,
+        target_owner_id=target_owner_id,
     )
 
 
@@ -357,11 +368,13 @@ async def _create_request(
     session: AsyncSession,
     *,
     request_search_max_age_days: int | None = None,
+    target_owner_id: UUID | None = None,
 ) -> RequestResponse:
     status = RequestStatus.QUEUED if payload.selected_release_guid else RequestStatus.SEARCHING
     now = datetime.now(UTC)
     request = Request(
         user_id=user.id,
+        target_owner_id=target_owner_id,
         query=payload.query,
         selected_release_guid=payload.selected_release_guid,
         status=status,

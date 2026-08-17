@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from datetime import timedelta
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -332,10 +332,56 @@ async def test_cancellation_is_propagated_to_the_download_client(app, client) ->
     ]
 
 
+async def test_only_an_admin_can_aim_a_request_at_another_library(app, client) -> None:
+    alice = await create_user(app, username="alice")
+    bob = await create_user(app, username="bob")
+    root = await create_user(app, username="root", role=UserRole.ADMIN)
+
+    await login(client, alice.username, "correct horse battery staple")
+    refused = await client.post(
+        "/api/requests",
+        json={"query": "For bob", "target_owner_id": str(bob.id)},
+        headers=csrf_headers(client),
+    )
+    own = await client.post(
+        "/api/requests",
+        json={"query": "For me", "target_owner_id": str(alice.id)},
+        headers=csrf_headers(client),
+    )
+    pooled = await client.post(
+        "/api/requests", json={"query": "For the house"}, headers=csrf_headers(client)
+    )
+    await login(client, root.username, "correct horse battery staple")
+    aimed = await client.post(
+        "/api/requests",
+        json={"query": "For bob", "target_owner_id": str(bob.id)},
+        headers=csrf_headers(client),
+    )
+    unknown = await client.post(
+        "/api/requests",
+        json={"query": "For nobody", "target_owner_id": str(uuid4())},
+        headers=csrf_headers(client),
+    )
+
+    assert refused.status_code == 403
+    assert refused.json() == {"code": "FORBIDDEN", "status": 403, "context": {}}
+    assert unknown.status_code == 404
+    async with AsyncSession(app.state.engine) as session:
+        stored = [
+            await session.get(Request, UUID(response.json()["id"]))
+            for response in (own, pooled, aimed)
+        ]
+    assert [request.target_owner_id for request in stored if request is not None] == [
+        alice.id,
+        None,
+        bob.id,
+    ]
+
+
 def test_request_contract_declares_structured_errors(app) -> None:
     paths = app.openapi()["paths"]
 
-    assert {"401", "409", "422"} <= paths["/api/requests"]["post"]["responses"].keys()
+    assert {"401", "403", "404", "409", "422"} <= paths["/api/requests"]["post"]["responses"].keys()
     assert {"401", "404", "422", "502"} <= paths["/api/requests/{request_id}/priority"]["patch"][
         "responses"
     ].keys()

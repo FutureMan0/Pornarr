@@ -20,8 +20,10 @@ from pornarr_api.auth import database_session, require_role
 from pornarr_core.library_placement import PlacementMethod, place_file
 from pornarr_db.audit import write_audit
 from pornarr_db.metadata_corrections import store_metadata_correction
+from pornarr_db.models.download import ImportTrigger
 from pornarr_db.models.media import Media, MediaFile
 from pornarr_db.models.quarantine import QuarantineItem
+from pornarr_db.models.request import Request as RequestRecord
 from pornarr_db.models.user import User, UserRole
 from pornarr_shared.errors import PornarrError
 
@@ -194,7 +196,11 @@ async def _approve_item(
         media = Media(
             title=title,
             normalized_title=title.casefold(),
-            owner_id=payload.target_owner_id,
+            owner_id=(
+                payload.target_owner_id
+                if "target_owner_id" in payload.model_fields_set
+                else await _requested_target_owner(session, item)
+            ),
             studio=studio,
             release_date=release_date,
             confidence=_metadata_float(metadata, "confidence"),
@@ -231,6 +237,21 @@ async def _approve_item(
     except Exception:
         await asyncio.to_thread(placed.path.unlink, missing_ok=True)
         raise
+
+
+async def _requested_target_owner(session: AsyncSession, item: QuarantineItem) -> UUID | None:
+    """Whose library the request behind this file aimed at, if it came from one.
+
+    The path is the only identity a quarantined file keeps: the trigger records
+    the completed download it was staged from, and the request records the job
+    it grabbed. Without this the target chosen at request time would be lost the
+    moment an import needed review.
+    """
+    return await session.scalar(
+        select(RequestRecord.target_owner_id)
+        .join(ImportTrigger, ImportTrigger.download_job_id == RequestRecord.download_job_id)
+        .where(ImportTrigger.source_path == item.original_path)
+    )
 
 
 async def _item_or_404(session: AsyncSession, item_id: UUID) -> QuarantineItem:
