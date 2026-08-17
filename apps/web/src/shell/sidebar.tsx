@@ -34,6 +34,13 @@ export interface NavItem {
 export const NAV_ITEMS = [
   { id: "library", path: "/library" },
   { id: "requests", path: "/requests" },
+  // Search is a destination, not only the field in the top bar. A field is a
+  // shortcut for someone who already knows they want to search; it is not how
+  // the screen is discovered, and until it was listed here `/search` could be
+  // reached only by typing or by URL. Third in the list rather than first
+  // because `library-route.tsx` and `route-errors.tsx` read the first two
+  // entries by position.
+  { id: "search", path: "/search" },
   { id: "monitors", path: "/monitors" },
   { id: "recommendations", path: "/recommendations" },
   { id: "downloads", path: "/downloads" },
@@ -256,6 +263,12 @@ const NAV_ICON_PATHS: Readonly<Record<string, JSX.Element>> = {
     <>
       <circle cx="8" cy="8" r="6" />
       <path d="M8 5.5v5M5.5 8h5" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="7" cy="7" r="4.5" />
+      <path d="m10.25 10.25 3.25 3.25" />
     </>
   ),
   monitors: (

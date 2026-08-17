@@ -57,7 +57,12 @@
 .menu {
   position: absolute;
   top: calc(100% + var(--space-1));
-  left: 0;
+  /* Anchored to the trigger's end edge, not its start. The surface is wider
+     than the trigger, so a start-anchored menu grows outward — and a menu
+     button lives at the end of a bar, where outward is off the screen. At
+     1440px the account menu took the document to 1539px wide this way. Logical
+     properties so a right-to-left interface anchors to its own end edge. */
+  inset-inline-end: 0;
   z-index: var(--z-dropdown);
   display: flex;
   flex-direction: column;
