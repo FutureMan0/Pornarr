@@ -53,10 +53,13 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
             nullable=False,
         ),
+        # A constraint, not a unique index. `unique=True` on the model's column
+        # is a UniqueConstraint to SQLAlchemy, and `alembic check` reports the
+        # difference as drift — the two are equivalent in PostgreSQL and not
+        # equivalent to the autogenerate comparison.
+        sa.UniqueConstraint("token_hash", name=op.f("uq_invites_token_hash")),
     )
-    op.create_index(op.f("uq_invites_token_hash"), "invites", ["token_hash"], unique=True)
 
 
 def downgrade() -> None:
-    op.drop_index(op.f("uq_invites_token_hash"), table_name="invites")
     op.drop_table("invites")

@@ -161,7 +161,7 @@ describe("Input", () => {
     render(
       <Input
         aria-label="Search"
-        leading={<svg data-testid="glyph" role="none" aria-hidden="true" />}
+        leading={<svg data-testid="glyph" aria-hidden="true" />}
       />,
     );
 
