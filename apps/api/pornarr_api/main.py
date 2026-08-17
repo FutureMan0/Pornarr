@@ -30,6 +30,7 @@ from pornarr_api.routers.admin_performance import router as admin_performance_ro
 from pornarr_api.routers.admin_quality import router as admin_quality_router
 from pornarr_api.routers.admin_quarantine import router as admin_quarantine_router
 from pornarr_api.routers.admin_settings import router as admin_settings_router
+from pornarr_api.routers.admin_tags import router as admin_tags_router
 from pornarr_api.routers.auth import router as auth_router
 from pornarr_api.routers.auth_oidc import router as auth_oidc_router
 from pornarr_api.routers.collections import router as collections_router
@@ -96,6 +97,7 @@ api_router.include_router(admin_audit_router)
 api_router.include_router(admin_indexers_router)
 api_router.include_router(admin_library_router)
 api_router.include_router(admin_settings_router)
+api_router.include_router(admin_tags_router)
 api_router.include_router(admin_comments_router)
 api_router.include_router(admin_shorts_router)
 api_router.include_router(events_router)

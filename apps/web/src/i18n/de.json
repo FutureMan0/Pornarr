@@ -191,6 +191,7 @@
     "admin": "Übersicht",
     "moderation": "Bewertungen",
     "scan": "Scannen",
+    "tags": "Tags",
     "primary": "Hauptnavigation",
     "navigation": "Navigation",
     "close": "Schließen",
@@ -842,5 +843,31 @@
     "auditDaysHint": "Tage an Administratoraktionen",
     "eventDays": "Sehereignisse behalten",
     "eventDaysHint": "Tage an Verlauf, den die Empfehlung nutzen darf"
+  },
+  "tags": {
+    "title": "Tags",
+    "subtitle_one": "{{count}} Tag",
+    "subtitle_other": "{{count}} Tags",
+    "search": "Tags durchsuchen",
+    "loading": "Tags werden gelesen…",
+    "empty": "Noch keine Tags. Scans und Scraper legen sie an.",
+    "noMatches": "Kein Tag passt dazu.",
+    "selected_one": "{{count}} Tag ausgewählt",
+    "selected_other": "{{count}} Tags ausgewählt",
+    "rename": "Umbenennen",
+    "newName": "Neuer Name",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "mergeInto": "Zusammenführen in",
+    "clearSelection": "Auswahl aufheben",
+    "select": "Auswählen",
+    "selectOne": "{{name}} auswählen",
+    "column": {
+      "tag": "Tag",
+      "titles": "Titel",
+      "lastUsed": "Zuletzt genutzt"
+    },
+    "neverUsed": "nie"
   }
 }

@@ -21,6 +21,7 @@ import { DashboardRoute } from "./routes/admin/dashboard-route";
 import { ModerationRoute } from "./routes/admin/moderation-route";
 import { QuarantineReviewRoute } from "./routes/admin/quarantine/quarantine-review-route";
 import { ScanRoute } from "./routes/admin/scan-route";
+import { TagsRoute } from "./routes/admin/tags-route";
 import { CollectionDetailRoute, CollectionsRoute } from "./routes/collections/collections-route";
 import { ContinueRoute } from "./routes/continue/continue-route";
 import { FeedRoute } from "./routes/feed/feed-route";
@@ -64,6 +65,7 @@ const BUILT = new Set([
   "admin",
   "moderation",
   "scan",
+  "tags",
   "feed",
   "continue",
   "library",
@@ -92,6 +94,7 @@ export const appRoutes: RouteObject[] = [
               { path: "admin/quarantine", element: <QuarantineReviewRoute /> },
               { path: "admin/moderation", element: <ModerationRoute /> },
               { path: "admin/scan", element: <ScanRoute /> },
+              { path: "admin/tags", element: <TagsRoute /> },
               { path: "settings", element: <SettingsRoute /> },
               { path: "settings/quality", element: <QualityProfilesRoute /> },
               { path: "search", element: <SearchRoute /> },

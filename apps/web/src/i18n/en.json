@@ -191,6 +191,7 @@
     "admin": "Dashboard",
     "moderation": "Ratings & comments",
     "scan": "Scan & import",
+    "tags": "Tags",
     "primary": "Primary",
     "navigation": "Navigation",
     "close": "Close",
@@ -842,5 +843,31 @@
     "auditDaysHint": "Days of administrator actions to retain",
     "eventDays": "Keep watch events",
     "eventDaysHint": "Days of viewing history the recommender may use"
+  },
+  "tags": {
+    "title": "Tags",
+    "subtitle_one": "{{count}} tag",
+    "subtitle_other": "{{count}} tags",
+    "search": "Search tags",
+    "loading": "Reading the tags…",
+    "empty": "No tags yet. Scans and scrapers create them.",
+    "noMatches": "No tag matches that.",
+    "selected_one": "{{count}} tag selected",
+    "selected_other": "{{count}} tags selected",
+    "rename": "Rename",
+    "newName": "New name",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "mergeInto": "Merge into",
+    "clearSelection": "Clear selection",
+    "select": "Select",
+    "selectOne": "Select {{name}}",
+    "column": {
+      "tag": "Tag",
+      "titles": "Titles",
+      "lastUsed": "Last used"
+    },
+    "neverUsed": "never"
   }
 }
