@@ -196,6 +196,10 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
                 className={({ isActive }) =>
                   cx(
                     "text-sm",
+                    // `pa-nav` owns the leading accent bar; see utilities.css for
+                    // why it is a scaled pseudo-element keyed off aria-current
+                    // rather than a class this file toggles.
+                    "pa-nav",
                     "flex items-center gap-2 rounded-md px-2 py-2",
                     "transition-colors duration-[var(--duration-fast)] ease-out",
                     "hover:bg-surface-3 hover:text-ink",

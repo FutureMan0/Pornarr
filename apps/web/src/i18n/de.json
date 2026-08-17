@@ -303,7 +303,14 @@
         "floor_other": "Ab {{count}} Sternen",
         "unrated": "Noch nicht bewertet"
       }
-    }
+    },
+    "shortcut": "Suche",
+    "shortcutHint": "{{keys}} von überall",
+    "clear": "Suche leeren",
+    "suggestions": "Vorschläge",
+    "seeAll": "Alle Ergebnisse für „{{query}}“",
+    "noSuggestions": "Noch kein Treffer in der Bibliothek.",
+    "suggestionsBusy": "Suche…"
   },
   "account": {
     "menu": "Konto",

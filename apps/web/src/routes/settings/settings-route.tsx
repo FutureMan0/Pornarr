@@ -20,7 +20,15 @@
  * comes from `@pornarr/ui`, which owns the accent, and is per-device rather
  * than per-server — see `theme.ts` for why that is not the server's business.
  */
-import { Input, Select, THEMES, type Theme, setTheme, storedTheme } from "@pornarr/ui";
+import {
+  Input,
+  Select,
+  THEMES,
+  type Theme,
+  applyAccentFavicon,
+  setTheme,
+  storedTheme,
+} from "@pornarr/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { JSX } from "react";
 import { useState } from "react";
@@ -467,6 +475,9 @@ function Appearance(): JSX.Element {
           const next = event.target.value as Theme;
           setLocal(next);
           setTheme(next, document.documentElement, globalThis.localStorage);
+          // The tab icon is drawn from the accent, so it has to be redrawn here
+          // too — otherwise the interface changes and the browser tab does not.
+          applyAccentFavicon();
         }}
       >
         {THEMES.map((option) => (

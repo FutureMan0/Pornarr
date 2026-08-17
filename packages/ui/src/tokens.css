@@ -153,12 +153,29 @@
   --z-toast: 500;
   --z-tooltip: 600;
 
-  /* Motion conveys state only. Components never name their own durations, which
-     is what makes the reduced-motion override below impossible to opt out of. */
+  /* Components never name their own durations, which is what makes the
+     reduced-motion override below impossible to opt out of. */
   --duration-fast: 150ms;
   --duration-base: 200ms;
   --duration-slow: 250ms;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* How far something travels while arriving.
+   *
+   * Two steps, because there are two distances worth having: a surface leaving
+   * the control that opened it, and a screen settling into place. Anything
+   * further reads as a slide rather than as arriving, which is the line between
+   * polish and choreography.
+   *
+   * Named rather than written inline so the whole system's sense of movement is
+   * one edit, the same way durations are. */
+  --lift-sm: 4px;
+  --lift-md: 10px;
+
+  /* What a surface rises by under the pointer. A scale rather than a translate:
+     a card that moves leaves a gap at its old edge, and a card that grows does
+     not. Small enough that a grid does not appear to breathe. */
+  --hover-scale: 1.015;
 }
 
 /**
@@ -171,6 +188,14 @@
     --duration-fast: 1ms;
     --duration-base: 1ms;
     --duration-slow: 1ms;
+
+    /* The distances go too, not only the durations. A 1ms transition over 10px
+       is not a reduced animation, it is a jump — which is exactly the thing the
+       preference asks not to happen. Zeroing the travel means the element is
+       simply where it belongs from the first frame. */
+    --lift-sm: 0px;
+    --lift-md: 0px;
+    --hover-scale: 1;
   }
 }
 

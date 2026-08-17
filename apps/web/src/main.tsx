@@ -10,7 +10,7 @@ import "@pornarr/ui/tokens.css";
 import "@pornarr/ui/utilities.css";
 import "./styles.css";
 
-import { applyStoredTheme } from "@pornarr/ui";
+import { applyAccentFavicon, applyStoredTheme } from "@pornarr/ui";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app";
@@ -19,6 +19,10 @@ import { App } from "./app";
 // setting it from a component would render one paint in the default accent and
 // then visibly swap.
 applyStoredTheme();
+
+// After the attribute, never before: the icon is drawn from the accent's own
+// logo filter, which is only readable once the theme is on the element.
+applyAccentFavicon();
 
 const container = document.getElementById("root");
 if (container === null) {

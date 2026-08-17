@@ -17,6 +17,7 @@ import { ConnectionStatus, useConnectionState } from "../errors/connection-statu
 import { ErrorBoundary } from "../errors/error-boundary";
 import { useEventStream } from "../lib/events";
 import { PageTitleProvider } from "./page-title";
+import { useScreenKey } from "./screen-key";
 import { Sidebar, useSidebarLayout } from "./sidebar";
 import { TopBar } from "./top-bar";
 
@@ -36,6 +37,7 @@ export function AppShell(): JSX.Element {
   // so a second caller would refill twice; both the pip and the banner take the
   // answer as a prop.
   const connection = useConnectionState(status);
+  const screenKey = useScreenKey();
 
   // Growing past the drawer breakpoint with the drawer open would leave an
   // overlay on top of a sidebar that is already visible.
@@ -87,7 +89,13 @@ export function AppShell(): JSX.Element {
                 the screen down, and the navigation out of it stays usable. The
                 boundary in `app.tsx` is the one that catches everything else. */}
             <ErrorBoundary>
-              <Outlet />
+              {/* The key is what makes the screen animate: `@starting-style`
+                  fires on insertion, so arriving somewhere new has to be a new
+                  element. `useScreenKey` is careful about what counts as new —
+                  see it for why this is not `location.pathname`. */}
+              <div key={screenKey} className="pa-enter">
+                <Outlet />
+              </div>
             </ErrorBoundary>
           </main>
         </div>

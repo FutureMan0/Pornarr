@@ -36,6 +36,27 @@
   padding-left: calc(var(--space-3) + var(--space-5));
 }
 
+/* The trailing slot holds controls, so unlike `.leading` it keeps its clicks.
+   No fixed width: a keyboard hint and a clear button are different sizes, and
+   the input's padding follows whatever is actually there. */
+.trailing {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--ink-muted);
+}
+
+/* Reserving room by hand would mean guessing the slot's width. `field-sizing`
+   is not the tool either — this is a padding problem. A generous reserve is the
+   honest answer: too little and the text slides under the control. */
+.control:has(.trailing) .input {
+  padding-right: calc(var(--space-3) + var(--space-8));
+}
+
 /* The resting boundary is --border-control, the one line token that clears 3:1
    on all four surfaces. --border would look right and fail WCAG 1.4.11. */
 .input {

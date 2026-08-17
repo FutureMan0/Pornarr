@@ -3,19 +3,17 @@
  * status cluster, the account menu, and — in the drawer layout only — the
  * control that opens the navigation.
  *
- * The global form owns only navigation. The route owns fetching, filters and
- * progressive result state, so the same search address works from the shell,
- * a bookmark and a browser history entry.
+ * Search lives in `global-search.tsx`. It grew a suggestion list and a keyboard
+ * shortcut hint of its own, which is more state than a bar that is otherwise a
+ * row of buttons should be holding.
  *
  * The screen's name is a real `<h1>` here rather than a copy of one rendered by
  * the route; see `page-title.tsx` for why the heading moved with the design
  * instead of being duplicated.
  */
-import { Input, Menu } from "@pornarr/ui";
-import type { FormEvent, JSX, RefObject } from "react";
-import { useEffect, useRef, useState } from "react";
+import { Menu } from "@pornarr/ui";
+import type { JSX, RefObject } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 import { useLogout, useSession } from "../auth/session";
 import type { ConnectionState } from "../errors/connection-status";
 import { LOCALES, setLocale } from "../i18n";
@@ -23,6 +21,7 @@ import { localeName } from "../i18n/format";
 import { messageForError } from "../lib/api-error";
 import { setArtVisible, useArtVisible } from "../lib/art-visibility";
 import { ConnectionPip } from "./connection-pip";
+import { GlobalSearch } from "./global-search";
 import { usePublishedTitle } from "./page-title";
 import { DRAWER_ID, type SidebarLayout } from "./sidebar";
 import { StatusCluster } from "./status-cluster";
@@ -48,29 +47,10 @@ export function TopBar({
   triggerRef,
 }: TopBarProps): JSX.Element {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const session = useSession();
   const logout = useLogout();
-  const searchFormRef = useRef<HTMLFormElement>(null);
-  const [query, setQuery] = useState("");
   const page = usePublishedTitle();
   const artVisible = useArtVisible();
-
-  useEffect(() => {
-    const focusSearch = (event: KeyboardEvent): void => {
-      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "k") return;
-      event.preventDefault();
-      searchFormRef.current?.querySelector<HTMLInputElement>("input")?.focus();
-    };
-    window.addEventListener("keydown", focusSearch);
-    return () => window.removeEventListener("keydown", focusSearch);
-  }, []);
-
-  const onSearchSubmit = (event: FormEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    const trimmed = query.trim();
-    navigate(trimmed === "" ? "/search" : `/search?q=${encodeURIComponent(trimmed)}`);
-  };
 
   return (
     <header className="sticky top-0 z-[var(--z-sticky)] flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-surface-2 px-4 py-3">
@@ -102,25 +82,7 @@ export function TopBar({
         </div>
       )}
 
-      {/* Wraps to its own line on a phone rather than squeezing every control
-          into one row. Nothing is hidden at any width: a control that vanishes
-          below a breakpoint is a control somebody cannot find. */}
-      <search className="order-last w-full min-w-0 basis-full sm:order-none sm:w-auto sm:max-w-[26rem] sm:flex-1 sm:basis-auto">
-        <form ref={searchFormRef} onSubmit={onSearchSubmit} className="relative">
-          <label className="visually-hidden" htmlFor="global-search">
-            {t("search.label")}
-          </label>
-          <Input
-            id="global-search"
-            name="q"
-            type="search"
-            value={query}
-            placeholder={t("search.placeholder")}
-            onChange={(event) => setQuery(event.target.value)}
-            leading={<SearchIcon />}
-          />
-        </form>
-      </search>
+      <GlobalSearch />
 
       <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
         {/* Not a decorative eye: every tile in the application is blurred until
@@ -155,7 +117,11 @@ export function TopBar({
 
         {/* The override. Each language names itself, so the entry a reader needs
             is legible even when the interface currently is not. */}
+        {/* Both of these sit hard against the right edge of the window, so their
+            surfaces open leftwards. Growing rightwards from here means growing
+            into the edge. */}
         <Menu
+          align="end"
           label={t("locale.label")}
           items={LOCALES.map((locale) => ({
             id: locale,
@@ -167,6 +133,7 @@ export function TopBar({
         />
 
         <Menu
+          align="end"
           label={session.data?.username ?? t("account.menu")}
           items={[
             {
@@ -184,24 +151,6 @@ export function TopBar({
         />
       </div>
     </header>
-  );
-}
-
-function SearchIcon(): JSX.Element {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      aria-hidden="true"
-      focusable="false"
-      className="size-3.5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    >
-      <circle cx="7" cy="7" r="4.5" />
-      <path d="M10.5 10.5 14 14" />
-    </svg>
   );
 }
 

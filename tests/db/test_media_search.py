@@ -35,6 +35,58 @@ def test_relevance_search_uses_trigram_similarity_and_exact_match_boosting() -> 
     assert TRIGRAM_THRESHOLD == 0.2
 
 
+def test_a_short_query_can_match_at_all() -> None:
+    """Trigram similarity alone cannot answer two or three characters.
+
+    `%` compares whole string to whole string, so a short query against a long
+    title scores below the threshold however well it matches the beginning of it —
+    "ni" found nothing while "night" found "Nightcall 04". A suggestion list that
+    only answers complete words answers nothing anybody waits for, so a substring
+    match is OR'd alongside.
+    """
+    rendered = str(search_statement(MediaSearch(query="ni")).compile(dialect=postgresql.dialect()))
+
+    # Both clauses, joined: the fuzzy one still catches typos in a whole title.
+    assert "media.normalized_title %%" in rendered
+    assert "media.normalized_title LIKE" in rendered
+    assert " OR " in rendered
+
+
+def test_a_wildcard_in_the_query_is_not_a_wildcard() -> None:
+    """Without escaping, one `%` in the box matches the entire library."""
+    statement = search_statement(MediaSearch(query="100%"))
+    rendered = str(statement.compile(dialect=postgresql.dialect()))
+
+    # SQLAlchemy's autoescape names an escape character rather than inlining the
+    # pattern, which is what says the user's `%` is a literal.
+    assert "ESCAPE" in rendered
+
+    # The LIKE clauses bind an escaped copy of the text — `100/%`, where `/` is
+    # SQLAlchemy's escape character — while the trigram operator binds the text as
+    # typed, because `%` means nothing special to it. Both spellings present is
+    # exactly the expected shape.
+    bound = {
+        value
+        for value in statement.compile(dialect=postgresql.dialect()).params.values()
+        if isinstance(value, str)
+    }
+    assert "100/%" in bound, "the LIKE patterns must treat the user's percent as a literal"
+    assert "100%" in bound, "the trigram operator takes the text as typed"
+
+
+def test_a_title_that_starts_with_the_query_scores_higher_than_one_that_merely_contains_it() -> (
+    None
+):
+    rendered = str(
+        search_statement(MediaSearch(query="night")).compile(dialect=postgresql.dialect())
+    )
+
+    # Three terms in the relevance expression: similarity, the exact-match bonus,
+    # and the prefix bonus. The prefix bonus is the new one.
+    assert rendered.count("normalized_title LIKE") >= 2
+    assert "similarity" in rendered
+
+
 def test_search_filters_and_sorting_are_composed_in_one_statement() -> None:
     statement = search_statement(
         MediaSearch(

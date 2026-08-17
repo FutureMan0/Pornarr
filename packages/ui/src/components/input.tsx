@@ -6,11 +6,18 @@
  * is wired to it with aria-describedby, because a red border that only sighted
  * pointer users can see is not an error state.
  */
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 import { useId } from "react";
 import { cx } from "../lib/cx";
 import css from "./input.module.css";
 
+/**
+ * `ComponentPropsWithRef`, so a caller can hold the element.
+ *
+ * React 19 passes `ref` to a function component as an ordinary prop, so this
+ * needs no `forwardRef` — the ref simply travels in `...rest` onto the input. The
+ * global search field needs it to take focus on ⌘K.
+ */
 export type InputProps = {
   /** The value is being fetched or saved: announces aria-busy, blocks editing. */
   loading?: boolean;
@@ -29,12 +36,23 @@ export type InputProps = {
    * will not fix.
    */
   leading?: ReactNode;
-} & ComponentPropsWithoutRef<"input">;
+  /**
+   * The same, after the text — a keyboard hint, a clear button.
+   *
+   * Unlike `leading` this is NOT hidden and NOT click-through: the things that
+   * belong on the right of a field are usually controls, and a clear button
+   * behind `pointer-events: none` is a clear button that cannot be pressed. A
+   * caller putting decoration here is responsible for marking it `aria-hidden`
+   * itself.
+   */
+  trailing?: ReactNode;
+} & ComponentPropsWithRef<"input">;
 
 export const Input = ({
   loading = false,
   error = false,
   leading,
+  trailing,
   className,
   disabled = false,
   "aria-describedby": describedBy,
@@ -66,6 +84,7 @@ export const Input = ({
           )}
           {...rest}
         />
+        {trailing === undefined ? null : <span className={css.trailing}>{trailing}</span>}
       </div>
       {message !== undefined && (
         <p id={messageId} role="alert" className={css.message}>

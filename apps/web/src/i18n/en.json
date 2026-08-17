@@ -303,7 +303,14 @@
         "floor_other": "{{count}} stars and up",
         "unrated": "Not yet rated"
       }
-    }
+    },
+    "shortcut": "Search",
+    "shortcutHint": "Press {{keys}} from anywhere",
+    "clear": "Clear the search",
+    "suggestions": "Suggestions",
+    "seeAll": "See all results for “{{query}}”",
+    "noSuggestions": "Nothing in the library matches yet.",
+    "suggestionsBusy": "Looking…"
   },
   "account": {
     "menu": "Account",
