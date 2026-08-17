@@ -59,6 +59,7 @@ from pornarr_shared.events import publish_event
 from pornarr_shared.jobs import (
     INDEXER_QUEUE,
     INDEXER_SEARCH_JOB_NAME,
+    enqueue_once,
     indexer_search_state_key,
 )
 from pornarr_shared.metrics import measure
@@ -197,12 +198,13 @@ async def start_indexer_search(
         ),
         ex=3600,
     )
-    await request.app.state.redis.enqueue_job(
+    await enqueue_once(
+        request.app.state.job_queue,
         INDEXER_SEARCH_JOB_NAME,
         str(search_id),
         str(user.id),
         payload.q,
-        _queue_name=INDEXER_QUEUE,
+        queue=INDEXER_QUEUE,
     )
     await publish_event(
         request.app.state.redis,

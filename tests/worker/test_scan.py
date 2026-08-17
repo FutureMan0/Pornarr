@@ -94,9 +94,29 @@ async def test_scanner_skips_unchanged_files_without_marking_them_dirty(
         tracked_file = await session.scalar(select(MediaFile))
         assert tracked_file is not None
         assert tracked_file not in session.sync_session.dirty
-        assert folder not in session.sync_session.dirty
 
     assert result == {"imported": 0, "changed": 0, "missing": 0, "scanned": 1}
+
+
+async def test_scanner_records_that_it_ran_even_when_nothing_changed(
+    session_factory, tmp_path: Path
+) -> None:
+    """An empty library that never records a scan reads as "never scanned"."""
+
+    library = tmp_path / "library"
+    library.mkdir()
+
+    async with session_factory() as session:
+        folder = RootFolder(path=str(library), free_space_bytes=0)
+        session.add(folder)
+        await session.flush()
+        assert folder.last_scanned_at is None
+
+        result = await scan_root_folder(session, folder, _recorded_progress([]))
+        await session.commit()
+
+    assert result == {"imported": 0, "changed": 0, "missing": 0, "scanned": 0}
+    assert folder.last_scanned_at is not None
 
 
 async def test_scanner_marks_disappeared_files_as_missing(session_factory, tmp_path: Path) -> None:

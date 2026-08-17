@@ -102,14 +102,17 @@ async def scan_root_folder(
             media_file.is_missing = True
             result["missing"] += 1
 
-    if result["imported"] or result["changed"] or result["missing"]:
-        folder.last_scanned_at = utcnow()
+    # Stamped even when nothing changed: a clean scan of an unchanged library is
+    # still a scan, and leaving the column null would tell the operator it never
+    # ran.
+    folder.last_scanned_at = utcnow()
     return result
 
 
-async def scan(context: dict[str, Any], root_folder_id: str) -> dict[str, int]:
+async def scan(context: dict[str, Any], root_folder_id: str, run_id: str) -> dict[str, int]:
     """Run one transactional scan; ARQ retries cancellation or write races safely."""
 
+    del run_id
     async with session_scope() as session:
         folder = await session.get(RootFolder, UUID(root_folder_id))
         if folder is None or not folder.enabled:

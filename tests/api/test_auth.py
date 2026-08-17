@@ -82,6 +82,24 @@ class MemoryRedis:
         return 1
 
 
+class MemoryJobQueue:
+    """The ARQ pool surface background work is submitted through.
+
+    Deliberately separate from :class:`MemoryRedis`: in production the event
+    client is a plain ``redis.asyncio.Redis`` with no ``enqueue_job``, so a
+    double that carries both would hide every misrouted job submission.
+    """
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, tuple[object, ...], dict[str, object]]] = []
+
+    async def enqueue_job(
+        self, function: str, *args: object, **kwargs: object
+    ) -> dict[str, object]:
+        self.calls.append((function, args, kwargs))
+        return {}
+
+
 @pytest.fixture
 async def app() -> AsyncIterator[FastAPI]:
     engine = create_async_engine("sqlite+aiosqlite://")
@@ -91,6 +109,7 @@ async def app() -> AsyncIterator[FastAPI]:
     application = create_app(build_settings())
     application.state.engine = engine
     application.state.redis = MemoryRedis()
+    application.state.job_queue = MemoryJobQueue()
     yield application
     await engine.dispose()
 

@@ -6981,6 +6981,63 @@
         ]
       }
     },
+    "/api/admin/library/root-folders/{folder_id}/scan": {
+      "post": {
+        "description": "Queue a filesystem scan of one root folder so its media can enter the library.",
+        "operationId": "admin_scan_root_folder",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "folder_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Folder Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Scan Root Folder",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/admin/oidc": {
       "get": {
         "operationId": "admin_list_providers",

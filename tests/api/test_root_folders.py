@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pornarr_db.models.audit import AuditLog
 from pornarr_db.models.media import Media, MediaFile
 from pornarr_db.models.user import UserRole
 from tests.api.test_auth import create_user, csrf_headers, login
@@ -70,6 +73,86 @@ async def test_root_folder_rejects_an_unwritable_path(
         "status": 422,
         "context": {"reason": "not_readable"},
     }
+
+
+async def test_admin_can_trigger_a_scan_of_a_configured_root_folder(
+    app, client, tmp_path: Path
+) -> None:
+    app.state.settings = app.state.settings.model_copy(update={"data_path": tmp_path})
+    app.state.settings.torrents_path.mkdir()
+    root_folder = tmp_path / "library"
+    root_folder.mkdir()
+    admin = await create_user(app, role=UserRole.ADMIN)
+    await login(client, admin.username, "correct horse battery staple")
+    created = await client.post(
+        "/api/admin/library/root-folders",
+        json={"path": str(root_folder)},
+        headers=csrf_headers(client),
+    )
+
+    response = await client.post(
+        f"/api/admin/library/root-folders/{created.json()['id']}/scan",
+        headers=csrf_headers(client),
+    )
+
+    assert response.status_code == 202
+    assert response.content == b""
+    function, args, kwargs = app.state.job_queue.calls[0]
+    folder_id, run_id = args
+    assert function == "scan"
+    assert folder_id == created.json()["id"]
+    assert isinstance(run_id, str)
+    assert run_id.startswith("manual:")
+    assert kwargs["_queue_name"] == "pornarr:import"
+    async with AsyncSession(app.state.engine) as session:
+        entry = await session.scalar(
+            select(AuditLog).where(AuditLog.action == "root_folder.scanned")
+        )
+    assert entry is not None
+    assert entry.target == created.json()["id"]
+
+
+async def test_scanning_an_unknown_or_disabled_root_folder_is_refused(
+    app, client, tmp_path: Path
+) -> None:
+    app.state.settings = app.state.settings.model_copy(update={"data_path": tmp_path})
+    app.state.settings.torrents_path.mkdir()
+    root_folder = tmp_path / "library"
+    root_folder.mkdir()
+    admin = await create_user(app, role=UserRole.ADMIN)
+    await login(client, admin.username, "correct horse battery staple")
+    created = await client.post(
+        "/api/admin/library/root-folders",
+        json={"path": str(root_folder), "enabled": False},
+        headers=csrf_headers(client),
+    )
+
+    missing = await client.post(
+        f"/api/admin/library/root-folders/{uuid4()}/scan", headers=csrf_headers(client)
+    )
+    disabled = await client.post(
+        f"/api/admin/library/root-folders/{created.json()['id']}/scan",
+        headers=csrf_headers(client),
+    )
+
+    assert missing.status_code == 404
+    assert disabled.status_code == 409
+    assert disabled.json() == {"code": "ROOT_FOLDER_DISABLED", "status": 409, "context": {}}
+    assert app.state.job_queue.calls == []
+
+
+async def test_a_regular_user_cannot_trigger_a_scan(app, client, tmp_path: Path) -> None:
+    app.state.settings = app.state.settings.model_copy(update={"data_path": tmp_path})
+    app.state.settings.torrents_path.mkdir()
+    user = await create_user(app)
+    await login(client, user.username, "correct horse battery staple")
+
+    response = await client.post(
+        f"/api/admin/library/root-folders/{uuid4()}/scan", headers=csrf_headers(client)
+    )
+
+    assert response.status_code == 403
+    assert app.state.job_queue.calls == []
 
 
 async def test_root_folder_cannot_be_removed_while_it_contains_media(

@@ -208,7 +208,7 @@ async def trigger_backlog_search(
     await monitor_or_404(session, user.id, monitor_id)
     minute = datetime.now(UTC).replace(second=0, microsecond=0).isoformat()
     await enqueue_once(
-        request.app.state.redis,
+        request.app.state.job_queue,
         BACKLOG_SEARCH_JOB_NAME,
         str(monitor_id),
         f"manual:{minute}",

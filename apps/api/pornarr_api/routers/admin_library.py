@@ -4,22 +4,24 @@ from __future__ import annotations
 
 import os
 import shutil
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import database_session, require_role
+from pornarr_api.errors import ErrorResponse
 from pornarr_db.audit import write_audit
 from pornarr_db.models.media import MediaFile
 from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.models.user import User, UserRole
 from pornarr_shared.errors import PornarrError
+from pornarr_shared.jobs import IMPORT_QUEUE, SCAN_JOB_NAME, enqueue_once
 
 router = APIRouter(prefix="/admin/library", tags=["admin"])
 Admin = Annotated[User, Depends(require_role(UserRole.ADMIN))]
@@ -54,6 +56,11 @@ class RootFolderInUseError(PornarrError):
     status = 409
 
 
+class RootFolderDisabledError(PornarrError):
+    code = "ROOT_FOLDER_DISABLED"
+    status = 409
+
+
 @router.get("/root-folders", response_model=list[RootFolderResponse])
 async def list_root_folders(
     request: Request, _: Admin, session: Session
@@ -85,6 +92,36 @@ async def create_root_folder(
     await session.flush()
     write_audit(session, actor_id=user.id, action="root_folder.created", target=str(folder.id))
     return _folder_response(folder, request.app.state.settings.torrents_path, same_filesystem)
+
+
+@router.post(
+    "/root-folders/{folder_id}/scan",
+    status_code=202,
+    response_class=Response,
+    responses={404: {"model": ErrorResponse}, 409: {"model": ErrorResponse}},
+)
+async def scan_root_folder(
+    folder_id: UUID, request: Request, user: Admin, session: Session
+) -> Response:
+    """Queue a filesystem scan of one root folder so its media can enter the library."""
+
+    folder = await session.get(RootFolder, folder_id)
+    if folder is None:
+        raise HTTPException(status_code=404)
+    if not folder.enabled:
+        raise RootFolderDisabledError("The root folder is disabled.")
+    # The minute stamp is what lets an operator scan again after the previous
+    # run finished, while still collapsing an impatient double click.
+    minute = datetime.now(UTC).replace(second=0, microsecond=0).isoformat()
+    await enqueue_once(
+        request.app.state.job_queue,
+        SCAN_JOB_NAME,
+        str(folder_id),
+        f"manual:{minute}",
+        queue=IMPORT_QUEUE,
+    )
+    write_audit(session, actor_id=user.id, action="root_folder.scanned", target=str(folder_id))
+    return Response(status_code=202)
 
 
 @router.delete("/root-folders/{folder_id}", status_code=204)

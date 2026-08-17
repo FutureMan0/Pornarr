@@ -13,6 +13,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 
 import redis.asyncio as redis
+from arq.connections import RedisSettings, create_pool
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -52,6 +53,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await dispose_engine()
         raise
     app.state.redis = redis.from_url(settings.redis_url, decode_responses=True)
+    # ARQ speaks its own wire format and needs undecoded replies, so job
+    # submission gets its own pool rather than borrowing the client above.
+    app.state.job_queue = await create_pool(RedisSettings.from_dsn(settings.redis_url))
     app.state.hardware_capabilities = detect_hardware_capabilities(
         requested=settings.transcode_hwaccel
     )
@@ -73,5 +77,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # than as an error.
         await app.state.redis.aclose()
         await app.state.redis.connection_pool.disconnect()
+        await app.state.job_queue.aclose()
+        await app.state.job_queue.connection_pool.disconnect()
         await dispose_engine()
         logger.info("api stopped")
