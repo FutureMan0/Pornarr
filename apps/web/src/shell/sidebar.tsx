@@ -46,6 +46,7 @@ export const NAV_ITEMS = [
   { id: "moderation", path: "/admin/moderation", adminOnly: true },
   { id: "scan", path: "/admin/scan", adminOnly: true },
   { id: "tags", path: "/admin/tags", adminOnly: true },
+  { id: "invites", path: "/admin/invites", adminOnly: true },
   { id: "feed", path: "/feed" },
   { id: "continue", path: "/continue" },
   { id: "library", path: "/library" },

@@ -18,6 +18,7 @@ import { LoginRoute } from "./auth/login-route";
 import { RequireAuth } from "./auth/require-auth";
 import { ForbiddenRoute, NotFoundRoute } from "./errors/route-errors";
 import { DashboardRoute } from "./routes/admin/dashboard-route";
+import { InvitesRoute } from "./routes/admin/invites-route";
 import { ModerationRoute } from "./routes/admin/moderation-route";
 import { QuarantineReviewRoute } from "./routes/admin/quarantine/quarantine-review-route";
 import { ScanRoute } from "./routes/admin/scan-route";
@@ -25,6 +26,7 @@ import { TagsRoute } from "./routes/admin/tags-route";
 import { CollectionDetailRoute, CollectionsRoute } from "./routes/collections/collections-route";
 import { ContinueRoute } from "./routes/continue/continue-route";
 import { FeedRoute } from "./routes/feed/feed-route";
+import { JoinRoute } from "./routes/join/join-route";
 import { LibraryRoute } from "./routes/library/library-route";
 import { MediaDetailRoute } from "./routes/media/media-detail-route";
 import { MonitorsRoute } from "./routes/monitors/monitors-route";
@@ -66,6 +68,7 @@ const BUILT = new Set([
   "moderation",
   "scan",
   "tags",
+  "invites",
   "feed",
   "continue",
   "library",
@@ -83,6 +86,7 @@ export const appRoutes: RouteObject[] = [
     element: <SetupGate />,
     children: [
       { path: "login", element: <LoginRoute /> },
+      { path: "join/:token", element: <JoinRoute /> },
       {
         element: <RequireAuth />,
         children: [
@@ -95,6 +99,7 @@ export const appRoutes: RouteObject[] = [
               { path: "admin/moderation", element: <ModerationRoute /> },
               { path: "admin/scan", element: <ScanRoute /> },
               { path: "admin/tags", element: <TagsRoute /> },
+              { path: "admin/invites", element: <InvitesRoute /> },
               { path: "settings", element: <SettingsRoute /> },
               { path: "settings/quality", element: <QualityProfilesRoute /> },
               { path: "search", element: <SearchRoute /> },

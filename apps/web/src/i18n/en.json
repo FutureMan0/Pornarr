@@ -192,6 +192,7 @@
     "moderation": "Ratings & comments",
     "scan": "Scan & import",
     "tags": "Tags",
+    "invites": "Invitations",
     "primary": "Primary",
     "navigation": "Navigation",
     "close": "Close",
@@ -793,7 +794,8 @@
       "downloads": "Downloads",
       "housekeeping": "Housekeeping",
       "quality": "Quality profiles",
-      "paths": "Library paths"
+      "paths": "Library paths",
+      "invites": "Invitations"
     },
     "unlimited": "empty means no limit",
     "weightsNote": "The signal weights behind the feed are not editable here yet; they are read from the server's configuration.",
@@ -871,5 +873,41 @@
       "lastUsed": "Last used"
     },
     "neverUsed": "never"
+  },
+  "join": {
+    "title": "Join this server",
+    "checking": "Checking the link…",
+    "unusable": "This link no longer works.",
+    "unusableHint": "It may have expired or already been used. Ask whoever sent it for a new one.",
+    "intro": "You have been invited to a library on this network.",
+    "expires": "The link works until {{when}}.",
+    "username": "Username",
+    "usernameHint": "What you sign in with",
+    "displayName": "Display name",
+    "displayNameHint": "Optional — how you appear where names are shown",
+    "password": "Password",
+    "passwordHint": "At least {{count}} characters",
+    "tooShort": "At least {{count}} characters",
+    "enter": "Enter the library"
+  },
+  "invites": {
+    "title": "Invitations",
+    "subtitle_one": "{{count}} link waiting",
+    "subtitle_other": "{{count}} links waiting",
+    "note": "Note",
+    "noteHint": "For you, not for them — nobody joining ever sees it",
+    "create": "Create link",
+    "freshTitle": "The link",
+    "freshHint": "Shown once. Copy it now — the server keeps only a hash and cannot show it again.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "existing": "Existing invitations",
+    "loading": "Reading the invitations…",
+    "empty": "No invitations yet.",
+    "unnamed": "No note",
+    "expires": "expires {{when}}",
+    "expired": "expired",
+    "usedBy": "used by {{name}}",
+    "revoke": "Withdraw"
   }
 }

@@ -256,12 +256,28 @@ def require_role(role: UserRole) -> Callable[..., object]:
     return dependency
 
 
+def _is_invite_redemption(path: str) -> bool:
+    """`/api/invites/<token>/redeem`, and nothing else under that prefix.
+
+    Redemption is exempt for the same reason login is: there is no session to
+    protect. The caller has no account yet, and an attacker who could make a
+    victim's browser redeem a token is an attacker who already holds the token
+    and could simply redeem it themselves.
+
+    Matched on shape rather than by prefix, so a future POST under /api/invites
+    does not inherit the exemption by accident.
+    """
+    parts = path.split("/")
+    return len(parts) == 5 and parts[:3] == ["", "api", "invites"] and parts[4] == "redeem"
+
+
 async def enforce_csrf(request: Request) -> None:
     """Require a session-bound double-submit token on every unsafe API request."""
     if (
         request.method not in _UNSAFE_METHODS
         or request.url.path
         in {"/api/auth/login", "/api/setup/validate-library-path", "/api/setup/complete"}
+        or _is_invite_redemption(request.url.path)
         or request.headers.get("X-Api-Key")
     ):
         return

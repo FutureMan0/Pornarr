@@ -192,6 +192,7 @@
     "moderation": "Bewertungen",
     "scan": "Scannen",
     "tags": "Tags",
+    "invites": "Einladungen",
     "primary": "Hauptnavigation",
     "navigation": "Navigation",
     "close": "Schließen",
@@ -793,7 +794,8 @@
       "downloads": "Downloads",
       "housekeeping": "Aufräumen",
       "quality": "Qualitätsprofile",
-      "paths": "Bibliothekspfade"
+      "paths": "Bibliothekspfade",
+      "invites": "Einladungen"
     },
     "unlimited": "leer bedeutet ohne Grenze",
     "weightsNote": "Die Gewichte hinter dem Feed sind hier noch nicht änderbar; sie kommen aus der Serverkonfiguration.",
@@ -871,5 +873,41 @@
       "lastUsed": "Zuletzt genutzt"
     },
     "neverUsed": "nie"
+  },
+  "join": {
+    "title": "Diesem Server beitreten",
+    "checking": "Link wird geprüft…",
+    "unusable": "Dieser Link funktioniert nicht mehr.",
+    "unusableHint": "Er ist abgelaufen oder wurde schon benutzt. Bitte um einen neuen.",
+    "intro": "Du bist zu einer Bibliothek in diesem Netzwerk eingeladen.",
+    "expires": "Der Link gilt bis {{when}}.",
+    "username": "Benutzername",
+    "usernameHint": "Damit meldest du dich an",
+    "displayName": "Anzeigename",
+    "displayNameHint": "Optional — so erscheinst du, wo Namen gezeigt werden",
+    "password": "Passwort",
+    "passwordHint": "Mindestens {{count}} Zeichen",
+    "tooShort": "Mindestens {{count}} Zeichen",
+    "enter": "Bibliothek betreten"
+  },
+  "invites": {
+    "title": "Einladungen",
+    "subtitle_one": "{{count}} offener Link",
+    "subtitle_other": "{{count}} offene Links",
+    "note": "Notiz",
+    "noteHint": "Für dich, nicht für die eingeladene Person — sie sieht sie nie",
+    "create": "Link erstellen",
+    "freshTitle": "Der Link",
+    "freshHint": "Wird einmal gezeigt. Jetzt kopieren — der Server speichert nur einen Hash und kann ihn nicht erneut zeigen.",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "existing": "Vorhandene Einladungen",
+    "loading": "Einladungen werden gelesen…",
+    "empty": "Noch keine Einladungen.",
+    "unnamed": "Ohne Notiz",
+    "expires": "läuft {{when}} ab",
+    "expired": "abgelaufen",
+    "usedBy": "benutzt von {{name}}",
+    "revoke": "Zurückziehen"
   }
 }

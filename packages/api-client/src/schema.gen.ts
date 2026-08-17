@@ -341,6 +341,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Invites */
+        get: operations["admin_list_invites"];
+        put?: never;
+        /** Create Invite */
+        post: operations["admin_create_invite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/invites/{invite_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke Invite
+         * @description Withdraw an unused invitation.
+         *
+         *     A redeemed one is left alone: the row is the record of who joined through
+         *     which link, and deleting it would lose the fact somebody would want later.
+         */
+        delete: operations["admin_revoke_invite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/library/root-folders": {
         parameters: {
             query?: never;
@@ -1186,6 +1227,55 @@ export interface paths {
         get: operations["health_dependency_health"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invites/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Invite State
+         * @description Whether a link still works. Reachable without an account, by design.
+         *
+         *     A 404 for a bad token and a 200 for a good one already distinguish the two;
+         *     there is nothing further to hide by pretending otherwise, and returning 200
+         *     for everything would make the join form unable to say "this link has
+         *     expired" before somebody types a password into it.
+         */
+        get: operations["invites_invite_state"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invites/{token}/redeem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Redeem Invite
+         * @description Create the guest's account and spend the invitation.
+         *
+         *     The row is locked for the duration. Two people opening the same link at the
+         *     same moment would otherwise both pass the "not yet redeemed" check and both
+         *     get an account from one invitation.
+         */
+        post: operations["invites_redeem_invite"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3086,6 +3176,77 @@ export interface components {
             /** Protocol */
             protocol: string;
         };
+        /** InviteCreate */
+        InviteCreate: {
+            /** Note */
+            note?: string | null;
+            /**
+             * Valid Days
+             * @default 7
+             */
+            valid_days: number;
+        };
+        /** InviteCreated */
+        InviteCreated: {
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Note */
+            note: string | null;
+            /** Token */
+            token: string;
+        };
+        /** InviteRedeem */
+        InviteRedeem: {
+            /** Display Name */
+            display_name?: string | null;
+            /**
+             * Password
+             * Format: password
+             */
+            password: string;
+            /** Username */
+            username: string;
+        };
+        /**
+         * InviteResponse
+         * @description What an administrator sees. Never the token.
+         */
+        InviteResponse: {
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Note */
+            note: string | null;
+            /** Redeemed At */
+            redeemed_at: string | null;
+            /** Redeemed Username */
+            redeemed_username: string | null;
+        };
+        /**
+         * InviteState
+         * @description What somebody holding a link is told before they commit to anything.
+         */
+        InviteState: {
+            /** Expires At */
+            expires_at: string | null;
+            /** Valid */
+            valid: boolean;
+        };
         JsonValue: unknown;
         /**
          * LibraryHealth
@@ -3899,6 +4060,14 @@ export interface components {
             score: number;
             /** Title */
             title: string;
+        };
+        /** RedeemedResponse */
+        RedeemedResponse: {
+            /** Display Name */
+            display_name: string | null;
+            role: components["schemas"]["UserRole"];
+            /** Username */
+            username: string;
         };
         /** RelatedResponse */
         RelatedResponse: {
@@ -5310,6 +5479,88 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["IndexerResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_invites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteResponse"][];
+                };
+            };
+        };
+    };
+    admin_create_invite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_revoke_invite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invite_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -7322,6 +7573,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthReport"];
+                };
+            };
+        };
+    };
+    invites_invite_state: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invites_redeem_invite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteRedeem"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedeemedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

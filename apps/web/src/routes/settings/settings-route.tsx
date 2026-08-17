@@ -272,6 +272,15 @@ export function SettingsRoute(): JSX.Element {
         >
           {t("settings.section.paths")}
         </Link>
+        {/* The design's "Users & access". There is still no user list — this
+            server has no user-management API — but inviting somebody is the
+            half of it that exists. */}
+        <Link
+          to="/admin/invites"
+          className="rounded-md px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-3 hover:text-ink"
+        >
+          {t("settings.section.invites")}
+        </Link>
       </nav>
 
       <section aria-live="polite" className="flex max-w-[46rem] flex-col gap-6">

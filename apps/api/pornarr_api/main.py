@@ -38,6 +38,8 @@ from pornarr_api.routers.comments import admin_router as admin_comments_router
 from pornarr_api.routers.comments import router as comments_router
 from pornarr_api.routers.events import router as events_router
 from pornarr_api.routers.health import router as health_router
+from pornarr_api.routers.invites import admin_router as admin_invites_router
+from pornarr_api.routers.invites import router as invites_router
 from pornarr_api.routers.library import media_router as library_media_router
 from pornarr_api.routers.library import router as library_router
 from pornarr_api.routers.metrics import router as metrics_router
@@ -98,6 +100,8 @@ api_router.include_router(admin_indexers_router)
 api_router.include_router(admin_library_router)
 api_router.include_router(admin_settings_router)
 api_router.include_router(admin_tags_router)
+api_router.include_router(admin_invites_router)
+api_router.include_router(invites_router)
 api_router.include_router(admin_comments_router)
 api_router.include_router(admin_shorts_router)
 api_router.include_router(events_router)
