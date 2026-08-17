@@ -229,12 +229,13 @@ function Progress({
   const percent = Math.max(0, Math.min(100, Math.round(((size - remaining) / size) * 100)));
   return (
     <span className="flex items-center gap-2">
+      {/* The figure beside it is the accessible one. Giving the bar a
+          `progressbar` role as well would announce the same percentage twice
+          and put a non-interactive graphic in the tab order. */}
       <span
+        aria-hidden="true"
         className="h-1.5 w-32 overflow-hidden rounded-full bg-surface-3"
-        role="progressbar"
-        aria-valuenow={percent}
-        aria-valuemin={0}
-        aria-valuemax={100}
+        data-percent={percent}
       >
         <span className="block h-full bg-[var(--primary)]" style={{ width: `${percent}%` }} />
       </span>

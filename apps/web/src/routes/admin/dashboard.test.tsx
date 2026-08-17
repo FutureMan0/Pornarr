@@ -54,14 +54,11 @@ describe("the dashboard", () => {
     stub();
     renderApp("/admin");
 
-    const matched = await screen.findByRole("progressbar", { name: "Metadata matched" });
-
     // 3273 of 3482. The server sends counts and the total; rounding happens
     // once, here, rather than in two places that could disagree.
-    expect(matched.getAttribute("aria-valuenow")).toBe("94");
-    expect(screen.getByRole("progressbar", { name: "Tagged" }).getAttribute("aria-valuenow")).toBe(
-      "73",
-    );
+    const matched = await screen.findByText("Metadata matched");
+    expect(matched.parentElement?.textContent).toContain("94%");
+    expect(screen.getByText("Tagged").parentElement?.textContent).toContain("73%");
   });
 
   test("unmeasured storage says so instead of drawing an empty disk", async () => {
@@ -102,7 +99,7 @@ describe("the dashboard", () => {
     renderApp("/admin");
 
     expect(await screen.findByText(/Nothing in the library to measure yet/)).toBeTruthy();
-    expect(screen.queryByRole("progressbar")).toBeNull();
+    expect(screen.queryByText("Metadata matched")).toBeNull();
   });
 
   test("held-back files link to where they are dealt with", async () => {

@@ -210,13 +210,12 @@ function Bar({
           <Numeric>{percent}</Numeric>%
         </span>
       </span>
+      {/* Decorative: the row above already reads "Metadata matched 94%".
+          A `progressbar` role here would say it a second time. */}
       <span
+        aria-hidden="true"
         className="h-1.5 overflow-hidden rounded-full bg-surface-3"
-        role="progressbar"
-        aria-label={label}
-        aria-valuenow={percent}
-        aria-valuemin={0}
-        aria-valuemax={100}
+        data-percent={percent}
       >
         <span className="block h-full bg-[var(--primary)]" style={{ width: `${percent}%` }} />
       </span>

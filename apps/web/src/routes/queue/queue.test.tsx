@@ -85,9 +85,9 @@ describe("the queue", () => {
     stub([job({ remaining_bytes: 280, size_bytes: 1_000 })]);
     renderApp("/downloads");
 
-    const bar = await screen.findByRole("progressbar");
-
-    expect(bar.getAttribute("aria-valuenow")).toBe("72");
+    // The figure is the accessible one; the bar beside it is decoration and is
+    // hidden from assistive technology so the percentage is announced once.
+    expect(await screen.findByText("72%")).toBeTruthy();
   });
 
   test("an unmeasured job says so instead of showing a bar at zero", async () => {
@@ -96,7 +96,7 @@ describe("the queue", () => {
 
     // A bar at zero reads as a stalled download. Nobody has measured it.
     expect(await screen.findByText("Size not reported")).toBeTruthy();
-    expect(screen.queryByRole("progressbar")).toBeNull();
+    expect(screen.queryByText(/%$/)).toBeNull();
   });
 
   test("a job with no request shows its identifier rather than a made-up name", async () => {
