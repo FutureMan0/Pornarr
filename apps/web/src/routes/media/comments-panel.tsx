@@ -22,13 +22,16 @@ import { apiFailure } from "../../lib/api-error";
 export interface CommentsPanelProps {
   readonly mediaId: string;
   /**
-   * `column` is the narrow treatment: the composer moves to the bottom, the list
-   * scrolls inside its own box, and the heading is left to whatever wraps it.
+   * Where the composer sits and whether the list scrolls. Nothing else.
    *
-   * The shorts feed shows comments in a column beside the video, where the panel
-   * has a fixed height and the reader is scrolling comments rather than the page.
-   * Same data, same actions, different geometry — a second component would be a
-   * second place to fix a bug in the report button.
+   * `panel` is read top to bottom with the page, so the composer is above the
+   * conversation and the list grows as long as it likes. `column` has a fixed
+   * height beside the shorts feed, so the list scrolls inside itself and the
+   * composer sits at the bottom, where a messaging surface puts it.
+   *
+   * The remarks themselves look the same either way. They used to differ — cards
+   * here, a conversation there — which is two answers to "what does a comment
+   * look like" and a second place to fix a bug in the report button.
    */
   readonly layout?: "panel" | "column" | undefined;
   /**
@@ -139,34 +142,29 @@ export function CommentsPanel({
     if (draft.trim().length > 0) post.mutate(draft.trim());
   };
 
+  /**
+   * One line that grows with what is typed.
+   *
+   * This was a three-row box with a full-width button under it, which took more
+   * room than the conversation it sat above and read as a form to fill in rather
+   * than somewhere to say something. `field-sizing-content` is what lets one row
+   * be honest: it grows the moment there is more to hold.
+   */
   const composer = (
-    <form onSubmit={submit} className={column ? "flex flex-none gap-2" : "flex flex-col gap-2"}>
-      <label
-        htmlFor="comment-draft"
-        className={column ? "visually-hidden" : "text-xs text-ink-muted"}
-      >
+    <form onSubmit={submit} className="flex flex-none items-start gap-2">
+      <label htmlFor="comment-draft" className="visually-hidden">
         {t("comments.add")}
       </label>
       <textarea
         id="comment-draft"
         value={draft}
         maxLength={4000}
-        rows={column ? 1 : 3}
-        placeholder={column ? t("comments.placeholder") : undefined}
+        rows={1}
+        placeholder={t("comments.placeholder")}
         onChange={(event) => setDraft(event.target.value)}
-        className={
-          column
-            ? // One line that grows with the text, so an empty composer is a
-              // single row rather than a box waiting to be filled.
-              "min-h-9 flex-1 resize-none rounded-lg bg-surface-3 px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--primary)] field-sizing-content"
-            : "rounded-md border border-border bg-surface-2 p-2 text-sm text-ink"
-        }
+        className="min-h-9 flex-1 resize-none rounded-lg bg-surface-3 px-3 py-2 text-sm text-ink placeholder:text-ink-faint field-sizing-content focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--primary)]"
       />
-      <Button
-        type="submit"
-        variant={column ? "ghost" : "primary"}
-        disabled={post.isPending || draft.trim().length === 0}
-      >
+      <Button type="submit" disabled={post.isPending || draft.trim().length === 0}>
         {t("comments.post")}
       </Button>
     </form>
@@ -211,25 +209,18 @@ export function CommentsPanel({
           const who =
             comment.author ?? (comment.is_own ? t("comments.you") : t("comments.someone"));
           return (
-            <li
-              key={comment.id}
-              className={
-                column ? "flex gap-2.5" : "flex flex-col gap-2 rounded-md bg-surface-2 p-3"
-              }
-            >
+            <li key={comment.id} className="flex gap-2.5">
               {/* An initial, not an avatar. There is no picture to show — the
                 server sends no author at all under the default configuration —
-                and a letter is enough to tell one column of remarks apart. */}
-              {column ? (
-                <span
-                  aria-hidden="true"
-                  className="grid size-8 flex-none place-items-center rounded-full bg-surface-3 text-2xs text-ink-muted"
-                >
-                  {who.slice(0, 1).toUpperCase()}
-                </span>
-              ) : null}
+                and a letter is enough to tell one remark from the next. */}
+              <span
+                aria-hidden="true"
+                className="grid size-8 flex-none place-items-center rounded-full bg-surface-3 text-2xs text-ink-muted"
+              >
+                {who.slice(0, 1).toUpperCase()}
+              </span>
 
-              <div className={column ? "flex min-w-0 flex-1 flex-col gap-1" : "contents"}>
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <div className="flex flex-wrap items-center gap-2">
                   {/* No name under the default configuration; the server simply
                   does not send one. `is_own` is what the buttons key off. */}
