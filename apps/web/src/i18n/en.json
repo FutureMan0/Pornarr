@@ -166,6 +166,7 @@
   },
   "nav": {
     "admin": "Dashboard",
+    "moderation": "Ratings & comments",
     "primary": "Primary",
     "navigation": "Navigation",
     "close": "Close",
@@ -694,5 +695,37 @@
     "activityEmpty": "Nothing has happened yet.",
     "openQueue": "Queue →",
     "storageNone": "No library folder yet"
+  },
+  "moderation": {
+    "title": "Ratings & comments",
+    "subtitle": "{{ratings}} ratings · {{comments}} comments · {{reported}} reported",
+    "filter": "Which comments to show",
+    "tab": {
+      "all": "All",
+      "reported": "Reported",
+      "answered": "Answered"
+    },
+    "empty": "Nothing to review.",
+    "on": "on",
+    "reported_one": "{{count}} report",
+    "reported_other": "{{count}} reports",
+    "markAnswered": "Mark answered",
+    "answered": "Answered",
+    "hide": "Hide",
+    "hidden": "Hidden",
+    "delete": "Delete",
+    "libraryAverage": "Library average",
+    "noRatings": "Nobody has rated anything yet.",
+    "topRated": "Top rated",
+    "rules": {
+      "title": "House rules",
+      "privateLibraries": "Private libraries",
+      "privateLibrariesHint": "Each guest browses only their own titles",
+      "pooledSearch": "Pooled search",
+      "pooledSearchHint": "Search reaches every shelf, without naming whose",
+      "anonymousSocial": "Anonymous comments",
+      "anonymousSocialHint": "Remarks carry no name — except in this queue"
+    },
+    "attributionNotice": "Comments are anonymous everywhere else. This queue names them so a report can be judged."
   }
 }

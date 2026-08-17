@@ -18,6 +18,7 @@ import { LoginRoute } from "./auth/login-route";
 import { RequireAuth } from "./auth/require-auth";
 import { ForbiddenRoute, NotFoundRoute } from "./errors/route-errors";
 import { DashboardRoute } from "./routes/admin/dashboard-route";
+import { ModerationRoute } from "./routes/admin/moderation-route";
 import { QuarantineReviewRoute } from "./routes/admin/quarantine/quarantine-review-route";
 import { CollectionDetailRoute, CollectionsRoute } from "./routes/collections/collections-route";
 import { ContinueRoute } from "./routes/continue/continue-route";
@@ -59,6 +60,7 @@ export const FORBIDDEN_PATH = "/forbidden";
 /** Sidebar destinations with a screen of their own. */
 const BUILT = new Set([
   "admin",
+  "moderation",
   "feed",
   "continue",
   "library",
@@ -85,6 +87,7 @@ export const appRoutes: RouteObject[] = [
               { index: true, element: <Navigate to="/library" replace /> },
               { path: "admin", element: <DashboardRoute /> },
               { path: "admin/quarantine", element: <QuarantineReviewRoute /> },
+              { path: "admin/moderation", element: <ModerationRoute /> },
               { path: "settings", element: <Navigate to="/settings/quality" replace /> },
               { path: "settings/quality", element: <QualityProfilesRoute /> },
               { path: "search", element: <SearchRoute /> },

@@ -166,6 +166,7 @@
   },
   "nav": {
     "admin": "Übersicht",
+    "moderation": "Bewertungen",
     "primary": "Hauptnavigation",
     "navigation": "Navigation",
     "close": "Schließen",
@@ -694,5 +695,37 @@
     "activityEmpty": "Bisher ist nichts passiert.",
     "openQueue": "Warteschlange →",
     "storageNone": "Noch kein Bibliotheksordner"
+  },
+  "moderation": {
+    "title": "Bewertungen & Kommentare",
+    "subtitle": "{{ratings}} Bewertungen · {{comments}} Kommentare · {{reported}} gemeldet",
+    "filter": "Welche Kommentare gezeigt werden",
+    "tab": {
+      "all": "Alle",
+      "reported": "Gemeldet",
+      "answered": "Beantwortet"
+    },
+    "empty": "Nichts zu prüfen.",
+    "on": "zu",
+    "reported_one": "{{count}} Meldung",
+    "reported_other": "{{count}} Meldungen",
+    "markAnswered": "Als beantwortet markieren",
+    "answered": "Beantwortet",
+    "hide": "Ausblenden",
+    "hidden": "Ausgeblendet",
+    "delete": "Löschen",
+    "libraryAverage": "Durchschnitt der Bibliothek",
+    "noRatings": "Bisher hat niemand etwas bewertet.",
+    "topRated": "Bestbewertet",
+    "rules": {
+      "title": "Hausregeln",
+      "privateLibraries": "Private Bibliotheken",
+      "privateLibrariesHint": "Jeder Gast sieht nur die eigenen Titel",
+      "pooledSearch": "Gemeinsame Suche",
+      "pooledSearchHint": "Die Suche erreicht alle Regale, ohne zu nennen wessen",
+      "anonymousSocial": "Anonyme Kommentare",
+      "anonymousSocialHint": "Beiträge tragen keinen Namen — außer in dieser Liste"
+    },
+    "attributionNotice": "Kommentare sind überall sonst anonym. Diese Liste nennt die Namen, damit eine Meldung beurteilt werden kann."
   }
 }

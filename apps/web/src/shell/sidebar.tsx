@@ -43,6 +43,7 @@ export interface NavItem {
  */
 export const NAV_ITEMS = [
   { id: "admin", path: "/admin", adminOnly: true },
+  { id: "moderation", path: "/admin/moderation", adminOnly: true },
   { id: "feed", path: "/feed" },
   { id: "continue", path: "/continue" },
   { id: "library", path: "/library" },

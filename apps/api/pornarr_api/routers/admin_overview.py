@@ -39,6 +39,7 @@ from pornarr_db.models.entities import MediaTag
 from pornarr_db.models.media import Media
 from pornarr_db.models.quarantine import QuarantineItem
 from pornarr_db.models.root_folders import RootFolder
+from pornarr_db.models.social import Rating
 from pornarr_db.models.user import User, UserRole
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -162,4 +163,63 @@ async def overview(request: Request, _: CurrentAdmin, session: Session) -> Overv
             duplicates_flagged=duplicates,
         ),
         last_scan_at=max(scans) if scans else None,
+    )
+
+
+class TopRated(BaseModel):
+    media_id: str
+    title: str
+    average: float
+    count: int
+
+
+class RatingsOverviewResponse(BaseModel):
+    """A6's right-hand column: what the household thinks of the library."""
+
+    average: float | None
+    count: int
+    # Keyed "1".."5". Absent stars are absent, not zero-filled — the client
+    # decides whether to draw an empty row.
+    breakdown: dict[str, int]
+    top: list[TopRated]
+
+
+# Below this a five-star average is one person's opinion, not the library's.
+TOP_RATED_MINIMUM_RATINGS = 2
+TOP_RATED_LIMIT = 5
+
+
+@router.get("/ratings/overview", response_model=RatingsOverviewResponse)
+async def ratings_overview(_: CurrentAdmin, session: Session) -> RatingsOverviewResponse:
+    total = int((await session.scalar(select(func.count()).select_from(Rating))) or 0)
+    average = await session.scalar(select(func.avg(Rating.stars)))
+
+    breakdown = {
+        str(int(stars)): int(count)
+        for stars, count in (
+            await session.execute(select(Rating.stars, func.count()).group_by(Rating.stars))
+        ).tuples()
+    }
+
+    # A minimum before a title can top the chart. One five-star rating is not
+    # the library's best film, and a leaderboard that says so is worthless.
+    rows = (
+        await session.execute(
+            select(Media.id, Media.title, func.avg(Rating.stars), func.count())
+            .join(Rating, Rating.media_id == Media.id)
+            .group_by(Media.id, Media.title)
+            .having(func.count() >= TOP_RATED_MINIMUM_RATINGS)
+            .order_by(func.avg(Rating.stars).desc(), func.count().desc(), Media.title)
+            .limit(TOP_RATED_LIMIT)
+        )
+    ).tuples()
+
+    return RatingsOverviewResponse(
+        average=float(average) if average is not None else None,
+        count=total,
+        breakdown=breakdown,
+        top=[
+            TopRated(media_id=str(media_id), title=title, average=float(avg), count=int(count))
+            for media_id, title, avg, count in rows
+        ],
     )

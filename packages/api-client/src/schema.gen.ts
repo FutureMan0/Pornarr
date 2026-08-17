@@ -657,6 +657,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/ratings/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ratings Overview */
+        get: operations["admin_ratings_overview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/settings": {
         parameters: {
             query?: never;
@@ -3696,6 +3713,22 @@ export interface components {
             /** Stars */
             stars: number;
         };
+        /**
+         * RatingsOverviewResponse
+         * @description A6's right-hand column: what the household thinks of the library.
+         */
+        RatingsOverviewResponse: {
+            /** Average */
+            average: number | null;
+            /** Breakdown */
+            breakdown: {
+                [key: string]: number;
+            };
+            /** Count */
+            count: number;
+            /** Top */
+            top: components["schemas"]["TopRated"][];
+        };
         /** RecommendationFeedbackWrite */
         RecommendationFeedbackWrite: {
             event_type: components["schemas"]["UserEventType"];
@@ -4200,6 +4233,17 @@ export interface components {
         TagCorrectionWrite: {
             /** Name */
             name: string;
+        };
+        /** TopRated */
+        TopRated: {
+            /** Average */
+            average: number;
+            /** Count */
+            count: number;
+            /** Media Id */
+            media_id: string;
+            /** Title */
+            title: string;
         };
         /** TranscodeFailureResponse */
         TranscodeFailureResponse: {
@@ -5812,6 +5856,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_ratings_overview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingsOverviewResponse"];
                 };
             };
         };

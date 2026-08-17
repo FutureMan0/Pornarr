@@ -4087,6 +4087,48 @@
         "title": "RatingWrite",
         "type": "object"
       },
+      "RatingsOverviewResponse": {
+        "description": "A6's right-hand column: what the household thinks of the library.",
+        "properties": {
+          "average": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average"
+          },
+          "breakdown": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Breakdown",
+            "type": "object"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "top": {
+            "items": {
+              "$ref": "#/components/schemas/TopRated"
+            },
+            "title": "Top",
+            "type": "array"
+          }
+        },
+        "required": [
+          "average",
+          "count",
+          "breakdown",
+          "top"
+        ],
+        "title": "RatingsOverviewResponse",
+        "type": "object"
+      },
       "RecommendationFeedbackWrite": {
         "properties": {
           "event_type": {
@@ -5708,6 +5750,34 @@
           "name"
         ],
         "title": "TagCorrectionWrite",
+        "type": "object"
+      },
+      "TopRated": {
+        "properties": {
+          "average": {
+            "title": "Average",
+            "type": "number"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "media_id": {
+            "title": "Media Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "media_id",
+          "title",
+          "average",
+          "count"
+        ],
+        "title": "TopRated",
         "type": "object"
       },
       "TranscodeFailureResponse": {
@@ -8070,6 +8140,27 @@
           }
         },
         "summary": "Reject Quarantine Item",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/ratings/overview": {
+      "get": {
+        "operationId": "admin_ratings_overview",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingsOverviewResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ratings Overview",
         "tags": [
           "admin"
         ]

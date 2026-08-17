@@ -20,6 +20,7 @@ from pornarr_db.base import Base
 from pornarr_db.models.entities import MediaTag, Tag
 from pornarr_db.models.media import Media, MediaFile
 from pornarr_db.models.root_folders import RootFolder
+from pornarr_db.models.social import Rating
 from pornarr_db.models.user import User, UserRole
 from tests.api.test_app import build_settings
 from tests.api.test_auth import MemoryRedis, create_user, login
@@ -178,3 +179,60 @@ async def test_a_guest_cannot_read_the_dashboard(app, client: AsyncClient) -> No
     # It counts guests, names volumes and totals the disk. None of that is a
     # guest's business.
     assert response.status_code == 403
+
+
+async def _rate(app, media: Media, users: list[User], stars: list[int]) -> None:
+    factory = async_sessionmaker(app.state.engine, class_=AsyncSession, expire_on_commit=False)
+    async with factory() as session:
+        for user, value in zip(users, stars, strict=True):
+            session.add(Rating(user_id=user.id, media_id=media.id, stars=value))
+        await session.commit()
+
+
+async def test_the_distribution_counts_every_star_given(app, client: AsyncClient) -> None:
+    admin = await _admin(app, client)
+    guest = await create_user(app, username="mira", role=UserRole.USER)
+    factory = async_sessionmaker(app.state.engine, class_=AsyncSession, expire_on_commit=False)
+    async with factory() as session:
+        media = Media(title="One", normalized_title="one")
+        session.add(media)
+        await session.commit()
+    await _rate(app, media, [admin, guest], [5, 3])
+
+    body = (await client.get("/api/admin/ratings/overview")).json()
+
+    assert body["count"] == 2
+    assert body["average"] == 4.0
+    assert body["breakdown"] == {"5": 1, "3": 1}
+
+
+async def test_one_rating_does_not_make_a_title_the_best_in_the_library(
+    app, client: AsyncClient
+) -> None:
+    admin = await _admin(app, client)
+    guest = await create_user(app, username="mira", role=UserRole.USER)
+    factory = async_sessionmaker(app.state.engine, class_=AsyncSession, expire_on_commit=False)
+    async with factory() as session:
+        lonely = Media(title="Lonely", normalized_title="lonely")
+        agreed = Media(title="Agreed", normalized_title="agreed")
+        session.add_all([lonely, agreed])
+        await session.commit()
+    await _rate(app, lonely, [admin], [5])
+    await _rate(app, agreed, [admin, guest], [4, 4])
+
+    top = (await client.get("/api/admin/ratings/overview")).json()["top"]
+
+    # A single five-star rating outranks everything on average and means
+    # nothing. A leaderboard that says otherwise is worse than no leaderboard.
+    assert [item["title"] for item in top] == ["Agreed"]
+
+
+async def test_a_library_nobody_has_rated_says_so(app, client: AsyncClient) -> None:
+    await _admin(app, client)
+
+    body = (await client.get("/api/admin/ratings/overview")).json()
+
+    # Not 0.0 out of five, which would read as a library everyone hated.
+    assert body["average"] is None
+    assert body["count"] == 0
+    assert body["top"] == []
