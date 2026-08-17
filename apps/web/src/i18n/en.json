@@ -4,7 +4,9 @@
   },
   "monitors": {
     "title": "Monitors",
+    "intro": "Standing searches that keep looking after a request has finished.",
     "loading": "Loading monitors",
+    "empty": "No monitors yet. A monitor keeps searching for a title until a matching release appears.",
     "enabled": "Enabled",
     "disabled": "Disabled",
     "enable": "Enable",
@@ -13,6 +15,7 @@
   },
   "recommendations": {
     "title": "Recommendations",
+    "intro": "Picked from the tags and performers in what you have already watched.",
     "loading": "Loading recommendations",
     "empty": "Watch and rate some media first. Your recommendations will appear here.",
     "reason": "Recommended because you liked: {{values}}",
@@ -21,6 +24,7 @@
   "queue": {
     "title": "Downloads",
     "loading": "Loading downloads",
+    "empty": "Nothing is downloading. Grab a release from search and it appears here.",
     "priority": "Priority {{value}}",
     "speed": "{{value}} bytes/s",
     "speedUnknown": "Speed unavailable",
@@ -165,6 +169,8 @@
     "closeNavigation": "Close navigation",
     "library": "Library",
     "requests": "Requests",
+    "monitors": "Monitors",
+    "recommendations": "Recommendations",
     "downloads": "Downloads",
     "settings": "Settings"
   },
@@ -255,7 +261,6 @@
     "label": "Language"
   },
   "screen": {
-    "notBuilt": "This screen is not built yet.",
     "notFoundTitle": "Not found",
     "notFoundBody": "There is nothing at this address. Pick a destination from the navigation.",
     "forbiddenTitle": "Not allowed",

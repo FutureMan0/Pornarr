@@ -28,31 +28,35 @@ export function QueueRoute() {
       <h1 id="queue-heading" className="text-xl text-ink">
         {t("queue.title")}
       </h1>
-      <ul className="mt-4 grid gap-3">
-        {queue.data.items.map((job) => (
-          <li key={job.id} className="border border-border p-4">
-            <strong>{job.client_name}</strong>
-            <p>
-              {job.status} · {t("queue.priority", { value: job.priority })}
-            </p>
-            <p>
-              {job.download_speed_bytes === null
-                ? t("queue.speedUnknown")
-                : t("queue.speed", { value: job.download_speed_bytes })}
-            </p>
-            <p>
-              {job.queue_estimate.low_seconds === null || job.queue_estimate.high_seconds === null
-                ? t("queue.estimateUnknown")
-                : t("queue.estimate", {
-                    low: job.queue_estimate.low_seconds,
-                    high: job.queue_estimate.high_seconds,
-                    confidence: job.queue_estimate.confidence,
-                  })}
-            </p>
-            {job.error ? <p role="alert">{t("queue.failure", { error: job.error })}</p> : null}
-          </li>
-        ))}
-      </ul>
+      {queue.data.items.length === 0 ? (
+        <p className="mt-4 text-sm text-ink-muted">{t("queue.empty")}</p>
+      ) : (
+        <ul className="mt-4 grid gap-3">
+          {queue.data.items.map((job) => (
+            <li key={job.id} className="border border-border p-4">
+              <strong>{job.client_name}</strong>
+              <p>
+                {job.status} · {t("queue.priority", { value: job.priority })}
+              </p>
+              <p>
+                {job.download_speed_bytes === null
+                  ? t("queue.speedUnknown")
+                  : t("queue.speed", { value: job.download_speed_bytes })}
+              </p>
+              <p>
+                {job.queue_estimate.low_seconds === null || job.queue_estimate.high_seconds === null
+                  ? t("queue.estimateUnknown")
+                  : t("queue.estimate", {
+                      low: job.queue_estimate.low_seconds,
+                      high: job.queue_estimate.high_seconds,
+                      confidence: job.queue_estimate.confidence,
+                    })}
+              </p>
+              {job.error ? <p role="alert">{t("queue.failure", { error: job.error })}</p> : null}
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

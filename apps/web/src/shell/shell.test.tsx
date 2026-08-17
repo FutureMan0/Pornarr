@@ -6,10 +6,20 @@
  * `useSidebarLayout` derives a named layout rather than leaving the three forms
  * to CSS: the name is the thing a test, and a reader, can hold onto.
  */
-import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { TEST_USER, renderApp, setViewportWidth, signedIn, useMockApi } from "../test/harness";
+import en from "../i18n/en.json";
+import {
+  TEST_USER,
+  renderApp,
+  server,
+  setViewportWidth,
+  signedIn,
+  useMockApi,
+} from "../test/harness";
+import { NAV_ITEMS } from "./sidebar";
 
 useMockApi();
 afterEach(cleanup);
@@ -57,6 +67,41 @@ describe("responsive structure", () => {
     const nav = screen.getByRole("navigation", { name: "Primary" });
     expect(nav.dataset.layout).toBe("drawer");
     expect(screen.getByRole("dialog", { name: "Navigation" })).toBeTruthy();
+  });
+});
+
+describe("reaching every screen", () => {
+  test("the sidebar links to all six destinations", async () => {
+    setViewportWidth(1440);
+    renderApp("/library");
+
+    const nav = await screen.findByRole("navigation", { name: "Primary" });
+    for (const item of NAV_ITEMS) {
+      const link = within(nav).getByRole("link", { name: en.nav[item.id] });
+      expect(link.getAttribute("href")).toBe(item.path);
+    }
+  });
+
+  test("following the Monitors link opens the monitors screen, not a placeholder", async () => {
+    setViewportWidth(1440);
+    server.use(http.get("/api/monitors", () => HttpResponse.json([])));
+    renderApp("/library");
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("link", { name: en.nav.monitors }));
+
+    expect(await screen.findByText(en.monitors.empty)).toBeTruthy();
+  });
+
+  test("following the Recommendations link opens the recommendations screen", async () => {
+    setViewportWidth(1440);
+    server.use(http.get("/api/recommendations", () => HttpResponse.json([])));
+    renderApp("/library");
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("link", { name: en.nav.recommendations }));
+
+    expect(await screen.findByText(en.recommendations.empty)).toBeTruthy();
   });
 });
 
@@ -110,8 +155,10 @@ describe("keyboard reach", () => {
 
     const menuTrigger = await screen.findByRole("button", { name: TEST_USER.username });
 
+    // Every nav link is a stop before the menu is, so the budget is derived from
+    // the destinations rather than fixed — adding one must not fail this test.
     let reached = false;
-    for (let step = 0; step < 10 && !reached; step += 1) {
+    for (let step = 0; step < NAV_ITEMS.length + 6 && !reached; step += 1) {
       await user.tab();
       reached = document.activeElement === menuTrigger;
     }

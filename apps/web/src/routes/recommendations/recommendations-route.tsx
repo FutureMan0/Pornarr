@@ -1,3 +1,4 @@
+import { Button, SkeletonRegion, SkeletonText } from "@pornarr/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { getApiClient } from "../../lib/api";
@@ -31,36 +32,49 @@ export function RecommendationsRoute() {
     },
     onSuccess: () => void client.invalidateQueries({ queryKey: ["recommendations"] }),
   });
-  if (recommendations.isPending) return <p>{t("recommendations.loading")}</p>;
-  if (recommendations.isError) return <p role="alert">{t("errors.generic")}</p>;
-  if (!recommendations.data.length)
-    return (
-      <section>
-        <h1>{t("recommendations.title")}</h1>
-        <p>{t("recommendations.empty")}</p>
-      </section>
-    );
+  const items = recommendations.data ?? [];
   return (
-    <section aria-labelledby="recommendations-heading">
-      <h1 id="recommendations-heading">{t("recommendations.title")}</h1>
-      <ul>
-        {recommendations.data.map((item) => (
-          <li key={item.media_id}>
-            <h2>{item.title}</h2>
-            <p>
-              {t("recommendations.reason", {
-                values: [
-                  ...(item.reason.matched_tags ?? []),
-                  ...(item.reason.matched_performers ?? []),
-                ].join(", "),
-              })}
-            </p>
-            <button type="button" onClick={() => feedback.mutate(item.media_id)}>
-              {t("recommendations.notInterested")}
-            </button>
-          </li>
-        ))}
-      </ul>
+    <section aria-labelledby="recommendations-heading" className="flex flex-col gap-4">
+      <header>
+        <h1 id="recommendations-heading" className="text-xl text-ink">
+          {t("recommendations.title")}
+        </h1>
+        <p className="text-sm text-ink-muted">{t("recommendations.intro")}</p>
+      </header>
+      {recommendations.isPending ? (
+        <SkeletonRegion label={t("recommendations.loading")}>
+          <SkeletonText lines={3} />
+        </SkeletonRegion>
+      ) : recommendations.isError ? (
+        <p role="alert" className="text-sm text-ink">
+          {t("errors.generic")}
+        </p>
+      ) : items.length === 0 ? (
+        <p className="text-sm text-ink-muted">{t("recommendations.empty")}</p>
+      ) : (
+        <ul className="grid gap-3">
+          {items.map((item) => (
+            <li key={item.media_id} className="border border-border p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="font-medium text-ink">{item.title}</h2>
+                  <p className="text-sm text-ink-muted">
+                    {t("recommendations.reason", {
+                      values: [
+                        ...(item.reason.matched_tags ?? []),
+                        ...(item.reason.matched_performers ?? []),
+                      ].join(", "),
+                    })}
+                  </p>
+                </div>
+                <Button variant="secondary" onClick={() => feedback.mutate(item.media_id)}>
+                  {t("recommendations.notInterested")}
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

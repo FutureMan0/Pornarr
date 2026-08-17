@@ -4,7 +4,9 @@
   },
   "monitors": {
     "title": "Monitore",
+    "intro": "Dauersuchen, die weiterlaufen, wenn eine Anfrage abgeschlossen ist.",
     "loading": "Monitore werden geladen",
+    "empty": "Noch keine Monitore. Ein Monitor sucht so lange nach einem Titel, bis ein passender Release erscheint.",
     "enabled": "Aktiv",
     "disabled": "Deaktiviert",
     "enable": "Aktivieren",
@@ -13,6 +15,7 @@
   },
   "recommendations": {
     "title": "Empfehlungen",
+    "intro": "Ausgewählt nach den Tags und Darstellerinnen aus dem, was du bereits angesehen hast.",
     "loading": "Empfehlungen werden geladen",
     "empty": "Sieh dir Medien an und bewerte sie. Deine Empfehlungen erscheinen dann hier.",
     "reason": "Empfohlen, weil dir gefiel: {{values}}",
@@ -21,6 +24,7 @@
   "queue": {
     "title": "Downloads",
     "loading": "Downloads werden geladen",
+    "empty": "Es lädt gerade nichts. Greife in der Suche einen Release, dann erscheint er hier.",
     "priority": "Priorität {{value}}",
     "speed": "{{value}} Bytes/s",
     "speedUnknown": "Geschwindigkeit nicht verfügbar",
@@ -165,6 +169,8 @@
     "closeNavigation": "Navigation schließen",
     "library": "Bibliothek",
     "requests": "Anfragen",
+    "monitors": "Monitore",
+    "recommendations": "Empfehlungen",
     "downloads": "Downloads",
     "settings": "Einstellungen"
   },
@@ -255,7 +261,6 @@
     "label": "Sprache"
   },
   "screen": {
-    "notBuilt": "Diese Seite ist noch nicht gebaut.",
     "notFoundTitle": "Nicht gefunden",
     "notFoundBody": "Unter dieser Adresse gibt es nichts. Wähle ein Ziel aus der Navigation.",
     "forbiddenTitle": "Nicht erlaubt",

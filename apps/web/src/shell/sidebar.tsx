@@ -34,6 +34,8 @@ export interface NavItem {
 export const NAV_ITEMS = [
   { id: "library", path: "/library" },
   { id: "requests", path: "/requests" },
+  { id: "monitors", path: "/monitors" },
+  { id: "recommendations", path: "/recommendations" },
   { id: "downloads", path: "/downloads" },
   { id: "settings", path: "/settings" },
 ] as const satisfies readonly NavItem[];
@@ -249,6 +251,17 @@ const NAV_ICON_PATHS: Readonly<Record<string, JSX.Element>> = {
     <>
       <circle cx="8" cy="8" r="6" />
       <path d="M8 5.5v5M5.5 8h5" />
+    </>
+  ),
+  monitors: (
+    <>
+      <path d="M1.25 8s2.5-4.25 6.75-4.25S14.75 8 14.75 8s-2.5 4.25-6.75 4.25S1.25 8 1.25 8Z" />
+      <circle cx="8" cy="8" r="1.75" />
+    </>
+  ),
+  recommendations: (
+    <>
+      <path d="m8 1.75 1.9 3.85 4.25.62-3.08 3 .73 4.23L8 11.45l-3.8 2 .73-4.23-3.08-3 4.25-.62Z" />
     </>
   ),
   downloads: (

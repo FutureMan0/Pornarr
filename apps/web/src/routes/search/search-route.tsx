@@ -368,7 +368,7 @@ function ExternalRow({
         {item.match.kind === "new" ? null : (
           <a
             className="ml-2 font-sans text-ink-muted underline decoration-border-control underline-offset-2"
-            href={`/library?media=${item.match.media_id}`}
+            href={`/library/${item.match.media_id}`}
           >
             {t(`search.match.${item.match.kind}`)}
           </a>
