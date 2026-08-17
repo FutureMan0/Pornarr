@@ -181,6 +181,35 @@ describe("who and where you are", () => {
     expect(nav.textContent).not.toContain("Admin");
   });
 
+  test("only one entry is current on an administrator's sub-screen", async () => {
+    setViewportWidth(1280);
+    renderApp("/admin/tags");
+
+    const nav = await screen.findByRole("navigation", { name: "Primary" });
+    await waitFor(() => expect(nav.querySelector('a[href="/admin/tags"]')).not.toBeNull());
+
+    // `/admin` is a prefix of `/admin/tags`, and NavLink counts a prefix as
+    // active unless told otherwise — so Dashboard stayed marked here and two
+    // entries read as current at once.
+    const current = [...nav.querySelectorAll('a[aria-current="page"]')].map((link) =>
+      link.getAttribute("href"),
+    );
+    expect(current).toEqual(["/admin/tags"]);
+  });
+
+  test("a title's own screen still marks the library it came from", async () => {
+    setViewportWidth(1280);
+    renderApp("/library/m-1");
+
+    const nav = await screen.findByRole("navigation", { name: "Primary" });
+    // The opposite case, and the reason exactness is derived rather than applied
+    // to every entry: `/library/:mediaId` is not a destination of its own, so the
+    // reader is still in the library.
+    await waitFor(() =>
+      expect(nav.querySelector('a[href="/library"]')?.getAttribute("aria-current")).toBe("page"),
+    );
+  });
+
   test("a guest is not offered Downloads, whose endpoints are admin-only", async () => {
     let asked = false;
     server.use(

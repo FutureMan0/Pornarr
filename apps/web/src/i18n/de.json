@@ -75,7 +75,11 @@
   },
   "player": {
     "label": "Player für {{title}}",
-    "unavailable": "Dieses Video kann derzeit nicht wiedergegeben werden."
+    "unavailable": "Dieses Video kann derzeit nicht wiedergegeben werden.",
+    "play": "Abspielen",
+    "pause": "Pause",
+    "mute": "Ton aus",
+    "unmute": "Ton an"
   },
   "login": {
     "subtitle": "Melde dich an, um fortzufahren.",
@@ -648,7 +652,9 @@
     "saved": "Gemerkt",
     "browseAll": "Alle ansehen →",
     "backToFeed": "← Zurück zum Feed",
-    "emptyHint": "Clips entstehen aus viel gesehenen Stellen und Szenenmarken — sie erscheinen, sobald im Haushalt etwas gesehen wurde."
+    "emptyHint": "Clips entstehen aus viel gesehenen Stellen und Szenenmarken — sie erscheinen, sobald im Haushalt etwas gesehen wurde.",
+    "comments": "Kommentare",
+    "closeComments": "Kommentare schließen"
   },
   "collections": {
     "title": "Sammlungen",
@@ -704,7 +710,9 @@
     "report": "Melden",
     "reported": "Gemeldet",
     "edited": "bearbeitet",
-    "hidden": "Von einem Admin zurückgehalten"
+    "hidden": "Von einem Admin zurückgehalten",
+    "empty": "Noch keine Kommentare. Sag das Erste.",
+    "placeholder": "Kommentar schreiben…"
   },
   "artwork": {
     "shown": "Bilder sichtbar",

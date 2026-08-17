@@ -1,5 +1,5 @@
 import Hls from "hls.js";
-import type { RefObject } from "react";
+import type { JSX, RefObject } from "react";
 import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CSRF_HEADER, readCsrfToken } from "../../lib/api";
@@ -27,6 +27,8 @@ export interface Clip {
 export interface PlayerHandle {
   /** Move to a position, in seconds from the start of the file. */
   readonly seek: (seconds: number) => void;
+  /** Play if paused, pause if playing. */
+  readonly toggle: () => void;
 }
 
 export interface VideoPlayerProps {
@@ -40,6 +42,19 @@ export interface VideoPlayerProps {
   readonly clip?: Clip | undefined;
   /** Portrait for shorts, which are shot that way and letterbox otherwise. */
   readonly portrait?: boolean | undefined;
+  /**
+   * `native` is the browser's own control bar — right for a film, where scrubbing,
+   * volume, captions and full screen all matter and the browser's version is
+   * better than one we would write.
+   *
+   * `minimal` is the short-form treatment: no control bar, muted autoplay, click
+   * to pause, a hairline of progress. A forty-second clip in a feed has no use
+   * for a scrub bar, and the control bar is the single most obvious thing
+   * standing between this and what it is imitating.
+   */
+  readonly chrome?: "native" | "minimal" | undefined;
+  /** Run the clip again at its end rather than stopping on the last frame. */
+  readonly loop?: boolean | undefined;
   readonly onEnded?: (() => void) | undefined;
   /**
    * A handle for seeking from outside — the scene markers use it.
@@ -51,11 +66,25 @@ export interface VideoPlayerProps {
   readonly handleRef?: RefObject<PlayerHandle | null> | undefined;
 }
 
+/**
+ * Whether sound is wanted, remembered across clips.
+ *
+ * Module scope rather than component state, and deliberately not persisted to
+ * storage. A feed mounts a new player per clip, so component state would mute
+ * again on every scroll and make the control useless; storage would carry the
+ * choice into a session where the person is somewhere else entirely, possibly
+ * with somebody in the room. It lasts as long as the tab, which is how long the
+ * decision is good for.
+ */
+let soundWanted = false;
+
 export function VideoPlayer({
   mediaId,
   title,
   clip,
   portrait,
+  chrome = "native",
+  loop,
   onEnded,
   handleRef,
 }: VideoPlayerProps) {
@@ -65,6 +94,11 @@ export function VideoPlayer({
   const session = useRef<string | null>(null);
   const lastProgress = useRef(0);
   const [error, setError] = useState(false);
+  const minimal = chrome === "minimal";
+  const [paused, setPaused] = useState(false);
+  const [muted, setMuted] = useState(!soundWanted);
+  /** Position inside the clip, 0–1. Drives the hairline, nothing else. */
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,6 +165,7 @@ export function VideoPlayer({
         // and a rejected promise here is not an error worth surfacing.
         void element.play().catch(() => {});
       },
+      toggle: togglePlayback,
     }),
     [],
   );
@@ -165,9 +200,37 @@ export function VideoPlayer({
     const element = video.current;
     if (element === null || clip === undefined) return;
     if (element.currentTime >= clip.endSeconds) {
+      if (loop === true) {
+        // Round again rather than stopping on the last frame. A short-form clip
+        // that ends leaves a still image and a decision; one that loops leaves
+        // the reader free to keep watching or scroll on, which is the whole
+        // shape of the format.
+        element.currentTime = clip.startSeconds;
+        return;
+      }
       element.pause();
       onEnded?.();
     }
+  }
+
+  /** How far into the clip, for the hairline under a minimal player. */
+  function trackProgress() {
+    const element = video.current;
+    if (element === null || !minimal) return;
+    const start = clip?.startSeconds ?? 0;
+    const end = clip?.endSeconds ?? element.duration;
+    if (!Number.isFinite(end) || end <= start) return;
+    setProgress(Math.min(1, Math.max(0, (element.currentTime - start) / (end - start))));
+  }
+
+  function togglePlayback() {
+    const element = video.current;
+    if (element === null) return;
+    if (element.paused) {
+      void element.play().catch(() => {});
+      return;
+    }
+    element.pause();
   }
 
   function reportProgress() {
@@ -218,16 +281,30 @@ export function VideoPlayer({
   return (
     <section
       aria-label={t("player.label", { title })}
-      className={portrait === true ? "h-full bg-black" : "bg-black"}
+      className={portrait === true ? "relative h-full w-full bg-black" : "relative bg-black"}
     >
       <video
         ref={video}
-        className={portrait === true ? "h-full w-full object-contain" : "aspect-video w-full"}
-        controls
+        className={
+          portrait === true
+            ? minimal
+              ? // A short is shot for this frame, so it fills it. `contain` on a
+                // correctly shot clip leaves black bars down both sides and makes
+                // the feed look like a video player rather than a feed.
+                "h-full w-full object-cover"
+              : "h-full w-full object-contain"
+            : "aspect-video w-full"
+        }
+        controls={!minimal}
+        autoPlay={minimal}
+        muted={minimal ? muted : undefined}
         playsInline
         onLoadedMetadata={enterClip}
+        onPlay={() => setPaused(false)}
+        onPause={() => setPaused(true)}
         onTimeUpdate={() => {
           stopAtClipEnd();
+          trackProgress();
           reportProgress();
         }}
         onEnded={() => {
@@ -237,6 +314,85 @@ export function VideoPlayer({
       >
         <track kind="captions" />
       </video>
+
+      {minimal ? (
+        <>
+          {/* The whole frame is the pause control, which is how the format
+              works. A button rather than a click handler on the section: it has
+              to be reachable by keyboard and named, and Space then does what the
+              hint in the feed has always claimed it does. */}
+          <button
+            type="button"
+            onClick={togglePlayback}
+            aria-label={paused ? t("player.play") : t("player.pause")}
+            className="absolute inset-0 grid place-items-center focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--primary)]"
+          >
+            {/* Only while paused. A play glyph over a running video is a control
+                that says the opposite of what is happening. */}
+            {paused ? (
+              <span className="grid size-14 place-items-center rounded-full bg-[color-mix(in_oklch,var(--pa-bg-00)_55%,transparent)] text-ink">
+                <PlayIcon />
+              </span>
+            ) : null}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              soundWanted = muted;
+              setMuted(!muted);
+            }}
+            aria-pressed={!muted}
+            aria-label={muted ? t("player.unmute") : t("player.mute")}
+            className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-[color-mix(in_oklch,var(--pa-bg-00)_55%,transparent)] text-ink transition-colors duration-[var(--duration-fast)] ease-out hover:bg-[color-mix(in_oklch,var(--pa-bg-00)_75%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
+          >
+            <SoundIcon muted={muted} />
+          </button>
+
+          {/* A hairline, not a scrub bar. It says how much is left; it is not
+              something to grab, because forty seconds has nothing worth seeking
+              to. `scaleX` rather than width so it is a composited property and
+              not a layout pass on every timeupdate. */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 origin-left bg-[var(--pa-accent-400)]"
+            style={{ transform: `scaleX(${progress})` }}
+          />
+        </>
+      ) : null}
     </section>
+  );
+}
+
+function PlayIcon(): JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className="size-7" fill="currentColor" aria-hidden="true">
+      <path d="M8 5.5v13l11-6.5z" />
+    </svg>
+  );
+}
+
+function SoundIcon({ muted }: { readonly muted: boolean }): JSX.Element {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z" />
+      {muted ? (
+        <path d="m16 9.5 4 5m0-5-4 5" />
+      ) : (
+        <>
+          <path d="M15.5 9.5a3.5 3.5 0 0 1 0 5" />
+          <path d="M18 7a7 7 0 0 1 0 10" />
+        </>
+      )}
+    </svg>
   );
 }

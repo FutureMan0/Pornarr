@@ -136,3 +136,22 @@
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
 }
+
+/* A field that is a place to start something rather than one row of a form. The
+   radius is the pill token; the horizontal padding grows with it, because text
+   set against a fully rounded edge reads as touching it. */
+.pill {
+  border-radius: var(--radius-full);
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+
+/* The two slots move with it. Written after `.pill` and at equal specificity so
+   source order settles the tie in favour of the rounder field. */
+.control:has(.leading) .pill {
+  padding-left: calc(var(--space-4) + var(--space-5));
+}
+
+.control:has(.trailing) .pill {
+  padding-right: calc(var(--space-4) + var(--space-8));
+}

@@ -173,6 +173,10 @@ export function GlobalSearch(): JSX.Element {
           // platforms, which would sit next to ours and do something subtly
           // different. One clear control, ours, at every width.
           type="text"
+          // A pill: this field is a place to start something rather than one row
+          // of a form, and the top bar is the one place in the product where that
+          // is true.
+          shape="pill"
           role="combobox"
           autoComplete="off"
           // The property built for this, rather than leaving the shortcut to the
@@ -216,7 +220,7 @@ export function GlobalSearch(): JSX.Element {
         />
 
         {showList ? (
-          <div className="pa-pop absolute inset-x-0 top-[calc(100%+var(--space-1))] z-[var(--z-dropdown)] overflow-hidden rounded-md bg-surface-2 shadow-[var(--shadow-floating)]">
+          <div className="pa-pop absolute inset-x-0 top-[calc(100%+var(--space-2))] z-[var(--z-dropdown)] overflow-hidden rounded-lg bg-surface-2 py-1 shadow-[var(--shadow-floating)]">
             {/* A div, not a ul. `role="listbox"` on a list element is an
                 interactive role on a non-interactive element, and the options here
                 are buttons rather than list items — the list semantics would be a

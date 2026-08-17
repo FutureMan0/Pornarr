@@ -64,6 +64,28 @@ export const NAV_ITEMS = [
 
 export type NavId = (typeof NAV_ITEMS)[number]["id"];
 
+/**
+ * Entries whose path is a prefix of another entry's, and which therefore have to
+ * match exactly.
+ *
+ * `NavLink` treats a prefix as active. `/admin` is a prefix of `/admin/tags`,
+ * `/admin/scan`, `/admin/moderation` and `/admin/invites`, so Dashboard stayed
+ * marked on every administrator screen and two entries read as current at once.
+ *
+ * Derived rather than hand-marked. A list of exceptions maintained by hand goes
+ * stale the first time somebody adds a destination under an existing one, and it
+ * goes stale silently — the symptom is a highlight, not an error. This cannot.
+ *
+ * Only nav entries count. `/library/:mediaId` is not one, so Library correctly
+ * stays marked while you are reading a title; `/shorts/browse` is not one either,
+ * for the same reason.
+ */
+const NEEDS_EXACT_MATCH: ReadonlySet<string> = new Set(
+  NAV_ITEMS.filter((item) =>
+    NAV_ITEMS.some((other) => other !== item && other.path.startsWith(`${item.path}/`)),
+  ).map((item) => item.id),
+);
+
 const RAIL_QUERY = "(max-width: 1279.98px)";
 const DRAWER_QUERY = "(max-width: 767.98px)";
 
@@ -192,6 +214,7 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
             <li key={item.id}>
               <NavLink
                 to={item.path}
+                end={NEEDS_EXACT_MATCH.has(item.id)}
                 onClick={isDrawer ? onClose : undefined}
                 className={({ isActive }) =>
                   cx(

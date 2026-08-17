@@ -33,6 +33,40 @@ import { apiFailure } from "../../lib/api-error";
 import { usePageTitle } from "../../shell/page-title";
 import { ShortPane } from "./short-pane";
 
+/**
+ * Below this there is no room for a comment column beside a 9/16 frame.
+ *
+ * A pane is roughly 700px tall, so its frame is roughly 394px wide; the column
+ * is 22rem; the sidebar takes another 240 in its full layout. Under about 1100
+ * the column would squeeze the video rather than sit beside it, so the comments
+ * move into a dialog instead.
+ *
+ * `max-width` rather than `min-width` because that is the form the whole shell
+ * uses — and the only form the test harness's matchMedia understands.
+ */
+const NARROW_QUERY = "(max-width: 1099.98px)";
+
+/** Whether the window has room for the comment column. */
+function useWideEnoughForComments(): boolean {
+  const read = (): boolean =>
+    typeof window === "undefined" || typeof window.matchMedia !== "function"
+      ? true
+      : !window.matchMedia(NARROW_QUERY).matches;
+
+  const [wide, setWide] = useState(read);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const list = window.matchMedia(NARROW_QUERY);
+    const update = (): void => setWide(!list.matches);
+    update();
+    list.addEventListener("change", update);
+    return () => list.removeEventListener("change", update);
+  }, []);
+
+  return wide;
+}
+
 /** How many clips one request brings back. */
 const PAGE = 20;
 
@@ -46,6 +80,7 @@ export function ShortsFeedRoute(): JSX.Element {
   const scroller = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const [pages, setPages] = useState(1);
+  const wide = useWideEnoughForComments();
   /**
    * The clip this screen opened on, captured once.
    *
@@ -195,7 +230,7 @@ export function ShortsFeedRoute(): JSX.Element {
             data-index={index}
             className="flex h-full snap-start snap-always items-center justify-center"
           >
-            <ShortPane clip={clip} active={index === active} />
+            <ShortPane clip={clip} active={index === active} wide={wide} />
           </div>
         ))}
       </div>

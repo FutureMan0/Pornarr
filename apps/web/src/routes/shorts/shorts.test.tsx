@@ -201,3 +201,115 @@ describe("the browse view", () => {
     await waitFor(() => expect(sorts).toContain("top"));
   });
 });
+
+/**
+ * The short-form treatment, as the owner asked for it: comments beside the video
+ * on a wide screen, behind a button on a narrow one.
+ *
+ * What is worth pinning down is the *cost*, not the geometry. A feed holds every
+ * pane in the DOM, so a comment panel per pane is one request per clip nobody is
+ * looking at — a mistake that is invisible on a three-clip fixture and expensive
+ * on a real library.
+ */
+describe("comments beside the clip", () => {
+  function stubComments(): { asked: () => number } {
+    let count = 0;
+    server.use(
+      http.get("/api/media/:mediaId/comments", ({ params }) => {
+        count += 1;
+        return HttpResponse.json([
+          {
+            id: `c-${String(params.mediaId)}`,
+            media_id: String(params.mediaId),
+            body: "Best in the library, no notes.",
+            author: null,
+            is_own: false,
+            stars: null,
+            state: "visible",
+            likes: 0,
+            you_liked: false,
+            created_at: "2026-08-17T09:00:00Z",
+            edited_at: null,
+          },
+        ]);
+      }),
+    );
+    return { asked: () => count };
+  }
+
+  test("a wide screen puts them in a column, for the clip on screen only", async () => {
+    stub();
+    const comments = stubComments();
+    setViewportWidth(1600);
+    renderApp("/shorts");
+
+    expect(await screen.findByText("Best in the library, no notes.")).not.toBeNull();
+    // One panel, not one per pane: the feed holds every clip in the DOM.
+    await waitFor(() => expect(comments.asked()).toBe(1));
+  });
+
+  test("a narrow screen offers a button instead, and asks for nothing until it is pressed", async () => {
+    stub();
+    const comments = stubComments();
+    setViewportWidth(900);
+    const user = userEvent.setup();
+    renderApp("/shorts");
+
+    const open = await screen.findByRole("button", { name: "Comments" });
+    // Nothing fetched yet. A dialog renders its children whether or not it is
+    // open, so this is the mistake worth a test rather than a comment.
+    expect(comments.asked()).toBe(0);
+
+    await user.click(open);
+
+    expect(await screen.findByText("Best in the library, no notes.")).not.toBeNull();
+    await waitFor(() => expect(comments.asked()).toBe(1));
+  });
+
+  test("the column is not offered where there is no room for it", async () => {
+    stub();
+    stubComments();
+    setViewportWidth(900);
+    renderApp("/shorts");
+
+    await screen.findByRole("button", { name: "Comments" });
+    // The heading only exists inside the panel, and at this width the panel is
+    // behind the button.
+    expect(screen.queryByText(/^Comments \(/)).toBeNull();
+  });
+});
+
+describe("the clip plays itself", () => {
+  test("space pauses from anywhere, and never while a comment is being typed", async () => {
+    stub();
+    server.use(http.get("/api/media/:mediaId/comments", () => HttpResponse.json([])));
+    setViewportWidth(1600);
+    renderApp("/shorts");
+
+    const video = await screen.findByLabelText(/the good bit/);
+    const element = video.querySelector("video");
+    expect(element).not.toBeNull();
+    if (element === null) return;
+
+    // jsdom implements neither play nor pause, so they are recorded rather than
+    // performed: what is under test is which keystrokes reach the player.
+    let paused = false;
+    Object.defineProperty(element, "paused", { get: () => paused, configurable: true });
+    element.play = () => {
+      paused = false;
+      return Promise.resolve();
+    };
+    element.pause = () => {
+      paused = true;
+    };
+
+    fireEvent.keyDown(window, { key: " " });
+    expect(paused).toBe(true);
+
+    // The composer sits beside the video now. A space that pauses the clip while
+    // somebody is writing a sentence would make the feed unusable.
+    const composer = await screen.findByPlaceholderText(/Add a comment/);
+    fireEvent.keyDown(composer, { key: " " });
+    expect(paused).toBe(true);
+  });
+});

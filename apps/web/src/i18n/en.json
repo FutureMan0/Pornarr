@@ -75,7 +75,11 @@
   },
   "player": {
     "label": "Player for {{title}}",
-    "unavailable": "This video cannot be played right now."
+    "unavailable": "This video cannot be played right now.",
+    "play": "Play",
+    "pause": "Pause",
+    "mute": "Mute",
+    "unmute": "Turn sound on"
   },
   "login": {
     "subtitle": "Sign in to continue.",
@@ -648,7 +652,9 @@
     "saved": "Saved",
     "browseAll": "Browse all →",
     "backToFeed": "← Back to the feed",
-    "emptyHint": "Clips are cut from watch hotspots and scene markers, so they appear once the household has watched something."
+    "emptyHint": "Clips are cut from watch hotspots and scene markers, so they appear once the household has watched something.",
+    "comments": "Comments",
+    "closeComments": "Close comments"
   },
   "collections": {
     "title": "Collections",
@@ -704,7 +710,9 @@
     "report": "Report",
     "reported": "Reported",
     "edited": "edited",
-    "hidden": "Withheld by an administrator"
+    "hidden": "Withheld by an administrator",
+    "empty": "No comments yet. Say the first thing.",
+    "placeholder": "Add a comment…"
   },
   "artwork": {
     "shown": "Art shown",

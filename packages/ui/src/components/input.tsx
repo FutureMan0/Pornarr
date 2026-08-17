@@ -46,6 +46,18 @@ export type InputProps = {
    * itself.
    */
   trailing?: ReactNode;
+  /**
+   * `pill` rounds the field fully, `box` keeps the form-control radius.
+   *
+   * A prop rather than a class from the caller: `.input` sets its own
+   * `border-radius`, and a utility from outside lands in the same specificity
+   * band and loses on source order — the same trap `leading` exists to avoid.
+   *
+   * Reach for `pill` where the field is a *place to start something* rather than
+   * one row of a form: the search bar in the top bar is a pill, a settings field
+   * is not. A form of pills reads as a row of buttons.
+   */
+  shape?: "box" | "pill";
 } & ComponentPropsWithRef<"input">;
 
 export const Input = ({
@@ -53,6 +65,7 @@ export const Input = ({
   error = false,
   leading,
   trailing,
+  shape = "box",
   className,
   disabled = false,
   "aria-describedby": describedBy,
@@ -77,6 +90,7 @@ export const Input = ({
           aria-describedby={cx(describedBy, message !== undefined && messageId) || undefined}
           className={cx(
             css.input,
+            shape === "pill" && css.pill,
             disabled && css.disabled,
             loading && css.loading,
             invalid && css.error,
