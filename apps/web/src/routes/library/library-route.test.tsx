@@ -1,0 +1,48 @@
+import { cleanup, screen } from "@testing-library/react";
+import { http, HttpResponse } from "msw";
+import { afterEach, expect, test } from "vitest";
+import { renderApp, server, signedIn, useMockApi } from "../../test/harness";
+
+useMockApi();
+
+afterEach(cleanup);
+
+test("an empty library with no root folder offers the screen that fixes it", async () => {
+  signedIn();
+  server.use(http.get("/api/admin/library/root-folders", () => HttpResponse.json([])));
+
+  renderApp("/library");
+
+  await screen.findByRole("heading", { name: "Your library is empty" });
+  const action = await screen.findByRole("link", { name: "Add a root folder" });
+  // Naming the fix is what the old copy did; this has to reach it.
+  expect(action.getAttribute("href")).toBe("/settings/root-folders");
+});
+
+test("once a root folder exists the empty library asks for a request instead", async () => {
+  signedIn();
+  server.use(
+    http.get("/api/admin/library/root-folders", () =>
+      HttpResponse.json([
+        {
+          id: "folder-1",
+          path: "/media/library",
+          enabled: true,
+          free_space_bytes: 1_073_741_824,
+          total_space_bytes: 2_147_483_648,
+          last_scanned_at: null,
+          last_space_checked_at: null,
+          low_space_warning_sent: false,
+          same_filesystem_as_downloads: true,
+          warning: null,
+        },
+      ]),
+    ),
+  );
+
+  renderApp("/library");
+
+  const action = await screen.findByRole("link", { name: "Open requests" });
+  expect(action.getAttribute("href")).toBe("/requests");
+  expect(screen.queryByRole("link", { name: "Add a root folder" })).toBeNull();
+});

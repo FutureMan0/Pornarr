@@ -159,11 +159,16 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
               className={({ isActive }) =>
                 cx(
                   "text-sm",
-                  "flex items-center gap-3 rounded-md px-2 py-2 text-ink-muted",
+                  "flex items-center gap-3 rounded-md px-2 py-2",
                   "transition-colors duration-[var(--duration-fast)] ease-out",
                   "hover:bg-surface-3 hover:text-ink",
                   layout === "rail" && "justify-center",
-                  isActive && "bg-[var(--primary-weak)] text-ink",
+                  // Exclusive rather than layered: `text-ink` and `text-ink-muted`
+                  // have equal specificity, so listing both leaves the winner to
+                  // stylesheet order — and the muted ink that won measured 3.76:1
+                  // on --primary-weak, which is an axe colour-contrast failure on
+                  // every screen the active item appears on.
+                  isActive ? "bg-[var(--primary-weak)] text-ink" : "text-ink-muted",
                 )
               }
             >

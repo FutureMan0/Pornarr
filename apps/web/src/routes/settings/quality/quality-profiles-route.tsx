@@ -515,9 +515,14 @@ export function QualityProfilesRoute(): JSX.Element {
                 <button
                   type="button"
                   className={cx(
-                    "flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm text-ink-muted",
+                    "flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm",
                     "transition-colors duration-[var(--duration-fast)] ease-out hover:bg-surface-3 hover:text-ink",
-                    selectedProfileId === profile.id && "bg-[var(--primary-weak)] text-ink",
+                    // Exclusive rather than layered: the two ink classes have
+                    // equal specificity, and the muted one that won measured
+                    // 3.76:1 on --primary-weak, which axe fails.
+                    selectedProfileId === profile.id
+                      ? "bg-[var(--primary-weak)] text-ink"
+                      : "text-ink-muted",
                   )}
                   onClick={() => selectProfile(profile)}
                 >

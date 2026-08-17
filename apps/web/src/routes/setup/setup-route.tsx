@@ -245,7 +245,8 @@ export function SetupRoute(): JSX.Element {
                 {...(accountError.password === undefined ? {} : { error: accountError.password })}
                 onChange={(event) => {
                   setPassword(event.target.value);
-                  if (passwordStrength(event.target.value) !== "weak") clearAccountError("password");
+                  if (passwordStrength(event.target.value) !== "weak")
+                    clearAccountError("password");
                 }}
               />
               <p className="text-sm text-ink-muted">{t(`setup.account.strength.${strength}`)}</p>

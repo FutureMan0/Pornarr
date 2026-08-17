@@ -37,6 +37,9 @@ function apiError(code: string, status: number) {
 export const defaultHandlers = [
   http.get("/api/setup/status", () => HttpResponse.json({ configured: true })),
   http.get("/api/library", () => HttpResponse.json({ items: [], next_offset: null })),
+  // The empty library asks whether a root folder exists before it decides which
+  // way out to offer, so every signed-in render of `/library` reaches this.
+  http.get("/api/admin/library/root-folders", () => HttpResponse.json([])),
   http.get("/api/auth/me", () => apiError("NOT_AUTHENTICATED", 401)),
   http.post("/api/auth/login", async ({ request }) => {
     const body = (await request.json()) as { username?: string; password?: string };

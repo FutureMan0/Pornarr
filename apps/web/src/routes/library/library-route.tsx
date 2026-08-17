@@ -1,8 +1,16 @@
+import { EmptyState } from "@pornarr/ui";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import type { JSX } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { NAV_ITEMS } from "../../shell/sidebar";
+import { useRootFolders } from "../settings/root-folders/root-folders";
+import { ROOT_FOLDERS_PATH } from "../settings/settings-layout";
+
+/** Read from the nav table so the link cannot outlive the route it points at. */
+const REQUESTS_PATH = NAV_ITEMS[1].path;
 
 type Item = {
   id: string;
@@ -21,6 +29,7 @@ type Page = { items: Item[]; next_offset: number | null };
 
 export function LibraryRoute() {
   const { t } = useTranslation();
+  const rootFolders = useRootFolders();
   const library = useInfiniteQuery<Page, Error>({
     queryKey: ["library"],
     initialPageParam: 0,
@@ -58,7 +67,9 @@ export function LibraryRoute() {
         {t("library.title")}
       </h1>
       {items.length === 0 ? (
-        <p className="text-sm text-ink-muted">{t("library.empty")}</p>
+        // `undefined` is "not asked" — a non-administrator never asks — so only
+        // a loaded, empty list makes the root folder the thing that is missing.
+        <LibraryEmpty needsRootFolder={rootFolders.data?.length === 0} />
       ) : (
         <VirtualGrid
           items={items}
@@ -68,6 +79,33 @@ export function LibraryRoute() {
         />
       )}
     </section>
+  );
+}
+
+/**
+ * DESIGN.md: "an empty library says how to add a root folder and links to it".
+ * It used to name the fix and stop, and the screen it named was not in the
+ * client at all — which made the sentence advice nobody could follow.
+ *
+ * Nothing here mentions scanning: the API exposes no way to start one, and an
+ * empty state that asks for an action the client cannot perform is the defect
+ * this replaces rather than a smaller version of it.
+ */
+function LibraryEmpty({ needsRootFolder }: { readonly needsRootFolder: boolean }): JSX.Element {
+  const { t } = useTranslation();
+
+  return needsRootFolder ? (
+    <EmptyState
+      title={t("library.emptyTitle")}
+      body={t("library.empty")}
+      action={{ label: t("library.emptyAction"), href: ROOT_FOLDERS_PATH }}
+    />
+  ) : (
+    <EmptyState
+      title={t("library.emptyTitle")}
+      body={t("library.emptyRequestBody")}
+      action={{ label: t("library.emptyRequestAction"), href: REQUESTS_PATH }}
+    />
   );
 }
 

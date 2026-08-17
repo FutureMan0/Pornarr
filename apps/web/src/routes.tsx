@@ -25,6 +25,8 @@ import { RecommendationsRoute } from "./routes/recommendations/recommendations-r
 import { RequestsRoute } from "./routes/requests/requests-route";
 import { SearchRoute } from "./routes/search/search-route";
 import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles-route";
+import { RootFoldersRoute } from "./routes/settings/root-folders/root-folders-route";
+import { ROOT_FOLDERS_PATH, SettingsLayout } from "./routes/settings/settings-layout";
 import { SetupGate } from "./routes/setup/setup-gate";
 import { SetupRoute } from "./routes/setup/setup-route";
 import { AppShell } from "./shell/app-shell";
@@ -51,8 +53,15 @@ export const appRoutes: RouteObject[] = [
             children: [
               { index: true, element: <Navigate to="/library" replace /> },
               { path: "admin/quarantine", element: <QuarantineReviewRoute /> },
-              { path: "settings", element: <Navigate to="/settings/quality" replace /> },
-              { path: "settings/quality", element: <QualityProfilesRoute /> },
+              {
+                path: "settings",
+                element: <SettingsLayout />,
+                children: [
+                  { index: true, element: <Navigate to={ROOT_FOLDERS_PATH} replace /> },
+                  { path: "root-folders", element: <RootFoldersRoute /> },
+                  { path: "quality", element: <QualityProfilesRoute /> },
+                ],
+              },
               { path: "search", element: <SearchRoute /> },
               { path: "monitors", element: <MonitorsRoute /> },
               { path: "requests", element: <RequestsRoute /> },

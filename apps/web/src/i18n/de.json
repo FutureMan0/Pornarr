@@ -342,6 +342,41 @@
     "cancelBulk": "Abbrechen",
     "confirmBulkWithCount": "{{count}} Dateien freigeben"
   },
+  "settings": {
+    "sections": {
+      "label": "Einstellungsbereiche",
+      "rootFolders": "Stammordner",
+      "quality": "Qualitätsprofile"
+    }
+  },
+  "rootFolders": {
+    "title": "Stammordner",
+    "intro": "Die Ordner, in denen diese Instanz ihre Medien ablegt. Jeder Import landet in einem davon, egal ob er aus einer Anfrage oder aus einem Monitor stammt.",
+    "loading": "Stammordner werden geladen",
+    "configured": "Eingerichtete Ordner",
+    "none": "Es ist noch kein Stammordner eingerichtet, also gibt es kein Ziel für Importe. Lege unten einen an.",
+    "status": "Status",
+    "enabled": "Aktiv",
+    "disabled": "Inaktiv",
+    "freeSpace": "Freier Speicher",
+    "totalSpace": "Gesamtspeicher",
+    "lastScanned": "Zuletzt gescannt",
+    "spaceChecked": "Speicher zuletzt geprüft",
+    "never": "Nie",
+    "differentFilesystem": "Dieser Ordner liegt auf einem anderen Dateisystem als die Downloads. Importe kopieren die Datei deshalb, statt sie zu verlinken.",
+    "lowSpace": "Für diesen Ordner wurde eine Warnung wegen wenig Speicherplatz verschickt.",
+    "remove": "Entfernen",
+    "removeFolder": "{{path}} entfernen",
+    "confirmRemoval": "{{path}} entfernen? Pornarr importiert dann nicht mehr dorthin. Auf der Festplatte wird nichts gelöscht, und ein Ordner, der noch Medien enthält, lässt sich nicht entfernen.",
+    "confirmRemovalAction": "Ordner entfernen",
+    "cancelRemoval": "Ordner behalten",
+    "addTitle": "Stammordner anlegen",
+    "addHint": "Gib den absoluten Pfad so an, wie der Server ihn sieht. Der Ordner muss bereits existieren, und Pornarr muss ihn lesen und beschreiben können.",
+    "path": "Ordnerpfad",
+    "pathPlaceholder": "/media/library",
+    "enable": "In diesen Ordner importieren",
+    "add": "Stammordner anlegen"
+  },
   "quality": {
     "title": "Qualitätsprofile",
     "intro": "Lege fest, welche Qualitäten und Release-Eigenschaften diese Instanz akzeptiert. Die Vorschau nutzt die noch nicht gespeicherten Editorwerte, sodass jeder Score und jede Regel vor dem Speichern erklärt wird.",
@@ -433,7 +468,11 @@
   "library": {
     "title": "Bibliothek",
     "loading": "Bibliothek wird geladen…",
-    "empty": "Deine Bibliothek ist leer. Konfiguriere einen Stammordner und scanne ihn, um Medien hinzuzufügen."
+    "emptyTitle": "Deine Bibliothek ist leer",
+    "empty": "Pornarr hat noch keinen Stammordner, also gibt es keinen Ort für importierte Medien. Lege einen an, dann landet dort alles, was Pornarr herunterlädt.",
+    "emptyAction": "Stammordner anlegen",
+    "emptyRequestBody": "Es wurde noch nichts importiert. Stelle eine Anfrage oder richte einen Monitor ein – Pornarr fügt den Titel hier ein, sobald ein Release heruntergeladen wurde.",
+    "emptyRequestAction": "Anfragen öffnen"
   },
   "media": {
     "loading": "Medium wird geladen…",
@@ -461,6 +500,8 @@
     "DECRYPTION_FAILED": "Gespeicherte Zugangsdaten konnten nicht gelesen werden. Das Anwendungsgeheimnis passt nicht zu dem, mit dem sie gespeichert wurden.",
     "QUALITY_CONFIGURATION_INVALID": "Dieses Qualitätsprofil oder benutzerdefinierte Format ist ungültig. Prüfe gewählte Qualitäten, Grenze und Namen.",
     "QUALITY_PROFILE_IN_USE": "Dieses Qualitätsprofil wird noch von der Anwendung benötigt und kann nicht gelöscht werden.",
+    "ROOT_FOLDER_INVALID": "Dieser Ordner ist bereits eingerichtet, existiert nicht, ist kein Ordner oder ist nicht les- und beschreibbar.",
+    "ROOT_FOLDER_HAS_MEDIA": "In diesem Stammordner liegen noch Medien. Ein Entfernen würde diese Dateien unerreichbar machen.",
     "SETUP_REQUIRED": "Schließe die Einrichtung dieser Instanz ab, bevor du die Anwendung verwendest.",
     "SETUP_ALREADY_COMPLETED": "Diese Instanz wurde bereits eingerichtet.",
     "SETUP_PATH_INVALID": "Dieser Bibliothekspfad ist nicht verfügbar, kein Ordner oder nicht beschreibbar.",
@@ -493,6 +534,8 @@
     "DECRYPTION_FAILED": "Stelle das ursprüngliche Anwendungsgeheimnis wieder her oder gib die Zugangsdaten erneut ein.",
     "QUALITY_CONFIGURATION_INVALID": "Prüfe gewählte Qualitäten, Grenze und Namen und speichere erneut.",
     "QUALITY_PROFILE_IN_USE": "Wähle zuerst ein anderes Standardprofil oder verschiebe die Monitore in ein anderes Profil.",
+    "ROOT_FOLDER_INVALID": "Prüfe den Pfad auf dem Server und gib dann einen an, der existiert und noch nicht eingerichtet ist.",
+    "ROOT_FOLDER_HAS_MEDIA": "Verschiebe oder lösche die Medien in diesem Ordner zuerst auf dem Server, dann entferne ihn hier.",
     "SETUP_REQUIRED": "Schließe zuerst die Einrichtungsschritte ab.",
     "SETUP_ALREADY_COMPLETED": "Melde dich mit dem bereits vorhandenen Administrationskonto an.",
     "SETUP_PATH_INVALID": "Wähle einen vorhandenen Ordner, den Pornarr lesen und beschreiben kann.",

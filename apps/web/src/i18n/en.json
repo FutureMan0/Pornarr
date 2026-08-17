@@ -342,6 +342,41 @@
     "cancelBulk": "Cancel",
     "confirmBulkWithCount": "Approve {{count}} files"
   },
+  "settings": {
+    "sections": {
+      "label": "Settings sections",
+      "rootFolders": "Root folders",
+      "quality": "Quality profiles"
+    }
+  },
+  "rootFolders": {
+    "title": "Root folders",
+    "intro": "The folders this instance keeps its media in. Every import, whether it came from a request or from a monitor, is placed inside one of them.",
+    "loading": "Loading root folders",
+    "configured": "Configured folders",
+    "none": "No root folder is configured yet, so there is nowhere to import media to. Add one below.",
+    "status": "Status",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "freeSpace": "Free space",
+    "totalSpace": "Total space",
+    "lastScanned": "Last scanned",
+    "spaceChecked": "Space last checked",
+    "never": "Never",
+    "differentFilesystem": "This folder is on a different filesystem from downloads, so imports copy the file instead of hardlinking it.",
+    "lowSpace": "A low disk space warning has been sent for this folder.",
+    "remove": "Remove",
+    "removeFolder": "Remove {{path}}",
+    "confirmRemoval": "Remove {{path}}? Pornarr stops importing into it. Nothing on disk is deleted, and a folder that still holds media cannot be removed.",
+    "confirmRemovalAction": "Remove folder",
+    "cancelRemoval": "Keep folder",
+    "addTitle": "Add a root folder",
+    "addHint": "Give the absolute path as the server sees it. The folder has to exist already, and Pornarr has to be able to read and write it.",
+    "path": "Folder path",
+    "pathPlaceholder": "/media/library",
+    "enable": "Import into this folder",
+    "add": "Add root folder"
+  },
   "quality": {
     "title": "Quality profiles",
     "intro": "Set the qualities and release properties this instance accepts. Previewing uses the unsaved editor values, so every score and rule is explained before it is stored.",
@@ -433,7 +468,11 @@
   "library": {
     "title": "Library",
     "loading": "Loading library…",
-    "empty": "Your library is empty. Configure a root folder and scan it to add media."
+    "emptyTitle": "Your library is empty",
+    "empty": "Pornarr has no root folder yet, so there is nowhere for imported media to go. Add one and everything Pornarr downloads lands there.",
+    "emptyAction": "Add a root folder",
+    "emptyRequestBody": "Nothing has been imported yet. Request a title, or set up a monitor, and Pornarr adds it here once a release has been downloaded.",
+    "emptyRequestAction": "Open requests"
   },
   "media": {
     "loading": "Loading media…",
@@ -461,6 +500,8 @@
     "DECRYPTION_FAILED": "A stored credential could not be read. The application secret does not match the one it was saved with.",
     "QUALITY_CONFIGURATION_INVALID": "This quality profile or custom format is not valid. Check the selected qualities, cutoff and names.",
     "QUALITY_PROFILE_IN_USE": "This quality profile is still required by the application and cannot be deleted.",
+    "ROOT_FOLDER_INVALID": "That folder is already configured, does not exist, is not a folder, or cannot be read and written.",
+    "ROOT_FOLDER_HAS_MEDIA": "That root folder still holds media, so removing it would leave those files unreachable.",
     "SETUP_REQUIRED": "Finish setting up this instance before using the application.",
     "SETUP_ALREADY_COMPLETED": "This instance has already been configured.",
     "SETUP_PATH_INVALID": "That library path is unavailable, not a folder, or cannot be written to.",
@@ -493,6 +534,8 @@
     "DECRYPTION_FAILED": "Restore the original application secret, or enter the credential again.",
     "QUALITY_CONFIGURATION_INVALID": "Check the selected qualities, cutoff and names, then save again.",
     "QUALITY_PROFILE_IN_USE": "Choose another default profile or move the monitors to another profile first.",
+    "ROOT_FOLDER_INVALID": "Check the path on the server, then enter one that exists and is not configured already.",
+    "ROOT_FOLDER_HAS_MEDIA": "Move or delete the media in that folder on the server first, then remove it here.",
     "SETUP_REQUIRED": "Finish the setup steps before using the application.",
     "SETUP_ALREADY_COMPLETED": "Sign in with the administrator account that already exists.",
     "SETUP_PATH_INVALID": "Choose an existing folder that Pornarr can read and write.",
