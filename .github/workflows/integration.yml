@@ -2,7 +2,10 @@ name: Integration
 
 on:
   pull_request:
-    branches: [develop, main]
+    # Stacked pull requests target another feature branch, and with only
+    # develop and main listed here they ran no checks at all: #279 through
+    # #284 arrived on develop as one red pipeline. See #309.
+    branches: [develop, main, "feat/**", "fix/**", "chore/**", "docs/**", "test/**"]
     paths:
       - "packages/integrations/**"
       - "packages/db/**"
