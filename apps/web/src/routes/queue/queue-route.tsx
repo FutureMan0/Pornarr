@@ -111,7 +111,7 @@ export function QueueRoute(): JSX.Element {
             onClick={() => setTab(option)}
             className={
               tab === option
-                ? "rounded-md bg-[color-mix(in_oklch,var(--primary)_14%,transparent)] px-3 py-1.5 text-sm text-[var(--pa-accent-300)]"
+                ? "rounded-md bg-[var(--primary-weak)] px-3 py-1.5 text-sm text-[var(--pa-accent-300)]"
                 : "rounded-md px-3 py-1.5 text-sm text-ink-muted hover:bg-surface-3 hover:text-ink"
             }
           >
@@ -260,7 +260,7 @@ function Stage({ status }: { readonly status: string }): JSX.Element {
       className={
         finished
           ? "rounded-md border border-border-control px-2 py-0.5 text-2xs text-ink-muted"
-          : "rounded-md bg-[color-mix(in_oklch,var(--primary)_16%,transparent)] px-2 py-0.5 text-2xs text-[var(--pa-accent-300)]"
+          : "rounded-md bg-[var(--primary-weak)] px-2 py-0.5 text-2xs text-[var(--pa-accent-300)]"
       }
     >
       {status}

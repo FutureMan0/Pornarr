@@ -64,7 +64,7 @@ export function FacetSidebar({
               key={`${selection.param}-${selection.value}`}
               type="button"
               onClick={() => onToggle(selection.param, selection.value)}
-              className="flex items-center gap-1.5 rounded-full bg-[color-mix(in_oklch,var(--primary)_16%,transparent)] px-2.5 py-1 text-2xs text-[var(--pa-accent-300)]"
+              className="flex items-center gap-1.5 rounded-full bg-[var(--primary-weak)] px-2.5 py-1 text-2xs text-[var(--pa-accent-300)]"
             >
               {label(t, selection.group, selection.value)}
               {/* The glyph is decorative; the button's text already names what

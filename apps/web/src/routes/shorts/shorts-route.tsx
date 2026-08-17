@@ -60,7 +60,7 @@ export function ShortsRoute(): JSX.Element {
             onClick={() => setSort(option)}
             className={
               sort === option
-                ? "rounded-md bg-[color-mix(in_oklch,var(--primary)_14%,transparent)] px-3 py-1.5 text-sm text-[var(--pa-accent-300)]"
+                ? "rounded-md bg-[var(--primary-weak)] px-3 py-1.5 text-sm text-[var(--pa-accent-300)]"
                 : "rounded-md px-3 py-1.5 text-sm text-ink-muted hover:bg-surface-3 hover:text-ink"
             }
           >

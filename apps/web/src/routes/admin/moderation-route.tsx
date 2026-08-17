@@ -160,7 +160,7 @@ export function ModerationRoute(): JSX.Element {
               onClick={() => setFilter(option)}
               className={
                 filter === option
-                  ? "rounded-md bg-[color-mix(in_oklch,var(--primary)_14%,transparent)] px-3 py-1.5 text-sm text-[var(--pa-accent-300)]"
+                  ? "rounded-md bg-[var(--primary-weak)] px-3 py-1.5 text-sm text-[var(--pa-accent-300)]"
                   : "rounded-md px-3 py-1.5 text-sm text-ink-muted hover:bg-surface-3 hover:text-ink"
               }
             >
@@ -208,7 +208,7 @@ export function ModerationRoute(): JSX.Element {
                 )}
                 <span className="ml-auto flex items-center gap-2">
                   {comment.reports > 0 ? (
-                    <span className="rounded-full bg-[color-mix(in_oklch,var(--primary)_18%,transparent)] px-2 py-0.5 text-2xs text-[var(--pa-accent-300)]">
+                    <span className="rounded-full bg-[var(--primary-weak)] px-2 py-0.5 text-2xs text-[var(--pa-accent-300)]">
                       {/* How many, never by whom. */}
                       {t("moderation.reported", { count: comment.reports })}
                     </span>

@@ -128,7 +128,7 @@ export function InvitesRoute(): JSX.Element {
       {fresh === null ? null : (
         <section
           aria-labelledby="fresh-heading"
-          className="flex flex-col gap-2 rounded-lg border border-[var(--primary)] bg-[color-mix(in_oklch,var(--primary)_8%,transparent)] p-4"
+          className="flex flex-col gap-2 rounded-lg border border-[var(--primary)] bg-[var(--primary-weak)] p-4"
         >
           <h2 id="fresh-heading" className="text-sm text-ink">
             {t("invites.freshTitle")}

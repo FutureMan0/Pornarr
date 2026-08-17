@@ -123,7 +123,7 @@ export function TagsRoute(): JSX.Element {
       )}
 
       {chosen.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-3 rounded-lg bg-[color-mix(in_oklch,var(--primary)_10%,transparent)] p-3">
+        <div className="flex flex-wrap items-center gap-3 rounded-lg bg-[var(--primary-weak)] p-3">
           <span className="text-sm text-ink">{t("tags.selected", { count: chosen.length })}</span>
 
           {chosen.length === 1 && chosen[0] !== undefined ? (

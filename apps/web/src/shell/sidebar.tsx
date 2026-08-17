@@ -192,15 +192,18 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
                 className={({ isActive }) =>
                   cx(
                     "text-sm",
-                    "flex items-center gap-2 rounded-md px-2 py-2 text-ink-muted",
+                    "flex items-center gap-2 rounded-md px-2 py-2",
                     "transition-colors duration-[var(--duration-fast)] ease-out",
                     "hover:bg-surface-3 hover:text-ink",
                     isRail && "justify-center",
-                    // Accent as a line, not a flood: a wash at 14% and the
-                    // accent's light step for the label, which is the step that
-                    // clears body contrast. The 500 step would not.
-                    isActive &&
-                      "bg-[color-mix(in_oklch,var(--primary)_14%,transparent)] text-[var(--pa-accent-300)]",
+                    // Exactly one text colour, chosen here rather than layered.
+                    // Emitting both `text-ink-muted` and the accent and letting
+                    // the cascade decide is how the active label ended up muted
+                    // on its own wash at 4.45:1 — the two utilities share a
+                    // specificity band and source order picks the winner.
+                    isActive ? "text-[var(--pa-accent-300)]" : "text-ink-muted",
+                    // Accent as a line, not a flood.
+                    isActive && "bg-[var(--primary-weak)]",
                   )
                 }
               >

@@ -91,7 +91,7 @@ export function LibraryRoute() {
               onClick={() => setRatingFloor(ratingFloor === floor ? null : floor)}
               className={
                 ratingFloor === floor
-                  ? "rounded-full bg-[color-mix(in_oklch,var(--primary)_16%,transparent)] px-3 py-1 text-xs text-[var(--pa-accent-300)]"
+                  ? "rounded-full bg-[var(--primary-weak)] px-3 py-1 text-xs text-[var(--pa-accent-300)]"
                   : "rounded-full border border-border px-3 py-1 text-xs text-ink-muted hover:bg-surface-3 hover:text-ink"
               }
             >

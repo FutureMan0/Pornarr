@@ -253,7 +253,7 @@ export function SettingsRoute(): JSX.Element {
             onClick={() => setSection(option)}
             className={
               section === option
-                ? "rounded-md bg-[color-mix(in_oklch,var(--primary)_14%,transparent)] px-3 py-2 text-left text-sm text-[var(--pa-accent-300)]"
+                ? "rounded-md bg-[var(--primary-weak)] px-3 py-2 text-left text-sm text-[var(--pa-accent-300)]"
                 : "rounded-md px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-3 hover:text-ink"
             }
           >

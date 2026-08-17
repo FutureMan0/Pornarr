@@ -149,6 +149,17 @@ describe("secondary text on a tinted background reaches 4.5:1 too", () => {
   test("--ink-muted on --primary-weak", () => atLeast("ink-muted", "primary-weak", 4.5));
 });
 
+describe("a selected control's label holds on the accent wash", () => {
+  // The gap this closes: the sidebar's active item used an inline
+  // `color-mix(... 14%, transparent)` rather than a token, so no test here
+  // could see it, and the label landed at 4.45:1 — axe found it in CI.
+  //
+  // Every selected state in the application now sits on --primary-weak, which
+  // means this one pairing covers the sidebar, the filter chips, the queue
+  // tabs, the facet chips and the settings sections at once.
+  test("--pa-accent-300 on --primary-weak", () => atLeast("pa-accent-300", "primary-weak", 4.5));
+});
+
 describe("a control boundary reaches 3:1 (WCAG 1.4.11)", () => {
   // --border and --border-strong sit at 1.22:1 and 1.71:1 on --surface. They
   // separate and decorate; they cannot be the only thing identifying a control.
