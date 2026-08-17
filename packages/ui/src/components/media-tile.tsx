@@ -31,8 +31,13 @@ export interface MediaTileProps {
   /** 0 to 1. Anything above zero draws the resume bar. */
   readonly progress?: number | undefined;
   readonly rating?: number | null | undefined;
-  /** The sentence a screen reader hears for the rating. */
-  readonly ratingLabel: string;
+  /**
+   * The sentence a screen reader hears for the rating.
+   *
+   * Omit it to leave the rating off the tile altogether — for a row where the
+   * rating is not the point and where the source has none to give.
+   */
+  readonly ratingLabel?: string | undefined;
   readonly tagCount?: number | undefined;
   readonly commentCount?: number | undefined;
   /** Any stable number from the record; drives the placeholder colour. */
@@ -119,16 +124,27 @@ export function MediaTile({
           ) : null}
         </span>
 
-        <span className={cx("text-2xs", styles.line)}>
-          <Stars value={rating} label={ratingLabel} />
-          <span className="tabular-nums">{rating === null ? "—" : rating.toFixed(1)}</span>
-          {commentCount > 0 ? (
-            <span className={styles.counter}>
-              <CommentIcon />
-              {commentCount}
-            </span>
-          ) : null}
-        </span>
+        {/* Omitting `ratingLabel` drops the stars entirely, which is a different
+            statement from `rating={null}`: null means "nobody has rated this",
+            and no label means "this tile is not about ratings". The continue-
+            watching row is the second case — five grey stars and a dash on every
+            tile, five times over, for a question nobody asked. */}
+        {ratingLabel === undefined && commentCount === 0 ? null : (
+          <span className={cx("text-2xs", styles.line)}>
+            {ratingLabel === undefined ? null : (
+              <>
+                <Stars value={rating} label={ratingLabel} />
+                <span className="tabular-nums">{rating === null ? "—" : rating.toFixed(1)}</span>
+              </>
+            )}
+            {commentCount > 0 ? (
+              <span className={styles.counter}>
+                <CommentIcon />
+                {commentCount}
+              </span>
+            ) : null}
+          </span>
+        )}
       </div>
     </>
   );

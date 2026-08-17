@@ -185,6 +185,81 @@ describe("continue watching", () => {
     expect(await screen.findByText("The Long Way")).not.toBeNull();
     expect(screen.queryByText("m-7")).toBeNull();
   });
+
+  test("the library's row asks the resume endpoint rather than sifting its own pages", async () => {
+    server.use(
+      http.get("/api/playback/continue-watching", () =>
+        HttpResponse.json([
+          {
+            media_id: "m-9",
+            title: "Half Light",
+            device_label: "iPad",
+            position_seconds: 300,
+            duration_seconds: 1800,
+            completed: false,
+          },
+        ]),
+      ),
+      // Deliberately disjoint from the row: a title mid-way through on page five
+      // used to be missing from the row until you scrolled that far, and the row
+      // used to grow as pages arrived.
+      http.get("/api/library", () =>
+        HttpResponse.json({
+          items: [
+            {
+              id: "m-1",
+              title: "Aurora 214",
+              studio: null,
+              release_date: null,
+              duration_seconds: 600,
+              quality: null,
+              resolution: null,
+              position_seconds: 120,
+              progress_duration_seconds: 600,
+              poster_url: "/api/media/m-1/poster",
+              sprite_url: null,
+              rating: null,
+              rating_count: 0,
+              tag_count: 0,
+              comment_count: 0,
+            },
+          ],
+          next_offset: null,
+        }),
+      ),
+    );
+    renderApp("/library");
+
+    expect(await screen.findByText("Half Light")).not.toBeNull();
+    // "Aurora 214" has a position too, and used to be pulled into the row by
+    // the old filter. The row is the endpoint's answer, not the page's.
+    const row = screen.getByRole("region", { name: /Continue/i });
+    expect(row.textContent).not.toContain("Aurora 214");
+  });
+
+  test("the row defers to the Continue screen once it has more than it can show", async () => {
+    server.use(
+      http.get("/api/playback/continue-watching", () =>
+        HttpResponse.json(
+          Array.from({ length: 7 }, (_, index) => ({
+            media_id: `m-${index}`,
+            title: `Title ${index}`,
+            device_label: null,
+            position_seconds: 60,
+            duration_seconds: 600,
+            completed: false,
+          })),
+        ),
+      ),
+    );
+    renderApp("/library");
+
+    const seeAll = await screen.findByRole("link", { name: /See all/ });
+    expect(seeAll.getAttribute("href")).toBe("/continue");
+    // Five shown, not seven: the row is a shortcut across the top of the grid.
+    expect(await screen.findByText("Title 4")).not.toBeNull();
+    expect(screen.queryByText("Title 5")).toBeNull();
+  });
 });
 
 describe("the related row", () => {

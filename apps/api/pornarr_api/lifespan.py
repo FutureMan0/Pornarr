@@ -70,10 +70,22 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     reaper = asyncio.create_task(_reap_transcode_sessions(app.state.transcode_sessions))
 
+    # Set the moment shutdown begins, so endpoints that hold a connection open
+    # for as long as the client wants it can let go.
+    #
+    # `/api/events` is a server-sent event stream and its loop only ended when
+    # the *browser* went away. uvicorn's graceful shutdown waits for open
+    # connections, so one idle tab was enough to make SIGTERM hang until the
+    # container's kill timeout — a forced kill that drops whatever else was in
+    # flight instead of draining it. In development with `--reload` the same
+    # thing made every code change hang until the tab was closed.
+    app.state.shutting_down = asyncio.Event()
+
     logger.info("api started in %s mode", settings.app_env)
     try:
         yield
     finally:
+        app.state.shutting_down.set()
         reaper.cancel()
         with suppress(asyncio.CancelledError):
             await reaper

@@ -1,12 +1,15 @@
 import { MediaTile } from "@pornarr/ui";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import { getApiClient } from "../../lib/api";
+import { apiFailure } from "../../lib/api-error";
 import { tileBlur, useArtVisible } from "../../lib/art-visibility";
 import { usePageTitle } from "../../shell/page-title";
+import { ResumeTile } from "../continue/resume-tile";
 
 type Item = {
   id: string;
@@ -30,6 +33,14 @@ type Page = { items: Item[]; next_offset: number | null };
 /** The rating floors the design offers as chips. */
 const RATING_FILTERS = [4, 3] as const;
 
+/**
+ * How many half-watched titles the row shows before deferring to `/continue`.
+ *
+ * Five is the column count the design was drawn at, so the row is one row on a
+ * wide screen and wraps to two at most on a narrow one.
+ */
+const RESUME_ROW = 5;
+
 export function LibraryRoute() {
   const { t } = useTranslation();
   const [ratingFloor, setRatingFloor] = useState<number | null>(null);
@@ -46,10 +57,28 @@ export function LibraryRoute() {
     },
   });
 
-  // Resume position comes from the same rows, so "continue watching" is a
-  // partition of the page rather than a second request.
-  const resuming = (items: Item[]): Item[] =>
-    items.filter((item) => item.position_seconds !== null && item.position_seconds > 0);
+  /**
+   * What you are part-way through, from the endpoint that knows.
+   *
+   * This used to be a filter over the loaded library pages, which was wrong in
+   * both directions: the row *grew* as you scrolled, because each new page
+   * contributed more half-watched titles to a row above the one you were
+   * reading; and a title you were half-way through on page five was missing
+   * until you scrolled that far. `/api/playback/continue-watching` answers the
+   * question directly, in the order the server considers most recent, and the
+   * answer does not change while you scroll.
+   */
+  const resuming = useQuery({
+    queryKey: ["continue-watching"],
+    queryFn: async () => {
+      const { data, error, response } = await getApiClient().GET("/api/playback/continue-watching");
+      if (!data || error) throw apiFailure(error, response);
+      return data;
+    },
+    // A failing row must not take the library with it. The grid below is the
+    // screen; this is a shortcut across the top of it.
+    retry: false,
+  });
   const items = library.data?.pages.flatMap((page) => page.items) ?? [];
 
   // The count is what has loaded, not what exists: the library pages as you
@@ -101,30 +130,45 @@ export function LibraryRoute() {
         </fieldset>
       </div>
 
+      {/* Outside the empty check below, because the two answer different
+          questions. A rating filter that matches nothing says so about the
+          grid; it says nothing about what you were half-way through, and
+          hiding the row behind an empty grid meant a filter could make your
+          own unfinished titles disappear. */}
+      {resuming.data !== undefined && resuming.data.length > 0 ? (
+        <section aria-labelledby="continue-section" className="flex flex-col gap-3">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2
+              id="continue-section"
+              className="text-2xs uppercase tracking-[0.08em] text-ink-muted"
+            >
+              {t("library.sections.continue")}
+            </h2>
+            {/* The row is a shortcut, not the list. Without this link the
+                Continue destination in the navigation and the row at the top
+                of the library have no relationship to each other. */}
+            {resuming.data.length > RESUME_ROW ? (
+              <Link to="/continue" className="text-2xs text-ink-muted hover:text-ink">
+                {t("media.seeAll")}
+              </Link>
+            ) : null}
+          </div>
+          <ul className="grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4">
+            {resuming.data.slice(0, RESUME_ROW).map((item) => (
+              <li key={item.media_id}>
+                <ResumeTile item={item} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {items.length === 0 ? (
         <p className="text-sm text-ink-muted">
           {ratingFloor === null ? t("library.empty") : t("library.noMatches")}
         </p>
       ) : (
         <>
-          {resuming(items).length > 0 ? (
-            <section aria-labelledby="continue-section" className="flex flex-col gap-3">
-              <h2
-                id="continue-section"
-                className="text-2xs uppercase tracking-[0.08em] text-ink-muted"
-              >
-                {t("library.sections.continue")}
-              </h2>
-              <ul className="grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4">
-                {resuming(items).map((item) => (
-                  <li key={item.id}>
-                    <MediaCard item={item} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-
           <section aria-labelledby="everything-section" className="flex flex-col gap-3">
             <h2
               id="everything-section"

@@ -59,9 +59,36 @@ function install(name: "localStorage" | "sessionStorage"): void {
   });
 }
 
+/**
+ * And its ResizeObserver.
+ *
+ * jsdom does not implement it, and `@tanstack/react-virtual` constructs one on
+ * mount — so the virtualised library grid threw `ResizeObserver is not defined`
+ * straight to the error boundary, and every test that rendered the library with
+ * titles in it silently measured an error screen instead. The grid had never
+ * been under test with content.
+ *
+ * A no-op is the honest stub: jsdom lays nothing out, so a real implementation
+ * would only ever report zero. Tests that care about virtualisation have to
+ * drive the sizes themselves.
+ */
+class NoopResizeObserver implements ResizeObserver {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+}
+
 // Only in a browser-like environment: the node-environment suites have no
-// window, and inventing storage for them would hide a real mistake.
+// window, and inventing browser globals for them would hide a real mistake.
 if (typeof window !== "undefined" && typeof document !== "undefined") {
   install("localStorage");
   install("sessionStorage");
+
+  if (!("ResizeObserver" in globalThis)) {
+    Object.defineProperty(globalThis, "ResizeObserver", {
+      value: NoopResizeObserver,
+      configurable: true,
+      writable: true,
+    });
+  }
 }
