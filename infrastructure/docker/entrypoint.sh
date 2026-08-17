@@ -21,10 +21,22 @@ if [ "$#" -gt 0 ]; then shift; fi
 
 case "$ROLE" in
   api)
+    # The graceful-shutdown timeout is not a nicety, it is the upper bound.
+    #
+    # uvicorn waits for open connections *before* running the lifespan shutdown,
+    # and `/api/events` is a server-sent event stream that lives as long as the
+    # browser wants it. Without a bound, one idle tab meant SIGTERM waited
+    # forever and Docker's ten-second stop timeout ended it with SIGKILL —
+    # dropping whatever else was in flight instead of draining it. Eight seconds
+    # leaves room to close inside that window.
+    #
+    # The application also ends its own streams on SIGTERM, so this should never
+    # be reached. It is here because "should never" is not a guarantee.
     exec uvicorn pornarr_api.main:create_app \
       --factory \
       --host 0.0.0.0 \
       --port 8000 \
+      --timeout-graceful-shutdown 8 \
       "$@"
     ;;
 

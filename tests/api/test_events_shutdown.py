@@ -15,11 +15,14 @@ test of shutdown promptness must not do.
 from __future__ import annotations
 
 import asyncio
+import signal
+from types import FrameType
 from typing import cast
 
 import pytest
 from fastapi import Request
 
+from pornarr_api.lifespan import _watch_for_shutdown
 from pornarr_api.routers import events
 
 # Far longer than the test should ever wait. If shutdown is honoured only
@@ -166,3 +169,39 @@ def test_the_heartbeat_interval_is_shorter_than_a_typical_proxy_timeout() -> Non
     # A proxy that closes an idle connection before the next heartbeat turns the
     # stream into a reconnect loop.
     assert events.HEARTBEAT_SECONDS <= 30
+
+
+async def test_the_signal_handler_sets_the_flag_and_leaves_the_previous_one_running() -> None:
+    """The flag has to be set by the signal, not by the lifespan's own shutdown.
+
+    uvicorn closes its sockets, waits for open connections, and only then runs
+    the lifespan shutdown — so a flag set on the way out is set after the stream
+    it was meant to interrupt has already blocked the wait. The signal is the
+    only notice that arrives in time, and chaining is what keeps uvicorn's own
+    handler working.
+    """
+    seen: list[int] = []
+
+    def earlier(signum: int, frame: FrameType | None) -> None:
+        seen.append(signum)
+
+    previous = signal.signal(signal.SIGTERM, earlier)
+    try:
+        shutting_down = asyncio.Event()
+        restore = _watch_for_shutdown(shutting_down)
+        try:
+            assert signal.getsignal(signal.SIGTERM) is not earlier
+
+            signal.raise_signal(signal.SIGTERM)
+            # `call_soon_threadsafe` schedules it; one turn of the loop runs it.
+            async with asyncio.timeout(PROMPTLY):
+                await shutting_down.wait()
+
+            # And uvicorn's handler — `earlier` here — still ran, so the server
+            # still shuts down.
+            assert seen == [int(signal.SIGTERM)]
+        finally:
+            restore()
+        assert signal.getsignal(signal.SIGTERM) is earlier
+    finally:
+        signal.signal(signal.SIGTERM, previous)
