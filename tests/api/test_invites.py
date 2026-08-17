@@ -15,6 +15,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from pornarr_api.auth import is_invite_redemption
 from pornarr_api.main import create_app
 from pornarr_api.routers.invites import token_hash
 from pornarr_db.base import Base
@@ -258,3 +259,29 @@ async def test_a_used_invitation_is_kept_as_the_record_of_who_joined(
     # person in, and through which link.
     assert revoked.status_code == 409
     assert listed[0]["redeemed_username"] == "mira"
+
+
+def test_the_csrf_exemption_matches_only_redemption() -> None:
+    """The one unauthenticated write in this application, and nothing else.
+
+    Redemption is exempt because there is no session to protect: an attacker who
+    could make a victim's browser redeem a token already holds the token and
+    could redeem it themselves. That reasoning applies to this one path and to
+    no other, so the match is on shape rather than on a prefix — a future POST
+    under /api/invites must not inherit the exemption by sitting there.
+    """
+    assert is_invite_redemption("/api/invites/abc/redeem") is True
+
+    for path in (
+        # The prefix alone is not enough.
+        "/api/invites",
+        "/api/invites/abc",
+        "/api/invites/abc/revoke",
+        # Nor is the suffix.
+        "/api/invites/abc/redeem/extra",
+        "/api/admin/invites/abc/redeem",
+        "/api/media/abc/redeem",
+        # Nor a near miss on the prefix.
+        "/api/invitesx/abc/redeem",
+    ):
+        assert is_invite_redemption(path) is False, path

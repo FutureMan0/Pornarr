@@ -256,7 +256,7 @@ def require_role(role: UserRole) -> Callable[..., object]:
     return dependency
 
 
-def _is_invite_redemption(path: str) -> bool:
+def is_invite_redemption(path: str) -> bool:
     """`/api/invites/<token>/redeem`, and nothing else under that prefix.
 
     Redemption is exempt for the same reason login is: there is no session to
@@ -277,7 +277,7 @@ async def enforce_csrf(request: Request) -> None:
         request.method not in _UNSAFE_METHODS
         or request.url.path
         in {"/api/auth/login", "/api/setup/validate-library-path", "/api/setup/complete"}
-        or _is_invite_redemption(request.url.path)
+        or is_invite_redemption(request.url.path)
         or request.headers.get("X-Api-Key")
     ):
         return
