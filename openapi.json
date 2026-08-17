@@ -3963,11 +3963,23 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           }
         },
         "required": [
           "id",
           "request_id",
+          "title",
           "client_name",
           "protocol",
           "release_guid",
@@ -4020,6 +4032,40 @@
         ],
         "title": "QueueSort",
         "type": "string"
+      },
+      "QueueSummaryResponse": {
+        "description": "The four cards above the queue.\n\nCounted over the whole queue rather than over the page. A card that\ndescribes what happened to load is a card that changes when you scroll,\nwhich is the one thing a summary must not do.",
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "integer"
+          },
+          "completed": {
+            "title": "Completed",
+            "type": "integer"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "queued": {
+            "title": "Queued",
+            "type": "integer"
+          },
+          "speed_bytes": {
+            "title": "Speed Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "active",
+          "queued",
+          "failed",
+          "completed",
+          "speed_bytes"
+        ],
+        "title": "QueueSummaryResponse",
+        "type": "object"
       },
       "RatingSummaryResponse": {
         "properties": {
@@ -11358,6 +11404,27 @@
           }
         },
         "summary": "List Queue",
+        "tags": [
+          "queue"
+        ]
+      }
+    },
+    "/api/queue/summary": {
+      "get": {
+        "operationId": "queue_queue_summary",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueSummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Queue Summary",
         "tags": [
           "queue"
         ]

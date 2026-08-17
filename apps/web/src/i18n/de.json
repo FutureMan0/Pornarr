@@ -22,11 +22,34 @@
     "title": "Downloads",
     "loading": "Downloads werden geladen",
     "priority": "Priorität {{value}}",
-    "speed": "{{value}} Bytes/s",
+    "speed": "Tempo",
     "speedUnknown": "Geschwindigkeit nicht verfügbar",
     "estimate": "Geschätzt {{low}}–{{high}} Sekunden ({{confidence}} Konfidenz)",
     "estimateUnknown": "Keine Schätzung verfügbar",
-    "failure": "Download fehlgeschlagen: {{error}}. Prüfe den Download-Client und wiederhole die Anfrage."
+    "failure": "Download fehlgeschlagen: {{error}}. Prüfe den Download-Client und wiederhole die Anfrage.",
+    "subtitle": "{{active}} aktiv · {{speed}}",
+    "active": "Aktiv",
+    "queued": "In Warteschlange",
+    "failed": "Fehlgeschlagen",
+    "filter": "Welche Aufträge gezeigt werden",
+    "tab": {
+      "active": "Aktiv",
+      "completed": "Abgeschlossen",
+      "failed": "Fehlgeschlagen"
+    },
+    "empty": {
+      "active": "Es lädt gerade nichts.",
+      "completed": "Bisher ist nichts fertig geworden.",
+      "failed": "Nichts ist fehlgeschlagen."
+    },
+    "column": {
+      "item": "Eintrag",
+      "progress": "Fortschritt",
+      "stage": "Phase",
+      "speed": "Tempo",
+      "eta": "Restzeit"
+    },
+    "progressUnknown": "Größe nicht gemeldet"
   },
   "requests": {
     "title": "Anfragen",

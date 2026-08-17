@@ -153,3 +153,98 @@ async def test_admin_queue_operations_sync_the_client_and_recalculate_estimates(
     assert persisted is not None
     assert persisted.priority == 100
     assert persisted.status == "queued"
+
+
+async def test_the_summary_counts_the_whole_queue_not_a_page(app, client) -> None:
+    """The cards above the queue must not change when someone scrolls."""
+    admin = await create_user(app, username="root", role=UserRole.ADMIN)
+    async with AsyncSession(app.state.engine, expire_on_commit=False) as session:
+        for index in range(3):
+            session.add(
+                DownloadJob(
+                    client_name="client",
+                    protocol="usenet",
+                    release_guid=f"queued-{index}",
+                    status="queued",
+                )
+            )
+        session.add(
+            DownloadJob(
+                client_name="client",
+                protocol="usenet",
+                release_guid="moving",
+                status="downloading",
+                download_speed_bytes=1_000,
+            )
+        )
+        session.add(
+            DownloadJob(
+                client_name="client",
+                protocol="usenet",
+                release_guid="also-moving",
+                status="moving",
+                download_speed_bytes=500,
+            )
+        )
+        session.add(
+            DownloadJob(
+                client_name="client", protocol="usenet", release_guid="broken", status="failed"
+            )
+        )
+        await session.commit()
+
+    await login(client, admin.username, "correct horse battery staple")
+    body = (await client.get("/api/queue/summary")).json()
+
+    assert body == {
+        "active": 2,
+        "queued": 3,
+        "failed": 1,
+        "completed": 0,
+        # Only the jobs actually moving bytes. A paused job reports no speed and
+        # must not be summed in as a zero that drags the figure down.
+        "speed_bytes": 1_500,
+    }
+
+
+async def test_a_queued_job_carries_what_somebody_asked_for(app, client) -> None:
+    admin = await create_user(app, username="root", role=UserRole.ADMIN)
+    async with AsyncSession(app.state.engine, expire_on_commit=False) as session:
+        job = DownloadJob(
+            client_name="client", protocol="usenet", release_guid="guid-1", status="queued"
+        )
+        session.add(job)
+        await session.flush()
+        session.add(
+            Request(
+                user_id=admin.id,
+                query="The Long Way",
+                status=RequestStatus.DOWNLOADING,
+                download_job_id=job.id,
+            )
+        )
+        await session.commit()
+
+    await login(client, admin.username, "correct horse battery staple")
+    items = (await client.get("/api/queue")).json()["items"]
+
+    # A queue listing release GUIDs is a queue nobody can read.
+    assert items[0]["title"] == "The Long Way"
+
+
+async def test_a_job_with_no_request_says_so_rather_than_inventing_a_name(app, client) -> None:
+    admin = await create_user(app, username="root", role=UserRole.ADMIN)
+    async with AsyncSession(app.state.engine, expire_on_commit=False) as session:
+        session.add(
+            DownloadJob(
+                client_name="client", protocol="usenet", release_guid="orphan", status="queued"
+            )
+        )
+        await session.commit()
+
+    await login(client, admin.username, "correct horse battery staple")
+    items = (await client.get("/api/queue")).json()["items"]
+
+    assert items[0]["title"] is None
+    # The GUID is all there is, and it is still there for the client to show.
+    assert items[0]["release_guid"] == "orphan"

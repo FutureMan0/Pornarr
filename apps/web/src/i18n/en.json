@@ -22,11 +22,34 @@
     "title": "Downloads",
     "loading": "Loading downloads",
     "priority": "Priority {{value}}",
-    "speed": "{{value}} bytes/s",
+    "speed": "Speed",
     "speedUnknown": "Speed unavailable",
     "estimate": "Estimated {{low}}–{{high}} seconds ({{confidence}} confidence)",
     "estimateUnknown": "No estimate available",
-    "failure": "Download failed: {{error}}. Check the download client and retry the request."
+    "failure": "Download failed: {{error}}. Check the download client and retry the request.",
+    "subtitle": "{{active}} active · {{speed}}",
+    "active": "Active",
+    "queued": "Queued",
+    "failed": "Failed",
+    "filter": "Which jobs to show",
+    "tab": {
+      "active": "Active",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "empty": {
+      "active": "Nothing is downloading.",
+      "completed": "Nothing has finished yet.",
+      "failed": "Nothing has failed."
+    },
+    "column": {
+      "item": "Item",
+      "progress": "Progress",
+      "stage": "Stage",
+      "speed": "Speed",
+      "eta": "ETA"
+    },
+    "progressUnknown": "Size not reported"
   },
   "requests": {
     "title": "Requests",

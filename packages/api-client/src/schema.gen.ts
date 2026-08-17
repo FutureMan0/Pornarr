@@ -1572,6 +1572,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/queue/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Queue Summary */
+        get: operations["queue_queue_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/recommendations": {
         parameters: {
             query?: never;
@@ -3677,6 +3694,8 @@ export interface components {
             size_bytes: number | null;
             /** Status */
             status: string;
+            /** Title */
+            title: string | null;
         };
         /** QueueListResponse */
         QueueListResponse: {
@@ -3690,6 +3709,26 @@ export interface components {
          * @enum {string}
          */
         QueueSort: "priority" | "created_at" | "status";
+        /**
+         * QueueSummaryResponse
+         * @description The four cards above the queue.
+         *
+         *     Counted over the whole queue rather than over the page. A card that
+         *     describes what happened to load is a card that changes when you scroll,
+         *     which is the one thing a summary must not do.
+         */
+        QueueSummaryResponse: {
+            /** Active */
+            active: number;
+            /** Completed */
+            completed: number;
+            /** Failed */
+            failed: number;
+            /** Queued */
+            queued: number;
+            /** Speed Bytes */
+            speed_bytes: number;
+        };
         /** RatingSummaryResponse */
         RatingSummaryResponse: {
             /** Average */
@@ -8198,6 +8237,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    queue_queue_summary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueSummaryResponse"];
                 };
             };
         };
