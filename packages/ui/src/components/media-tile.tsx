@@ -14,7 +14,7 @@
  * they have no library behind them, which is not a reason to throw away artwork
  * the scanner already produced.
  */
-import type { JSX, ReactNode } from "react";
+import type { CSSProperties, JSX, ReactNode } from "react";
 
 import { cx } from "../lib/cx";
 import { Artwork, type ArtworkBlur } from "./artwork";
@@ -38,6 +38,12 @@ export interface MediaTileProps {
   /** Any stable number from the record; drives the placeholder colour. */
   readonly seed: number;
   readonly blur?: ArtworkBlur | undefined;
+  /**
+   * CSS aspect ratio for the artwork. A clip is 9/16 and a title is 16/10, and
+   * the shape is the fastest thing telling a reader which of the two they are
+   * looking at — faster than a duration badge and faster than reading a title.
+   */
+  readonly ratio?: string | undefined;
   /** A real image for this title. Falls back to the generated placeholder. */
   readonly poster?: ReactNode | undefined;
   readonly veil?: ReactNode | undefined;
@@ -58,6 +64,7 @@ export function MediaTile({
   commentCount = 0,
   seed,
   blur = "hidden",
+  ratio,
   poster,
   veil,
   action,
@@ -85,11 +92,14 @@ export function MediaTile({
   const content = (
     <>
       {poster === undefined ? (
-        <Artwork seed={seed} blur={blur} veil={veil} className={styles.art}>
+        <Artwork seed={seed} blur={blur} veil={veil} ratio={ratio} className={styles.art}>
           {overlays}
         </Artwork>
       ) : (
-        <div className={cx(styles.art, styles.frame, blur === "hidden" && styles.blurred)}>
+        <div
+          className={cx(styles.art, styles.frame, blur === "hidden" && styles.blurred)}
+          style={ratio === undefined ? undefined : ({ "--art-ratio": ratio } as CSSProperties)}
+        >
           {poster}
           <span className={styles.scrim} aria-hidden="true" />
           {overlays}

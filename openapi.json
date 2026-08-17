@@ -2519,6 +2519,11 @@
       },
       "MediaDetailResponse": {
         "properties": {
+          "added_at": {
+            "format": "date-time",
+            "title": "Added At",
+            "type": "string"
+          },
           "bitrate": {
             "anyOf": [
               {
@@ -2677,6 +2682,7 @@
           "release_date",
           "confidence",
           "metadata_source",
+          "added_at",
           "performers",
           "tags",
           "rating",

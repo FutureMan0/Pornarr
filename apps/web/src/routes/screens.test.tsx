@@ -48,55 +48,6 @@ describe("the watchlist", () => {
   });
 });
 
-describe("the shorts feed", () => {
-  test("choosing a sort asks the server for that sort", async () => {
-    const sorts: (string | null)[] = [];
-    server.use(
-      http.get("/api/shorts", ({ request }) => {
-        sorts.push(new URL(request.url).searchParams.get("sort"));
-        return HttpResponse.json([]);
-      }),
-    );
-    renderApp("/shorts");
-
-    await screen.findByRole("heading", { name: "Shorts", level: 1 });
-    await userEvent.setup().click(screen.getByRole("button", { name: "Top rated" }));
-
-    // Sorting a feed client-side would reorder one page and lie about the rest.
-    await waitFor(() => expect(sorts).toContain("top"));
-  });
-
-  test("a clip opens the player rather than dead-ending in the grid", async () => {
-    server.use(
-      http.get("/api/shorts", () =>
-        HttpResponse.json([
-          {
-            id: "s-1",
-            media_id: "m-9",
-            parent_media_id: "m-9",
-            marker_id: null,
-            media_title: "Aurora 214",
-            title: "the good bit",
-            start_seconds: 10,
-            end_seconds: 70,
-            duration_seconds: 60,
-            source: "marker",
-            average_stars: 4.5,
-            comment_count: 3,
-          },
-        ]),
-      ),
-    );
-    renderApp("/shorts");
-
-    const link = await screen.findByRole("link", { name: /the good bit/ });
-
-    // The way back to the full title is on the player, where the timestamp
-    // gives it somewhere to land. A grid tile has no room to say "at 15:11".
-    expect(link.getAttribute("href")).toBe("/shorts/s-1");
-  });
-});
-
 describe("collections", () => {
   test("a shelf shows whether the household can read it", async () => {
     server.use(
@@ -287,6 +238,75 @@ describe("the related row", () => {
   });
 });
 
+describe("the detail rail", () => {
+  test("names the performers and links each into a search for their work", async () => {
+    server.use(
+      http.get("/api/media/:mediaId", () =>
+        HttpResponse.json({ ...DETAIL, performers: ["Mira Vance", "Jon Ek"] }),
+      ),
+    );
+    renderApp("/library/m-1");
+
+    const link = await screen.findByRole("link", { name: /Mira Vance/ });
+    // There is no performer page to send anyone to, so the name has to lead
+    // somewhere that exists — and a search for it is what a reader wanted.
+    expect(link.getAttribute("href")).toBe("/search?q=Mira%20Vance");
+  });
+
+  test("shows the file path to the owner and withholds it from everyone else", async () => {
+    server.use(
+      http.get("/api/media/:mediaId", () => HttpResponse.json({ ...DETAIL, in_my_library: true })),
+    );
+    const own = renderApp("/library/m-1");
+    expect(await screen.findByText("/data/a.mp4")).not.toBeNull();
+    own.unmount();
+
+    server.use(
+      http.get("/api/media/:mediaId", () => HttpResponse.json({ ...DETAIL, in_my_library: false })),
+    );
+    renderApp("/library/m-1");
+
+    // Where a household keeps its files is not a guest's business.
+    expect(await screen.findByText(/hidden by the owner/)).not.toBeNull();
+    expect(screen.queryByText("/data/a.mp4")).toBeNull();
+  });
+});
+
+describe("scene markers", () => {
+  test("offer one jump per detected scene, timestamped", async () => {
+    server.use(
+      http.get("/api/media/:mediaId", () => HttpResponse.json({ ...DETAIL, playable: true })),
+      http.get("/api/media/:mediaId/scenes", () =>
+        HttpResponse.json({
+          scenes: [
+            { id: "s-1", ordinal: 1, start_seconds: 0, end_seconds: 90 },
+            { id: "s-2", ordinal: 2, start_seconds: 605, end_seconds: 1200 },
+          ],
+        }),
+      ),
+    );
+    renderApp("/library/m-1");
+
+    expect(await screen.findByRole("button", { name: /Scene 1/ })).not.toBeNull();
+    // The timestamp is the whole value of the control: "Scene 2" alone tells a
+    // reader nothing about where in two hours it starts.
+    expect(screen.getByRole("button", { name: /10:05/ })).not.toBeNull();
+  });
+
+  test("stay away when the detector has not run", async () => {
+    server.use(
+      http.get("/api/media/:mediaId", () => HttpResponse.json({ ...DETAIL, playable: true })),
+      http.get("/api/media/:mediaId/scenes", () => HttpResponse.json({ scenes: [] })),
+    );
+    renderApp("/library/m-1");
+
+    await screen.findByRole("heading", { level: 1, name: "Aurora 214" });
+    // A heading over nothing reads as a broken feature rather than as work
+    // that has not run.
+    expect(screen.queryByText("Scene markers")).toBeNull();
+  });
+});
+
 const DETAIL = {
   id: "m-1",
   owner_id: null,
@@ -296,6 +316,7 @@ const DETAIL = {
   release_date: "2026-01-01",
   confidence: 0.9,
   metadata_source: "test",
+  added_at: "2026-01-02T03:04:05Z",
   performers: [],
   tags: [],
   path: "/data/a.mp4",

@@ -38,7 +38,7 @@ import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles
 import { SettingsRoute } from "./routes/settings/settings-route";
 import { SetupGate } from "./routes/setup/setup-gate";
 import { SetupRoute } from "./routes/setup/setup-route";
-import { ShortsPlayerRoute } from "./routes/shorts/shorts-player-route";
+import { ShortsFeedRoute } from "./routes/shorts/shorts-feed";
 import { ShortsRoute } from "./routes/shorts/shorts-route";
 import { WatchlistRoute } from "./routes/watchlist/watchlist-route";
 import { AppShell } from "./shell/app-shell";
@@ -109,8 +109,12 @@ export const appRoutes: RouteObject[] = [
               { path: "downloads", element: <QueueRoute /> },
               { path: "feed", element: <FeedRoute /> },
               { path: "continue", element: <ContinueRoute /> },
-              { path: "shorts", element: <ShortsRoute /> },
-              { path: "shorts/:shortId", element: <ShortsPlayerRoute /> },
+              // The feed is the destination; the grid is where you go when you
+              // are after a particular clip. `/shorts/browse` sits before the
+              // parameterised route so "browse" is never read as an id.
+              { path: "shorts", element: <ShortsFeedRoute /> },
+              { path: "shorts/browse", element: <ShortsRoute /> },
+              { path: "shorts/:shortId", element: <ShortsFeedRoute /> },
               { path: "collections", element: <CollectionsRoute /> },
               { path: "collections/:collectionId", element: <CollectionDetailRoute /> },
               { path: "watchlist", element: <WatchlistRoute /> },

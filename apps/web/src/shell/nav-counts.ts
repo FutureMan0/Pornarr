@@ -11,6 +11,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 
+import { useSession } from "../auth/session";
 import { getApiClient } from "../lib/api";
 import type { NavId } from "./sidebar";
 
@@ -20,12 +21,18 @@ const STALE_MS = 30_000;
 export type NavCounts = Partial<Record<NavId, number>>;
 
 export function useNavCounts(): NavCounts {
+  const session = useSession();
+
   const queue = useQuery({
     queryKey: ["queue"],
     queryFn: async () => {
       const { data } = await getApiClient().GET("/api/queue");
       return data ?? [];
     },
+    // `/api/queue` is admin-only, and Downloads is hidden from guests for the
+    // same reason. Asking anyway would spend a 403 on every screen a guest
+    // opens, to decide the badge on an entry they cannot see.
+    enabled: session.data?.role === "admin",
     staleTime: STALE_MS,
     // A failing count must never take a screen down with it: the navigation is
     // how you get away from a broken screen.

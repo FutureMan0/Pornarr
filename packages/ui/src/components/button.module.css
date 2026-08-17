@@ -88,9 +88,14 @@
 }
 
 /* Disabled is the one place --border is allowed: 1.4.11 exempts controls that
-   cannot be operated, and --ink-faint exists for exactly this. */
+   cannot be operated, and --ink-faint exists for exactly this.
+ *
+ * --surface-3 rather than --surface-2, because a card is --surface-2: a disabled
+ * button inside one was the same colour as the card behind it and read as a line
+ * of grey text rather than as a control waiting for input. --surface-3 is a step
+ * away from both the page ground and a card. */
 .button:disabled {
-  background-color: var(--surface-2);
+  background-color: var(--surface-3);
   border-color: var(--border);
   color: var(--ink-faint);
   cursor: not-allowed;

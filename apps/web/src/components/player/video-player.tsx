@@ -1,5 +1,6 @@
 import Hls from "hls.js";
-import { useEffect, useRef, useState } from "react";
+import type { RefObject } from "react";
+import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CSRF_HEADER, readCsrfToken } from "../../lib/api";
 
@@ -22,6 +23,12 @@ export interface Clip {
   readonly endSeconds: number;
 }
 
+/** What a caller outside the player can ask it to do. */
+export interface PlayerHandle {
+  /** Move to a position, in seconds from the start of the file. */
+  readonly seek: (seconds: number) => void;
+}
+
 export interface VideoPlayerProps {
   readonly mediaId: string;
   readonly title: string;
@@ -34,9 +41,24 @@ export interface VideoPlayerProps {
   /** Portrait for shorts, which are shot that way and letterbox otherwise. */
   readonly portrait?: boolean | undefined;
   readonly onEnded?: (() => void) | undefined;
+  /**
+   * A handle for seeking from outside — the scene markers use it.
+   *
+   * A ref rather than a `position` prop: seeking is an event, and expressing an
+   * event as state means inventing a nonce so that asking for the same second
+   * twice still does something.
+   */
+  readonly handleRef?: RefObject<PlayerHandle | null> | undefined;
 }
 
-export function VideoPlayer({ mediaId, title, clip, portrait, onEnded }: VideoPlayerProps) {
+export function VideoPlayer({
+  mediaId,
+  title,
+  clip,
+  portrait,
+  onEnded,
+  handleRef,
+}: VideoPlayerProps) {
   const { t } = useTranslation();
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
@@ -90,6 +112,22 @@ export function VideoPlayer({ mediaId, title, clip, portrait, onEnded }: VideoPl
       }
     };
   }, [mediaId]);
+
+  useImperativeHandle(
+    handleRef,
+    () => ({
+      seek: (seconds: number) => {
+        const element = video.current;
+        if (element === null) return;
+        element.currentTime = seconds;
+        // A seek from a marker is a request to watch from there, so it plays.
+        // `catch` because a browser that has not seen a gesture yet refuses,
+        // and a rejected promise here is not an error worth surfacing.
+        void element.play().catch(() => {});
+      },
+    }),
+    [],
+  );
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -147,12 +185,38 @@ export function VideoPlayer({ mediaId, title, clip, portrait, onEnded }: VideoPl
     });
   }
 
-  if (error) return <p role="alert">{t("player.unavailable")}</p>;
+  // A failure keeps the video's footprint. As a bare paragraph this collapsed
+  // the player to one line of text and pulled the whole screen up around it,
+  // which reads as a page that was never meant to have a video on it rather
+  // than as a video that did not load.
+  if (error)
+    return (
+      <div
+        role="alert"
+        className={
+          portrait === true
+            ? "grid h-full w-full place-items-center rounded-lg bg-surface-2 p-4 text-center text-sm text-ink-muted [aspect-ratio:9/16]"
+            : "grid aspect-video w-full place-items-center rounded-lg bg-surface-2 p-4 text-center text-sm text-ink-muted"
+        }
+      >
+        {t("player.unavailable")}
+      </div>
+    );
+
+  // Portrait fills whatever box it is given rather than declaring its own ratio.
+  // `aspect-[9/16] h-full` looks equivalent but is not: `h-full` against an
+  // auto-height parent resolves to nothing, the ratio wins, and the video grows
+  // past the bottom of the box it was meant to sit in — which is how the shorts
+  // caption ended up clipped away. The shorts pane owns the 9/16 now, and
+  // `object-contain` letterboxes a mis-sized source rather than stretching it.
   return (
-    <section aria-label={t("player.label", { title })} className="bg-black">
+    <section
+      aria-label={t("player.label", { title })}
+      className={portrait === true ? "h-full bg-black" : "bg-black"}
+    >
       <video
         ref={video}
-        className={portrait === true ? "aspect-[9/16] h-full w-full" : "aspect-video w-full"}
+        className={portrait === true ? "h-full w-full object-contain" : "aspect-video w-full"}
         controls
         playsInline
         onLoadedMetadata={enterClip}
