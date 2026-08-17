@@ -23,6 +23,7 @@ def test_score_returns_each_weighted_component_and_their_sum() -> None:
         quality="1080p",
         release_date=today,
         popularity=0.7,
+        rating=0.5,
     )
     profile = UserInterestProfile(
         tags={"tag-a": 0.8},
@@ -41,6 +42,7 @@ def test_score_returns_each_weighted_component_and_their_sum() -> None:
         "quality": pytest.approx(0.05),
         "recency": pytest.approx(0.1),
         "popularity": pytest.approx(0.07),
+        "rating": pytest.approx(0.05),
     }
     assert result.score == pytest.approx(sum(result.breakdown.values()))
 
@@ -75,6 +77,7 @@ def test_hard_blocks_make_a_candidate_unreachable(
         "quality": 0,
         "recency": 0,
         "popularity": 0,
+        "rating": 0,
     }
 
 

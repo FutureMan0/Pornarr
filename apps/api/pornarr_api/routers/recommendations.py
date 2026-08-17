@@ -23,7 +23,7 @@ from pornarr_db.models.preferences import UserPreference, UserPreferenceState
 from pornarr_db.models.recommendation import RecommendationCandidate
 from pornarr_db.models.user import User
 from pornarr_db.preferences import refresh_user_interest_profile
-from pornarr_db.recommendations import generate_recommendations
+from pornarr_db.recommendations import RecommendationOptions, generate_recommendations
 from pornarr_db.settings import RuntimeSettings, get_runtime_settings
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
@@ -81,10 +81,15 @@ def reason_sentences(reason: dict[str, object]) -> list[str]:
 
     Strongest first, and only signals that actually contributed: a reason with
     zero weight explains nothing and would just make every card look the same.
+    The weights live under `score_breakdown`; the rest of the reason is the
+    matched tags, performers and studios, which the card shows on its own.
     """
+    breakdown = reason.get("score_breakdown")
+    if not isinstance(breakdown, dict):
+        return []
     weighted = [
-        (key, float(value))
-        for key, value in reason.items()
+        (str(key), float(value))
+        for key, value in breakdown.items()
         if isinstance(value, (int, float)) and float(value) > 0
     ]
     return [_REASON_LABELS.get(key, key) for key, _ in sorted(weighted, key=lambda item: -item[1])]
@@ -113,6 +118,15 @@ def recommendation_weights(settings: RuntimeSettings) -> RecommendationWeights:
         quality=settings.recommendation_quality_weight,
         recency=settings.recommendation_recency_weight,
         popularity=settings.recommendation_popularity_weight,
+    )
+
+
+def recommendation_options(settings: RuntimeSettings) -> RecommendationOptions:
+    return RecommendationOptions(
+        use_ratings=settings.recommendation_use_ratings,
+        include_friend_picks=settings.recommendation_include_friend_picks,
+        hide_finished=settings.recommendation_hide_finished,
+        include_shorts=settings.recommendation_include_shorts,
     )
 
 
@@ -174,7 +188,12 @@ async def record_recommendation_feedback(
     await session.flush()
     await refresh_user_interest_profile(session, user.id)
     settings = await get_runtime_settings(session, request.app.state.settings)
-    await generate_recommendations(session, user.id, weights=recommendation_weights(settings))
+    await generate_recommendations(
+        session,
+        user.id,
+        weights=recommendation_weights(settings),
+        options=recommendation_options(settings),
+    )
 
 
 @router.delete("/profile", status_code=204)

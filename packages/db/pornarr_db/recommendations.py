@@ -3,23 +3,45 @@
 from __future__ import annotations
 
 from collections import Counter
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_core.scoring import RecommendationCandidate as ScoringCandidate
 from pornarr_core.scoring import RecommendationWeights, UserInterestProfile, score_recommendation
 from pornarr_db.models.entities import MediaPerformer, MediaTag
 from pornarr_db.models.media import Media, MediaFile
-from pornarr_db.models.playback import UserEvent
+from pornarr_db.models.playback import PlaybackProgress, UserEvent
 from pornarr_db.models.preferences import PreferenceAxis, UserPreference
 from pornarr_db.models.recommendation import RecommendationCandidate
+from pornarr_db.models.social import (
+    MAXIMUM_SHORT_SECONDS,
+    MAXIMUM_STARS,
+    MINIMUM_STARS,
+    MediaSend,
+    Rating,
+)
 
 MODEL_VERSION = "v1"
 MAX_CANDIDATES = 20
 EXPLORATION_SLOTS = 4
+
+
+@dataclass(frozen=True)
+class RecommendationOptions:
+    """The feed switches an administrator sets, resolved for one generation run.
+
+    Defaults mirror `Settings`, so a caller that has no runtime settings to hand
+    generates the same feed a freshly installed server would.
+    """
+
+    use_ratings: bool = True
+    include_friend_picks: bool = True
+    hide_finished: bool = True
+    include_shorts: bool = True
 
 
 async def generate_recommendations(
@@ -28,10 +50,12 @@ async def generate_recommendations(
     *,
     now: datetime | None = None,
     weights: RecommendationWeights | None = None,
+    options: RecommendationOptions | None = None,
 ) -> list[RecommendationCandidate]:
     """Replace one user's unexpired candidates with a diverse scored selection."""
 
     generated_at = now or datetime.now(UTC)
+    resolved_options = options or RecommendationOptions()
     profile = await _profile(session, user_id)
     seen = set(
         await session.scalars(
@@ -40,6 +64,8 @@ async def generate_recommendations(
             )
         )
     )
+    seen |= await _excluded(session, user_id, resolved_options)
+    ratings = await _ratings(session) if resolved_options.use_ratings else {}
     rows = await session.execute(
         select(Media, MediaFile)
         .join(MediaFile, MediaFile.media_id == Media.id)
@@ -48,6 +74,8 @@ async def generate_recommendations(
     scored = []
     for media, media_file in rows:
         if media.id in seen:
+            continue
+        if not resolved_options.include_shorts and _is_short(media_file):
             continue
         tags = frozenset(
             str(value)
@@ -68,6 +96,7 @@ async def generate_recommendations(
                 studio=media.studio.casefold() if media.studio else None,
                 quality=media_file.quality,
                 release_date=media.release_date,
+                rating=ratings.get(media.id, 0),
             ),
             profile,
             weights=weights,
@@ -98,6 +127,52 @@ async def generate_recommendations(
     session.add_all(records)
     await session.flush()
     return records
+
+
+async def _excluded(
+    session: AsyncSession, user_id: UUID, options: RecommendationOptions
+) -> set[UUID]:
+    """Media the switches keep out of the feed on top of what the user has touched."""
+
+    excluded: set[UUID] = set()
+    if options.hide_finished:
+        # Read from playback rather than the event stream: events are pruned on
+        # a retention schedule, so a title finished last year would otherwise
+        # come back as a fresh suggestion.
+        excluded |= set(
+            await session.scalars(
+                select(PlaybackProgress.media_id).where(
+                    PlaybackProgress.user_id == user_id,
+                    PlaybackProgress.completed.is_(True),
+                )
+            )
+        )
+    if not options.include_friend_picks:
+        excluded |= set(
+            await session.scalars(
+                select(MediaSend.media_id).where(MediaSend.recipient_id == user_id)
+            )
+        )
+    return excluded
+
+
+async def _ratings(session: AsyncSession) -> dict[UUID, float]:
+    """Each title's household score on the 0-1 scale the scorer works in."""
+
+    rows = await session.execute(
+        select(Rating.media_id, func.avg(Rating.stars)).group_by(Rating.media_id)
+    )
+    return {
+        media_id: (float(average) - MINIMUM_STARS) / (MAXIMUM_STARS - MINIMUM_STARS)
+        for media_id, average in rows
+    }
+
+
+def _is_short(media_file: MediaFile) -> bool:
+    return (
+        media_file.duration_seconds is not None
+        and media_file.duration_seconds <= MAXIMUM_SHORT_SECONDS
+    )
 
 
 async def _profile(session: AsyncSession, user_id: UUID) -> UserInterestProfile:

@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from math import isfinite
 
-_BREAKDOWN_KEYS = ("tag", "performer", "studio", "quality", "recency", "popularity")
+_BREAKDOWN_KEYS = ("tag", "performer", "studio", "quality", "recency", "popularity", "rating")
 
 
 @dataclass(frozen=True)
@@ -18,6 +18,10 @@ class RecommendationWeights:
     quality: float = 0.10
     recency: float = 0.10
     popularity: float = 0.10
+    # What the household said about a title, as opposed to how much it was
+    # played. Kept apart from popularity so the stored explanation names the
+    # signal a person can actually recognise on the card.
+    rating: float = 0.10
 
     def __post_init__(self) -> None:
         if any(not isfinite(value) or value < 0 for value in self.__dict__.values()):
@@ -42,6 +46,7 @@ class RecommendationCandidate:
     quality: str | None = None
     release_date: date | None = None
     popularity: float = 0
+    rating: float = 0
 
 
 @dataclass(frozen=True)
@@ -75,6 +80,7 @@ def score_recommendation(
         "quality": _match(candidate.quality, profile.qualities) * resolved_weights.quality,
         "recency": _recency(candidate.release_date, now) * resolved_weights.recency,
         "popularity": _normalise(candidate.popularity) * resolved_weights.popularity,
+        "rating": _normalise(candidate.rating) * resolved_weights.rating,
     }
     return RecommendationScore(score=sum(components.values()), breakdown=components, blocked=False)
 

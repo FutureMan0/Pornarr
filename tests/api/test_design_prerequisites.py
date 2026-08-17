@@ -477,7 +477,12 @@ async def test_a_recommendation_carries_a_match_score_and_readable_reasons(
                 user_id=alice.id,
                 media_id=media.id,
                 score=0.94,
-                reason_json={"tag": 0.6, "studio": 0.34, "recency": 0.0},
+                # The shape the recommender stores: the weights sit one level
+                # down, next to the matched tags, performers and studios.
+                reason_json={
+                    "dominant_factor": "tag",
+                    "score_breakdown": {"tag": 0.6, "studio": 0.34, "recency": 0.0},
+                },
                 model_version="test",
                 expires_at=datetime.now(UTC) + timedelta(days=1),
             )

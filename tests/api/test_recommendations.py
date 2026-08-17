@@ -78,6 +78,50 @@ async def test_recommendations_are_private_and_expired_candidates_are_hidden(app
     assert forbidden_feedback.status_code == 404
 
 
+async def test_reasons_name_the_signals_that_carried_the_score(app, client) -> None:
+    """The card prints sentences, strongest signal first, and nothing that scored zero."""
+
+    user = await create_user(app)
+    async with AsyncSession(app.state.engine, expire_on_commit=False) as session:
+        media = await _media(session, "Explained")
+        session.add(
+            RecommendationCandidate(
+                user_id=user.id,
+                media_id=media.id,
+                score=0.6,
+                reason_json={
+                    "matched_tags": ["neon"],
+                    "matched_performers": ["ada"],
+                    "matched_studios": [],
+                    "dominant_factor": "tag",
+                    "score_breakdown": {
+                        "tag": 0.3,
+                        "performer": 0.12,
+                        "studio": 0,
+                        "quality": 0.1,
+                        "recency": 0,
+                        "popularity": 0,
+                        "rating": 0.08,
+                    },
+                },
+                model_version="v1",
+                expires_at=datetime.now(UTC) + timedelta(days=1),
+            )
+        )
+        await session.commit()
+    await login(client, user.username, "correct horse battery staple")
+
+    entry = (await client.get("/api/recommendations")).json()[0]
+
+    assert entry["match_score"] == 60
+    assert entry["reasons"] == [
+        "Tags you keep watching",
+        "A performer you follow",
+        "Matches the quality you prefer",
+        "Rated highly here",
+    ]
+
+
 async def test_not_interested_removes_a_recommendation_immediately(app, client) -> None:
     user = await create_user(app)
     async with AsyncSession(app.state.engine, expire_on_commit=False) as session:
