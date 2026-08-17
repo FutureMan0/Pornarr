@@ -32,6 +32,7 @@ import { RecommendationsRoute } from "./routes/recommendations/recommendations-r
 import { RequestsRoute } from "./routes/requests/requests-route";
 import { SearchRoute } from "./routes/search/search-route";
 import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles-route";
+import { SettingsRoute } from "./routes/settings/settings-route";
 import { SetupGate } from "./routes/setup/setup-gate";
 import { SetupRoute } from "./routes/setup/setup-route";
 import { ShortsPlayerRoute } from "./routes/shorts/shorts-player-route";
@@ -91,7 +92,7 @@ export const appRoutes: RouteObject[] = [
               { path: "admin/quarantine", element: <QuarantineReviewRoute /> },
               { path: "admin/moderation", element: <ModerationRoute /> },
               { path: "admin/scan", element: <ScanRoute /> },
-              { path: "settings", element: <Navigate to="/settings/quality" replace /> },
+              { path: "settings", element: <SettingsRoute /> },
               { path: "settings/quality", element: <QualityProfilesRoute /> },
               { path: "search", element: <SearchRoute /> },
               { path: "monitors", element: <MonitorsRoute /> },
