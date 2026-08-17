@@ -1,0 +1,36 @@
+/**
+ * Two stacked rows of the same five glyphs. The filled row is clipped to the
+ * score, which is what makes a half star exactly half.
+ */
+
+.stars {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  line-height: 0;
+}
+
+.track,
+.fill {
+  display: inline-flex;
+  gap: 1px;
+}
+
+/* The empty state has to be visible as an empty state, not invisible. */
+.track {
+  color: var(--border-strong);
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  width: var(--stars-fill, 0%);
+  color: var(--primary);
+}
+
+.star {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex: none;
+}

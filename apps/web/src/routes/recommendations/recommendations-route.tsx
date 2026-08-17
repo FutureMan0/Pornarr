@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { getApiClient } from "../../lib/api";
 import { apiFailure } from "../../lib/api-error";
+import { usePageTitle } from "../../shell/page-title";
 type Item = {
   media_id: string;
   title: string;
@@ -9,6 +11,7 @@ type Item = {
 };
 export function RecommendationsRoute() {
   const { t } = useTranslation();
+  usePageTitle(t("recommendations.title"));
   const client = useQueryClient();
   const recommendations = useQuery({
     queryKey: ["recommendations"],
@@ -36,13 +39,11 @@ export function RecommendationsRoute() {
   if (!recommendations.data.length)
     return (
       <section>
-        <h1>{t("recommendations.title")}</h1>
         <p>{t("recommendations.empty")}</p>
       </section>
     );
   return (
-    <section aria-labelledby="recommendations-heading">
-      <h1 id="recommendations-heading">{t("recommendations.title")}</h1>
+    <section aria-label={t("recommendations.title")}>
       <ul>
         {recommendations.data.map((item) => (
           <li key={item.media_id}>

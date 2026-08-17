@@ -1,0 +1,72 @@
+/**
+ * Placeholder artwork.
+ *
+ * Every title gets a gradient derived from a number on the record, not a random
+ * one — the same title is the same colour on every load and in every list.
+ *
+ * The hue is *anchored*, not free. A raw hash would spread tiles across the
+ * whole wheel and turn a page into a rainbow that fights the accent. `--art-h`
+ * carries an offset the component computes inside a ±50° band around the
+ * theme's own art hue, so a grid stays in the accent's family and still tells
+ * its tiles apart.
+ */
+
+.frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  aspect-ratio: var(--art-ratio, 16 / 10);
+}
+
+/*
+ * Inset past the edge: the blur samples nothing outside the element, so a
+ * gradient stopping at the boundary leaves a pale rim once it is blurred.
+ */
+.wash {
+  position: absolute;
+  inset: -12%;
+  background: radial-gradient(
+      58% 66% at 32% 34%,
+      hsl(calc(var(--pa-art-hue) + var(--art-h, 0deg)) 34% 54%),
+      transparent 72%
+    ),
+    radial-gradient(
+      52% 62% at 74% 64%,
+      hsl(calc(var(--pa-art-hue) + var(--art-h, 0deg) + 26deg) 32% 44%),
+      transparent 74%
+    ), linear-gradient(155deg, var(--surface-3), var(--pa-bg-00));
+  filter: blur(2px) saturate(calc(1.1 * var(--pa-art-sat)));
+}
+
+/*
+ * "Art hidden" is one switch, not per-component CSS: the blur strength and the
+ * saturation are tokens, so turning artwork off is a class on a wrapper rather
+ * than a prop threaded through every tile.
+ */
+.hidden .wash {
+  filter: blur(var(--pa-art-blur-md)) saturate(calc(1.25 * var(--pa-art-sat)));
+}
+
+.small .wash {
+  filter: blur(var(--pa-art-blur-sm)) saturate(calc(1.25 * var(--pa-art-sat)));
+}
+
+/* Keeps a badge in the corner readable over whatever the gradient does there. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    color-mix(in oklch, var(--pa-bg-00) 90%, transparent),
+    transparent 62%
+  );
+}
+
+.veil {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--ink-muted);
+}

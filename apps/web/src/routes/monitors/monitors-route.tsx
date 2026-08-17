@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { getApiClient } from "../../lib/api";
 import { apiFailure } from "../../lib/api-error";
+import { usePageTitle } from "../../shell/page-title";
 type Monitor = {
   id: string;
   kind: string;
@@ -12,6 +14,7 @@ type Monitor = {
 };
 export function MonitorsRoute() {
   const { t } = useTranslation();
+  usePageTitle(t("monitors.title"));
   const cache = useQueryClient();
   const monitors = useQuery({
     queryKey: ["monitors"],
@@ -44,7 +47,6 @@ export function MonitorsRoute() {
   if (monitors.isError) return <p role="alert">{t("errors.generic")}</p>;
   return (
     <section>
-      <h1>{t("monitors.title")}</h1>
       <ul>
         {monitors.data.map((m) => (
           <li key={m.id}>

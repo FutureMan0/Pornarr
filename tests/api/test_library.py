@@ -67,6 +67,8 @@ async def test_library_browses_active_media_with_user_progress(app, client: Asyn
             "sprite_url": f"/api/media/{media.id}/sprite",
             "rating": None,
             "rating_count": 0,
+            "tag_count": 0,
+            "comment_count": 0,
         }
     ]
     correction = await client.post(

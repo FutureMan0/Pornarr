@@ -17,11 +17,21 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
+import { useSession } from "../auth/session";
+import { useNavCounts } from "./nav-counts";
+import { SidebarBrand, SidebarIdentity } from "./sidebar-identity";
+
 export type SidebarLayout = "full" | "rail" | "drawer";
 
 export interface NavItem {
   readonly id: string;
   readonly path: string;
+  /**
+   * Hidden from guests. Not a security measure — the endpoints behind it check
+   * the role themselves — but a destination that answers 403 has no business
+   * being in someone's navigation.
+   */
+  readonly adminOnly?: boolean;
 }
 
 /**
@@ -32,7 +42,17 @@ export interface NavItem {
  * compiler's rather than a reviewer's.
  */
 export const NAV_ITEMS = [
+  { id: "admin", path: "/admin", adminOnly: true },
+  { id: "moderation", path: "/admin/moderation", adminOnly: true },
+  { id: "scan", path: "/admin/scan", adminOnly: true },
+  { id: "tags", path: "/admin/tags", adminOnly: true },
+  { id: "invites", path: "/admin/invites", adminOnly: true },
+  { id: "feed", path: "/feed" },
+  { id: "continue", path: "/continue" },
   { id: "library", path: "/library" },
+  { id: "shorts", path: "/shorts" },
+  { id: "collections", path: "/collections" },
+  { id: "watchlist", path: "/watchlist" },
   { id: "requests", path: "/requests" },
   { id: "downloads", path: "/downloads" },
   { id: "settings", path: "/settings" },
@@ -82,6 +102,15 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
   const { t } = useTranslation();
   const drawerRef = useRef<HTMLDivElement>(null);
   const isDrawer = layout === "drawer";
+  const isRail = layout === "rail";
+  const counts = useNavCounts();
+  const session = useSession();
+  // Until the session answers, show the guest set. Rendering the admin entry
+  // first and withdrawing it is worse than adding it a beat late.
+  const isAdmin = session.data?.role === "admin";
+  // `as const` narrows each entry, so the ones without the flag do not have the
+  // property at all — hence the `in` rather than a plain read.
+  const items = NAV_ITEMS.filter((item) => isAdmin || !("adminOnly" in item && item.adminOnly));
 
   // An overlay covers what the reader was reading, so focus moves into it and
   // stays until it closes. Returning focus afterwards belongs to the caller,
@@ -148,32 +177,54 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
         </button>
       ) : null}
 
-      <ul className="flex flex-col gap-1">
-        {NAV_ITEMS.map((item) => (
-          <li key={item.id}>
-            <NavLink
-              to={item.path}
-              onClick={isDrawer ? onClose : undefined}
-              className={({ isActive }) =>
-                cx(
-                  "text-sm",
-                  "flex items-center gap-3 rounded-md px-2 py-2 text-ink-muted",
-                  "transition-colors duration-[var(--duration-fast)] ease-out",
-                  "hover:bg-surface-3 hover:text-ink",
-                  layout === "rail" && "justify-center",
-                  isActive && "bg-[var(--primary-weak)] text-ink",
-                )
-              }
-            >
-              <NavIcon id={item.id} label={t(`nav.${item.id}`)} />
-              {/* The rail keeps the label for assistive technology; only the
-                  pixels go away. */}
-              <span className={layout === "rail" ? "visually-hidden" : undefined}>
-                {t(`nav.${item.id}`)}
-              </span>
-            </NavLink>
-          </li>
-        ))}
+      <SidebarBrand compact={isRail} />
+      <SidebarIdentity compact={isRail} />
+
+      <ul className="flex flex-col gap-0.5">
+        {items.map((item) => {
+          const label = t(`nav.${item.id}`);
+          const count = counts[item.id];
+          return (
+            <li key={item.id}>
+              <NavLink
+                to={item.path}
+                onClick={isDrawer ? onClose : undefined}
+                className={({ isActive }) =>
+                  cx(
+                    "text-sm",
+                    "flex items-center gap-2 rounded-md px-2 py-2",
+                    "transition-colors duration-[var(--duration-fast)] ease-out",
+                    "hover:bg-surface-3 hover:text-ink",
+                    isRail && "justify-center",
+                    // Exactly one text colour, chosen here rather than layered.
+                    // Emitting both `text-ink-muted` and the accent and letting
+                    // the cascade decide is how the active label ended up muted
+                    // on its own wash at 4.45:1 — the two utilities share a
+                    // specificity band and source order picks the winner.
+                    isActive ? "text-[var(--pa-accent-300)]" : "text-ink-muted",
+                    // Accent as a line, not a flood.
+                    isActive && "bg-[var(--primary-weak)]",
+                  )
+                }
+              >
+                <NavIcon id={item.id} label={label} />
+                {/* The rail keeps the label for assistive technology; only the
+                    pixels go away. */}
+                <span className={isRail ? "visually-hidden" : undefined}>{label}</span>
+                {count === undefined ? null : (
+                  <span
+                    className={cx(
+                      "text-2xs tabular-nums text-ink-muted",
+                      isRail ? "visually-hidden" : "ml-auto",
+                    )}
+                  >
+                    {count}
+                  </span>
+                )}
+              </NavLink>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );
@@ -237,6 +288,31 @@ function NavIcon({ id, label }: { readonly id: string; readonly label: string })
 }
 
 const NAV_ICON_PATHS: Readonly<Record<string, JSX.Element>> = {
+  feed: (
+    <>
+      <circle cx="8" cy="12" r="1.25" fill="currentColor" stroke="none" />
+      <path d="M2.5 8.5a6 6 0 0 1 5 4M2.5 4.5a10 10 0 0 1 9 8" />
+    </>
+  ),
+  continue: (
+    <>
+      <circle cx="8" cy="8" r="6" />
+      <path d="M6.75 5.75 10.5 8l-3.75 2.25Z" />
+    </>
+  ),
+  shorts: (
+    <>
+      <rect x="4.5" y="1.5" width="7" height="13" rx="1.5" />
+      <path d="M7 12.5h2" />
+    </>
+  ),
+  collections: (
+    <>
+      <path d="M2.5 5.5h5l1 1.5h5v6a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1Z" />
+      <path d="M4 5.5V4a1 1 0 0 1 1-1h2.2" />
+    </>
+  ),
+  watchlist: <path d="M4 2.5h8v11l-4-2.75L4 13.5Z" />,
   library: (
     <>
       <rect x="1.5" y="2.5" width="5" height="5" rx="1" />

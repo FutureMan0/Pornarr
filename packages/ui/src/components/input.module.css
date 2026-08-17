@@ -10,6 +10,32 @@
   gap: var(--space-1);
 }
 
+/* Holds the field and its optional leading glyph. Position is here rather than
+   on the input so the glyph can sit over the padding the input reserves. */
+.control {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+
+.leading {
+  position: absolute;
+  left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  color: var(--ink-muted);
+  /* Clicks belong to the field beneath, not to the decoration on top of it. */
+  pointer-events: none;
+}
+
+/* The text starts clear of the glyph. Set here rather than by the caller: a
+   utility class from outside is in the same specificity band as `.input` and
+   loses on source order. */
+.control:has(.leading) .input {
+  padding-left: calc(var(--space-3) + var(--space-5));
+}
+
 /* The resting boundary is --border-control, the one line token that clears 3:1
    on all four surfaces. --border would look right and fail WCAG 1.4.11. */
 .input {

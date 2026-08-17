@@ -22,11 +22,34 @@
     "title": "Downloads",
     "loading": "Loading downloads",
     "priority": "Priority {{value}}",
-    "speed": "{{value}} bytes/s",
+    "speed": "Speed",
     "speedUnknown": "Speed unavailable",
     "estimate": "Estimated {{low}}–{{high}} seconds ({{confidence}} confidence)",
     "estimateUnknown": "No estimate available",
-    "failure": "Download failed: {{error}}. Check the download client and retry the request."
+    "failure": "Download failed: {{error}}. Check the download client and retry the request.",
+    "subtitle": "{{active}} active · {{speed}}",
+    "active": "Active",
+    "queued": "Queued",
+    "failed": "Failed",
+    "filter": "Which jobs to show",
+    "tab": {
+      "active": "Active",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "empty": {
+      "active": "Nothing is downloading.",
+      "completed": "Nothing has finished yet.",
+      "failed": "Nothing has failed."
+    },
+    "column": {
+      "item": "Item",
+      "progress": "Progress",
+      "stage": "Stage",
+      "speed": "Speed",
+      "eta": "ETA"
+    },
+    "progressUnknown": "Size not reported"
   },
   "requests": {
     "title": "Requests",
@@ -156,9 +179,20 @@
     "retry": "Try again"
   },
   "shell": {
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "brand": "Pornarr",
+    "scope": "LOCAL",
+    "role": {
+      "admin": "Admin",
+      "guest": "Guest"
+    }
   },
   "nav": {
+    "admin": "Dashboard",
+    "moderation": "Ratings & comments",
+    "scan": "Scan & import",
+    "tags": "Tags",
+    "invites": "Invitations",
     "primary": "Primary",
     "navigation": "Navigation",
     "close": "Close",
@@ -166,7 +200,12 @@
     "library": "Library",
     "requests": "Requests",
     "downloads": "Downloads",
-    "settings": "Settings"
+    "settings": "Settings",
+    "feed": "Feed",
+    "continue": "Continue",
+    "shorts": "Shorts",
+    "collections": "Collections",
+    "watchlist": "Watchlist"
   },
   "search": {
     "label": "Search",
@@ -218,7 +257,9 @@
       "title": "In your library",
       "notSearched": "Enter a title to search your local library.",
       "loading": "Loading local results",
-      "empty": "No matching library items. Indexer results may still find a release."
+      "empty": "No matching library items. Indexer results may still find a release.",
+      "count": "{{matched}} of {{total}}",
+      "countCapped": "{{matched}} of more than {{total}}"
     },
     "external": {
       "title": "From indexers",
@@ -239,6 +280,29 @@
       "present": "In library",
       "upgrade": "Upgrade",
       "scoreBreakdown": "Title {{title}}, attributes {{attributes}}, indexer reliability {{reliability}}"
+    },
+    "facets": {
+      "active": "Active",
+      "remove": "Remove this filter",
+      "clearAll": "Clear all",
+      "group": {
+        "studio": "Studio",
+        "resolution": "Resolution",
+        "duration": "Duration",
+        "rating": "Rating",
+        "tag": "Tags"
+      },
+      "duration": {
+        "under_10": "Under 10 min",
+        "10_20": "10–20 min",
+        "20_40": "20–40 min",
+        "over_40": "Over 40 min"
+      },
+      "rating": {
+        "floor_one": "{{count}} star and up",
+        "floor_other": "{{count}} stars and up",
+        "unrated": "Not yet rated"
+      }
     }
   },
   "account": {
@@ -266,7 +330,12 @@
     "offlineTitle": "Offline",
     "offlineBody": "This device has no network connection. The screen updates itself when it comes back.",
     "reconnectingTitle": "Reconnecting",
-    "reconnectingBody": "The live connection to the server dropped. It is being re-established; nothing needs doing."
+    "reconnectingBody": "The live connection to the server dropped. It is being re-established; nothing needs doing.",
+    "pip": {
+      "live": "Live",
+      "reconnecting": "Reconnecting…",
+      "offline": "Offline"
+    }
   },
   "events": {
     "downloadCompleted": "A download finished.",
@@ -428,7 +497,19 @@
   "library": {
     "title": "Library",
     "loading": "Loading library…",
-    "empty": "Your library is empty. Configure a root folder and scan it to add media."
+    "empty": "Your library is empty. Configure a root folder and scan it to add media.",
+    "rating": {
+      "none": "Not rated",
+      "value": "{{value}} out of 5, from {{count}} ratings"
+    },
+    "filters": "Filters",
+    "results": "{{count}} results",
+    "ratingFloor": "{{count}}★ and up",
+    "noMatches": "Nothing matches that filter.",
+    "sections": {
+      "continue": "Continue watching",
+      "everything": "Everything"
+    }
   },
   "media": {
     "loading": "Loading media…",
@@ -503,5 +584,330 @@
     "NETWORK_UNREACHABLE": "Check that the server is running and reachable, then try again.",
     "unknown": "Try again, and quote this code if it keeps happening.",
     "generic": "Try again. If it keeps happening, reload the page."
+  },
+  "watchlist": {
+    "title": "Watchlist",
+    "loading": "Loading watchlist",
+    "empty": "Nothing saved yet. Add a title from its page.",
+    "remove": "Remove",
+    "add": "Add to watchlist"
+  },
+  "continueWatching": {
+    "title": "Continue watching",
+    "loading": "Loading",
+    "empty": "Nothing in progress."
+  },
+  "shorts": {
+    "title": "Shorts",
+    "loading": "Loading shorts",
+    "empty": "No clips yet. They are cut from scene markers.",
+    "count": "{{count}} clips",
+    "from": "from {{title}}",
+    "sort": {
+      "label": "Sort",
+      "trending": "Trending",
+      "newest": "Newest",
+      "top": "Top rated",
+      "duration": "Shortest"
+    },
+    "player": {
+      "position": "Clip {{index}} of {{total}}",
+      "keys": "Space pauses · arrow keys move between clips",
+      "previous": "Previous clip",
+      "next": "Next clip",
+      "cutFrom": "Cut from",
+      "at": "at {{time}}",
+      "upNext": "Up next",
+      "queueEmpty": "Nothing else in the feed yet.",
+      "aboutTitle": "Ratings and comments belong to the full title, not to this clip."
+    }
+  },
+  "collections": {
+    "title": "Collections",
+    "loading": "Loading collections",
+    "empty": "No collections yet.",
+    "emptyShelf": "Nothing on this shelf yet.",
+    "name": "Name",
+    "create": "Create",
+    "duplicate": "You already have a collection with that name.",
+    "items": "{{count}} titles",
+    "includeShared": "Include shelves others have shared",
+    "share": "Share with the household",
+    "makePrivate": "Make private",
+    "visibility": {
+      "private": "Private",
+      "shared": "Shared"
+    }
+  },
+  "feed": {
+    "loading": "Loading feed",
+    "open": "Open",
+    "match": "{{value}}% match",
+    "sent": {
+      "title": "Sent to you",
+      "intro": "A friend picked this out by hand.",
+      "empty": "Nobody has sent you anything yet.",
+      "from": "{{name}} sent you this",
+      "markSeen": "Mark seen"
+    },
+    "forYou": {
+      "title": "For you",
+      "empty": "Nothing yet — the feed learns from what gets watched."
+    }
+  },
+  "rating": {
+    "title": "Rating",
+    "count": "{{count}} ratings",
+    "yours": "Your rating",
+    "set": "{{count}} stars",
+    "clear": "Take it back"
+  },
+  "comments": {
+    "title": "Comments ({{count}})",
+    "add": "Add a comment",
+    "post": "Post",
+    "you": "You",
+    "someone": "Someone",
+    "like": "Helpful ({{count}})",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "report": "Report",
+    "reported": "Reported",
+    "edited": "edited",
+    "hidden": "Withheld by an administrator"
+  },
+  "artwork": {
+    "shown": "Art shown",
+    "hidden": "Art hidden"
+  },
+  "related": {
+    "title": "Related",
+    "reason": {
+      "performer": "Same performer",
+      "studio": "Same studio",
+      "tag_one": "{{count}} shared tag",
+      "tag_other": "{{count}} shared tags"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "loading": "Reading the library…",
+    "lastScan": "Last scan {{when}}",
+    "neverScanned": "No scan has run yet",
+    "titles": "Titles",
+    "addedThisWeek_one": "+{{count}} this week",
+    "addedThisWeek_other": "+{{count}} this week",
+    "nothingNew": "Nothing added this week",
+    "storage": "Storage",
+    "storageOf": "{{percent}}% of {{total}}",
+    "storageUnmeasured_one": "{{count}} volume, not yet measured",
+    "storageUnmeasured_other": "{{count}} volumes, not yet measured",
+    "untagged": "Untagged",
+    "ofTitles_one": "of {{count}} title",
+    "ofTitles_other": "of {{count}} titles",
+    "guests": "Guests",
+    "guestsHint": "Accounts other than yours",
+    "health": "Library health",
+    "healthEmpty": "Nothing in the library to measure yet.",
+    "metadataMatched": "Metadata matched",
+    "artworkPresent": "Artwork present",
+    "tagged": "Tagged",
+    "duplicates": "Held for review",
+    "duplicateFiles_one": "{{count}} file",
+    "duplicateFiles_other": "{{count}} files",
+    "activity": "Activity",
+    "activityEmpty": "Nothing has happened yet.",
+    "openQueue": "Queue →",
+    "storageNone": "No library folder yet",
+    "recentlyAdded": "Recently added",
+    "openLibrary": "Open library →"
+  },
+  "moderation": {
+    "title": "Ratings & comments",
+    "subtitle": "{{ratings}} ratings · {{comments}} comments · {{reported}} reported",
+    "filter": "Which comments to show",
+    "tab": {
+      "all": "All",
+      "reported": "Reported",
+      "answered": "Answered"
+    },
+    "empty": "Nothing to review.",
+    "on": "on",
+    "reported_one": "{{count}} report",
+    "reported_other": "{{count}} reports",
+    "markAnswered": "Mark answered",
+    "answered": "Answered",
+    "hide": "Hide",
+    "hidden": "Hidden",
+    "delete": "Delete",
+    "libraryAverage": "Library average",
+    "noRatings": "Nobody has rated anything yet.",
+    "topRated": "Top rated",
+    "rules": {
+      "title": "House rules",
+      "privateLibraries": "Private libraries",
+      "privateLibrariesHint": "Each guest browses only their own titles",
+      "pooledSearch": "Pooled search",
+      "pooledSearchHint": "Search reaches every shelf, without naming whose",
+      "anonymousSocial": "Anonymous comments",
+      "anonymousSocialHint": "Remarks carry no name — except in this queue"
+    },
+    "attributionNotice": "Comments are anonymous everywhere else. This queue names them so a report can be judged."
+  },
+  "scan": {
+    "title": "Scan & import",
+    "subtitle_one": "{{count}} watched folder",
+    "subtitle_other": "{{count}} watched folders",
+    "folders": "Watched folders",
+    "noFolders": "No folder is being watched yet.",
+    "state": {
+      "scanning": "Scanning",
+      "idle": "Idle",
+      "disabled": "Disabled"
+    },
+    "space": "{{free}} free of {{total}}",
+    "spaceUnmeasured": "Space not measured",
+    "neverScanned": "never scanned",
+    "lastScanned": "scanned {{when}}",
+    "scanNow": "Scan now",
+    "remove": "Remove",
+    "add": "Add folder",
+    "addPath": "Folder to watch",
+    "inProgress": "Scan in progress",
+    "filesScanned_one": "{{count}} file scanned",
+    "filesScanned_other": "{{count}} files scanned",
+    "log": "Log",
+    "logEmpty": "Nothing has run since this screen was opened.",
+    "review": "Review held files →",
+    "pathExample": "/media/library"
+  },
+  "settings": {
+    "title": "Settings",
+    "loading": "Reading the settings…",
+    "sections": "Settings sections",
+    "section": {
+      "household": "Household",
+      "playback": "Playback",
+      "recommendations": "Recommendations",
+      "downloads": "Downloads",
+      "housekeeping": "Housekeeping",
+      "quality": "Quality profiles",
+      "paths": "Library paths",
+      "invites": "Invitations"
+    },
+    "unlimited": "empty means no limit",
+    "weightsNote": "The signal weights behind the feed are not editable here yet; they are read from the server's configuration.",
+    "accent": "Accent",
+    "accentHint": "Applies to this browser only",
+    "theme": {
+      "rose": "Rose",
+      "amber": "Amber"
+    },
+    "privateLibraries": "Private libraries",
+    "privateLibrariesHint": "Each guest browses only their own titles",
+    "pooledSearch": "Pooled search",
+    "pooledSearchHint": "Search reaches every shelf, without naming whose",
+    "anonymousSocial": "Anonymous comments",
+    "anonymousSocialHint": "Remarks carry no name — except in the moderation queue",
+    "useRatings": "Use ratings",
+    "useRatingsHint": "Let what the household rated shape the feed",
+    "hideFinished": "Hide finished titles",
+    "hideFinishedHint": "Keep watched titles out of recommendations",
+    "includeShorts": "Include shorts",
+    "includeShortsHint": "Let clips appear in the feed alongside titles",
+    "includeFriendPicks": "Include sent titles",
+    "includeFriendPicksHint": "Count what housemates sent each other",
+    "autoDownloads": "Automatic downloads",
+    "autoDownloadsHint": "New accounts may grab releases without asking",
+    "metrics": "Metrics endpoint",
+    "metricsHint": "Expose Prometheus metrics on this server",
+    "completion": "Counted as watched at",
+    "completionHint": "Percent of a title that marks it finished",
+    "perUser": "Transcodes per person",
+    "perUserHint": "How many streams one account may transcode at once",
+    "hwSessions": "Hardware transcodes",
+    "hwSessionsHint": "Total concurrent hardware sessions",
+    "swSessions": "Software transcodes",
+    "swSessionsHint": "Total concurrent software sessions",
+    "dailyLimit": "Daily download limit",
+    "dailyLimitHint": "Gigabytes per account per day",
+    "maxJobs": "Automatic jobs",
+    "maxJobsHint": "How many automatic grabs may run at once",
+    "maxPerDay": "Automatic downloads per day",
+    "maxPerDayHint": "Per account",
+    "searchAge": "Give up searching after",
+    "searchAgeHint": "Days before a request stops being retried",
+    "minFreeDisk": "Keep free",
+    "minFreeDiskHint": "Percent of the disk to leave alone",
+    "quarantineDays": "Keep held files",
+    "quarantineDaysHint": "Days before an unreviewed file is discarded",
+    "auditDays": "Keep the audit log",
+    "auditDaysHint": "Days of administrator actions to retain",
+    "eventDays": "Keep watch events",
+    "eventDaysHint": "Days of viewing history the recommender may use"
+  },
+  "tags": {
+    "title": "Tags",
+    "subtitle_one": "{{count}} tag",
+    "subtitle_other": "{{count}} tags",
+    "search": "Search tags",
+    "loading": "Reading the tags…",
+    "empty": "No tags yet. Scans and scrapers create them.",
+    "noMatches": "No tag matches that.",
+    "selected_one": "{{count}} tag selected",
+    "selected_other": "{{count}} tags selected",
+    "rename": "Rename",
+    "newName": "New name",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "mergeInto": "Merge into",
+    "clearSelection": "Clear selection",
+    "select": "Select",
+    "selectOne": "Select {{name}}",
+    "column": {
+      "tag": "Tag",
+      "titles": "Titles",
+      "lastUsed": "Last used"
+    },
+    "neverUsed": "never"
+  },
+  "join": {
+    "title": "Join this server",
+    "checking": "Checking the link…",
+    "unusable": "This link no longer works.",
+    "unusableHint": "It may have expired or already been used. Ask whoever sent it for a new one.",
+    "intro": "You have been invited to a library on this network.",
+    "expires": "The link works until {{when}}.",
+    "username": "Username",
+    "usernameHint": "What you sign in with",
+    "displayName": "Display name",
+    "displayNameHint": "Optional — how you appear where names are shown",
+    "password": "Password",
+    "passwordHint": "At least {{count}} characters",
+    "tooShort": "At least {{count}} characters",
+    "enter": "Enter the library"
+  },
+  "invites": {
+    "title": "Invitations",
+    "subtitle_one": "{{count}} link waiting",
+    "subtitle_other": "{{count}} links waiting",
+    "note": "Note",
+    "noteHint": "For you, not for them — nobody joining ever sees it",
+    "create": "Create link",
+    "freshTitle": "The link",
+    "freshHint": "Shown once. Copy it now — the server keeps only a hash and cannot show it again.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "existing": "Existing invitations",
+    "loading": "Reading the invitations…",
+    "empty": "No invitations yet.",
+    "unnamed": "No note",
+    "expires": "expires {{when}}",
+    "expired": "expired",
+    "usedBy": "used by {{name}}",
+    "revoke": "Withdraw"
   }
 }

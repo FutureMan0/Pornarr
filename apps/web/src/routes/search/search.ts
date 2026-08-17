@@ -12,6 +12,13 @@ export type ExternalSearchResponse =
 export type ExternalSearchItem = ExternalSearchResponse["items"][number];
 export type SearchFilters = {
   readonly quality?: string | undefined;
+  // The four dimensions the design's sidebar offers over the local library.
+  // They do not reach the indexers: an indexer knows nothing about who has
+  // rated a release or which shelf it would land on.
+  readonly studio?: string | undefined;
+  readonly tag?: string | undefined;
+  readonly duration?: string | undefined;
+  readonly ratingFloor?: number | undefined;
   readonly minimumSize?: number | undefined;
   readonly maximumSize?: number | undefined;
   readonly maximumAgeDays?: number | undefined;
@@ -36,6 +43,10 @@ export function useLocalSearch(
           query: {
             q: query,
             quality: filters.quality ?? null,
+            studio: filters.studio ?? null,
+            tag: filters.tag ?? null,
+            rating_gte: filters.ratingFloor ?? null,
+            ...durationRange(filters.duration),
             minimum_size_bytes: filters.minimumSize ?? null,
             maximum_size_bytes: filters.maximumSize ?? null,
             maximum_age_days: filters.maximumAgeDays ?? null,
@@ -122,4 +133,66 @@ export function useGrabRelease(): UseMutationResult<void, ApiRequestError, GrabT
 
 function localSort(sort: SearchFilters["sort"]): "relevance" | "age" | "size" | "quality" {
   return sort === "seeders" || sort === "estimated_time" ? "relevance" : sort;
+}
+
+/**
+ * The bands the sidebar offers, as the seconds the API takes.
+ *
+ * Half-open, matching the server's own boundaries — a ten-minute clip belongs
+ * to "10–20", not to both bands. The names are the server's; only the wording
+ * is the client's.
+ */
+export const DURATION_BANDS: Record<string, { min: number; max: number | null }> = {
+  under_10: { min: 0, max: 600 },
+  "10_20": { min: 600, max: 1200 },
+  "20_40": { min: 1200, max: 2400 },
+  over_40: { min: 2400, max: null },
+};
+
+function durationRange(band: string | undefined): {
+  minimum_duration_seconds?: number;
+  maximum_duration_seconds?: number;
+} {
+  const range = band === undefined ? undefined : DURATION_BANDS[band];
+  if (range === undefined) return {};
+  return {
+    minimum_duration_seconds: range.min,
+    ...(range.max === null ? {} : { maximum_duration_seconds: range.max }),
+  };
+}
+
+export type SearchFacets =
+  paths["/api/search/local/facets"]["get"]["responses"][200]["content"]["application/json"];
+
+/**
+ * The numbers beside the filters.
+ *
+ * A separate request from the results on purpose: the counts change only when
+ * the query or a selection does, while the result list also pages. Folding them
+ * together would recount the whole matching set every time someone scrolls.
+ */
+export function useSearchFacets(
+  query: string,
+  filters: SearchFilters,
+): UseQueryResult<SearchFacets, ApiRequestError> {
+  return useQuery<SearchFacets, ApiRequestError>({
+    queryKey: [...SEARCH_QUERY_KEY, "facets", query, filters],
+    enabled: query.length > 0,
+    queryFn: async () => {
+      const { data, error, response } = await getApiClient().GET("/api/search/local/facets", {
+        params: {
+          query: {
+            q: query,
+            quality: filters.quality ?? null,
+            studio: filters.studio ?? null,
+            tag: filters.tag ?? null,
+            duration: filters.duration ?? null,
+            rating_gte: filters.ratingFloor ?? null,
+          },
+        },
+      });
+      if (error !== undefined || data === undefined) throw apiFailure(error, response);
+      return data;
+    },
+  });
 }

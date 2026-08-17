@@ -17,7 +17,16 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 import { LoginRoute } from "./auth/login-route";
 import { RequireAuth } from "./auth/require-auth";
 import { ForbiddenRoute, NotFoundRoute } from "./errors/route-errors";
+import { DashboardRoute } from "./routes/admin/dashboard-route";
+import { InvitesRoute } from "./routes/admin/invites-route";
+import { ModerationRoute } from "./routes/admin/moderation-route";
 import { QuarantineReviewRoute } from "./routes/admin/quarantine/quarantine-review-route";
+import { ScanRoute } from "./routes/admin/scan-route";
+import { TagsRoute } from "./routes/admin/tags-route";
+import { CollectionDetailRoute, CollectionsRoute } from "./routes/collections/collections-route";
+import { ContinueRoute } from "./routes/continue/continue-route";
+import { FeedRoute } from "./routes/feed/feed-route";
+import { JoinRoute } from "./routes/join/join-route";
 import { LibraryRoute } from "./routes/library/library-route";
 import { MediaDetailRoute } from "./routes/media/media-detail-route";
 import { MonitorsRoute } from "./routes/monitors/monitors-route";
@@ -26,8 +35,12 @@ import { RecommendationsRoute } from "./routes/recommendations/recommendations-r
 import { RequestsRoute } from "./routes/requests/requests-route";
 import { SearchRoute } from "./routes/search/search-route";
 import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles-route";
+import { SettingsRoute } from "./routes/settings/settings-route";
 import { SetupGate } from "./routes/setup/setup-gate";
 import { SetupRoute } from "./routes/setup/setup-route";
+import { ShortsPlayerRoute } from "./routes/shorts/shorts-player-route";
+import { ShortsRoute } from "./routes/shorts/shorts-route";
+import { WatchlistRoute } from "./routes/watchlist/watchlist-route";
 import { AppShell } from "./shell/app-shell";
 import { NAV_ITEMS, type NavId } from "./shell/sidebar";
 
@@ -49,6 +62,23 @@ function Placeholder({ navId }: { readonly navId: NavId }): JSX.Element {
  */
 export const FORBIDDEN_PATH = "/forbidden";
 
+/** Sidebar destinations with a screen of their own. */
+const BUILT = new Set([
+  "admin",
+  "moderation",
+  "scan",
+  "tags",
+  "invites",
+  "feed",
+  "continue",
+  "library",
+  "shorts",
+  "collections",
+  "watchlist",
+  "downloads",
+  "settings",
+]);
+
 export const appRoutes: RouteObject[] = [
   { path: "/setup", element: <SetupRoute /> },
   {
@@ -56,6 +86,7 @@ export const appRoutes: RouteObject[] = [
     element: <SetupGate />,
     children: [
       { path: "login", element: <LoginRoute /> },
+      { path: "join/:token", element: <JoinRoute /> },
       {
         element: <RequireAuth />,
         children: [
@@ -63,22 +94,35 @@ export const appRoutes: RouteObject[] = [
             element: <AppShell />,
             children: [
               { index: true, element: <Navigate to="/library" replace /> },
+              { path: "admin", element: <DashboardRoute /> },
               { path: "admin/quarantine", element: <QuarantineReviewRoute /> },
-              { path: "settings", element: <Navigate to="/settings/quality" replace /> },
+              { path: "admin/moderation", element: <ModerationRoute /> },
+              { path: "admin/scan", element: <ScanRoute /> },
+              { path: "admin/tags", element: <TagsRoute /> },
+              { path: "admin/invites", element: <InvitesRoute /> },
+              { path: "settings", element: <SettingsRoute /> },
               { path: "settings/quality", element: <QualityProfilesRoute /> },
               { path: "search", element: <SearchRoute /> },
               { path: "monitors", element: <MonitorsRoute /> },
               { path: "requests", element: <RequestsRoute /> },
               { path: "recommendations", element: <RecommendationsRoute /> },
               { path: "downloads", element: <QueueRoute /> },
+              { path: "feed", element: <FeedRoute /> },
+              { path: "continue", element: <ContinueRoute /> },
+              { path: "shorts", element: <ShortsRoute /> },
+              { path: "shorts/:shortId", element: <ShortsPlayerRoute /> },
+              { path: "collections", element: <CollectionsRoute /> },
+              { path: "collections/:collectionId", element: <CollectionDetailRoute /> },
+              { path: "watchlist", element: <WatchlistRoute /> },
               { path: "library", element: <LibraryRoute /> },
               { path: "library/:mediaId", element: <MediaDetailRoute /> },
-              ...NAV_ITEMS.filter((item) => item.id !== "settings" && item.id !== "library").map(
-                (item) => ({
-                  path: item.path.slice(1),
-                  element: <Placeholder navId={item.id} />,
-                }),
-              ),
+              // Destinations in the sidebar that nothing has built yet. Listing
+              // the built ones here too would be harmless — the real route is
+              // declared first and wins — but it hides which are still stubs.
+              ...NAV_ITEMS.filter((item) => !BUILT.has(item.id)).map((item) => ({
+                path: item.path.slice(1),
+                element: <Placeholder navId={item.id} />,
+              })),
               { path: FORBIDDEN_PATH.slice(1), element: <ForbiddenRoute /> },
               { path: "*", element: <NotFoundRoute /> },
             ],

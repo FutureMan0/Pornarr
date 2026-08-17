@@ -6,6 +6,7 @@ import type { JSX } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router-dom";
+
 import { useSession } from "../../../auth/session";
 import { ErrorScreen } from "../../../errors/error-screen";
 import { getApiClient } from "../../../lib/api";
@@ -16,6 +17,7 @@ import {
   messageForError,
   nextStepForError,
 } from "../../../lib/api-error";
+import { usePageTitle } from "../../../shell/page-title";
 
 type QualityDefinition =
   paths["/api/admin/quality/definitions"]["get"]["responses"][200]["content"]["application/json"][number];
@@ -231,6 +233,7 @@ function QualityLoading(): JSX.Element {
 
 export function QualityProfilesRoute(): JSX.Element {
   const { t } = useTranslation();
+  usePageTitle(t("quality.title"));
   const session = useSession();
   const queryClient = useQueryClient();
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
@@ -489,7 +492,6 @@ export function QualityProfilesRoute(): JSX.Element {
   return (
     <section className="mx-auto flex w-full max-w-[var(--layout-content-max)] flex-col gap-6">
       <header className="max-w-[70ch]">
-        <h1 className="text-xl text-ink">{t("quality.title")}</h1>
         <p className="mt-2 text-sm text-ink-muted">{t("quality.intro")}</p>
       </header>
 

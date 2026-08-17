@@ -10,7 +10,7 @@ import { Button, Input } from "@pornarr/ui";
 import type { FormEvent, JSX } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { messageForError } from "../lib/api-error";
 import type { FromLocationState } from "./require-auth";
 import { useLogin, useSession } from "./session";
@@ -20,7 +20,12 @@ export function LoginRoute(): JSX.Element {
   const session = useSession();
   const login = useLogin();
   const location = useLocation();
-  const [username, setUsername] = useState("");
+  // Prefilled after joining: `/join` sends the name that was just chosen, so
+  // the first thing a new guest sees is not an empty field asking them to
+  // remember what they typed thirty seconds ago. Read once as the initial
+  // value — after that the field is theirs.
+  const [params] = useSearchParams();
+  const [username, setUsername] = useState(() => params.get("username") ?? "");
   const [password, setPassword] = useState("");
 
   const state = location.state as FromLocationState | null;

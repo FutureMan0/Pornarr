@@ -31,7 +31,7 @@ from pornarr_shared.crypto import CredentialCipher
 from pornarr_shared.jobs import INDEXER_QUEUE, indexer_search_state_key
 from pornarr_shared.metrics import REGISTRY
 from tests.api.test_app import SECRET
-from tests.api.test_auth import create_user, csrf_headers, login
+from tests.api.test_auth import MemoryQueue, create_user, csrf_headers, login
 
 pytest_plugins = ["tests.api.test_auth"]
 
@@ -169,12 +169,11 @@ async def test_indexer_search_enqueues_a_user_scoped_job_and_publishes_its_start
     app, client
 ) -> None:
     user = await create_user(app)
-    calls: list[tuple[str, tuple[object, ...], dict[str, object]]] = []
-
-    async def enqueue_job(function: str, *args: object, **kwargs: object) -> None:
-        calls.append((function, args, kwargs))
-
-    app.state.redis.enqueue_job = enqueue_job
+    # The queue, not the session client. Attaching `enqueue_job` to the latter
+    # is what let the API ship a call its Redis object could not answer.
+    queue = MemoryQueue()
+    app.state.queue = queue
+    calls = queue.jobs
     await login(client, user.username, "correct horse battery staple")
 
     response = await client.post(
