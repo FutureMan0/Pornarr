@@ -30,6 +30,9 @@ services:
       - ./pyproject.toml:/app/pyproject.toml
       - ./apps:/app/apps
       - ./packages:/app/packages
+      # Maintenance commands are run by hand in this container; without this the
+      # repository's own scripts are not there to run.
+      - ./scripts:/app/scripts
     ports:
       - "8000:8000"
       - "5678:5678"   # debugpy

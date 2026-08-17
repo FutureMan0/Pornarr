@@ -37,3 +37,26 @@ The API contract is the boundary. When a change needs a new endpoint, the contra
 changes first, both owners approve it, and then both sides can proceed in parallel —
 the frontend against generated types and MSW mocks, the backend against the real
 implementation.
+
+## Looking at the application
+
+```bash
+docker compose up -d --wait          # postgres, redis, api, workers, vite
+docker compose exec api python /app/scripts/seed_demo.py
+```
+
+Then <http://localhost:5173>, signing in as `kai` with
+`correct horse battery staple`. The seed also creates four guests — `jonas`,
+`mira`, `tobi`, `lea` — with the same password, which is how to see what a
+non-administrator's navigation looks like.
+
+`seed_demo.py` refuses a database that already holds titles. It is for looking
+at screens, not for fixtures: every screen in this application is a view of
+data, and an empty server shows a dozen honest empty states and nothing else.
+
+The compose stack expects the download directories to exist under the data
+volume. Nothing creates them:
+
+```bash
+mkdir -p data/torrents data/usenet data/quarantine data/thumbnails backups
+```

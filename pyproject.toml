@@ -74,6 +74,10 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101"]
+# A script's output is its interface. The application logs instead of printing,
+# which is what T201 is there to enforce; a command somebody runs by hand is the
+# one place stdout is the point.
+"scripts/**" = ["T201"]
 
 [tool.ruff.lint.isort]
 known-first-party = [
@@ -85,7 +89,10 @@ known-first-party = [
 docstring-code-format = true
 
 [tool.ty.src]
-include = ["apps", "packages", "tests"]
+# `scripts` is included so a script's own logic is checked. It does not catch a
+# wrong column name: SQLAlchemy's declarative constructor takes `**kwargs`, so
+# only running the thing finds those.
+include = ["apps", "packages", "scripts", "tests"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"

@@ -132,11 +132,21 @@ def _validate_root_folder(path_value: str, downloads_path: Path) -> tuple[Path, 
 def _folder_response(
     folder: RootFolder, downloads_path: Path, same_filesystem: bool | None = None
 ) -> RootFolderResponse:
-    same_filesystem = (
-        Path(folder.path).stat().st_dev == downloads_path.stat().st_dev
-        if same_filesystem is None
-        else same_filesystem
-    )
+    """One folder, and whether an import from downloads can hardlink into it.
+
+    A missing path — either side — is reported rather than raised. Nothing
+    creates the download directories, so a fresh deployment has a root folder
+    and no `/data/torrents`, and answering 500 there makes the whole screen
+    unreachable over a condition it exists to describe. Treated as "not the same
+    filesystem", which is the cautious reading: it says imports will copy, and
+    copying always works.
+    """
+    if same_filesystem is None:
+        try:
+            same_filesystem = Path(folder.path).stat().st_dev == downloads_path.stat().st_dev
+        except OSError:
+            same_filesystem = False
+
     warning = (
         None if same_filesystem else "different filesystem from downloads; imports cannot hardlink"
     )

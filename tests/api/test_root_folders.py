@@ -178,3 +178,37 @@ async def test_scanning_an_unknown_folder_is_a_404(app, client) -> None:
     )
 
     assert response.status_code == 404
+
+
+async def test_a_missing_downloads_directory_does_not_take_the_screen_down(
+    app, client, tmp_path: Path
+) -> None:
+    """Nothing creates the download directories, so a fresh server has none.
+
+    The comparison exists to tell an administrator whether imports can hardlink.
+    Answering 500 because one side of it is absent makes the whole folder screen
+    unreachable over a condition it was written to describe.
+    """
+    app.state.settings = app.state.settings.model_copy(update={"data_path": tmp_path})
+    app.state.settings.torrents_path.mkdir()
+    app.state.settings.usenet_path.mkdir()
+    root_folder = tmp_path / "library"
+    root_folder.mkdir()
+    admin = await create_user(app, role=UserRole.ADMIN)
+    await login(client, admin.username, "correct horse battery staple")
+    await client.post(
+        "/api/admin/library/root-folders",
+        json={"path": str(root_folder)},
+        headers=csrf_headers(client),
+    )
+
+    # The mount goes away, as it does when a volume is not attached.
+    app.state.settings.torrents_path.rmdir()
+
+    response = await client.get("/api/admin/library/root-folders")
+
+    assert response.status_code == 200
+    folder = response.json()[0]
+    # The cautious reading: imports will copy, and copying always works.
+    assert folder["same_filesystem_as_downloads"] is False
+    assert folder["warning"] is not None
