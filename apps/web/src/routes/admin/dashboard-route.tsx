@@ -15,6 +15,7 @@
  * history, and only one of them would be the one an administrator is
  * accountable for.
  */
+import type { paths } from "@pornarr/api-client";
 import { MediaTile } from "@pornarr/ui";
 import { useQuery } from "@tanstack/react-query";
 import type { JSX } from "react";
@@ -50,9 +51,11 @@ export function DashboardRoute(): JSX.Element {
       // The library endpoint already orders by most recently touched, so the
       // first page is the answer; a separate "recent" endpoint would be a
       // second ordering to keep in step with this one.
-      const response = await fetch(`/api/library?limit=${RECENT_LIMIT}`);
-      if (!response.ok) throw new Error();
-      return (await response.json()) as { items: RecentItem[] };
+      const { data, error, response } = await getApiClient().GET("/api/library", {
+        params: { query: { limit: RECENT_LIMIT } },
+      });
+      if (!data || error) throw apiFailure(error, response);
+      return data;
     },
   });
 
@@ -261,18 +264,14 @@ function Bar({
   );
 }
 
-interface RecentItem {
-  readonly id: string;
-  readonly title: string;
-  readonly studio: string | null;
-  readonly duration_seconds: number | null;
-  readonly quality: string | null;
-  readonly resolution: string | null;
-  readonly rating: number | null;
-  readonly rating_count: number;
-  readonly tag_count: number;
-  readonly comment_count: number;
-}
+/**
+ * Derived from the contract rather than transcribed from it. The hand-written
+ * version was a copy of the server's response that nothing checked, so a field
+ * added or renamed on the server changed nothing here until something rendered
+ * `undefined`.
+ */
+type RecentItem =
+  paths["/api/library"]["get"]["responses"]["200"]["content"]["application/json"]["items"][number];
 
 /**
  * One newly added title. The same tile the library uses, and the same artwork

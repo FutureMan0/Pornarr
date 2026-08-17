@@ -102,6 +102,12 @@ export function VideoPlayer({
       hls.current?.destroy();
       hls.current = null;
       if (session.current !== null) {
+        // Raw `fetch`, deliberately, and the same for the heartbeat and the
+        // progress report below. `keepalive` is the whole point: these three fire
+        // as the player unmounts or the tab closes, and a request the browser is
+        // free to cancel at that moment is a transcode session left running on
+        // the server. The generated client does not pass the flag through, so
+        // routing these through it would silently drop the guarantee.
         void fetch(`/api/transcode/sessions/${session.current}`, {
           method: "DELETE",
           headers: csrfHeaders(),

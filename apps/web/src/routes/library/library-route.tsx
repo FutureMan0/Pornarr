@@ -1,4 +1,6 @@
+import type { paths } from "@pornarr/api-client";
 import { MediaTile } from "@pornarr/ui";
+import type { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useRef, useState } from "react";
@@ -11,24 +13,19 @@ import { tileBlur, useArtVisible } from "../../lib/art-visibility";
 import { usePageTitle } from "../../shell/page-title";
 import { ResumeTile } from "../continue/resume-tile";
 
-type Item = {
-  id: string;
-  title: string;
-  studio: string | null;
-  release_date: string | null;
-  duration_seconds: number | null;
-  quality: string | null;
-  resolution: string | null;
-  position_seconds: number | null;
-  progress_duration_seconds: number | null;
-  poster_url: string;
-  sprite_url: string | null;
-  rating: number | null;
-  rating_count: number;
-  tag_count: number;
-  comment_count: number;
-};
-type Page = { items: Item[]; next_offset: number | null };
+/**
+ * Derived from the contract, not transcribed from it.
+ *
+ * This screen carried a hand-written copy of the server's response — a copy
+ * nothing checked, which had already drifted: it was missing `completed`. Naming
+ * the types through `paths` makes a server change a compile error here, which is
+ * the whole point of generating the client.
+ */
+type Page = paths["/api/library"]["get"]["responses"]["200"]["content"]["application/json"];
+type Item = Page["items"][number];
+
+/** How many titles one page brings back. */
+const PAGE_SIZE = 48;
 
 /** The rating floors the design offers as chips. */
 const RATING_FILTERS = [4, 3] as const;
@@ -45,15 +42,27 @@ export function LibraryRoute() {
   const { t } = useTranslation();
   const [ratingFloor, setRatingFloor] = useState<number | null>(null);
 
-  const library = useInfiniteQuery<Page, Error>({
+  // The last generic is the page param. Without it `pageParam` arrives as
+  // `unknown` and the offset has to be cast, which is the cast this file was
+  // created to avoid.
+  const library = useInfiniteQuery<Page, Error, InfiniteData<Page>, readonly unknown[], number>({
     queryKey: ["library", ratingFloor],
     initialPageParam: 0,
     getNextPageParam: (page) => page.next_offset ?? undefined,
     queryFn: async ({ pageParam }): Promise<Page> => {
-      const filter = ratingFloor === null ? "" : `&rating_gte=${ratingFloor}`;
-      const response = await fetch(`/api/library?limit=48&offset=${pageParam}${filter}`);
-      if (!response.ok) throw new Error();
-      return response.json() as Promise<Page>;
+      const { data, error, response } = await getApiClient().GET("/api/library", {
+        params: {
+          query: {
+            limit: PAGE_SIZE,
+            offset: pageParam,
+            // Omitted rather than sent as null: the endpoint validates the
+            // floor, and `rating_gte=null` is a 422 on every unfiltered load.
+            ...(ratingFloor === null ? {} : { rating_gte: ratingFloor }),
+          },
+        },
+      });
+      if (!data || error) throw apiFailure(error, response);
+      return data;
     },
   });
 
