@@ -190,6 +190,7 @@
   "nav": {
     "admin": "Übersicht",
     "moderation": "Bewertungen",
+    "scan": "Scannen",
     "primary": "Hauptnavigation",
     "navigation": "Navigation",
     "close": "Schließen",
@@ -750,5 +751,32 @@
       "anonymousSocialHint": "Beiträge tragen keinen Namen — außer in dieser Liste"
     },
     "attributionNotice": "Kommentare sind überall sonst anonym. Diese Liste nennt die Namen, damit eine Meldung beurteilt werden kann."
+  },
+  "scan": {
+    "title": "Scannen & importieren",
+    "subtitle_one": "{{count}} beobachteter Ordner",
+    "subtitle_other": "{{count}} beobachtete Ordner",
+    "folders": "Beobachtete Ordner",
+    "noFolders": "Es wird noch kein Ordner beobachtet.",
+    "state": {
+      "scanning": "Wird gescannt",
+      "idle": "Bereit",
+      "disabled": "Deaktiviert"
+    },
+    "space": "{{free}} frei von {{total}}",
+    "spaceUnmeasured": "Speicher nicht gemessen",
+    "neverScanned": "nie gescannt",
+    "lastScanned": "gescannt {{when}}",
+    "scanNow": "Jetzt scannen",
+    "remove": "Entfernen",
+    "add": "Ordner hinzufügen",
+    "addPath": "Zu beobachtender Ordner",
+    "inProgress": "Scan läuft",
+    "filesScanned_one": "{{count}} Datei gescannt",
+    "filesScanned_other": "{{count}} Dateien gescannt",
+    "log": "Protokoll",
+    "logEmpty": "Seit dem Öffnen dieses Bildschirms ist nichts gelaufen.",
+    "review": "Zurückgehaltene Dateien prüfen →",
+    "pathExample": "/media/library"
   }
 }

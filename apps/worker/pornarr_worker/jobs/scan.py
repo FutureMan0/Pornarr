@@ -118,7 +118,18 @@ async def scan(context: dict[str, Any], root_folder_id: str) -> dict[str, int]:
         async def progress(event_type: str, data: dict[str, object]) -> None:
             await publish_event(context["redis"], event_type, data)
 
-        return await scan_root_folder(session, folder, progress)
+        result = await scan_root_folder(session, folder, progress)
+        # Without this the only way to know a scan ended is to notice the
+        # progress events stopping, which is indistinguishable from a worker
+        # that died mid-walk.
+        await progress(
+            "scan.completed",
+            {
+                "root_folder_id": str(folder.id),
+                **{key: int(value) for key, value in result.items()},
+            },
+        )
+        return result
 
 
 SCAN_JOB = job(scan)

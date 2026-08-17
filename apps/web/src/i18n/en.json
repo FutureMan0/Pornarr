@@ -190,6 +190,7 @@
   "nav": {
     "admin": "Dashboard",
     "moderation": "Ratings & comments",
+    "scan": "Scan & import",
     "primary": "Primary",
     "navigation": "Navigation",
     "close": "Close",
@@ -750,5 +751,32 @@
       "anonymousSocialHint": "Remarks carry no name — except in this queue"
     },
     "attributionNotice": "Comments are anonymous everywhere else. This queue names them so a report can be judged."
+  },
+  "scan": {
+    "title": "Scan & import",
+    "subtitle_one": "{{count}} watched folder",
+    "subtitle_other": "{{count}} watched folders",
+    "folders": "Watched folders",
+    "noFolders": "No folder is being watched yet.",
+    "state": {
+      "scanning": "Scanning",
+      "idle": "Idle",
+      "disabled": "Disabled"
+    },
+    "space": "{{free}} free of {{total}}",
+    "spaceUnmeasured": "Space not measured",
+    "neverScanned": "never scanned",
+    "lastScanned": "scanned {{when}}",
+    "scanNow": "Scan now",
+    "remove": "Remove",
+    "add": "Add folder",
+    "addPath": "Folder to watch",
+    "inProgress": "Scan in progress",
+    "filesScanned_one": "{{count}} file scanned",
+    "filesScanned_other": "{{count}} files scanned",
+    "log": "Log",
+    "logEmpty": "Nothing has run since this screen was opened.",
+    "review": "Review held files →",
+    "pathExample": "/media/library"
   }
 }

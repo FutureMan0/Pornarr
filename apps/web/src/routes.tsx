@@ -20,6 +20,7 @@ import { ForbiddenRoute, NotFoundRoute } from "./errors/route-errors";
 import { DashboardRoute } from "./routes/admin/dashboard-route";
 import { ModerationRoute } from "./routes/admin/moderation-route";
 import { QuarantineReviewRoute } from "./routes/admin/quarantine/quarantine-review-route";
+import { ScanRoute } from "./routes/admin/scan-route";
 import { CollectionDetailRoute, CollectionsRoute } from "./routes/collections/collections-route";
 import { ContinueRoute } from "./routes/continue/continue-route";
 import { FeedRoute } from "./routes/feed/feed-route";
@@ -61,6 +62,7 @@ export const FORBIDDEN_PATH = "/forbidden";
 const BUILT = new Set([
   "admin",
   "moderation",
+  "scan",
   "feed",
   "continue",
   "library",
@@ -88,6 +90,7 @@ export const appRoutes: RouteObject[] = [
               { path: "admin", element: <DashboardRoute /> },
               { path: "admin/quarantine", element: <QuarantineReviewRoute /> },
               { path: "admin/moderation", element: <ModerationRoute /> },
+              { path: "admin/scan", element: <ScanRoute /> },
               { path: "settings", element: <Navigate to="/settings/quality" replace /> },
               { path: "settings/quality", element: <QualityProfilesRoute /> },
               { path: "search", element: <SearchRoute /> },

@@ -376,6 +376,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/library/root-folders/{folder_id}/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scan Root Folder
+         * @description Ask the worker to walk one folder now.
+         *
+         *     Idempotent per folder: asking twice while a scan is queued does not queue a
+         *     second walk of the same tree. `enqueue_once` keys on the arguments, so the
+         *     second request returns the same 202 and changes nothing — which is what an
+         *     administrator clicking twice means, rather than two scans racing each other
+         *     over the same files.
+         *
+         *     The progress is not returned here. The worker publishes `scan.progress` on
+         *     the event stream as it goes, and the screen watches that; holding the
+         *     request open for a walk of ten thousand files would time out long before it
+         *     told anyone anything.
+         */
+        post: operations["admin_scan_root_folder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/oidc": {
         parameters: {
             query?: never;
@@ -5266,6 +5297,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_scan_root_folder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                folder_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
             };
             /** @description Validation Error */
             422: {

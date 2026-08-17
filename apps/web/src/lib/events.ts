@@ -25,7 +25,12 @@ import { z } from "zod";
 
 export const EVENTS_URL = "/api/events";
 
-/** The twelve documented frame names. docs/api-contract.md is the source. */
+/**
+ * The frame names this client listens for. `docs/api-contract.md` documents
+ * twelve; the two scan frames are emitted by the worker and are here because
+ * the scan screen watches them — a walk of ten thousand files cannot be
+ * reported by holding a request open.
+ */
 export const EVENT_TYPES = [
   "search.started",
   "search.result_added",
@@ -39,6 +44,8 @@ export const EVENT_TYPES = [
   "import.started",
   "import.completed",
   "media.available",
+  "scan.progress",
+  "scan.completed",
 ] as const;
 
 export type PornarrEventType = (typeof EVENT_TYPES)[number];
@@ -80,6 +87,10 @@ const INVALIDATED_BY: Readonly<Record<PornarrEventType, readonly QueryKeyPrefix[
   "import.started": [["imports"]],
   "import.completed": [["imports"], ["library"]],
   "media.available": [["library"]],
+  // Progress changes nothing that is cached — it is watched directly by the
+  // screen. Completion is what makes the folder list and the library stale.
+  "scan.progress": [],
+  "scan.completed": [["library"], ["root-folders"], ["admin"]],
 };
 
 type AnnouncementKey =
@@ -127,6 +138,34 @@ export function applyEvent(queryClient: QueryClient, event: PornarrEvent): void 
   for (const queryKey of INVALIDATED_BY[event.type]) {
     void queryClient.invalidateQueries({ queryKey });
   }
+}
+
+/**
+ * Watching individual frames.
+ *
+ * Most screens want the cache invalidated and nothing more, which `applyEvent`
+ * does. A few — the scan screen above all — want the frames themselves, because
+ * "2,104 of 3,010 files" is not a cached resource; it is a thing happening now.
+ *
+ * One stream, not one per subscriber. The shell owns the `EventSource`, and
+ * this is how anything else reaches it. A screen opening its own connection
+ * would double the server's stream count for every open tab.
+ */
+type EventListener = (event: PornarrEvent) => void;
+
+const listeners = new Map<PornarrEventType, Set<EventListener>>();
+
+export function subscribeToEvent(type: PornarrEventType, listener: EventListener): () => void {
+  const existing = listeners.get(type) ?? new Set<EventListener>();
+  existing.add(listener);
+  listeners.set(type, existing);
+  return () => {
+    existing.delete(listener);
+  };
+}
+
+function notify(event: PornarrEvent): void {
+  for (const listener of listeners.get(event.type) ?? []) listener(event);
 }
 
 /**
@@ -185,6 +224,7 @@ export function useEventStream(): EventStreamState {
         if (parsed === null) return;
 
         applyEvent(queryClient, parsed);
+        notify(parsed);
 
         const key = ANNOUNCEMENT_KEYS[type];
         if (key !== undefined) {

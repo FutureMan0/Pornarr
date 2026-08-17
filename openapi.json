@@ -7396,6 +7396,48 @@
         ]
       }
     },
+    "/api/admin/library/root-folders/{folder_id}/scan": {
+      "post": {
+        "description": "Ask the worker to walk one folder now.\n\nIdempotent per folder: asking twice while a scan is queued does not queue a\nsecond walk of the same tree. `enqueue_once` keys on the arguments, so the\nsecond request returns the same 202 and changes nothing — which is what an\nadministrator clicking twice means, rather than two scans racing each other\nover the same files.\n\nThe progress is not returned here. The worker publishes `scan.progress` on\nthe event stream as it goes, and the screen watches that; holding the\nrequest open for a walk of ten thousand files would time out long before it\ntold anyone anything.",
+        "operationId": "admin_scan_root_folder",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "folder_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Folder Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Scan Root Folder",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/admin/oidc": {
       "get": {
         "operationId": "admin_list_providers",

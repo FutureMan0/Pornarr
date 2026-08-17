@@ -18,6 +18,7 @@ IMPORT_QUEUE = "pornarr:import"
 TRANSCODE_QUEUE = "pornarr:transcode"
 INDEXER_QUEUE = "pornarr:indexer"
 BACKLOG_SEARCH_JOB_NAME = "backlog_search"
+SCAN_JOB_NAME = "scan"
 INDEXER_SEARCH_JOB_NAME = "search_indexers"
 
 JOB_TIMEOUT_SECONDS = 300
