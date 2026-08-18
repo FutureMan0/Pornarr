@@ -10,14 +10,21 @@
  */
 import { expect, test } from "@playwright/test";
 import {
+  TESTING_RELEASE_TITLE,
   apiGet,
   apiPostRaw,
-  configuredDownloadClientCount,
   configuredIndexerCount,
   expectNoAccessibilityViolations,
+  libraryItems,
   loginAsAdmin,
+  queueJobs,
   seedLibraryMedia,
+  testingDownloadClient,
+  testingIndexer,
 } from "./helpers";
+
+/** Verifying a two-hundred-megabyte fixture is the slow part, not the network. */
+const ACQUISITION_TIMEOUT_MILLISECONDS = 240_000;
 
 const NO_FIXTURE =
   "The suite cannot write a fixture into a configured root folder: either ffmpeg is missing or the stack's data volume is not reachable from here.";
@@ -100,25 +107,59 @@ test.describe("search", () => {
     await expect(externalResults.getByRole("row").nth(1)).toBeVisible();
   });
 
-  test("a release from an indexer can be grabbed", async ({ page }) => {
-    const [indexers, clients] = await Promise.all([
-      configuredIndexerCount(page),
-      configuredDownloadClientCount(page),
+  test("a release from an indexer is grabbed, downloaded and imported", async ({ page }) => {
+    // The whole acquisition chain in one test, because every link in it only
+    // means something with the others: an indexer that answers, a client that
+    // accepts the release, a completion the product notices, and a file that
+    // ends up in the library.
+    test.setTimeout(ACQUISITION_TIMEOUT_MILLISECONDS + 60_000);
+    const [indexer, client] = await Promise.all([
+      testingIndexer(page),
+      testingDownloadClient(page),
     ]);
     test.skip(
-      indexers === 0 || clients === 0,
-      "Grabbing needs both an indexer to return a release and a download client to accept it; the local Compose stack provides neither.",
+      indexer === null || client === null,
+      "Grabbing needs an indexer and a download client: start them with " +
+        "docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.testing.yml up -d",
     );
 
-    await page.goto("/search?q=scene");
+    await page.goto(`/search?q=${encodeURIComponent("Compose Test Scene")}`);
     const externalResults = page.getByRole("region", { name: "From indexers" });
-    const firstGrab = externalResults.getByRole("button", { name: "Grab" }).first();
-    await expect(firstGrab).toBeVisible();
-    await firstGrab.click();
+    const row = externalResults.getByRole("row").filter({ hasText: TESTING_RELEASE_TITLE });
+    await expect(
+      row,
+      `The indexer answered but ${TESTING_RELEASE_TITLE} never reached the screen.`,
+    ).toBeVisible({ timeout: 30_000 });
 
-    await page.goto("/downloads");
-    const downloads = page.getByRole("region", { name: "Downloads" });
-    await expect(downloads.getByRole("listitem").first()).toBeVisible();
-    await expectNoAccessibilityViolations(page);
+    await row.getByRole("button", { name: "Grab" }).click();
+
+    // The client verifies the data it was handed and reports the download as
+    // finished; a torrent client that keeps seeding says "seeding", not
+    // "completed", and both mean the file is on disk.
+    await expect
+      .poll(
+        async () =>
+          (await queueJobs(page)).some((job) =>
+            ["completed", "seeding", "importing"].includes(job.status),
+          ),
+        {
+          timeout: ACQUISITION_TIMEOUT_MILLISECONDS,
+          intervals: [2_000],
+          message: "The grabbed release never finished in the download client.",
+        },
+      )
+      .toBe(true);
+
+    await expect
+      .poll(
+        async () => (await libraryItems(page)).some((item) => item.title.includes("Compose Test")),
+        {
+          timeout: ACQUISITION_TIMEOUT_MILLISECONDS,
+          intervals: [2_000],
+          message:
+            "The download finished and nothing reached the library. See docs/pipelines/import.md.",
+        },
+      )
+      .toBe(true);
   });
 });

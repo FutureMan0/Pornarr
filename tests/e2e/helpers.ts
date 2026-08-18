@@ -188,8 +188,72 @@ export async function configuredIndexerCount(page: Page): Promise<number> {
   return (await apiGet<unknown[]>(page, "/api/admin/indexers")).length;
 }
 
-export async function configuredDownloadClientCount(page: Page): Promise<number> {
-  return (await apiGet<unknown[]>(page, "/api/admin/download-clients")).length;
+/**
+ * The indexer and the download client that `docker-compose.testing.yml` brings
+ * up, configured through the same routes an operator would use.
+ *
+ * Both return null when that compose file is not running, and the tests that
+ * need them say so in their skip rather than pretending the grab path was
+ * covered.
+ */
+const TESTING_INDEXER_NAME = "E2E fake indexer";
+const TESTING_CLIENT_NAME = "E2E qBittorrent";
+export const TESTING_RELEASE_TITLE =
+  process.env.E2E_FAKE_RELEASE_TITLE ?? "Fake Studio - Compose Test Scene (2026) 1080p";
+
+type NamedResource = { readonly id: string; readonly name: string; readonly health: string };
+
+async function healthyResource(
+  page: Page,
+  collection: string,
+  name: string,
+  body: Record<string, unknown>,
+): Promise<NamedResource | null> {
+  const existing = (await apiGet<NamedResource[]>(page, collection)).find(
+    (item) => item.name === name,
+  );
+  const resource =
+    existing ??
+    (await apiPostRaw(page, collection, { ...body, name }).then(async (response) =>
+      response.status() === 201 ? ((await response.json()) as NamedResource) : null,
+    ));
+  if (resource === null) return null;
+  const tested = await apiPostRaw(page, `${collection}/${resource.id}/test`, {});
+  if (!tested.ok()) return null;
+  return (await tested.json()) as NamedResource;
+}
+
+export async function testingIndexer(page: Page): Promise<NamedResource | null> {
+  return healthyResource(page, "/api/admin/indexers", TESTING_INDEXER_NAME, {
+    protocol: "torrent",
+    implementation: "torznab",
+    base_url: process.env.E2E_FAKE_INDEXER_URL ?? "http://fake-indexer:9117/api",
+    api_key: "fake",
+    priority: 1,
+    enabled: true,
+  });
+}
+
+export async function testingDownloadClient(page: Page): Promise<NamedResource | null> {
+  return healthyResource(page, "/api/admin/download-clients", TESTING_CLIENT_NAME, {
+    protocol: "torrent",
+    implementation: "qbittorrent",
+    host: process.env.E2E_QBITTORRENT_HOST ?? "qbittorrent",
+    port: Number(process.env.E2E_QBITTORRENT_PORT ?? 8080),
+    credentials: JSON.stringify({ username: "admin", password: "adminadmin" }),
+    category: "pornarr",
+    enabled: true,
+  });
+}
+
+export type QueueJob = {
+  readonly id: string;
+  readonly release_guid: string;
+  readonly status: string;
+};
+
+export async function queueJobs(page: Page): Promise<QueueJob[]> {
+  return (await apiGet<{ items: QueueJob[] }>(page, "/api/queue")).items;
 }
 
 export type PlaybackInfo = { readonly direct_play: boolean };
