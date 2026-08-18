@@ -241,6 +241,9 @@ export function SetupRoute(): JSX.Element {
                 name="password"
                 type="password"
                 autoComplete="new-password"
+                // The rule was only ever stated by rejecting a password that
+                // broke it, which is the wrong moment to learn it.
+                aria-describedby="setup-password-rule"
                 value={password}
                 {...(accountError.password === undefined ? {} : { error: accountError.password })}
                 onChange={(event) => {
@@ -249,6 +252,9 @@ export function SetupRoute(): JSX.Element {
                     clearAccountError("password");
                 }}
               />
+              <p id="setup-password-rule" className="text-sm text-ink-muted">
+                {t("setup.account.passwordRule")}
+              </p>
               <p className="text-sm text-ink-muted">{t(`setup.account.strength.${strength}`)}</p>
             </div>
           </section>

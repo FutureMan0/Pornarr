@@ -89,7 +89,8 @@
         "weak": "Password strength: weak",
         "fair": "Password strength: fair",
         "strong": "Password strength: strong"
-      }
+      },
+      "passwordRule": "At least 12 characters from two kinds: lower case, upper case, digits, symbols."
     },
     "library": {
       "title": "Choose the library path",

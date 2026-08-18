@@ -48,7 +48,6 @@ test("once a root folder exists the empty library asks for a request instead", a
   expect(screen.queryByRole("link", { name: "Add a root folder" })).toBeNull();
 });
 
-
 test("picking a facet filters the library by that value", async () => {
   signedIn();
   const requested: string[] = [];
@@ -76,5 +75,7 @@ test("picking a facet filters the library by that value", async () => {
   await waitFor(() => {
     expect(requested.some((search) => search.includes("studio=Probe+Studio"))).toBe(true);
   });
-  expect(await screen.findByRole("heading", { name: "Nothing matches these filters" })).toBeTruthy();
+  expect(
+    await screen.findByRole("heading", { name: "Nothing matches these filters" }),
+  ).toBeTruthy();
 });

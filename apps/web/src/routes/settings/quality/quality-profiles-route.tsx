@@ -233,7 +233,10 @@ export function QualityProfilesRoute(): JSX.Element {
   const { t } = useTranslation();
   const session = useSession();
   const queryClient = useQueryClient();
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  // `undefined` is "nothing chosen yet", `null` is "editing a new profile".
+  // One value for both meant the effect below adopted the first profile the
+  // instant New profile cleared the selection, so the button did nothing.
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null | undefined>(undefined);
   const [draft, setDraft] = useState<ProfileDraft | null>(null);
   const [formatDrafts, setFormatDrafts] = useState<readonly FormatDraft[]>([]);
   const [removedFormatIds, setRemovedFormatIds] = useState<readonly string[]>([]);
@@ -289,7 +292,7 @@ export function QualityProfilesRoute(): JSX.Element {
 
   useEffect(() => {
     if (profilesQuery.data === undefined || definitionsQuery.data === undefined) return;
-    if (selectedProfileId !== null) return;
+    if (selectedProfileId !== undefined) return;
     const first = profilesQuery.data[0];
     if (first !== undefined) {
       setSelectedProfileId(first.id);

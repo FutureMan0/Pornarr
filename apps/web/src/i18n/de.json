@@ -89,7 +89,8 @@
         "weak": "Passwortstärke: schwach",
         "fair": "Passwortstärke: ausreichend",
         "strong": "Passwortstärke: stark"
-      }
+      },
+      "passwordRule": "Mindestens 12 Zeichen aus zwei Arten: Kleinbuchstaben, Großbuchstaben, Ziffern, Sonderzeichen."
     },
     "library": {
       "title": "Bibliothekspfad wählen",

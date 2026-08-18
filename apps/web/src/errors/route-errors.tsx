@@ -26,6 +26,7 @@ export function NotFoundRoute(): JSX.Element {
   return (
     <EmptyState
       title={t("screen.notFoundTitle")}
+      titleLevel={1}
       body={t("screen.notFoundBody")}
       action={{ label: t("screen.backToLibrary"), href: LIBRARY_PATH }}
     />
@@ -42,6 +43,7 @@ export function ForbiddenRoute(): JSX.Element {
   return (
     <EmptyState
       title={t("screen.forbiddenTitle")}
+      titleLevel={1}
       body={t("screen.forbiddenBody")}
       action={{ label: t("screen.backToLibrary"), href: LIBRARY_PATH }}
     />

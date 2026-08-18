@@ -112,3 +112,35 @@ test("edits a quality profile with keyboard-accessible ordering and previews uns
     custom_formats: [{ name: "Prefer HEVC", score: 9 }],
   });
 });
+
+test("new profile empties the editor instead of snapping back to the first profile", async () => {
+  signedIn();
+  server.use(
+    http.get("/api/admin/quality/definitions", () => HttpResponse.json(definitions)),
+    http.get("/api/admin/quality/profiles", () =>
+      HttpResponse.json([
+        {
+          id: "profile-1",
+          name: "Default profile",
+          cutoff_quality_id: "q-2160",
+          minimum_custom_format_score: 0,
+          is_default: true,
+          qualities: definitions,
+        },
+      ]),
+    ),
+    http.get("/api/admin/quality/custom-formats", () => HttpResponse.json([])),
+  );
+
+  renderApp("/settings/quality");
+  const user = userEvent.setup();
+
+  const name = await screen.findByLabelText("Profile name");
+  await waitFor(() => expect((name as HTMLInputElement).value).toBe("Default profile"));
+
+  await user.click(screen.getByRole("button", { name: "New profile" }));
+
+  await waitFor(() =>
+    expect((screen.getByLabelText("Profile name") as HTMLInputElement).value).toBe(""),
+  );
+});
