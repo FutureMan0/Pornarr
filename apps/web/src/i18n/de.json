@@ -317,7 +317,11 @@
     "suggestions": "Vorschläge",
     "seeAll": "Alle Ergebnisse für „{{query}}“",
     "noSuggestions": "Noch kein Treffer in der Bibliothek.",
-    "suggestionsBusy": "Suche…"
+    "suggestionsBusy": "Suche…",
+    "filtersTitle": "Filter",
+    "openFilters": "Filter",
+    "clearFilters": "Alles zurücksetzen",
+    "applyFilters": "Ergebnisse zeigen"
   },
   "account": {
     "menu": "Konto",

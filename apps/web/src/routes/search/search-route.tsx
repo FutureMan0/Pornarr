@@ -1,5 +1,5 @@
 /** The URL-addressable search workspace: local library first, indexers progressively. */
-import { Button, Input, Select, SkeletonRegion } from "@pornarr/ui";
+import { Button, Input, Select, Sheet, SkeletonRegion } from "@pornarr/ui";
 import type { JSX, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -69,6 +69,39 @@ export function SearchRoute() {
     );
   };
 
+  /** Every filter except the query itself — what the sheet holds. */
+  const FILTER_KEYS = [
+    "quality",
+    "minimum_size",
+    "maximum_size",
+    "maximum_age_days",
+    "indexer_id",
+    "protocol",
+    "minimum_seeders",
+    "sort",
+  ] as const;
+
+  const phone = usePhoneLayout();
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // How many are actually doing something, for the count on the button. `sort`
+  // has a default, so having a value is not the same as being set.
+  const activeFilters = FILTER_KEYS.filter((key) => {
+    const value = params.get(key);
+    if (value === null || value === "") return false;
+    return !(key === "sort" && value === "relevance");
+  }).length;
+
+  const clearAllFilters = (): void => {
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        for (const key of FILTER_KEYS) next.delete(key);
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
   const setValue = (key: string, value: string): void => {
     setParams(
       (current) => {
@@ -81,6 +114,85 @@ export function SearchRoute() {
     );
   };
 
+  /** The eight controls that are a sheet on a phone and a row on a desktop. */
+  const filterControls = (
+    <>
+      <FilterSelect
+        id="search-quality"
+        label={t("search.filters.quality")}
+        value={filters.quality ?? ""}
+        onChange={(value) => setValue("quality", value)}
+        options={[
+          ["", t("search.filters.anyQuality")],
+          ["720p", "720p"],
+          ["1080p", "1080p"],
+          ["2160p", "2160p"],
+        ]}
+      />
+      <FilterInput
+        id="search-minimum-size"
+        label={t("search.filters.minimumSize")}
+        value={params.get("minimum_size") ?? ""}
+        onChange={(value) => setValue("minimum_size", value)}
+      />
+      <FilterInput
+        id="search-maximum-size"
+        label={t("search.filters.maximumSize")}
+        value={params.get("maximum_size") ?? ""}
+        onChange={(value) => setValue("maximum_size", value)}
+      />
+      <FilterSelect
+        id="search-age"
+        label={t("search.filters.age")}
+        value={params.get("maximum_age_days") ?? ""}
+        onChange={(value) => setValue("maximum_age_days", value)}
+        options={[
+          ["", t("search.filters.anyAge")],
+          ["1", t("search.filters.day")],
+          ["7", t("search.filters.week")],
+          ["30", t("search.filters.month")],
+        ]}
+      />
+      <FilterText
+        id="search-indexer"
+        label={t("search.filters.indexer")}
+        value={params.get("indexer_id") ?? ""}
+        onChange={(value) => setValue("indexer_id", value)}
+      />
+      <FilterSelect
+        id="search-protocol"
+        label={t("search.filters.protocol")}
+        value={filters.protocol ?? ""}
+        onChange={(value) => setValue("protocol", value)}
+        options={[
+          ["", t("search.filters.anyProtocol")],
+          ["torrent", t("search.filters.torrent")],
+          ["usenet", t("search.filters.usenet")],
+        ]}
+      />
+      <FilterInput
+        id="search-minimum-seeders"
+        label={t("search.filters.minimumSeeders")}
+        value={params.get("minimum_seeders") ?? ""}
+        onChange={(value) => setValue("minimum_seeders", value)}
+      />
+      <FilterSelect
+        id="search-sort"
+        label={t("search.filters.sort")}
+        value={filters.sort}
+        onChange={(value) => setValue("sort", value)}
+        options={[
+          ["relevance", t("search.sort.relevance")],
+          ["age", t("search.sort.age")],
+          ["size", t("search.sort.size")],
+          ["quality", t("search.sort.quality")],
+          ["seeders", t("search.sort.seeders")],
+          ["estimated_time", t("search.sort.estimatedTime")],
+        ]}
+      />
+    </>
+  );
+
   return (
     <section className="flex flex-col gap-10" aria-label={t("search.title")}>
       <header className="flex flex-col gap-2">
@@ -88,7 +200,11 @@ export function SearchRoute() {
       </header>
 
       <form
-        className="grid gap-4 border-y border-border py-4 md:grid-cols-[minmax(0,1fr)_repeat(4,minmax(8rem,0.45fr))]"
+        className={
+          phone
+            ? "flex flex-col gap-3 border-y border-border py-4"
+            : "grid gap-4 border-y border-border py-4 md:grid-cols-[minmax(0,1fr)_repeat(4,minmax(8rem,0.45fr))]"
+        }
         onSubmit={(event) => event.preventDefault()}
       >
         <div className="md:col-span-5">
@@ -103,79 +219,36 @@ export function SearchRoute() {
             onChange={(event) => setValue("q", event.target.value)}
           />
         </div>
-        <FilterSelect
-          id="search-quality"
-          label={t("search.filters.quality")}
-          value={filters.quality ?? ""}
-          onChange={(value) => setValue("quality", value)}
-          options={[
-            ["", t("search.filters.anyQuality")],
-            ["720p", "720p"],
-            ["1080p", "1080p"],
-            ["2160p", "2160p"],
-          ]}
-        />
-        <FilterInput
-          id="search-minimum-size"
-          label={t("search.filters.minimumSize")}
-          value={params.get("minimum_size") ?? ""}
-          onChange={(value) => setValue("minimum_size", value)}
-        />
-        <FilterInput
-          id="search-maximum-size"
-          label={t("search.filters.maximumSize")}
-          value={params.get("maximum_size") ?? ""}
-          onChange={(value) => setValue("maximum_size", value)}
-        />
-        <FilterSelect
-          id="search-age"
-          label={t("search.filters.age")}
-          value={params.get("maximum_age_days") ?? ""}
-          onChange={(value) => setValue("maximum_age_days", value)}
-          options={[
-            ["", t("search.filters.anyAge")],
-            ["1", t("search.filters.day")],
-            ["7", t("search.filters.week")],
-            ["30", t("search.filters.month")],
-          ]}
-        />
-        <FilterText
-          id="search-indexer"
-          label={t("search.filters.indexer")}
-          value={params.get("indexer_id") ?? ""}
-          onChange={(value) => setValue("indexer_id", value)}
-        />
-        <FilterSelect
-          id="search-protocol"
-          label={t("search.filters.protocol")}
-          value={filters.protocol ?? ""}
-          onChange={(value) => setValue("protocol", value)}
-          options={[
-            ["", t("search.filters.anyProtocol")],
-            ["torrent", t("search.filters.torrent")],
-            ["usenet", t("search.filters.usenet")],
-          ]}
-        />
-        <FilterInput
-          id="search-minimum-seeders"
-          label={t("search.filters.minimumSeeders")}
-          value={params.get("minimum_seeders") ?? ""}
-          onChange={(value) => setValue("minimum_seeders", value)}
-        />
-        <FilterSelect
-          id="search-sort"
-          label={t("search.filters.sort")}
-          value={filters.sort}
-          onChange={(value) => setValue("sort", value)}
-          options={[
-            ["relevance", t("search.sort.relevance")],
-            ["age", t("search.sort.age")],
-            ["size", t("search.sort.size")],
-            ["quality", t("search.sort.quality")],
-            ["seeders", t("search.sort.seeders")],
-            ["estimated_time", t("search.sort.estimatedTime")],
-          ]}
-        />
+
+        {/* Eight controls above the first result is a form to fill in, not a
+            search. On a phone they move into the sheet C3 draws, and the count
+            on the button says how many are doing anything. */}
+        {phone ? (
+          <>
+            <Button variant="secondary" onClick={() => setFiltersOpen(true)}>
+              {activeFilters === 0
+                ? t("search.openFilters")
+                : `${t("search.openFilters")} (${activeFilters})`}
+            </Button>
+            <Sheet
+              open={filtersOpen}
+              onClose={() => setFiltersOpen(false)}
+              title={t("search.filtersTitle")}
+              action={
+                <Button variant="ghost" onClick={clearAllFilters}>
+                  {t("search.clearFilters")}
+                </Button>
+              }
+              footer={
+                <Button onClick={() => setFiltersOpen(false)}>{t("search.applyFilters")}</Button>
+              }
+            >
+              {filterControls}
+            </Sheet>
+          </>
+        ) : (
+          filterControls
+        )}
       </form>
 
       {/* The sidebar beside the results, as the design lays it out; stacked
