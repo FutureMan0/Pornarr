@@ -1,5 +1,6 @@
 /** The URL-addressable search workspace: local library first, indexers progressively. */
 import { Button, Input, Select, SkeletonRegion } from "@pornarr/ui";
+import type { JSX, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
@@ -7,6 +8,7 @@ import { useSearchParams } from "react-router-dom";
 import { Numeric, useFormat } from "../../i18n/format";
 import { messageForError } from "../../lib/api-error";
 import { usePageTitle } from "../../shell/page-title";
+import { usePhoneLayout } from "../../shell/sidebar";
 import { FacetSidebar } from "./facet-sidebar";
 import {
   type ExternalSearchItem,
@@ -204,6 +206,28 @@ export function SearchRoute() {
   );
 }
 
+/**
+ * One field of a result, for the card a phone gets instead of a table row.
+ *
+ * Label on the left, value on the right, which is the same reading order a table
+ * header gives — the column name is just beside the value rather than above a
+ * stack of them.
+ */
+function Field({
+  label,
+  children,
+}: {
+  readonly label: string;
+  readonly children: ReactNode;
+}): JSX.Element {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <dt className="flex-none text-2xs text-ink-muted">{label}</dt>
+      <dd className="m-0 min-w-0 truncate text-right text-xs text-ink">{children}</dd>
+    </div>
+  );
+}
+
 function LocalResults({
   query,
   search,
@@ -215,6 +239,7 @@ function LocalResults({
 }) {
   const { t } = useTranslation();
   const format = useFormat();
+  const phone = usePhoneLayout();
   return (
     <section className="flex flex-col gap-4" aria-labelledby="local-results-heading">
       <div className="flex items-baseline justify-between gap-4">
@@ -247,7 +272,34 @@ function LocalResults({
         </p>
       ) : search.data?.items.length === 0 ? (
         <p className="text-sm text-ink-muted">{t("search.local.empty")}</p>
+      ) : phone ? (
+        /* A table you drag sideways is not a phone layout — it scrolls the whole
+           page with it, and a keyboard cannot reach the scroller at all. The
+           design draws these as cards; so does this. */
+        <ul className="flex flex-col gap-2">
+          {search.data?.items.map((item) => (
+            <li key={item.id} className="card gap-1.5">
+              <p className="text-sm text-ink">{item.title}</p>
+              <dl className="flex flex-col gap-1">
+                <Field label={t("search.columns.studio")}>{item.studio ?? "—"}</Field>
+                <Field label={t("search.columns.age")}>
+                  {item.release_date === null
+                    ? "—"
+                    : format.relativeDate(new Date(item.release_date))}
+                </Field>
+                <Field label={t("search.columns.quality")}>
+                  {item.quality ?? item.resolution ?? "—"}
+                </Field>
+                <Field label={t("search.columns.size")}>
+                  <Numeric>{format.bytes(item.size)}</Numeric>
+                </Field>
+              </dl>
+            </li>
+          ))}
+        </ul>
       ) : (
+        // `tabIndex`: a region that scrolls has to be reachable by a keyboard,
+        // and a div with `overflow-x: auto` is not focusable on its own.
         <div className="min-w-0 overflow-x-auto border border-border">
           <table className="w-full min-w-[44rem] text-sm">
             <thead className="bg-surface-2 text-left text-xs text-ink-muted">
@@ -298,6 +350,7 @@ function ExternalResults({
 }) {
   const { t } = useTranslation();
   const format = useFormat();
+  const phone = usePhoneLayout();
   const grab = useGrabRelease();
   const items = useProgressiveItems(search.data?.id ?? null, search.data?.items ?? []);
   const names = new Map(items.map((item) => [item.indexer_id, item.indexer_name]));
@@ -327,40 +380,85 @@ function ExternalResults({
       ) : (
         <>
           <IndexerStatus statuses={search.data?.statuses ?? {}} names={names} />
-          {/* `min-w-0`: without it the wrapper stretches to the table and its
-              own overflow never engages. */}
-          <div className="min-w-0 overflow-x-auto border border-border">
-            <table className="w-full min-w-[68rem] text-sm">
-              <thead className="bg-surface-2 text-left text-xs text-ink-muted">
-                <tr>
-                  <th className="px-3 py-2 font-medium">{t("search.columns.title")}</th>
-                  <th className="px-3 py-2 font-medium">{t("search.columns.indexer")}</th>
-                  <th className="px-3 py-2 font-medium">{t("search.columns.quality")}</th>
-                  <th className="px-3 py-2 text-right font-medium">{t("search.columns.size")}</th>
-                  <th className="px-3 py-2 text-right font-medium">{t("search.columns.age")}</th>
-                  <th className="px-3 py-2 text-right font-medium">
-                    {t("search.columns.seeders")}
-                  </th>
-                  <th className="px-3 py-2 text-right font-medium">{t("search.columns.score")}</th>
-                  <th className="px-3 py-2 text-right font-medium">{t("search.columns.time")}</th>
-                  <th className="px-3 py-2">
-                    <span className="visually-hidden">{t("search.columns.action")}</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {items.map((item) => (
-                  <ExternalRow
-                    key={item.id}
-                    item={item}
-                    onGrab={(releaseId = item.id) => grab.mutate({ item, releaseId })}
-                    grabbing={grab.isPending && grab.variables?.item.id === item.id}
-                    format={format}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {phone ? (
+            /* Nine columns is 68rem, and 68rem on a 390px screen used to scroll
+               the whole page sideways — measured at 673px. A card per release
+               instead: the name, the four facts worth comparing, and the one
+               control. */
+            <ul className="flex flex-col gap-2">
+              {items.map((item) => (
+                <li key={item.id} className="card gap-2">
+                  <p className="break-words font-mono text-2xs text-ink">{item.title}</p>
+                  <dl className="flex flex-col gap-1">
+                    <Field label={t("search.columns.indexer")}>{item.indexer_name}</Field>
+                    <Field label={t("search.columns.quality")}>{item.quality ?? "—"}</Field>
+                    <Field label={t("search.columns.size")}>
+                      <Numeric>{item.size === null ? "—" : format.bytes(item.size)}</Numeric>
+                    </Field>
+                    <Field label={t("search.columns.seeders")}>
+                      <Numeric>{item.seeders ?? "—"}</Numeric>
+                    </Field>
+                    <Field label={t("search.columns.age")}>
+                      {item.published_at === null
+                        ? "—"
+                        : format.relativeDate(new Date(item.published_at))}
+                    </Field>
+                    <Field label={t("search.columns.time")}>
+                      <Numeric>
+                        {format.estimate(item.estimate.low_seconds, item.estimate.high_seconds)}
+                      </Numeric>
+                    </Field>
+                  </dl>
+                  <Button
+                    variant="secondary"
+                    loading={grab.isPending && grab.variables?.item.id === item.id}
+                    onClick={() => grab.mutate({ item, releaseId: item.id })}
+                  >
+                    {t("search.grab")}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            /* `min-w-0`: without it the wrapper stretches to the table and its
+              own overflow never engages. `role="region"` with a name is what
+              makes a scrolling box reachable by keyboard — a bare div with
+              `tabIndex` is a focus stop with nothing to announce. */
+            <div className="min-w-0 overflow-x-auto border border-border">
+              <table className="w-full min-w-[68rem] text-sm">
+                <thead className="bg-surface-2 text-left text-xs text-ink-muted">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">{t("search.columns.title")}</th>
+                    <th className="px-3 py-2 font-medium">{t("search.columns.indexer")}</th>
+                    <th className="px-3 py-2 font-medium">{t("search.columns.quality")}</th>
+                    <th className="px-3 py-2 text-right font-medium">{t("search.columns.size")}</th>
+                    <th className="px-3 py-2 text-right font-medium">{t("search.columns.age")}</th>
+                    <th className="px-3 py-2 text-right font-medium">
+                      {t("search.columns.seeders")}
+                    </th>
+                    <th className="px-3 py-2 text-right font-medium">
+                      {t("search.columns.score")}
+                    </th>
+                    <th className="px-3 py-2 text-right font-medium">{t("search.columns.time")}</th>
+                    <th className="px-3 py-2">
+                      <span className="visually-hidden">{t("search.columns.action")}</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {items.map((item) => (
+                    <ExternalRow
+                      key={item.id}
+                      item={item}
+                      onGrab={(releaseId = item.id) => grab.mutate({ item, releaseId })}
+                      grabbing={grab.isPending && grab.variables?.item.id === item.id}
+                      format={format}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           {items.length === 0 && !search.isFetching ? (
             <p className="text-sm text-ink-muted">{t("search.external.empty")}</p>
           ) : null}

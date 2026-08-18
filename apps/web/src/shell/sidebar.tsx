@@ -115,6 +115,22 @@ export function useSidebarLayout(): SidebarLayout {
   return useSyncExternalStore(subscribeToLayout, readLayout, () => "full");
 }
 
+/**
+ * Is this a phone?
+ *
+ * One definition, shared. Screens that have to *choose their markup* rather than
+ * restyle it — a table that becomes a list of cards, and nothing else so far —
+ * need the same answer the shell used to decide on a tab bar, or the two will
+ * disagree at the boundary and something will render twice or not at all.
+ *
+ * Restyling is still CSS's job. Reach for this only when the two layouts are
+ * different elements, because rendering both and hiding one doubles what a
+ * screen reader walks.
+ */
+export function usePhoneLayout(): boolean {
+  return useSidebarLayout() === "drawer";
+}
+
 export interface SidebarProps {
   readonly layout: SidebarLayout;
 }
