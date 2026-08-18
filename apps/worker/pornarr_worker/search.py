@@ -41,6 +41,7 @@ class SearchTarget:
     skip_status: str | None = None
     cached_releases: list[Release] | None = None
     last_rss_guid: str | None = None
+    search_categories: tuple[str, ...] = ()
 
 
 @dataclass(slots=True)
@@ -184,6 +185,7 @@ async def configured_targets(redis: Any) -> list[SearchTarget]:
                     api_key=indexer.api_key,
                     adapter=ADAPTERS.get(indexer.implementation),
                     last_rss_guid=indexer.last_rss_guid,
+                    search_categories=tuple(indexer.search_categories),
                 )
             )
     return targets
@@ -277,7 +279,12 @@ async def _search(
         return target.id, "unavailable", None, None
     try:
         releases = await asyncio.wait_for(
-            target.adapter.search(base_url=target.base_url, api_key=target.api_key, query=query),
+            target.adapter.search(
+                base_url=target.base_url,
+                api_key=target.api_key,
+                query=query,
+                categories=target.search_categories,
+            ),
             timeout,
         )
         return target.id, "completed", releases, None

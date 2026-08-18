@@ -10,6 +10,19 @@ from pornarr_core.matching import parse_release, score_release
 
 
 @pytest.mark.parametrize(
+    "title",
+    [
+        "Fake Studio - Compose Test Scene (2026) 1080p",
+        "Studio - A Title Without A Date 2160p WEB-DL",
+    ],
+)
+def test_an_undated_release_names_no_performers(title: str) -> None:
+    """A title is not a person, and reading it as one poisons every later match."""
+
+    assert parse_release(title).performers == ()
+
+
+@pytest.mark.parametrize(
     ("title", "resolution", "source", "codec", "group", "release_date", "performers"),
     [
         (

@@ -52,7 +52,11 @@ async def fetch_rss(
         return "unavailable", None, None
     try:
         releases = await asyncio.wait_for(
-            target.adapter.rss(base_url=target.base_url, api_key=target.api_key),
+            target.adapter.rss(
+                base_url=target.base_url,
+                api_key=target.api_key,
+                categories=target.search_categories,
+            ),
             INDEXER_SEARCH_TIMEOUT_SECONDS,
         )
         return "completed", releases, None

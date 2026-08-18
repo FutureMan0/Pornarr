@@ -22,6 +22,13 @@ class Indexer(TimestampMixin, Base):
     base_url: Mapped[str] = mapped_column(String(512), nullable=False)
     api_key: Mapped[str] = mapped_column(EncryptedString(), nullable=False)
     categories: Mapped[list[dict[str, str]]] = mapped_column(JSON, nullable=False, default=list)
+    # What to actually restrict `search`/`rss` requests to, as opposed to
+    # `categories` above (everything the indexer's caps response advertised).
+    # Pornarr is an adult media manager, so a general-purpose indexer defaults
+    # to the Newznab/Torznab XXX range until an administrator narrows it.
+    search_categories: Mapped[list[str]] = mapped_column(
+        JSON, nullable=False, default=lambda: ["6000"]
+    )
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"

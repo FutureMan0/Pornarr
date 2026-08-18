@@ -16,13 +16,17 @@ class Adapter:
         self.fail = fail
         self.calls = 0
 
-    async def rss(self, *, base_url: str, api_key: str) -> list[Release]:
+    async def rss(
+        self, *, base_url: str, api_key: str, categories: tuple[str, ...] = ()
+    ) -> list[Release]:
         self.calls += 1
         if self.fail:
             raise RuntimeError("unavailable")
         return self.releases
 
-    async def search(self, *, base_url: str, api_key: str, query: str) -> list[Release]:
+    async def search(
+        self, *, base_url: str, api_key: str, query: str, categories: tuple[str, ...] = ()
+    ) -> list[Release]:
         return self.releases
 
     async def test_connection(self, *, base_url: str, api_key: str) -> list[IndexerCategory]:
@@ -137,6 +141,35 @@ async def test_failed_rss_feed_is_recorded_for_indexer_health(monkeypatch) -> No
     assert await rss_sync.rss_sync({"redis": object()}, cycle=1) == 0
     assert recorded[0][:2] == ("failed", "failed")
     assert isinstance(recorded[0][2], RuntimeError)
+
+
+async def test_fetch_rss_sends_the_targets_search_categories() -> None:
+    class RecordingAdapter:
+        def __init__(self) -> None:
+            self.categories: tuple[str, ...] | None = None
+
+        async def test_connection(self, *, base_url: str, api_key: str) -> list[IndexerCategory]:
+            return []
+
+        async def search(
+            self, *, base_url: str, api_key: str, query: str, categories: tuple[str, ...] = ()
+        ) -> list[Release]:
+            raise NotImplementedError
+
+        async def rss(
+            self, *, base_url: str, api_key: str, categories: tuple[str, ...] = ()
+        ) -> list[Release]:
+            self.categories = categories
+            return []
+
+    adapter = RecordingAdapter()
+    target = SearchTarget(
+        "indexer-1", "https://indexer.example", "key", adapter, search_categories=("6000",)
+    )
+
+    await rss_sync.fetch_rss(target)
+
+    assert adapter.categories == ("6000",)
 
 
 def test_new_releases_stops_at_the_last_seen_guid() -> None:

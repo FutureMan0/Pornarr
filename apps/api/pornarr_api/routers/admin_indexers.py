@@ -36,6 +36,12 @@ class IndexerWrite(BaseModel):
     api_key: SecretStr
     priority: int = 0
     enabled: bool = True
+    # None means "use the model's default" rather than "clear the selection".
+    search_categories: list[str] | None = None
+
+
+class IndexerSearchCategoriesWrite(BaseModel):
+    search_categories: list[str]
 
 
 class IndexerStatsResponse(BaseModel):
@@ -52,6 +58,7 @@ class IndexerResponse(BaseModel):
     implementation: str
     base_url: str
     categories: list[dict[str, str]]
+    search_categories: list[str]
     priority: int
     enabled: bool
     health: str
@@ -69,6 +76,7 @@ def indexer_response(indexer: Indexer, stats: IndexerStats) -> IndexerResponse:
         implementation=indexer.implementation,
         base_url=indexer.base_url,
         categories=indexer.categories,
+        search_categories=indexer.search_categories,
         priority=indexer.priority,
         enabled=indexer.enabled,
         health=indexer.health,
@@ -136,6 +144,8 @@ async def create_indexer(payload: IndexerWrite, _: Admin, session: Session) -> I
         priority=payload.priority,
         enabled=payload.enabled,
     )
+    if payload.search_categories is not None:
+        indexer.search_categories = payload.search_categories
     session.add(indexer)
     await session.flush()
     stats = IndexerStats(indexer_id=indexer.id)
@@ -168,6 +178,17 @@ async def test_indexer(
     indexer.health_reason = None
     indexer.last_error = None
     indexer.last_tested_at = datetime.now(UTC)
+    return indexer_response(indexer, await stats_for(session, indexer.id))
+
+
+@router.put("/{indexer_id}/search-categories", response_model=IndexerResponse)
+async def update_indexer_search_categories(
+    indexer_id: UUID, payload: IndexerSearchCategoriesWrite, _: Admin, session: Session
+) -> IndexerResponse:
+    """Change which categories this indexer's search/rss requests are restricted to."""
+
+    indexer = await indexer_or_404(session, indexer_id)
+    indexer.search_categories = payload.search_categories
     return indexer_response(indexer, await stats_for(session, indexer.id))
 
 

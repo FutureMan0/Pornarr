@@ -30,13 +30,23 @@ class TorznabAdapter:
     async def test_connection(self, *, base_url: str, api_key: str) -> list[IndexerCategory]:
         return parse_capabilities(await self._request(base_url, api_key, {"t": "caps"}))
 
-    async def search(self, *, base_url: str, api_key: str, query: str) -> list[Release]:
-        return parse_results(await self._request(base_url, api_key, {"t": "search", "q": query}))
+    async def search(
+        self, *, base_url: str, api_key: str, query: str, categories: tuple[str, ...] = ()
+    ) -> list[Release]:
+        return parse_results(
+            await self._request(
+                base_url, api_key, _with_categories({"t": "search", "q": query}, categories)
+            )
+        )
 
-    async def rss(self, *, base_url: str, api_key: str) -> list[Release]:
-        """Fetch the indexer's unfiltered RSS feed without a search term."""
+    async def rss(
+        self, *, base_url: str, api_key: str, categories: tuple[str, ...] = ()
+    ) -> list[Release]:
+        """Fetch the indexer's feed without a search term, restricted to its configured categories."""
 
-        return parse_results(await self._request(base_url, api_key, {"t": "search"}))
+        return parse_results(
+            await self._request(base_url, api_key, _with_categories({"t": "search"}, categories))
+        )
 
     async def _request(self, base_url: str, api_key: str, params: dict[str, str]) -> str:
         try:
@@ -114,6 +124,10 @@ def parse_results(document: str) -> list[Release]:
             )
         )
     return releases
+
+
+def _with_categories(params: dict[str, str], categories: tuple[str, ...]) -> dict[str, str]:
+    return {**params, "cat": ",".join(categories)} if categories else params
 
 
 def _root(document: str) -> ElementTree.Element:
