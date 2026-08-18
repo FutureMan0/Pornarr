@@ -16,6 +16,7 @@ dist/
 *.tsbuildinfo
 playwright-report/
 test-results/
+.playwright-cli/
 
 # Environment
 .env

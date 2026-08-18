@@ -1,59 +1,11 @@
-import AxeBuilder from "@axe-core/playwright";
-import { type Page, expect, test } from "@playwright/test";
-
-const ADMIN_USERNAME = "e2e-admin";
-const ADMIN_PASSWORD = "E2E administrator password! 2026";
-
-async function expectNoAccessibilityViolations(page: Page): Promise<void> {
-  const results = await new AxeBuilder({ page }).analyze();
-  expect(results.violations).toEqual([]);
-}
-
-async function waitForWebServer(page: Page): Promise<void> {
-  await expect
-    .poll(
-      async () => {
-        try {
-          return (await page.request.get("/")).ok();
-        } catch {
-          return false;
-        }
-      },
-      { timeout: 30_000 },
-    )
-    .toBe(true);
-}
-
-async function setUpAdministrator(page: Page): Promise<void> {
-  await page.goto("/setup");
-
-  await expect(page.getByRole("heading", { name: "Set up Pornarr" })).toBeVisible();
-  await page.getByLabel("Username").fill(ADMIN_USERNAME);
-  await page.getByLabel("Password").fill(ADMIN_PASSWORD);
-  await page.getByRole("button", { name: "Continue" }).click();
-
-  await expect(page.getByRole("heading", { name: "Choose the library path" })).toBeVisible();
-  await page.getByRole("textbox", { name: "Library path" }).fill("/data");
-  await page.getByRole("button", { name: "Continue" }).click();
-
-  const filtersHeading = page.getByRole("heading", { name: "Review content filters" });
-  const copyImports = page.getByRole("button", { name: "Continue with copy imports" });
-  await expect(filtersHeading.or(copyImports)).toBeVisible();
-  if (await copyImports.isVisible()) {
-    await copyImports.click();
-    await expect(filtersHeading).toBeVisible();
-  }
-  await page.getByRole("button", { name: "Continue" }).click();
-
-  await expect(page.getByRole("heading", { name: "Metadata providers" })).toBeVisible();
-  await page.getByRole("button", { name: "Skip for now" }).click();
-
-  await expect(page.getByRole("heading", { name: "Review setup" })).toBeVisible();
-  await page.getByRole("button", { name: "Complete setup" }).click();
-
-  await expect(page.getByRole("heading", { name: "Setup complete" })).toBeVisible();
-  await page.getByRole("link", { name: "Sign in" }).click();
-}
+import { expect, test } from "@playwright/test";
+import {
+  ADMIN_PASSWORD,
+  ADMIN_USERNAME,
+  expectNoAccessibilityViolations,
+  setUpAdministrator,
+  waitForWebServer,
+} from "./helpers";
 
 test("an administrator can set up, sign in, reach the library and sign out", async ({ page }) => {
   await waitForWebServer(page);
@@ -70,7 +22,8 @@ test("an administrator can set up, sign in, reach the library and sign out", asy
   await page.getByLabel("Username").fill(ADMIN_USERNAME);
   await page.getByLabel("Password").fill(ADMIN_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: "Library" })).toBeVisible();
+  // By level: an empty library also renders a "Your library is empty" heading.
+  await expect(page.getByRole("heading", { name: "Library", level: 1 })).toBeVisible();
   await expectNoAccessibilityViolations(page);
 
   await page.getByRole("button", { name: ADMIN_USERNAME }).click();

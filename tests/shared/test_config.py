@@ -138,6 +138,23 @@ def test_settings_are_immutable() -> None:
         settings.log_level = "debug"  # type: ignore[misc]
 
 
+def test_ensure_data_directories_creates_the_whole_tree(tmp_path: Path) -> None:
+    settings = build_settings(data_path=tmp_path)
+
+    settings.ensure_data_directories()
+
+    assert [path.name for path in sorted(tmp_path.iterdir())] == [
+        "library",
+        "quarantine",
+        "thumbnails",
+        "torrents",
+        "transcodes",
+        "usenet",
+    ]
+    # A second start must not fail on the directories the first one made.
+    settings.ensure_data_directories()
+
+
 def build_settings(base_path: str = "", data_path: Path = Path("/data")) -> Settings:
     """Construct settings with explicit arguments.
 

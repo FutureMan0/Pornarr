@@ -44,6 +44,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     configure_logging(settings.log_level)
     install_redaction()
 
+    settings.ensure_data_directories()
+
     app.state.engine = get_engine(settings)
     try:
         async with AsyncSession(app.state.engine) as session:
