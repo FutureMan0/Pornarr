@@ -9,7 +9,8 @@
  * finishing while the user is in settings is still worth announcing, and a
  * region that unmounts with the route announces nothing.
  */
-import type { CSSProperties, JSX } from "react";
+import { cx } from "@pornarr/ui";
+import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
 import { ConnectionStatus, useConnectionState } from "../errors/connection-status";
@@ -39,7 +40,10 @@ export function AppShell(): JSX.Element {
   const phone = layout === "drawer";
 
   return (
-    <div className="min-h-full">
+    // A column exactly one viewport tall, so nothing has to guess how much of
+    // it the chrome took. `dvh` because a phone's address bar shrinks the
+    // viewport as you scroll and `vh` is the tall version.
+    <div className="flex h-dvh flex-col">
       <a
         href="#main"
         className={
@@ -57,37 +61,20 @@ export function AppShell(): JSX.Element {
           name and the bar above renders it, so the provider has to contain
           the two of them. */}
       <PageTitleProvider>
-        <div className={CONTENT_OFFSET[layout]}>
+        <div className={cx("flex min-h-0 flex-1 flex-col", CONTENT_OFFSET[layout])}>
           <TopBar layout={layout} connection={connection} />
 
-          {/* The tab bar is fixed to the window, so the content reserves its
-              height rather than scrolling under it. */}
+          {/* The scroll container. The window no longer scrolls, which is what
+              makes `h-full` inside a screen mean "the rest of the window" — the
+              shorts feed and the library grid both used to subtract a guessed
+              number of rem from `100vh` instead, and both guesses were wrong on
+              a phone. */}
           <main
             id="main"
-            /**
-             * How much of the window the shell has already taken.
-             *
-             * A screen that wants to be exactly as tall as what is left — the
-             * shorts feed is the only one so far — cannot work that out for
-             * itself: the header is one row on a desktop and two on a phone, and
-             * a phone also carries a tab bar and a home indicator. It used to
-             * subtract a flat 11rem, which was right on a desktop and cut the
-             * bottom off every clip on a phone.
-             *
-             * Declared here because this is the element that knows.
-             */
-            style={
-              {
-                "--shell-chrome": phone
-                  ? "calc(11.5rem + var(--space-16) + var(--space-5) + env(safe-area-inset-bottom, 0px))"
-                  : "9.5rem",
-              } as CSSProperties
-            }
-            className={
-              phone
-                ? "mx-auto w-full max-w-[var(--layout-content-max-width)] px-4 pt-4 pb-[calc(var(--space-16)+var(--space-5)+env(safe-area-inset-bottom,0px))]"
-                : "mx-auto w-full max-w-[var(--layout-content-max-width)] p-6"
-            }
+            className={cx(
+              "mx-auto flex min-h-0 w-full max-w-[var(--layout-content-max-width)] flex-1 flex-col overflow-y-auto",
+              phone ? "px-4 pt-4" : "p-6",
+            )}
           >
             {/* Two registers of the same fact, on purpose: the pip in the bar
                 is always present and says which state we are in, this says what
@@ -103,7 +90,12 @@ export function AppShell(): JSX.Element {
                   fires on insertion, so arriving somewhere new has to be a new
                   element. `useScreenKey` is careful about what counts as new —
                   see it for why this is not `location.pathname`. */}
-              <div key={screenKey} className="pa-enter">
+              {/* `flex-1` and a column, so a screen can ask for the rest of the
+                  height. Without it this wrapper is content-sized — `main` being a
+                  flex column stretches its children across, not down — and the
+                  shorts feed's `flex-1` resolved against nothing and ran 71px
+                  under the tab bar. */}
+              <div key={screenKey} className="pa-enter flex min-h-0 flex-1 flex-col">
                 <Outlet />
               </div>
             </ErrorBoundary>
@@ -111,6 +103,9 @@ export function AppShell(): JSX.Element {
         </div>
       </PageTitleProvider>
 
+      {/* In flow at the bottom of the column, not fixed over the content. A
+          fixed bar means every screen has to reserve its height and get that
+          number right; a flex child means none of them do. */}
       {phone ? <TabBar /> : null}
 
       {/* Polite, and never focused: state that arrives over SSE is reported,

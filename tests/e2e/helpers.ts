@@ -70,6 +70,9 @@ export async function loginAsAdmin(page: Page): Promise<void> {
     await page.getByLabel("Username").fill(ADMIN_USERNAME);
     await page.getByLabel("Password").fill(ADMIN_PASSWORD);
     await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page.getByRole("heading", { name: "Library" })).toBeVisible();
+    // The Dashboard, not the library: signing in as an administrator lands on
+    // maintenance, because that is what the account is for. See
+    // `routes/home-redirect.tsx`.
+    await expect(page.getByRole("heading", { name: "Dashboard", level: 1 })).toBeVisible();
   }
 }

@@ -55,13 +55,13 @@ export function TabBar(): JSX.Element {
 
   return (
     <>
-      {/* `fixed`, not sticky: the bar belongs to the window, not to the scroll
-          container, and a sticky footer inside a scrolling main leaves a gap the
-          length of the page. The shell reserves the height so nothing hides
-          underneath it. */}
+      {/* In flow, at the bottom of the shell's column. It was `fixed`, which
+          meant every screen had to reserve its height and get that number right;
+          as a flex child it simply takes the room it needs and the scrolling
+          content above gets the rest. */}
       <nav
         aria-label={t("nav.tabs")}
-        className="fixed inset-x-0 bottom-0 z-[var(--z-sticky)] flex items-stretch gap-1 border-t border-border bg-[var(--pa-bg-00)] px-2 pt-2 pb-[calc(var(--space-3)+env(safe-area-inset-bottom,0px))]"
+        className="flex flex-none items-stretch gap-1 border-t border-border bg-[var(--pa-bg-00)] px-2 pt-2 pb-[calc(var(--space-3)+env(safe-area-inset-bottom,0px))]"
       >
         {tabs.map((item) => {
           const label = t(`nav.${item.id}`);

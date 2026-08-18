@@ -70,7 +70,8 @@ test("an administrator can set up, sign in, reach the library and sign out", asy
   await page.getByLabel("Username").fill(ADMIN_USERNAME);
   await page.getByLabel("Password").fill(ADMIN_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: "Library" })).toBeVisible();
+  // The Dashboard, not the library: an administrator lands on maintenance.
+  await expect(page.getByRole("heading", { name: "Dashboard", level: 1 })).toBeVisible();
   await expectNoAccessibilityViolations(page);
 
   await page.getByRole("button", { name: ADMIN_USERNAME }).click();

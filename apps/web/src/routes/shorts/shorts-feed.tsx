@@ -31,6 +31,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { getApiClient } from "../../lib/api";
 import { apiFailure } from "../../lib/api-error";
 import { usePageTitle } from "../../shell/page-title";
+import { usePhoneLayout } from "../../shell/sidebar";
 import { ShortPane } from "./short-pane";
 
 /**
@@ -81,6 +82,7 @@ export function ShortsFeedRoute(): JSX.Element {
   const [active, setActive] = useState(0);
   const [pages, setPages] = useState(1);
   const wide = useWideEnoughForComments();
+  const phone = usePhoneLayout();
   /**
    * The clip this screen opened on, captured once.
    *
@@ -206,8 +208,22 @@ export function ShortsFeedRoute(): JSX.Element {
     );
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-4">
+    // On a phone the feed is the screen. It breaks out of `main`'s padding and
+    // out of the room the header leaves, because a short-form feed inside a
+    // padded card with rounded corners is a video player on a page — which is
+    // what this looked like, and the opposite of what it is imitating.
+    <div
+      className={
+        phone ? "-mx-4 -mt-4 flex min-h-0 flex-1 flex-col" : "flex min-h-0 flex-1 flex-col gap-3"
+      }
+    >
+      <div
+        className={
+          phone
+            ? "flex items-center justify-end px-4 py-2"
+            : "flex items-center justify-between gap-4"
+        }
+      >
         {/* Nothing to say to a thumb. The hint names Space and the arrow keys,
             which is advice for a keyboard and clutter for everyone else — two
             lines of it at 390px, above a feed that is scrolled by swiping. */}
@@ -224,7 +240,15 @@ export function ShortsFeedRoute(): JSX.Element {
         ref={scroller}
         // `overscroll-contain` keeps a swipe past the last clip from scrolling
         // the page behind the feed.
-        className="h-[calc(100dvh-var(--shell-chrome,11rem))] snap-y snap-mandatory overflow-y-auto overscroll-contain rounded-lg"
+        // `flex-1` of the shell's column, not a subtraction from the viewport.
+        // The pane is then exactly what is left after the header and the tab bar,
+        // whatever those turn out to be — which is the only version of this that
+        // is right on both a desktop and a phone.
+        className={
+          phone
+            ? "min-h-0 flex-1 snap-y snap-mandatory overflow-y-auto overscroll-contain"
+            : "min-h-0 flex-1 snap-y snap-mandatory overflow-y-auto overscroll-contain rounded-lg"
+        }
         tabIndex={-1}
       >
         {clips.map((clip, index) => (
@@ -233,7 +257,7 @@ export function ShortsFeedRoute(): JSX.Element {
             data-index={index}
             className="flex h-full snap-start snap-always items-center justify-center"
           >
-            <ShortPane clip={clip} active={index === active} wide={wide} />
+            <ShortPane clip={clip} active={index === active} wide={wide} phone={phone} />
           </div>
         ))}
       </div>

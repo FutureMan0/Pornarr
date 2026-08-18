@@ -20,6 +20,12 @@
  * that width there is no room for a column, so the comment button opens them in
  * a dialog instead — the same panel, a different container.
  *
+ * AND ON A PHONE THE FRAME IS THE SCREEN, edge to edge. It used to be a rounded
+ * card with padding around it inside a padded page, which is a video player on a
+ * page and the opposite of what this is. A phone is not 9/16 either — 390×844 is
+ * nearer 9/19.5 — so the picture is cropped to fill rather than fitted, because
+ * a fitted clip leaves bands top and bottom and gives the whole illusion away.
+ *
  * THE RATING AND THE COUNT BELONG TO THE TITLE. That is what the API returns for
  * a short, and the label says so rather than letting a viewer think they are
  * rating forty seconds.
@@ -54,9 +60,18 @@ export interface ShortPaneProps {
   readonly active: boolean;
   /** The comment column has room. Below this the button opens a dialog. */
   readonly wide: boolean;
+  /**
+   * Fill the screen rather than sit on it.
+   *
+   * On a phone the frame is the viewport: no padding around it, no rounded
+   * corners, and the picture cropped to fill rather than fitted inside a 9/16
+   * box. A phone is not 9/16 — 390×844 is nearer 9/19.5 — so honouring the ratio
+   * would leave bands above and below and make the feed a video player on a page.
+   */
+  readonly phone: boolean;
 }
 
-export function ShortPane({ clip, active, wide }: ShortPaneProps): JSX.Element {
+export function ShortPane({ clip, active, wide, phone }: ShortPaneProps): JSX.Element {
   const { t } = useTranslation();
   const artVisible = useArtVisible();
   const { saved, busy, toggle } = useWatchlist(clip.parent_media_id);
@@ -92,8 +107,20 @@ export function ShortPane({ clip, active, wide }: ShortPaneProps): JSX.Element {
   }, [active]);
 
   return (
-    <article className="flex h-full w-full items-center justify-center gap-4 px-2 py-3">
-      <div className="relative flex aspect-[9/16] h-full min-h-0 flex-none overflow-hidden rounded-xl bg-[var(--pa-bg-00)]">
+    <article
+      className={
+        phone
+          ? "flex h-full w-full"
+          : "flex h-full w-full items-center justify-center gap-4 px-2 py-3"
+      }
+    >
+      <div
+        className={
+          phone
+            ? "relative h-full w-full overflow-hidden bg-[var(--pa-bg-00)]"
+            : "relative flex aspect-[9/16] h-full min-h-0 flex-none overflow-hidden rounded-xl bg-[var(--pa-bg-00)]"
+        }
+      >
         {active ? (
           <VideoPlayer
             mediaId={clip.parent_media_id}
@@ -105,12 +132,14 @@ export function ShortPane({ clip, active, wide }: ShortPaneProps): JSX.Element {
             clip={{ startSeconds: clip.start_seconds, endSeconds: clip.end_seconds }}
           />
         ) : (
-          /* A still, not a second player. */
+          /* A still, not a second player. On a phone it fills the frame for the
+             same reason the video does: the screen is taller than 9/16, and a
+             placeholder that honours the ratio leaves bands the video would not. */
           <Artwork
             seed={seedFrom(clip.id)}
             blur={tileBlur(artVisible)}
-            ratio="9 / 16"
-            className="h-full"
+            ratio={phone ? "auto" : "9 / 16"}
+            className="h-full w-full"
           />
         )}
 
@@ -238,7 +267,10 @@ function RailItem({
     // Its own ground, so the glyph holds against any frame beneath it.
     "bg-[color-mix(in_oklch,var(--pa-bg-00)_62%,transparent)]",
     "backdrop-blur-sm",
-    tone === "accent" ? "text-[var(--pa-accent-300)]" : "text-ink",
+    // `--primary` is what a filled star and a saved bookmark are everywhere
+    // else. The rail used a lighter step of the ramp, which made one fact wear
+    // two colours depending on where you met it.
+    tone === "accent" ? "text-[var(--primary)]" : "text-ink",
     onClick === undefined
       ? ""
       : "transition-[background-color,scale] duration-[var(--duration-fast)] ease-out hover:bg-[color-mix(in_oklch,var(--pa-bg-00)_82%,transparent)] hover:scale-[var(--hover-scale)] active:scale-100",

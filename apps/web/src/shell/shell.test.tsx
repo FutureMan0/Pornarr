@@ -12,6 +12,7 @@ import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import {
   TEST_USER,
+  currentPath,
   renderApp,
   server,
   setViewportWidth,
@@ -328,5 +329,39 @@ describe("navigation counts", () => {
 
     expect(nav.textContent).toContain("Downloads");
     expect(nav.textContent).toContain("Library");
+  });
+});
+
+/**
+ * Signing in puts you where your account is for.
+ *
+ * Everybody used to land on the library, which is the right answer for nobody: a
+ * household member opens this to watch something, an administrator because
+ * something needs attention.
+ */
+describe("where signing in lands", () => {
+  test("a guest starts at the feed, which answers what to watch", async () => {
+    server.use(http.get("/api/auth/me", () => HttpResponse.json({ ...TEST_USER, role: "user" })));
+    setViewportWidth(1440);
+    const { router } = renderApp("/");
+
+    await waitFor(() => expect(currentPath(router)).toBe("/feed"));
+  });
+
+  test("an administrator starts at the dashboard, which is maintenance", async () => {
+    setViewportWidth(1440);
+    const { router } = renderApp("/");
+
+    await waitFor(() => expect(currentPath(router)).toBe("/admin"));
+  });
+
+  test("it replaces rather than pushes, so back does not bounce", async () => {
+    setViewportWidth(1440);
+    const { router } = renderApp("/");
+
+    await waitFor(() => expect(currentPath(router)).toBe("/admin"));
+    // A push would leave "/" in the history, and going back would redirect
+    // forward again — a trap rather than a navigation.
+    expect(router.state.historyAction).not.toBe("PUSH");
   });
 });
