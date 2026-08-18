@@ -74,7 +74,9 @@
       "library": "Bibliothekspfad",
       "filters": "Inhaltsfilter",
       "metadata": "Metadaten",
-      "summary": "Zusammenfassung"
+      "summary": "Zusammenfassung",
+      "indexer": "Indexer",
+      "downloadClient": "Download-Client"
     },
     "next": "Weiter",
     "back": "Zurück",
@@ -135,8 +137,10 @@
     "metadata": {
       "title": "Metadatenanbieter",
       "body": "Externe Metadatenanbieter sind optional. Pornarr kann ohne einen solchen Anbieter starten.",
-      "skipped": "Während der Einrichtung wird kein Anbieter konfiguriert. StashDB oder ThePornDB lassen sich später unter Einstellungen, Metadaten hinzufügen.",
-      "skipAction": "Vorerst überspringen"
+      "skipAction": "Vorerst überspringen",
+      "implementation": "Anbieter",
+      "apiKey": "API-Schlüssel",
+      "endpoint": "Eigener Endpunkt (optional)"
     },
     "summary": {
       "title": "Einrichtung prüfen",
@@ -146,13 +150,52 @@
       "filters": "Inhaltsfilter",
       "filtersOff": "Alle Filter beginnen ausgeschaltet",
       "metadata": "Metadatenanbieter",
-      "metadataSkipped": "Kein Anbieter konfiguriert"
+      "metadataSkipped": "Kein Anbieter konfiguriert",
+      "indexer": "Indexer",
+      "indexerSkipped": "Kein Indexer eingerichtet",
+      "downloadClient": "Download-Client",
+      "downloadClientSkipped": "Kein Download-Client eingerichtet"
     },
     "complete": {
       "action": "Einrichtung abschließen",
       "title": "Einrichtung abgeschlossen",
       "body": "Die Instanz ist bereit. Melde dich mit dem Administrationskonto an, um fortzufahren.",
       "signIn": "Anmelden"
+    },
+    "indexer": {
+      "title": "Such-Indexer hinzufügen",
+      "body": "Pornarr durchsucht Indexer nach Veröffentlichungen. Richte jetzt einen ein oder füge ihn später unter Einstellungen, Indexer hinzu.",
+      "implementation": "Indexer-Typ",
+      "implementations": {
+        "torznab": "Torznab",
+        "newznab": "Newznab"
+      },
+      "baseUrl": "Basis-URL",
+      "baseUrlRequired": "Gib die Basis-URL des Indexers ein.",
+      "apiKey": "API-Schlüssel",
+      "apiKeyRequired": "Gib den API-Schlüssel des Indexers ein.",
+      "skipAction": "Vorerst überspringen"
+    },
+    "downloadClient": {
+      "title": "Download-Client hinzufügen",
+      "body": "Pornarr schickt angenommene Veröffentlichungen an einen Download-Client. Richte jetzt einen ein oder füge ihn später unter Einstellungen, Download-Clients hinzu.",
+      "implementation": "Download-Client-Typ",
+      "implementations": {
+        "qbittorrent": "qBittorrent",
+        "sabnzbd": "SABnzbd"
+      },
+      "host": "Host",
+      "hostRequired": "Gib den Host des Download-Clients ein.",
+      "port": "Port",
+      "portRequired": "Gib einen gültigen Port zwischen 1 und 65535 ein.",
+      "username": "Benutzername",
+      "usernameRequired": "Gib den qBittorrent-Benutzernamen ein.",
+      "password": "Passwort",
+      "passwordRequired": "Gib das qBittorrent-Passwort ein.",
+      "apiKey": "API-Schlüssel",
+      "apiKeyRequired": "Gib den SABnzbd-API-Schlüssel ein.",
+      "category": "Kategorie (optional)",
+      "skipAction": "Vorerst überspringen"
     }
   },
   "session": {
@@ -173,6 +216,7 @@
     "search": "Suche",
     "monitors": "Monitore",
     "recommendations": "Empfehlungen",
+    "shorts": "Shorts",
     "downloads": "Downloads",
     "settings": "Einstellungen"
   },
@@ -349,7 +393,8 @@
       "label": "Einstellungsbereiche",
       "rootFolders": "Stammordner",
       "quality": "Qualitätsprofile",
-      "metadata": "Metadaten"
+      "metadata": "Metadaten",
+      "peers": "Geteilte Bibliotheken"
     }
   },
   "rootFolders": {
@@ -491,7 +536,12 @@
     "facetCount": "{{value}} ({{count}})",
     "noMatchTitle": "Nichts passt zu diesen Filtern",
     "noMatchBody": "Die Bibliothek enthält Titel, aber keiner trägt alle gewählten Filter. Setze sie zurück, um wieder alles zu sehen.",
-    "noMatchAction": "Filter zurücksetzen"
+    "noMatchAction": "Filter zurücksetzen",
+    "filterSource": "Bibliothek",
+    "sourceLocal": "Diese Bibliothek",
+    "sourceAll": "Alle Bibliotheken",
+    "fromLocal": "Aus dieser Bibliothek",
+    "fromPeer": "Von {{name}}"
   },
   "media": {
     "loading": "Medium wird geladen…",
@@ -590,5 +640,55 @@
       "stashdb": "StashDB",
       "tpdb": "ThePornDB"
     }
+  },
+  "shorts": {
+    "title": "Shorts",
+    "intro": "Ausschnitte aus Titeln der Bibliothek. Jeder Clip spielt genau die Stelle, aus der er geschnitten wurde, und hält dort an.",
+    "loading": "Shorts werden geladen…",
+    "position": "{{position}} von {{count}}",
+    "previous": "Vorheriger Clip",
+    "next": "Nächster Clip",
+    "openTitle": "Ganzen Titel öffnen",
+    "hint": "Nach oben wischen für den nächsten Clip, nach unten für den vorherigen – oder die Pfeiltasten benutzen.",
+    "emptyTitle": "Es gibt noch keine Shorts",
+    "empty": "Ein Short ist eine Stelle aus einem Titel, den du schon hast – ein Anfang und ein Ende, keine zweite Kopie der Datei. Sobald einer geschnitten wurde, läuft er hier.",
+    "emptyAction": "Bibliothek öffnen"
+  },
+  "peers": {
+    "title": "Geteilte Bibliotheken",
+    "intro": "Ein Peer ist das Pornarr einer anderen Person, über das Netzwerk erreichbar. Wenn du eines hinzufügst, erscheinen dessen Titel neben deinen eigenen in der Bibliothek und werden bei Bedarf von diesem Server gestreamt – kopiert wird hier nichts.",
+    "loading": "Geteilte Bibliotheken werden geladen…",
+    "configured": "Verbundene Server",
+    "none": "Es ist noch keine geteilte Bibliothek verbunden. Trag die Adresse des Pornarr einer anderen Person und den Schlüssel ein, den sie dir gegeben hat – dann stehen ihre Titel in der Bibliothek zur Auswahl.",
+    "status": "Status",
+    "enabled": "In Benutzung",
+    "disabled": "Nicht in Benutzung",
+    "health": "Verbindung",
+    "healthHealthy": "Erreichbar",
+    "healthDegraded": "Erreichbar, aber langsam",
+    "healthUnhealthy": "Nicht erreichbar",
+    "healthUnknown": "Noch nicht getestet",
+    "healthOther": "Gemeldet als {{health}}",
+    "healthReason": "Der letzte Test meldete: {{reason}}",
+    "titles": "Titel",
+    "lastTested": "Zuletzt getestet",
+    "never": "Nie",
+    "test": "Testen",
+    "testPeer": "Verbindung zu {{name}} testen",
+    "remove": "Entfernen",
+    "removePeer": "{{name}} entfernen",
+    "confirmRemoval": "{{name}} entfernen? Die Titel dieses Servers verschwinden aus deiner Bibliothek. Auf dem anderen Server wird nichts verändert, und von deinen eigenen Dateien wird nichts gelöscht.",
+    "confirmRemovalAction": "Peer entfernen",
+    "cancelRemoval": "Peer behalten",
+    "addTitle": "Geteilte Bibliothek hinzufügen",
+    "addHint": "Frag die andere Person nach der Adresse ihres Pornarr und nach einem Schlüssel. Beides kann nur sie vergeben – ein Pornarr schließt sich keiner Bibliothek an, zu der es nicht eingeladen wurde.",
+    "name": "Name",
+    "namePlaceholder": "Annas Pornarr",
+    "baseUrl": "Adresse",
+    "baseUrlPlaceholder": "https://pornarr.example.net",
+    "apiKey": "API-Schlüssel",
+    "apiKeyHint": "Der Schlüssel, den dieser Server dir ausgestellt hat. Er wird hier gespeichert und nie wieder angezeigt – bewahr deine eigene Kopie auf.",
+    "enable": "Diese Bibliothek verwenden",
+    "add": "Peer hinzufügen"
   }
 }

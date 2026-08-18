@@ -1,5 +1,5 @@
 /** A focused first-run flow that records only configuration the API can honour. */
-import { Button, Input, SkeletonRegion, SkeletonText } from "@pornarr/ui";
+import { Button, Input, Select, SkeletonRegion, SkeletonText } from "@pornarr/ui";
 import type { FormEvent, JSX } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,13 +7,28 @@ import { Link, Navigate } from "react-router-dom";
 import { ErrorScreen } from "../../errors/error-screen";
 import { isRetryableError, messageForError, nextStepForError } from "../../lib/api-error";
 import {
+  type SetupDownloadClientImplementation,
+  type SetupDownloadClientWrite,
+  type SetupIndexerImplementation,
+  type SetupIndexerWrite,
+  type SetupMetadataProviderImplementation,
   type SetupPathValidation,
   useCompleteSetup,
   useLibraryPathValidation,
   useSetupStatus,
+  useTestDownloadClientConnection,
+  useTestIndexerConnection,
 } from "./setup";
 
-const STEPS = ["account", "library", "filters", "metadata", "summary"] as const;
+const STEPS = [
+  "account",
+  "library",
+  "indexer",
+  "downloadClient",
+  "filters",
+  "metadata",
+  "summary",
+] as const;
 type SetupStep = (typeof STEPS)[number];
 type PasswordStrength = "weak" | "fair" | "strong";
 
@@ -25,6 +40,15 @@ const FILTER_RULES = [
   "unknownPerformerAge",
   "unknownFileType",
 ] as const;
+
+type IndexerFieldError = { baseUrl?: string; apiKey?: string };
+type DownloadClientFieldError = {
+  host?: string;
+  port?: string;
+  username?: string;
+  password?: string;
+  apiKey?: string;
+};
 
 function passwordStrength(password: string): PasswordStrength {
   const kinds = [/[a-z]/, /[A-Z]/, /\d/, /[^\w\s]/].filter((pattern) =>
@@ -39,6 +63,8 @@ export function SetupRoute(): JSX.Element {
   const { t } = useTranslation();
   const setup = useSetupStatus();
   const validateLibraryPath = useLibraryPathValidation();
+  const testIndexerConnection = useTestIndexerConnection();
+  const testDownloadClientConnection = useTestDownloadClientConnection();
   const completeSetup = useCompleteSetup();
   const [step, setStep] = useState<SetupStep>("account");
   const [username, setUsername] = useState("");
@@ -50,6 +76,41 @@ export function SetupRoute(): JSX.Element {
     readonly path: string;
     readonly result: SetupPathValidation;
   }>();
+
+  const [indexerImplementation, setIndexerImplementation] =
+    useState<SetupIndexerImplementation>("torznab");
+  const [indexerBaseUrl, setIndexerBaseUrl] = useState("");
+  const [indexerApiKey, setIndexerApiKey] = useState("");
+  const [indexerError, setIndexerError] = useState<IndexerFieldError>({});
+  const [indexerTestError, setIndexerTestError] = useState<string>();
+  // Set once the exact fields above have passed a live connection test; any
+  // edit to those fields clears it, so a stale pass can never be submitted.
+  const [indexerConfig, setIndexerConfig] = useState<SetupIndexerWrite>();
+  const indexerHasInput = indexerBaseUrl.trim() !== "" || indexerApiKey.trim() !== "";
+
+  const [downloadClientImplementation, setDownloadClientImplementation] =
+    useState<SetupDownloadClientImplementation>("qbittorrent");
+  const [downloadClientHost, setDownloadClientHost] = useState("");
+  const [downloadClientPort, setDownloadClientPort] = useState("");
+  const [downloadClientUsername, setDownloadClientUsername] = useState("");
+  const [downloadClientPassword, setDownloadClientPassword] = useState("");
+  const [downloadClientApiKey, setDownloadClientApiKey] = useState("");
+  const [downloadClientCategory, setDownloadClientCategory] = useState("");
+  const [downloadClientError, setDownloadClientError] = useState<DownloadClientFieldError>({});
+  const [downloadClientTestError, setDownloadClientTestError] = useState<string>();
+  const [downloadClientConfig, setDownloadClientConfig] = useState<SetupDownloadClientWrite>();
+  const downloadClientHasInput =
+    downloadClientHost.trim() !== "" ||
+    downloadClientPort.trim() !== "" ||
+    (downloadClientImplementation === "qbittorrent"
+      ? downloadClientUsername.trim() !== "" || downloadClientPassword !== ""
+      : downloadClientApiKey.trim() !== "");
+
+  const [metadataImplementation, setMetadataImplementation] =
+    useState<SetupMetadataProviderImplementation>("stashdb");
+  const [metadataApiKey, setMetadataApiKey] = useState("");
+  const [metadataEndpoint, setMetadataEndpoint] = useState("");
+
   const headingRef = useRef<HTMLHeadingElement>(null);
   const previousStepRef = useRef<SetupStep | undefined>(undefined);
   const stepIndex = STEPS.indexOf(step);
@@ -59,6 +120,22 @@ export function SetupRoute(): JSX.Element {
   // tells the user their accepted input is wrong.
   const clearAccountError = (field: "username" | "password"): void => {
     setAccountError((current) => {
+      if (current[field] === undefined) return current;
+      const { [field]: _cleared, ...rest } = current;
+      return rest;
+    });
+  };
+
+  const clearIndexerError = (field: keyof IndexerFieldError): void => {
+    setIndexerError((current) => {
+      if (current[field] === undefined) return current;
+      const { [field]: _cleared, ...rest } = current;
+      return rest;
+    });
+  };
+
+  const clearDownloadClientError = (field: keyof DownloadClientFieldError): void => {
+    setDownloadClientError((current) => {
       if (current[field] === undefined) return current;
       const { [field]: _cleared, ...rest } = current;
       return rest;
@@ -155,13 +232,102 @@ export function SetupRoute(): JSX.Element {
       const path = libraryPath.trim();
       if (validatedPath?.path !== path) {
         const result = await checkLibraryPath();
-        if (result?.same_filesystem_as_downloads) setStep("filters");
+        if (result?.same_filesystem_as_downloads) setStep("indexer");
         return;
       }
       if (validatedPath.result.same_filesystem_as_downloads === false) {
+        setStep("indexer");
+        return;
+      }
+    }
+    if (step === "indexer") {
+      if (!indexerHasInput) {
+        setIndexerError({});
+        setIndexerTestError(undefined);
+        setStep("downloadClient");
+        return;
+      }
+      if (indexerConfig !== undefined) {
+        setStep("downloadClient");
+        return;
+      }
+      const nextError: IndexerFieldError = {
+        ...(indexerBaseUrl.trim() === "" ? { baseUrl: t("setup.indexer.baseUrlRequired") } : {}),
+        ...(indexerApiKey.trim() === "" ? { apiKey: t("setup.indexer.apiKeyRequired") } : {}),
+      };
+      setIndexerError(nextError);
+      if (Object.keys(nextError).length > 0) return;
+      const candidate: SetupIndexerWrite = {
+        implementation: indexerImplementation,
+        base_url: indexerBaseUrl.trim(),
+        api_key: indexerApiKey.trim(),
+      };
+      setIndexerTestError(undefined);
+      try {
+        await testIndexerConnection.mutateAsync(candidate);
+        setIndexerConfig(candidate);
+        setStep("downloadClient");
+      } catch (error) {
+        setIndexerTestError(messageForError(error));
+      }
+      return;
+    }
+    if (step === "downloadClient") {
+      if (!downloadClientHasInput) {
+        setDownloadClientError({});
+        setDownloadClientTestError(undefined);
         setStep("filters");
         return;
       }
+      if (downloadClientConfig !== undefined) {
+        setStep("filters");
+        return;
+      }
+      const port = Number.parseInt(downloadClientPort, 10);
+      const nextError: DownloadClientFieldError = {
+        ...(downloadClientHost.trim() === ""
+          ? { host: t("setup.downloadClient.hostRequired") }
+          : {}),
+        ...(downloadClientPort.trim() === "" || Number.isNaN(port) || port < 1 || port > 65535
+          ? { port: t("setup.downloadClient.portRequired") }
+          : {}),
+        ...(downloadClientImplementation === "qbittorrent"
+          ? {
+              ...(downloadClientUsername.trim() === ""
+                ? { username: t("setup.downloadClient.usernameRequired") }
+                : {}),
+              ...(downloadClientPassword === ""
+                ? { password: t("setup.downloadClient.passwordRequired") }
+                : {}),
+            }
+          : downloadClientApiKey.trim() === ""
+            ? { apiKey: t("setup.downloadClient.apiKeyRequired") }
+            : {}),
+      };
+      setDownloadClientError(nextError);
+      if (Object.keys(nextError).length > 0) return;
+      const candidate: SetupDownloadClientWrite = {
+        implementation: downloadClientImplementation,
+        host: downloadClientHost.trim(),
+        port,
+        credentials:
+          downloadClientImplementation === "qbittorrent"
+            ? JSON.stringify({
+                username: downloadClientUsername.trim(),
+                password: downloadClientPassword,
+              })
+            : downloadClientApiKey.trim(),
+        category: downloadClientCategory.trim() === "" ? null : downloadClientCategory.trim(),
+      };
+      setDownloadClientTestError(undefined);
+      try {
+        await testDownloadClientConnection.mutateAsync(candidate);
+        setDownloadClientConfig(candidate);
+        setStep("filters");
+      } catch (error) {
+        setDownloadClientTestError(messageForError(error));
+      }
+      return;
     }
     if (stepIndex < STEPS.length - 1) setStep(STEPS[stepIndex + 1] as SetupStep);
   };
@@ -177,11 +343,41 @@ export function SetupRoute(): JSX.Element {
         username: username.trim(),
         password,
         library_path: libraryPath.trim(),
+        ...(indexerConfig === undefined ? {} : { indexer: indexerConfig }),
+        ...(downloadClientConfig === undefined ? {} : { download_client: downloadClientConfig }),
+        ...(metadataApiKey.trim() === ""
+          ? {}
+          : {
+              metadata_provider: {
+                implementation: metadataImplementation,
+                api_key: metadataApiKey.trim(),
+                endpoint: metadataEndpoint.trim() === "" ? null : metadataEndpoint.trim(),
+              },
+            }),
       });
       return;
     }
     void next();
   };
+
+  const nextLabel = ((): string => {
+    if (step === "indexer")
+      return indexerHasInput ? t("setup.next") : t("setup.indexer.skipAction");
+    if (step === "downloadClient") {
+      return downloadClientHasInput ? t("setup.next") : t("setup.downloadClient.skipAction");
+    }
+    if (step === "metadata") {
+      return metadataApiKey.trim() === "" ? t("setup.metadata.skipAction") : t("setup.next");
+    }
+    if (step === "library" && validatedPath?.result.same_filesystem_as_downloads === false) {
+      return t("setup.library.continueWithCopy");
+    }
+    return t("setup.next");
+  })();
+  const nextLoading =
+    validateLibraryPath.isPending ||
+    testIndexerConnection.isPending ||
+    testDownloadClientConnection.isPending;
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-[calc(var(--space-16)*8)] flex-col justify-center gap-8 p-6">
@@ -289,6 +485,230 @@ export function SetupRoute(): JSX.Element {
           </section>
         ) : null}
 
+        {step === "indexer" ? (
+          <section className="flex flex-col gap-4" aria-labelledby="setup-title">
+            <h1 ref={headingRef} id="setup-title" className="text-xl text-ink" tabIndex={-1}>
+              {t("setup.indexer.title")}
+            </h1>
+            <p className="text-base text-ink-muted">{t("setup.indexer.body")}</p>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-ink-muted" htmlFor="setup-indexer-implementation">
+                {t("setup.indexer.implementation")}
+              </label>
+              <Select
+                id="setup-indexer-implementation"
+                value={indexerImplementation}
+                onChange={(event) => {
+                  setIndexerImplementation(event.target.value as SetupIndexerImplementation);
+                  setIndexerConfig(undefined);
+                }}
+              >
+                <option value="torznab">{t("setup.indexer.implementations.torznab")}</option>
+                <option value="newznab">{t("setup.indexer.implementations.newznab")}</option>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-ink-muted" htmlFor="setup-indexer-base-url">
+                {t("setup.indexer.baseUrl")}
+              </label>
+              <Input
+                id="setup-indexer-base-url"
+                name="indexer-base-url"
+                value={indexerBaseUrl}
+                {...(indexerError.baseUrl === undefined ? {} : { error: indexerError.baseUrl })}
+                onChange={(event) => {
+                  setIndexerBaseUrl(event.target.value);
+                  setIndexerConfig(undefined);
+                  if (event.target.value.trim() !== "") clearIndexerError("baseUrl");
+                }}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-ink-muted" htmlFor="setup-indexer-api-key">
+                {t("setup.indexer.apiKey")}
+              </label>
+              <Input
+                id="setup-indexer-api-key"
+                name="indexer-api-key"
+                type="password"
+                autoComplete="off"
+                value={indexerApiKey}
+                {...(indexerError.apiKey === undefined ? {} : { error: indexerError.apiKey })}
+                onChange={(event) => {
+                  setIndexerApiKey(event.target.value);
+                  setIndexerConfig(undefined);
+                  if (event.target.value.trim() !== "") clearIndexerError("apiKey");
+                }}
+              />
+            </div>
+            {indexerTestError === undefined ? null : (
+              <p role="alert" className="rounded-sm bg-danger-weak p-3 text-sm text-ink">
+                {indexerTestError}
+              </p>
+            )}
+          </section>
+        ) : null}
+
+        {step === "downloadClient" ? (
+          <section className="flex flex-col gap-4" aria-labelledby="setup-title">
+            <h1 ref={headingRef} id="setup-title" className="text-xl text-ink" tabIndex={-1}>
+              {t("setup.downloadClient.title")}
+            </h1>
+            <p className="text-base text-ink-muted">{t("setup.downloadClient.body")}</p>
+            <div className="flex flex-col gap-2">
+              <label
+                className="text-sm text-ink-muted"
+                htmlFor="setup-download-client-implementation"
+              >
+                {t("setup.downloadClient.implementation")}
+              </label>
+              <Select
+                id="setup-download-client-implementation"
+                value={downloadClientImplementation}
+                onChange={(event) => {
+                  setDownloadClientImplementation(
+                    event.target.value as SetupDownloadClientImplementation,
+                  );
+                  setDownloadClientConfig(undefined);
+                }}
+              >
+                <option value="qbittorrent">
+                  {t("setup.downloadClient.implementations.qbittorrent")}
+                </option>
+                <option value="sabnzbd">{t("setup.downloadClient.implementations.sabnzbd")}</option>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-ink-muted" htmlFor="setup-download-client-host">
+                {t("setup.downloadClient.host")}
+              </label>
+              <Input
+                id="setup-download-client-host"
+                name="download-client-host"
+                value={downloadClientHost}
+                {...(downloadClientError.host === undefined
+                  ? {}
+                  : { error: downloadClientError.host })}
+                onChange={(event) => {
+                  setDownloadClientHost(event.target.value);
+                  setDownloadClientConfig(undefined);
+                  if (event.target.value.trim() !== "") clearDownloadClientError("host");
+                }}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-ink-muted" htmlFor="setup-download-client-port">
+                {t("setup.downloadClient.port")}
+              </label>
+              <Input
+                id="setup-download-client-port"
+                name="download-client-port"
+                type="number"
+                min={1}
+                max={65535}
+                value={downloadClientPort}
+                {...(downloadClientError.port === undefined
+                  ? {}
+                  : { error: downloadClientError.port })}
+                onChange={(event) => {
+                  setDownloadClientPort(event.target.value);
+                  setDownloadClientConfig(undefined);
+                  if (event.target.value.trim() !== "") clearDownloadClientError("port");
+                }}
+              />
+            </div>
+            {downloadClientImplementation === "qbittorrent" ? (
+              <>
+                <div className="flex flex-col gap-2">
+                  <label
+                    className="text-sm text-ink-muted"
+                    htmlFor="setup-download-client-username"
+                  >
+                    {t("setup.downloadClient.username")}
+                  </label>
+                  <Input
+                    id="setup-download-client-username"
+                    name="download-client-username"
+                    autoComplete="off"
+                    value={downloadClientUsername}
+                    {...(downloadClientError.username === undefined
+                      ? {}
+                      : { error: downloadClientError.username })}
+                    onChange={(event) => {
+                      setDownloadClientUsername(event.target.value);
+                      setDownloadClientConfig(undefined);
+                      if (event.target.value.trim() !== "") clearDownloadClientError("username");
+                    }}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label
+                    className="text-sm text-ink-muted"
+                    htmlFor="setup-download-client-password"
+                  >
+                    {t("setup.downloadClient.password")}
+                  </label>
+                  <Input
+                    id="setup-download-client-password"
+                    name="download-client-password"
+                    type="password"
+                    autoComplete="off"
+                    value={downloadClientPassword}
+                    {...(downloadClientError.password === undefined
+                      ? {}
+                      : { error: downloadClientError.password })}
+                    onChange={(event) => {
+                      setDownloadClientPassword(event.target.value);
+                      setDownloadClientConfig(undefined);
+                      if (event.target.value !== "") clearDownloadClientError("password");
+                    }}
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <label className="text-sm text-ink-muted" htmlFor="setup-download-client-api-key">
+                  {t("setup.downloadClient.apiKey")}
+                </label>
+                <Input
+                  id="setup-download-client-api-key"
+                  name="download-client-api-key"
+                  type="password"
+                  autoComplete="off"
+                  value={downloadClientApiKey}
+                  {...(downloadClientError.apiKey === undefined
+                    ? {}
+                    : { error: downloadClientError.apiKey })}
+                  onChange={(event) => {
+                    setDownloadClientApiKey(event.target.value);
+                    setDownloadClientConfig(undefined);
+                    if (event.target.value.trim() !== "") clearDownloadClientError("apiKey");
+                  }}
+                />
+              </div>
+            )}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-ink-muted" htmlFor="setup-download-client-category">
+                {t("setup.downloadClient.category")}
+              </label>
+              <Input
+                id="setup-download-client-category"
+                name="download-client-category"
+                value={downloadClientCategory}
+                onChange={(event) => {
+                  setDownloadClientCategory(event.target.value);
+                  setDownloadClientConfig(undefined);
+                }}
+              />
+            </div>
+            {downloadClientTestError === undefined ? null : (
+              <p role="alert" className="rounded-sm bg-danger-weak p-3 text-sm text-ink">
+                {downloadClientTestError}
+              </p>
+            )}
+          </section>
+        ) : null}
+
         {step === "filters" ? (
           <section className="flex flex-col gap-4" aria-labelledby="setup-title">
             <h1 ref={headingRef} id="setup-title" className="text-xl text-ink" tabIndex={-1}>
@@ -315,7 +735,47 @@ export function SetupRoute(): JSX.Element {
               {t("setup.metadata.title")}
             </h1>
             <p className="text-base text-ink-muted">{t("setup.metadata.body")}</p>
-            <p className="text-sm text-ink-muted">{t("setup.metadata.skipped")}</p>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-ink-muted" htmlFor="setup-metadata-implementation">
+                {t("setup.metadata.implementation")}
+              </label>
+              <Select
+                id="setup-metadata-implementation"
+                value={metadataImplementation}
+                onChange={(event) =>
+                  setMetadataImplementation(
+                    event.target.value as SetupMetadataProviderImplementation,
+                  )
+                }
+              >
+                <option value="stashdb">{t("metadataProviders.implementations.stashdb")}</option>
+                <option value="tpdb">{t("metadataProviders.implementations.tpdb")}</option>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-ink-muted" htmlFor="setup-metadata-api-key">
+                {t("setup.metadata.apiKey")}
+              </label>
+              <Input
+                id="setup-metadata-api-key"
+                name="metadata-api-key"
+                type="password"
+                autoComplete="off"
+                value={metadataApiKey}
+                onChange={(event) => setMetadataApiKey(event.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-ink-muted" htmlFor="setup-metadata-endpoint">
+                {t("setup.metadata.endpoint")}
+              </label>
+              <Input
+                id="setup-metadata-endpoint"
+                name="metadata-endpoint"
+                value={metadataEndpoint}
+                onChange={(event) => setMetadataEndpoint(event.target.value)}
+              />
+            </div>
           </section>
         ) : null}
 
@@ -330,10 +790,28 @@ export function SetupRoute(): JSX.Element {
               <dd className="m-0 text-ink">{username}</dd>
               <dt className="text-ink-muted">{t("setup.summary.library")}</dt>
               <dd className="m-0 font-mono text-ink">{libraryPath}</dd>
+              <dt className="text-ink-muted">{t("setup.summary.indexer")}</dt>
+              <dd className="m-0 text-ink">
+                {indexerConfig === undefined
+                  ? t("setup.summary.indexerSkipped")
+                  : t(`setup.indexer.implementations.${indexerConfig.implementation}`)}
+              </dd>
+              <dt className="text-ink-muted">{t("setup.summary.downloadClient")}</dt>
+              <dd className="m-0 text-ink">
+                {downloadClientConfig === undefined
+                  ? t("setup.summary.downloadClientSkipped")
+                  : t(
+                      `setup.downloadClient.implementations.${downloadClientConfig.implementation}`,
+                    )}
+              </dd>
               <dt className="text-ink-muted">{t("setup.summary.filters")}</dt>
               <dd className="m-0 text-ink">{t("setup.summary.filtersOff")}</dd>
               <dt className="text-ink-muted">{t("setup.summary.metadata")}</dt>
-              <dd className="m-0 text-ink">{t("setup.summary.metadataSkipped")}</dd>
+              <dd className="m-0 text-ink">
+                {metadataApiKey.trim() === ""
+                  ? t("setup.summary.metadataSkipped")
+                  : t(`metadataProviders.implementations.${metadataImplementation}`)}
+              </dd>
             </dl>
             {completeSetup.isError ? (
               <p role="alert" className="rounded-sm bg-danger-weak p-3 text-sm text-ink">
@@ -356,12 +834,8 @@ export function SetupRoute(): JSX.Element {
               {t("setup.complete.action")}
             </Button>
           ) : (
-            <Button type="submit" loading={validateLibraryPath.isPending}>
-              {step === "metadata"
-                ? t("setup.metadata.skipAction")
-                : step === "library" && validatedPath?.result.same_filesystem_as_downloads === false
-                  ? t("setup.library.continueWithCopy")
-                  : t("setup.next")}
+            <Button type="submit" loading={nextLoading}>
+              {nextLabel}
             </Button>
           )}
         </footer>

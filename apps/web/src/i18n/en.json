@@ -74,7 +74,9 @@
       "library": "Library path",
       "filters": "Content filters",
       "metadata": "Metadata",
-      "summary": "Summary"
+      "summary": "Summary",
+      "indexer": "Indexer",
+      "downloadClient": "Download client"
     },
     "next": "Continue",
     "back": "Back",
@@ -135,8 +137,10 @@
     "metadata": {
       "title": "Metadata providers",
       "body": "External metadata providers are optional. Pornarr can start without one.",
-      "skipped": "No provider is configured during setup. Add StashDB or ThePornDB later under Settings, Metadata.",
-      "skipAction": "Skip for now"
+      "skipAction": "Skip for now",
+      "implementation": "Provider",
+      "apiKey": "API key",
+      "endpoint": "Custom endpoint (optional)"
     },
     "summary": {
       "title": "Review setup",
@@ -146,13 +150,52 @@
       "filters": "Content filters",
       "filtersOff": "All filters start off",
       "metadata": "Metadata providers",
-      "metadataSkipped": "No provider configured"
+      "metadataSkipped": "No provider configured",
+      "indexer": "Indexer",
+      "indexerSkipped": "No indexer configured",
+      "downloadClient": "Download client",
+      "downloadClientSkipped": "No download client configured"
     },
     "complete": {
       "action": "Complete setup",
       "title": "Setup complete",
       "body": "The instance is ready. Sign in with the administrator account to continue.",
       "signIn": "Sign in"
+    },
+    "indexer": {
+      "title": "Add a search indexer",
+      "body": "Pornarr searches indexers for releases. Configure one now, or add it later under Settings, Indexers.",
+      "implementation": "Indexer type",
+      "implementations": {
+        "torznab": "Torznab",
+        "newznab": "Newznab"
+      },
+      "baseUrl": "Base URL",
+      "baseUrlRequired": "Enter the indexer's base URL.",
+      "apiKey": "API key",
+      "apiKeyRequired": "Enter the indexer's API key.",
+      "skipAction": "Skip for now"
+    },
+    "downloadClient": {
+      "title": "Add a download client",
+      "body": "Pornarr sends accepted releases to a download client. Configure one now, or add it later under Settings, Download Clients.",
+      "implementation": "Download client type",
+      "implementations": {
+        "qbittorrent": "qBittorrent",
+        "sabnzbd": "SABnzbd"
+      },
+      "host": "Host",
+      "hostRequired": "Enter the download client's host.",
+      "port": "Port",
+      "portRequired": "Enter a valid port between 1 and 65535.",
+      "username": "Username",
+      "usernameRequired": "Enter the qBittorrent username.",
+      "password": "Password",
+      "passwordRequired": "Enter the qBittorrent password.",
+      "apiKey": "API key",
+      "apiKeyRequired": "Enter the SABnzbd API key.",
+      "category": "Category (optional)",
+      "skipAction": "Skip for now"
     }
   },
   "session": {
@@ -173,6 +216,7 @@
     "search": "Search",
     "monitors": "Monitors",
     "recommendations": "Recommendations",
+    "shorts": "Shorts",
     "downloads": "Downloads",
     "settings": "Settings"
   },
@@ -349,7 +393,8 @@
       "label": "Settings sections",
       "rootFolders": "Root folders",
       "quality": "Quality profiles",
-      "metadata": "Metadata"
+      "metadata": "Metadata",
+      "peers": "Shared libraries"
     }
   },
   "rootFolders": {
@@ -491,7 +536,12 @@
     "facetCount": "{{value}} ({{count}})",
     "noMatchTitle": "Nothing matches these filters",
     "noMatchBody": "The library has titles, but none of them carry every filter you picked. Clear them to see everything again.",
-    "noMatchAction": "Clear the filters"
+    "noMatchAction": "Clear the filters",
+    "filterSource": "Library",
+    "sourceLocal": "This library",
+    "sourceAll": "All libraries",
+    "fromLocal": "From this library",
+    "fromPeer": "From {{name}}"
   },
   "media": {
     "loading": "Loading media…",
@@ -590,5 +640,55 @@
       "stashdb": "StashDB",
       "tpdb": "ThePornDB"
     }
+  },
+  "shorts": {
+    "title": "Shorts",
+    "intro": "Clips cut out of titles in the library. Each one plays the passage it was cut from and stops there.",
+    "loading": "Loading shorts…",
+    "position": "{{position}} of {{count}}",
+    "previous": "Previous clip",
+    "next": "Next clip",
+    "openTitle": "Open the full title",
+    "hint": "Swipe up for the next clip and down for the previous one, or use the arrow keys.",
+    "emptyTitle": "There are no shorts yet",
+    "empty": "A short is a passage of a title you already have — a start and an end, not a second copy of the file. Once one has been cut it plays here.",
+    "emptyAction": "Open the library"
+  },
+  "peers": {
+    "title": "Shared libraries",
+    "intro": "A peer is another person's Pornarr, reachable over the network. Add one and its titles appear alongside yours in the library, streamed from that server on demand — nothing is copied here.",
+    "loading": "Loading shared libraries…",
+    "configured": "Connected servers",
+    "none": "No shared library is connected yet. Add the address of someone else's Pornarr and the key they issued you, and their titles join yours in the library's source picker.",
+    "status": "Status",
+    "enabled": "In use",
+    "disabled": "Not in use",
+    "health": "Connection",
+    "healthHealthy": "Reachable",
+    "healthDegraded": "Reachable, but slow",
+    "healthUnhealthy": "Unreachable",
+    "healthUnknown": "Not tested yet",
+    "healthOther": "Reported as {{health}}",
+    "healthReason": "The last test reported: {{reason}}",
+    "titles": "Titles",
+    "lastTested": "Last tested",
+    "never": "Never",
+    "test": "Test",
+    "testPeer": "Test the connection to {{name}}",
+    "remove": "Remove",
+    "removePeer": "Remove {{name}}",
+    "confirmRemoval": "Remove {{name}}? Its titles disappear from your library. Nothing on that server is touched, and nothing of yours is deleted.",
+    "confirmRemovalAction": "Remove peer",
+    "cancelRemoval": "Keep peer",
+    "addTitle": "Add a shared library",
+    "addHint": "Ask the other person for the address of their Pornarr and for a key. Both are theirs to give — a Pornarr never joins a library it was not invited to.",
+    "name": "Name",
+    "namePlaceholder": "Anna's Pornarr",
+    "baseUrl": "Address",
+    "baseUrlPlaceholder": "https://pornarr.example.net",
+    "apiKey": "API key",
+    "apiKeyHint": "The key that server issued you. It is stored here and never shown again, so keep your own copy.",
+    "enable": "Use this library",
+    "add": "Add peer"
   }
 }
