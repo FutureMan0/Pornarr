@@ -27,7 +27,8 @@ from tests.api.test_auth import create_user, csrf_headers, login
 pytest_plugins = ["tests.api.test_auth"]
 
 PEER_KEY = "pnr_remote-instance-key"
-POSTER = "media/2a1c6a3c-5f52-4f0e-9d2f-7f8a6f3d1b21/poster"
+MEDIA_ID = "2a1c6a3c-5f52-4f0e-9d2f-7f8a6f3d1b21"
+POSTER = f"media/{MEDIA_ID}/poster"
 
 
 @pytest.fixture(autouse=True)
@@ -246,11 +247,31 @@ async def test_the_proxy_carries_a_range_through_untouched(
     assert calls[0].headers["Range"] == "bytes=10-14"
 
 
+async def test_a_remote_title_can_be_opened_through_the_proxy(app, client) -> None:
+    """A card in a merged library has to lead somewhere, and its id is the peer's."""
+
+    await admin_client(app, client)
+    peer = await register(client)
+    calls = install_peer(
+        app,
+        lambda _: streamed(
+            200,
+            b'{"title": "Remote"}',
+            {"Content-Type": "application/json"},
+        ),
+    )
+
+    response = await client.get(f"/api/peers/{peer['id']}/proxy/media/{MEDIA_ID}")
+
+    assert response.status_code == 200
+    assert response.json()["title"] == "Remote"
+    assert [call.url.path for call in calls] == [f"/api/media/{MEDIA_ID}"]
+
+
 @pytest.mark.parametrize(
     ("method", "path"),
     [
         ("GET", "admin/settings"),
-        ("GET", "media/2a1c6a3c-5f52-4f0e-9d2f-7f8a6f3d1b21"),
         ("GET", "../admin/peers"),
         ("GET", "library/facets"),
         ("POST", "library"),

@@ -65,6 +65,9 @@ _HLS_ASSET = r"(?:master\.m3u8|variant\.m3u8|segment_[0-9]+\.ts)"
 # that drive a transcode of the reader's own playback and nothing else: no
 # ratings, no requests, no administration, no writes to somebody's library.
 ALLOWED_PATHS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    # The detail as well as the artwork: a card in a merged library has to be
+    # openable, and its address on this instance does not exist here.
+    ("GET", re.compile(rf"media/{_UUID}")),
     ("GET", re.compile(rf"media/{_UUID}/(?:poster|sprite|stream|playback-info)")),
     ("GET", re.compile(rf"transcode/sessions/{_UUID}/hls/{_HLS_ASSET}")),
     ("GET", re.compile(r"library")),

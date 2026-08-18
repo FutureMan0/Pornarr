@@ -1,7 +1,8 @@
+import { cx } from "@pornarr/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { VideoPlayer } from "../../components/player/video-player";
 import { ErrorScreen } from "../../errors/error-screen";
 import { NotFoundRoute } from "../../errors/route-errors";
@@ -43,13 +44,17 @@ async function failureBody(response: Response): Promise<unknown> {
 
 export function MediaDetailRoute() {
   const { mediaId = "" } = useParams();
+  // A title in a shared library lives on another instance, and this browser has
+  // no key for it: everything about it is fetched through this instance's proxy.
+  const peerId = useSearchParams()[0].get("peer") ?? undefined;
+  const base = peerId === undefined ? "/api" : `/api/peers/${peerId}/proxy`;
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [tag, setTag] = useState("");
   const detail = useQuery({
-    queryKey: ["media", mediaId],
+    queryKey: ["media", mediaId, peerId ?? null],
     queryFn: async (): Promise<Detail> => {
-      const response = await fetch(`/api/media/${mediaId}`);
+      const response = await fetch(`${base}/media/${mediaId}`);
       // The status is the whole difference between a title that does not exist
       // and a server that is having a bad day, and the reader needs to be told
       // which one they are looking at.
@@ -106,7 +111,7 @@ export function MediaDetailRoute() {
         · {media.metadata_source}
       </p>
       {media.playable ? (
-        <VideoPlayer mediaId={media.id} title={media.title} />
+        <VideoPlayer mediaId={media.id} title={media.title} peerId={peerId} />
       ) : (
         <p>{t("media.unavailable")}</p>
       )}
@@ -122,8 +127,11 @@ export function MediaDetailRoute() {
             </li>
           ))}
         </ul>
+        {/* Correcting a tag writes to the instance that owns the title, and a
+            peer is read-only from here, so the form is only offered at home. */}
         <form
-          className="mt-3 flex gap-2"
+          className={cx("mt-3 flex gap-2", peerId === undefined ? undefined : "hidden")}
+          hidden={peerId !== undefined}
           onSubmit={(event) => {
             event.preventDefault();
             correct.mutate();

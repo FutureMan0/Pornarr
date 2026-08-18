@@ -387,9 +387,15 @@ function MediaCard({ item, showSource }: { readonly item: Item; readonly showSou
   const [preview, setPreview] = useState(false);
   const source = preview && item.sprite_url ? item.sprite_url : item.poster_url;
   const from = item.peer_name ?? null;
+  // A remote title's id means nothing on this instance, so the detail screen is
+  // told which library to ask; without it the card led to the not-found screen.
+  const address =
+    item.peer_id === null || item.peer_id === undefined
+      ? `/library/${item.id}`
+      : `/library/${item.id}?peer=${item.peer_id}`;
   return (
     <Link
-      to={`/library/${item.id}`}
+      to={address}
       className="overflow-hidden border border-border bg-surface"
       onPointerEnter={() => setPreview(true)}
       onPointerLeave={() => setPreview(false)}

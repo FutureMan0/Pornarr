@@ -18,8 +18,25 @@ async function responseJson<T>(url: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-function releaseSession(sessionId: string): void {
-  void fetch(`/api/transcode/sessions/${sessionId}`, {
+/**
+ * Where this player's requests go.
+ *
+ * A title on somebody else's instance is reached through the proxy on this
+ * one, because the browser has no key for a peer and must never be given one.
+ * Everything below is written against this prefix so the two cases differ in
+ * one string rather than in every call.
+ */
+function apiBase(peerId: string | undefined): string {
+  return peerId === undefined ? "/api" : `/api/peers/${peerId}/proxy`;
+}
+
+/** A peer answers with its own address for the playlist; the proxy owns it here. */
+function playlistUrl(base: string, playlistUrl: string): string {
+  return base === "/api" ? playlistUrl : `${base}${playlistUrl.replace(/^\/api/, "")}`;
+}
+
+function releaseSession(base: string, sessionId: string): void {
+  void fetch(`${base}/transcode/sessions/${sessionId}`, {
     method: "DELETE",
     headers: csrfHeaders(),
     credentials: "same-origin",
@@ -49,6 +66,8 @@ export interface VideoPlayerProps {
   readonly autoPlay?: boolean;
   /** Fill the parent instead of holding a 16:9 block of it. */
   readonly fill?: boolean;
+  /** The peer this title lives on. Absent for this instance's own library. */
+  readonly peerId?: string | undefined;
 }
 
 export function VideoPlayer({
@@ -58,6 +77,7 @@ export function VideoPlayer({
   endSeconds,
   autoPlay = false,
   fill = false,
+  peerId,
 }: VideoPlayerProps) {
   const { t } = useTranslation();
   const video = useRef<HTMLVideoElement>(null);
@@ -71,19 +91,20 @@ export function VideoPlayer({
   useEffect(() => {
     let cancelled = false;
     const generation = ++mount.current;
+    const base = apiBase(peerId);
     async function load() {
       try {
-        const info = await responseJson<PlaybackInfo>(`/api/media/${mediaId}/playback-info`);
+        const info = await responseJson<PlaybackInfo>(`${base}/media/${mediaId}/playback-info`);
         if (info.direct_play) {
           if (cancelled || video.current === null) return;
-          video.current.src = `/api/media/${mediaId}/stream`;
+          video.current.src = `${base}/media/${mediaId}/stream`;
           return;
         }
         // Remounting must not ask for a second session: the request the first
         // mount sent is still in flight, and whichever of the two answers last
         // leaves a transcode nobody is holding.
         starting.current ??= responseJson<TranscodeSession>(
-          `/api/transcode/media/${mediaId}/sessions`,
+          `${base}/transcode/media/${mediaId}/sessions`,
           { method: "POST", headers: csrfHeaders() },
         );
         const source = await starting.current;
@@ -93,7 +114,7 @@ export function VideoPlayer({
           // it did not exist yet. Release it here - but only when no later
           // mount has taken over, because the server hands that mount the very
           // same session and deleting it would break the player that is live.
-          if (generation === mount.current) releaseSession(source.session_id);
+          if (generation === mount.current) releaseSession(base, source.session_id);
           return;
         }
         session.current = source.session_id;
@@ -105,10 +126,10 @@ export function VideoPlayer({
           hls.current.on(Hls.Events.ERROR, (_event, data) => {
             if (data.fatal) setError(true);
           });
-          hls.current.loadSource(source.playlist_url);
+          hls.current.loadSource(playlistUrl(base, source.playlist_url));
           hls.current.attachMedia(video.current);
         } else if (video.current.canPlayType("application/vnd.apple.mpegurl")) {
-          video.current.src = source.playlist_url;
+          video.current.src = playlistUrl(base, source.playlist_url);
         } else {
           setError(true);
         }
@@ -122,11 +143,11 @@ export function VideoPlayer({
       hls.current?.destroy();
       hls.current = null;
       if (session.current !== null) {
-        releaseSession(session.current);
+        releaseSession(base, session.current);
         session.current = null;
       }
     };
-  }, [mediaId]);
+  }, [mediaId, peerId]);
 
   // React runs no cleanup when the page itself goes away, so a reload, a hard
   // navigation or a closed tab left the transcode running until its heartbeat
@@ -134,17 +155,17 @@ export function VideoPlayer({
   useEffect(() => {
     const release = (): void => {
       if (session.current === null) return;
-      releaseSession(session.current);
+      releaseSession(apiBase(peerId), session.current);
       session.current = null;
     };
     window.addEventListener("pagehide", release);
     return () => window.removeEventListener("pagehide", release);
-  }, []);
+  }, [peerId]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
       if (session.current !== null) {
-        void fetch(`/api/transcode/sessions/${session.current}/heartbeat`, {
+        void fetch(`${apiBase(peerId)}/transcode/sessions/${session.current}/heartbeat`, {
           method: "POST",
           headers: csrfHeaders(),
           credentials: "same-origin",
@@ -152,7 +173,7 @@ export function VideoPlayer({
       }
     }, 25_000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [peerId]);
 
   // Two clips cut from the same title are the same source at two offsets, so
   // moving between them changes `startSeconds` without changing `mediaId`. The
