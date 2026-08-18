@@ -1,12 +1,64 @@
-import { cleanup, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { afterEach, expect, test } from "vitest";
+import { afterEach, beforeAll, expect, test } from "vitest";
 import { renderApp, server, signedIn, useMockApi } from "../../test/harness";
 
 useMockApi();
 
 afterEach(cleanup);
+
+/**
+ * jsdom has no ResizeObserver, and both the grid and its virtualizer measure
+ * themselves through one. This reports a fixed viewport the moment either
+ * starts observing, which is the only part of the API they use.
+ */
+beforeAll(() => {
+  const size = { inlineSize: 1200, blockSize: 800 };
+  Object.defineProperty(globalThis, "ResizeObserver", {
+    configurable: true,
+    writable: true,
+    value: class {
+      #callback: (entries: unknown[]) => void;
+
+      constructor(callback: (entries: unknown[]) => void) {
+        this.#callback = callback;
+      }
+
+      observe(target: Element): void {
+        this.#callback([
+          {
+            target,
+            borderBoxSize: [size],
+            contentRect: { width: size.inlineSize, height: size.blockSize },
+          },
+        ]);
+      }
+
+      unobserve(): void {}
+      disconnect(): void {}
+    },
+  });
+});
+
+function item(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "m-1",
+    title: "Local title",
+    studio: null,
+    release_date: null,
+    duration_seconds: null,
+    quality: null,
+    resolution: null,
+    position_seconds: null,
+    progress_duration_seconds: null,
+    poster_url: "/api/media/m-1/poster",
+    sprite_url: null,
+    peer_id: null,
+    peer_name: null,
+    ...overrides,
+  };
+}
 
 test("an empty library with no root folder offers the screen that fixes it", async () => {
   signedIn();
@@ -78,4 +130,74 @@ test("picking a facet filters the library by that value", async () => {
   expect(
     await screen.findByRole("heading", { name: "Nothing matches these filters" }),
   ).toBeTruthy();
+});
+
+test("the source picker browses every library and each card says where it came from", async () => {
+  signedIn();
+  const requested: string[] = [];
+  server.use(
+    http.get("/api/library/facets", () =>
+      HttpResponse.json({ studios: [], performers: [], tags: [] }),
+    ),
+    http.get("/api/admin/peers", () =>
+      HttpResponse.json([
+        {
+          id: "peer-1",
+          name: "Anna's Pornarr",
+          base_url: "https://pornarr.example.net",
+          enabled: true,
+          health: "healthy",
+          health_reason: null,
+          last_tested_at: null,
+          media_count: 2,
+        },
+      ]),
+    ),
+    http.get("/api/library", ({ request }) => {
+      const query = new URL(request.url).searchParams;
+      requested.push(query.toString());
+      if (query.get("source") !== "all")
+        return HttpResponse.json({ items: [item()], next_offset: null });
+      const cursor = query.get("cursor");
+      return HttpResponse.json({
+        items:
+          cursor === null
+            ? [
+                item(),
+                item({
+                  id: "m-2",
+                  title: "Borrowed",
+                  peer_id: "peer-1",
+                  peer_name: "Anna's Pornarr",
+                }),
+              ]
+            : [item({ id: "m-3", title: "The next page" })],
+        // Merged pages count from no single zero, so paging is by cursor.
+        next_offset: null,
+        next_cursor: cursor === null ? "page-2" : null,
+      });
+    }),
+  );
+
+  renderApp("/library");
+  const user = userEvent.setup();
+
+  await screen.findByRole("option", { name: "All libraries" });
+  // By role, because the sidebar has a "Library" link with the same name.
+  await user.selectOptions(screen.getByRole("combobox", { name: "Library" }), "all");
+
+  await waitFor(() => expect(requested.some((query) => query.includes("source=all"))).toBe(true));
+  // The peer only becomes a destination once the reader has left their own
+  // library; before that the picker never asks an administrator-only endpoint.
+  expect(await screen.findByRole("option", { name: "Anna's Pornarr" })).toBeTruthy();
+  expect(await screen.findByText("From Anna's Pornarr")).toBeTruthy();
+  expect(screen.getByText("From this library")).toBeTruthy();
+
+  const scroller = document.querySelector(".overflow-auto");
+  if (scroller === null) throw new Error("the grid did not render");
+  fireEvent.scroll(scroller);
+
+  await waitFor(() =>
+    expect(requested.some((query) => query.includes("cursor=page-2"))).toBe(true),
+  );
 });

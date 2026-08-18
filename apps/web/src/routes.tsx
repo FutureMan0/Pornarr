@@ -25,11 +25,13 @@ import { RecommendationsRoute } from "./routes/recommendations/recommendations-r
 import { RequestsRoute } from "./routes/requests/requests-route";
 import { SearchRoute } from "./routes/search/search-route";
 import { MetadataProvidersRoute } from "./routes/settings/metadata/metadata-providers-route";
+import { PeersRoute } from "./routes/settings/peers/peers-route";
 import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles-route";
 import { RootFoldersRoute } from "./routes/settings/root-folders/root-folders-route";
 import { ROOT_FOLDERS_PATH, SettingsLayout } from "./routes/settings/settings-layout";
 import { SetupGate } from "./routes/setup/setup-gate";
 import { SetupRoute } from "./routes/setup/setup-route";
+import { ShortsRoute } from "./routes/shorts/shorts-route";
 import { AppShell } from "./shell/app-shell";
 
 /**
@@ -62,6 +64,7 @@ export const appRoutes: RouteObject[] = [
                   { path: "root-folders", element: <RootFoldersRoute /> },
                   { path: "quality", element: <QualityProfilesRoute /> },
                   { path: "metadata", element: <MetadataProvidersRoute /> },
+                  { path: "peers", element: <PeersRoute /> },
                 ],
               },
               { path: "search", element: <SearchRoute /> },
@@ -70,6 +73,7 @@ export const appRoutes: RouteObject[] = [
               { path: "recommendations", element: <RecommendationsRoute /> },
               { path: "downloads", element: <QueueRoute /> },
               { path: "library", element: <LibraryRoute /> },
+              { path: "shorts", element: <ShortsRoute /> },
               { path: "library/:mediaId", element: <MediaDetailRoute /> },
               { path: FORBIDDEN_PATH.slice(1), element: <ForbiddenRoute /> },
               { path: "*", element: <NotFoundRoute /> },

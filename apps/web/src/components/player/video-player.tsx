@@ -1,3 +1,4 @@
+import { cx } from "@pornarr/ui";
 import Hls from "hls.js";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -26,10 +27,38 @@ function releaseSession(sessionId: string): void {
   });
 }
 
+export interface VideoPlayerProps {
+  readonly mediaId: string;
+  readonly title: string;
+  /**
+   * Play only a window of the title, as offsets in seconds.
+   *
+   * A short is an offset pair into an existing file rather than a file of its
+   * own (`packages/db/pornarr_db/models/social.py`), so a clip is this player
+   * pointed at the parent title and told where to begin and where to stop.
+   * Absent, the whole title plays, which is what the media detail screen asks
+   * for and what every existing caller gets.
+   */
+  readonly startSeconds?: number;
+  readonly endSeconds?: number;
+  /**
+   * Start as soon as the source is ready. Implies muted, because that is the
+   * only autoplay a browser permits without a gesture; the controls still let
+   * the reader turn sound on.
+   */
+  readonly autoPlay?: boolean;
+  /** Fill the parent instead of holding a 16:9 block of it. */
+  readonly fill?: boolean;
+}
+
 export function VideoPlayer({
   mediaId,
   title,
-}: { readonly mediaId: string; readonly title: string }) {
+  startSeconds,
+  endSeconds,
+  autoPlay = false,
+  fill = false,
+}: VideoPlayerProps) {
   const { t } = useTranslation();
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
@@ -125,6 +154,40 @@ export function VideoPlayer({
     return () => window.clearInterval(timer);
   }, []);
 
+  // Two clips cut from the same title are the same source at two offsets, so
+  // moving between them changes `startSeconds` without changing `mediaId`. The
+  // effect above does not re-run then — deliberately, because tearing the
+  // transcode session down and building it again for a seek is exactly what
+  // this player exists to avoid — so the seek happens here instead. Before the
+  // element has metadata there is nothing to seek; `startAtOffset` below runs
+  // when it arrives.
+  useEffect(() => {
+    const element = video.current;
+    if (element === null || startSeconds === undefined) return;
+    if (element.readyState === 0) return;
+    element.currentTime = startSeconds;
+  }, [startSeconds]);
+
+  function startAtOffset() {
+    if (startSeconds === undefined || video.current === null) return;
+    video.current.currentTime = startSeconds;
+  }
+
+  function stopAtOffset() {
+    const element = video.current;
+    if (element === null || endSeconds === undefined) return;
+    if (element.currentTime >= endSeconds) element.pause();
+  }
+
+  // Pressing play on a clip that has run out means "again", not "carry on into
+  // the rest of the title" — the rest of the title is what the media detail
+  // screen is for.
+  function replayFromOffset() {
+    const element = video.current;
+    if (element === null || startSeconds === undefined || endSeconds === undefined) return;
+    if (element.currentTime >= endSeconds) element.currentTime = startSeconds;
+  }
+
   function reportProgress() {
     const element = video.current;
     if (element === null || !Number.isFinite(element.duration) || element.duration <= 0) return;
@@ -144,13 +207,20 @@ export function VideoPlayer({
 
   if (error) return <p role="alert">{t("player.unavailable")}</p>;
   return (
-    <section aria-label={t("player.label", { title })} className="bg-black">
+    <section aria-label={t("player.label", { title })} className={cx("bg-black", fill && "h-full")}>
       <video
         ref={video}
-        className="aspect-video w-full"
+        className={cx("w-full", fill ? "h-full object-contain" : "aspect-video")}
         controls
         playsInline
-        onTimeUpdate={reportProgress}
+        autoPlay={autoPlay}
+        muted={autoPlay}
+        onLoadedMetadata={startAtOffset}
+        onPlay={replayFromOffset}
+        onTimeUpdate={() => {
+          stopAtOffset();
+          reportProgress();
+        }}
         onEnded={reportProgress}
       >
         <track kind="captions" />

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
 import { NAV_ITEMS } from "../../shell/sidebar";
+import { usePeers } from "../settings/peers/peers";
 import { useRootFolders } from "../settings/root-folders/root-folders";
 import { ROOT_FOLDERS_PATH } from "../settings/settings-layout";
 
@@ -24,14 +25,31 @@ type Item = {
   progress_duration_seconds: number | null;
   poster_url: string;
   sprite_url: string | null;
+  /**
+   * Which library the title came from. Absent or null means this one — a
+   * remote item carries the peer it was borrowed from, and its `poster_url`
+   * already points at a proxy on this server, so the grid needs no special
+   * case for the picture.
+   */
+  peer_id?: string | null;
+  peer_name?: string | null;
 };
-type Page = { items: Item[]; next_offset: number | null };
+/**
+ * One library pages by offset. Every library at once cannot: the pages are
+ * merged from servers that each count from their own zero, so the API hands
+ * back an opaque cursor instead and leaves `next_offset` null.
+ */
+type Page = { items: Item[]; next_offset: number | null; next_cursor?: string | null };
 type Facet = { value: string; count: number };
 type Facets = { studios: Facet[]; performers: Facet[]; tags: Facet[] };
 
 const SORTS = ["added", "title", "release", "duration"] as const;
 type Sort = (typeof SORTS)[number];
 const FILTER_KEYS = ["studio", "performer", "tag"] as const;
+
+/** Browsing your own library, or everyone's. Anything else is one peer's id. */
+const LOCAL_SOURCE = "local";
+const ALL_SOURCES = "all";
 
 function sortOf(value: string | null): Sort {
   return SORTS.includes(value as Sort) ? (value as Sort) : "added";
@@ -45,6 +63,12 @@ export function LibraryRoute() {
   // send, and reloading the page does not throw the selection away.
   const filters = FILTER_KEYS.map((key) => [key, params.get(key) ?? ""] as const);
   const sort = sortOf(params.get("sort"));
+  const source = params.get("source") ?? LOCAL_SOURCE;
+  // The names of other people's servers are only needed once the reader has
+  // left their own library. Asking an administrator-only endpoint on every
+  // library load would be a request nobody asked for, on the one screen the
+  // application opens on.
+  const peers = usePeers(source !== LOCAL_SOURCE);
   const facets = useQuery<Facets, Error>({
     queryKey: ["library", "facets"],
     queryFn: async (): Promise<Facets> => {
@@ -53,12 +77,17 @@ export function LibraryRoute() {
       return response.json() as Promise<Facets>;
     },
   });
-  const library = useInfiniteQuery<Page, Error>({
-    queryKey: ["library", Object.fromEntries(filters), sort],
-    initialPageParam: 0,
-    getNextPageParam: (page) => page.next_offset ?? undefined,
+  const library = useInfiniteQuery({
+    queryKey: ["library", Object.fromEntries(filters), sort, source],
+    // A page is addressed by an offset or by a cursor depending on which
+    // library is being read, so the page parameter is whichever of the two the
+    // previous page handed back.
+    initialPageParam: 0 as number | string,
+    getNextPageParam: (page: Page) => page.next_cursor ?? page.next_offset ?? undefined,
     queryFn: async ({ pageParam }): Promise<Page> => {
-      const query = new URLSearchParams({ limit: "48", offset: String(pageParam), sort });
+      const query = new URLSearchParams({ limit: "48", sort, source });
+      if (typeof pageParam === "string") query.set("cursor", pageParam);
+      else query.set("offset", String(pageParam));
       for (const [key, value] of filters) if (value !== "") query.set(key, value);
       const response = await fetch(`/api/library?${query.toString()}`);
       if (!response.ok) throw new Error();
@@ -107,6 +136,8 @@ export function LibraryRoute() {
         performer={params.get("performer") ?? ""}
         tag={params.get("tag") ?? ""}
         sort={sort}
+        source={source}
+        peers={(peers.data ?? []).map((peer) => [peer.id, peer.name] as const)}
         onChange={setFilter}
       />
       {items.length === 0 ? (
@@ -127,6 +158,7 @@ export function LibraryRoute() {
       ) : (
         <VirtualGrid
           items={items}
+          showSource={source === ALL_SOURCES}
           onEnd={() =>
             library.hasNextPage && !library.isFetchingNextPage && void library.fetchNextPage()
           }
@@ -147,6 +179,8 @@ function LibraryFilters({
   performer,
   tag,
   sort,
+  source,
+  peers,
   onChange,
 }: {
   readonly facets: Facets | undefined;
@@ -155,6 +189,8 @@ function LibraryFilters({
   readonly performer: string;
   readonly tag: string;
   readonly sort: Sort;
+  readonly source: string;
+  readonly peers: readonly (readonly [string, string])[];
   readonly onChange: (key: string, value: string) => void;
 }): JSX.Element {
   const { t } = useTranslation();
@@ -163,6 +199,21 @@ function LibraryFilters({
 
   return (
     <div className="flex flex-wrap gap-4" aria-label={t("library.filters")}>
+      {/* First, because it decides what the other three are filtering. The
+          peers appear once they are known; until then the choice is between
+          this library and every library, which is what the picker is for. */}
+      <FacetSelect
+        id="library-source"
+        label={t("library.filterSource")}
+        value={source}
+        loading={false}
+        options={[
+          [LOCAL_SOURCE, t("library.sourceLocal")],
+          [ALL_SOURCES, t("library.sourceAll")],
+          ...peers,
+        ]}
+        onChange={(value) => onChange("source", value)}
+      />
       <FacetSelect
         id="library-studio"
         label={t("library.filterStudio")}
@@ -273,7 +324,15 @@ function LibraryEmpty({ needsRootFolder }: { readonly needsRootFolder: boolean }
   );
 }
 
-function VirtualGrid({ items, onEnd }: { readonly items: Item[]; readonly onEnd: () => void }) {
+function VirtualGrid({
+  items,
+  showSource,
+  onEnd,
+}: {
+  readonly items: Item[];
+  readonly showSource: boolean;
+  readonly onEnd: () => void;
+}) {
   const parentRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(1);
   useEffect(() => {
@@ -308,7 +367,13 @@ function VirtualGrid({ items, onEnd }: { readonly items: Item[]; readonly onEnd:
             style={{ transform: `translateY(${row.start}px)` }}
           >
             {items.slice(row.index * columns, (row.index + 1) * columns).map((item) => (
-              <MediaCard key={item.id} item={item} />
+              // Ids are per-server: two libraries can hand back the same one,
+              // and browsing both at once made React see one card twice.
+              <MediaCard
+                key={`${item.peer_id ?? ""}:${item.id}`}
+                item={item}
+                showSource={showSource}
+              />
             ))}
           </div>
         ))}
@@ -317,9 +382,11 @@ function VirtualGrid({ items, onEnd }: { readonly items: Item[]; readonly onEnd:
   );
 }
 
-function MediaCard({ item }: { readonly item: Item }) {
+function MediaCard({ item, showSource }: { readonly item: Item; readonly showSource: boolean }) {
+  const { t } = useTranslation();
   const [preview, setPreview] = useState(false);
   const source = preview && item.sprite_url ? item.sprite_url : item.poster_url;
+  const from = item.peer_name ?? null;
   return (
     <Link
       to={`/library/${item.id}`}
@@ -345,6 +412,13 @@ function MediaCard({ item }: { readonly item: Item }) {
           {item.release_date ? ` · ${item.release_date}` : ""}
         </p>
         <p className="text-xs text-ink-muted">{item.quality ?? item.resolution ?? "—"}</p>
+        {/* Only while every library is on screen at once: on one library the
+            answer is the same for every card and says nothing. */}
+        {showSource ? (
+          <p className="truncate text-xs text-ink-muted">
+            {from === null ? t("library.fromLocal") : t("library.fromPeer", { name: from })}
+          </p>
+        ) : null}
       </div>
     </Link>
   );

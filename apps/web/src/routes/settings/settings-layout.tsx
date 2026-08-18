@@ -25,6 +25,7 @@ export const SETTINGS_SECTIONS = [
   { id: "rootFolders", path: "/settings/root-folders" },
   { id: "quality", path: "/settings/quality" },
   { id: "metadata", path: "/settings/metadata" },
+  { id: "peers", path: "/settings/peers" },
 ] as const satisfies readonly SettingsSection[];
 
 /** Read from the table so a link to it cannot outlive the route. */

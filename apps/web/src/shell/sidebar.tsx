@@ -43,6 +43,11 @@ export const NAV_ITEMS = [
   { id: "search", path: "/search" },
   { id: "monitors", path: "/monitors" },
   { id: "recommendations", path: "/recommendations" },
+  // The shorts feed. `/api/shorts` was served from the first release with no
+  // route, link or screen pointed at it, so every clip the server cut was
+  // unreachable. Listed after recommendations rather than beside the library
+  // because the first two entries are read by position elsewhere.
+  { id: "shorts", path: "/shorts" },
   { id: "downloads", path: "/downloads" },
   { id: "settings", path: "/settings" },
 ] as const satisfies readonly NavItem[];
@@ -280,6 +285,12 @@ const NAV_ICON_PATHS: Readonly<Record<string, JSX.Element>> = {
   recommendations: (
     <>
       <path d="m8 1.75 1.9 3.85 4.25.62-3.08 3 .73 4.23L8 11.45l-3.8 2 .73-4.23-3.08-3 4.25-.62Z" />
+    </>
+  ),
+  shorts: (
+    <>
+      <rect x="4.5" y="1.5" width="7" height="13" rx="1.5" />
+      <path d="M6.75 5.75v4.5l3.5-2.25Z" />
     </>
   ),
   downloads: (
