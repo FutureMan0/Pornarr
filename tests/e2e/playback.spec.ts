@@ -31,6 +31,9 @@ type MediaDetail = {
 type PlaybackProgress = { readonly position_seconds: number | null };
 type TranscodeLimits = { readonly effective_software: number };
 
+// Deliberately not a variation on the main fixture's name: other specs
+// match that one by pattern and a near-namesake makes them ambiguous.
+const SECOND_FIXTURE_TITLE = "Pornarr Cap Clip";
 const NO_FIXTURE =
   "The suite cannot write a fixture into a configured root folder: either ffmpeg is missing or the stack's data volume is not reachable from here.";
 
@@ -145,8 +148,11 @@ test.describe("playback", () => {
 
   test("a second playback is refused once the software session cap is one", async ({ page }) => {
     const media = await playableMedia(page);
-    test.skip(media === null, NO_FIXTURE);
-    if (media === null) return;
+    // A second title, because one viewer watching one title deliberately
+    // reuses its running session and would never reach the cap.
+    const other = await seedLibraryMedia(page, SECOND_FIXTURE_TITLE);
+    test.skip(media === null || other === null, NO_FIXTURE);
+    if (media === null || other === null) return;
 
     const before = await apiGet<{ transcode_max_sw_sessions: number | null }>(
       page,
@@ -160,7 +166,7 @@ test.describe("playback", () => {
 
       const first = await apiPostRaw(page, `/api/transcode/media/${media.id}/sessions`);
       expect(first.status()).toBe(201);
-      const second = await apiPostRaw(page, `/api/transcode/media/${media.id}/sessions`);
+      const second = await apiPostRaw(page, `/api/transcode/media/${other.id}/sessions`);
       expect(second.status()).toBe(429);
     } finally {
       await releaseTranscodeSessions(page);

@@ -324,14 +324,17 @@ export async function enabledRootFolder(page: Page): Promise<RootFolder | null> 
  * no ffmpeg, or a data volume the suite cannot write. A scan that runs and
  * still leaves the library empty is a failure, not a skip.
  */
-export async function seedLibraryMedia(page: Page): Promise<LibraryItem | null> {
-  const existing = await libraryItemByTitle(page, LIBRARY_FIXTURE_TITLE);
+export async function seedLibraryMedia(
+  page: Page,
+  title: string = LIBRARY_FIXTURE_TITLE,
+): Promise<LibraryItem | null> {
+  const existing = await libraryItemByTitle(page, title);
   const folder = await enabledRootFolder(page);
   if (folder === null) return null;
   const hostFolder = hostPathFor(folder.path);
   if (hostFolder === null || !isWritableDirectory(hostFolder) || !hasFfmpeg()) return null;
 
-  const target = join(hostFolder, `${LIBRARY_FIXTURE_TITLE}.mp4`);
+  const target = join(hostFolder, `${title}.mp4`);
   if (existing !== null && existsSync(target)) return existing;
 
   // Seeding is a once-per-run cost that the first test to ask for media pays,
@@ -351,7 +354,7 @@ export async function seedLibraryMedia(page: Page): Promise<LibraryItem | null> 
           const scan = await apiPostRaw(page, `/api/admin/library/root-folders/${folder.id}/scan`);
           expect([202, 409]).toContain(scan.status());
         }
-        return (await libraryItemByTitle(page, LIBRARY_FIXTURE_TITLE)) !== null;
+        return (await libraryItemByTitle(page, title)) !== null;
       },
       {
         timeout: SEED_TIMEOUT_MILLISECONDS,
@@ -360,7 +363,7 @@ export async function seedLibraryMedia(page: Page): Promise<LibraryItem | null> 
       },
     )
     .toBe(true);
-  return libraryItemByTitle(page, LIBRARY_FIXTURE_TITLE);
+  return libraryItemByTitle(page, title);
 }
 
 /**

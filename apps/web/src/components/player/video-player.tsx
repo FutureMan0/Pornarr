@@ -34,11 +34,14 @@ export function VideoPlayer({
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
   const session = useRef<string | null>(null);
+  const starting = useRef<Promise<TranscodeSession> | null>(null);
+  const mount = useRef(0);
   const lastProgress = useRef(0);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    const generation = ++mount.current;
     async function load() {
       try {
         const info = await responseJson<PlaybackInfo>(`/api/media/${mediaId}/playback-info`);
@@ -47,25 +50,36 @@ export function VideoPlayer({
           video.current.src = `/api/media/${mediaId}/stream`;
           return;
         }
-        const source = await responseJson<TranscodeSession>(
+        // Remounting must not ask for a second session: the request the first
+        // mount sent is still in flight, and whichever of the two answers last
+        // leaves a transcode nobody is holding.
+        starting.current ??= responseJson<TranscodeSession>(
           `/api/transcode/media/${mediaId}/sessions`,
           { method: "POST", headers: csrfHeaders() },
         );
-        // A session that finished being created after the player went away is
-        // still holding a transcode slot, and the cap is low enough that the
-        // next player would be refused one. The cleanup below cannot release it
-        // because it did not exist yet, so release it here.
+        const source = await starting.current;
         if (cancelled || video.current === null) {
-          releaseSession(source.session_id);
+          // A session created after the player went away still holds a
+          // transcode slot, and the cleanup below could not release it because
+          // it did not exist yet. Release it here - but only when no later
+          // mount has taken over, because the server hands that mount the very
+          // same session and deleting it would break the player that is live.
+          if (generation === mount.current) releaseSession(source.session_id);
           return;
         }
         session.current = source.session_id;
-        if (video.current.canPlayType("application/vnd.apple.mpegurl")) {
-          video.current.src = source.playlist_url;
-        } else if (Hls.isSupported()) {
+        // Media Source first. Chromium answers "maybe" to the HLS mime type
+        // and then never loads a segment, so asking the element what it can
+        // play picked the one path that cannot work outside Safari.
+        if (Hls.isSupported()) {
           hls.current = new Hls();
+          hls.current.on(Hls.Events.ERROR, (_event, data) => {
+            if (data.fatal) setError(true);
+          });
           hls.current.loadSource(source.playlist_url);
           hls.current.attachMedia(video.current);
+        } else if (video.current.canPlayType("application/vnd.apple.mpegurl")) {
+          video.current.src = source.playlist_url;
         } else {
           setError(true);
         }
@@ -84,6 +98,19 @@ export function VideoPlayer({
       }
     };
   }, [mediaId]);
+
+  // React runs no cleanup when the page itself goes away, so a reload, a hard
+  // navigation or a closed tab left the transcode running until its heartbeat
+  // expired - a slot the next viewer could not have.
+  useEffect(() => {
+    const release = (): void => {
+      if (session.current === null) return;
+      releaseSession(session.current);
+      session.current = null;
+    };
+    window.addEventListener("pagehide", release);
+    return () => window.removeEventListener("pagehide", release);
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
