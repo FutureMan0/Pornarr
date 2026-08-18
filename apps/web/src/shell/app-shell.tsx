@@ -9,8 +9,7 @@
  * finishing while the user is in settings is still worth announcing, and a
  * region that unmounts with the route announces nothing.
  */
-import type { JSX } from "react";
-import { useEffect, useRef, useState } from "react";
+import type { CSSProperties, JSX } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
 import { ConnectionStatus, useConnectionState } from "../errors/connection-status";
@@ -19,6 +18,7 @@ import { useEventStream } from "../lib/events";
 import { PageTitleProvider } from "./page-title";
 import { useScreenKey } from "./screen-key";
 import { Sidebar, useSidebarLayout } from "./sidebar";
+import { TabBar } from "./tab-bar";
 import { TopBar } from "./top-bar";
 
 const CONTENT_OFFSET = {
@@ -30,27 +30,13 @@ const CONTENT_OFFSET = {
 export function AppShell(): JSX.Element {
   const { t } = useTranslation();
   const layout = useSidebarLayout();
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const triggerRef = useRef<HTMLDivElement>(null);
   const { announcement, status } = useEventStream();
   // Derived once, here. The hook refills the cache when a connection recovers,
   // so a second caller would refill twice; both the pip and the banner take the
   // answer as a prop.
   const connection = useConnectionState(status);
   const screenKey = useScreenKey();
-
-  // Growing past the drawer breakpoint with the drawer open would leave an
-  // overlay on top of a sidebar that is already visible.
-  useEffect(() => {
-    if (layout !== "drawer") setDrawerOpen(false);
-  }, [layout]);
-
-  const closeDrawer = (): void => {
-    setDrawerOpen(false);
-    // DESIGN.md: focus is returned to the trigger on close. The trigger is a
-    // Button inside a ref'd wrapper, hence the query rather than a direct ref.
-    triggerRef.current?.querySelector("button")?.focus();
-  };
+  const phone = layout === "drawer";
 
   return (
     <div className="min-h-full">
@@ -63,22 +49,46 @@ export function AppShell(): JSX.Element {
         {t("shell.skipToContent")}
       </a>
 
-      <Sidebar layout={layout} open={drawerOpen} onClose={closeDrawer} />
+      {/* No sidebar on a phone, and no drawer behind a button either. Section C
+          of the design navigates from the bottom edge — see `tab-bar.tsx`. */}
+      {phone ? null : <Sidebar layout={layout} />}
 
       {/* Wraps both the bar and the content: the screen inside publishes its
           name and the bar above renders it, so the provider has to contain
           the two of them. */}
       <PageTitleProvider>
         <div className={CONTENT_OFFSET[layout]}>
-          <TopBar
-            layout={layout}
-            drawerOpen={drawerOpen}
-            onOpenDrawer={() => setDrawerOpen(true)}
-            connection={connection}
-            triggerRef={triggerRef}
-          />
+          <TopBar layout={layout} connection={connection} />
 
-          <main id="main" className="mx-auto w-full max-w-[var(--layout-content-max-width)] p-6">
+          {/* The tab bar is fixed to the window, so the content reserves its
+              height rather than scrolling under it. */}
+          <main
+            id="main"
+            /**
+             * How much of the window the shell has already taken.
+             *
+             * A screen that wants to be exactly as tall as what is left — the
+             * shorts feed is the only one so far — cannot work that out for
+             * itself: the header is one row on a desktop and two on a phone, and
+             * a phone also carries a tab bar and a home indicator. It used to
+             * subtract a flat 11rem, which was right on a desktop and cut the
+             * bottom off every clip on a phone.
+             *
+             * Declared here because this is the element that knows.
+             */
+            style={
+              {
+                "--shell-chrome": phone
+                  ? "calc(11.5rem + var(--space-16) + var(--space-5) + env(safe-area-inset-bottom, 0px))"
+                  : "9.5rem",
+              } as CSSProperties
+            }
+            className={
+              phone
+                ? "mx-auto w-full max-w-[var(--layout-content-max-width)] px-4 pt-4 pb-[calc(var(--space-16)+var(--space-5)+env(safe-area-inset-bottom,0px))]"
+                : "mx-auto w-full max-w-[var(--layout-content-max-width)] p-6"
+            }
+          >
             {/* Two registers of the same fact, on purpose: the pip in the bar
                 is always present and says which state we are in, this says what
                 it means and what is being done about it. The banner stays
@@ -100,6 +110,8 @@ export function AppShell(): JSX.Element {
           </main>
         </div>
       </PageTitleProvider>
+
+      {phone ? <TabBar /> : null}
 
       {/* Polite, and never focused: state that arrives over SSE is reported,
           not thrust in front of whatever the user is doing. */}

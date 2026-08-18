@@ -42,7 +42,7 @@ export function ContinueRoute(): JSX.Element {
         resuming.data.length === 0 ? (
           <p className="text-sm text-ink-muted">{t("continueWatching.empty")}</p>
         ) : (
-          <ul className="grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4">
+          <ul className="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4">
             {resuming.data.map((item) => (
               <li key={item.media_id}>
                 <ResumeTile item={item} />

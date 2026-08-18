@@ -162,7 +162,7 @@ export function LibraryRoute() {
               </Link>
             ) : null}
           </div>
-          <ul className="grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4">
+          <ul className="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4">
             {resuming.data.slice(0, RESUME_ROW).map((item) => (
               <li key={item.media_id}>
                 <ResumeTile item={item} />
@@ -200,13 +200,33 @@ export function LibraryRoute() {
 
 function VirtualGrid({ items, onEnd }: { readonly items: Item[]; readonly onEnd: () => void }) {
   const parentRef = useRef<HTMLDivElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(1);
+
+  /**
+   * How many tiles fit, counted rather than calculated.
+   *
+   * This divided the width by a hardcoded 216 — the 12.5rem minimum plus the
+   * gap. The moment a phone got a narrower minimum so that two tiles fit, the
+   * arithmetic said one and the CSS drew two: the virtualiser would have sliced
+   * one item per row and left every second tile out of the list entirely.
+   *
+   * `grid-template-columns` computes to the *used* track sizes, and `auto-fill`
+   * creates the empty tracks too — so one rendered row answers the question for
+   * the whole grid, whatever the breakpoint decides. One source of truth, and it
+   * is the stylesheet.
+   */
   useEffect(() => {
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (entry) setColumns(Math.max(1, Math.floor(entry.contentRect.width / 216)));
-    });
+    const measure = (): void => {
+      const row = rowRef.current;
+      if (row === null) return;
+      const tracks = window.getComputedStyle(row).gridTemplateColumns.split(" ").length;
+      setColumns(Math.max(1, tracks));
+    };
+
+    const observer = new ResizeObserver(measure);
     if (parentRef.current) observer.observe(parentRef.current);
+    measure();
     return () => observer.disconnect();
   }, []);
   const rows = Math.ceil(items.length / columns);
@@ -229,7 +249,9 @@ function VirtualGrid({ items, onEnd }: { readonly items: Item[]; readonly onEnd:
         {virtualizer.getVirtualItems().map((row) => (
           <div
             key={row.key}
-            className="absolute left-0 grid w-full grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4"
+            // Only the first row is measured; every row lays out identically.
+            ref={row.index === 0 ? rowRef : undefined}
+            className="absolute left-0 grid w-full grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-4 sm:grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))]"
             style={{ transform: `translateY(${row.start}px)` }}
           >
             {items.slice(row.index * columns, (row.index + 1) * columns).map((item) => (

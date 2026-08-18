@@ -42,6 +42,7 @@ export { Logo, LogoMark, type LogoProps, type WordmarkProps } from "./components
 export { MediaTile, type MediaTileProps } from "./components/media-tile";
 export { Menu, type MenuAlign, type MenuItem, type MenuProps } from "./components/menu";
 export { Select, type SelectProps } from "./components/select";
+export { Sheet, type SheetProps } from "./components/sheet";
 export { MAXIMUM_STARS, Stars, type StarsProps } from "./components/stars";
 export {
   SkeletonPoster,

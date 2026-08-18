@@ -208,7 +208,10 @@ export function ShortsFeedRoute(): JSX.Element {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-4">
-        <p className="text-2xs text-ink-muted">{t("shorts.player.keys")}</p>
+        {/* Nothing to say to a thumb. The hint names Space and the arrow keys,
+            which is advice for a keyboard and clutter for everyone else — two
+            lines of it at 390px, above a feed that is scrolled by swiping. */}
+        <p className="hidden text-2xs text-ink-muted sm:block">{t("shorts.player.keys")}</p>
         <Link
           to="/shorts/browse"
           className="rounded-full border border-border-control px-3 py-1 text-2xs text-ink-muted transition-colors hover:bg-surface-3 hover:text-ink"
@@ -221,7 +224,7 @@ export function ShortsFeedRoute(): JSX.Element {
         ref={scroller}
         // `overscroll-contain` keeps a swipe past the last clip from scrolling
         // the page behind the feed.
-        className="h-[calc(100vh-11rem)] snap-y snap-mandatory overflow-y-auto overscroll-contain rounded-lg"
+        className="h-[calc(100dvh-var(--shell-chrome,11rem))] snap-y snap-mandatory overflow-y-auto overscroll-contain rounded-lg"
         tabIndex={-1}
       >
         {clips.map((clip, index) => (

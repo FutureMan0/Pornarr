@@ -56,7 +56,7 @@ export function WatchlistRoute(): JSX.Element {
       {items.length === 0 ? (
         <p className="text-sm text-ink-muted">{t("watchlist.empty")}</p>
       ) : (
-        <ul className="grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4">
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4">
           {items.map((item) => (
             <li key={item.media_id} className="flex flex-col gap-2">
               <MediaTile

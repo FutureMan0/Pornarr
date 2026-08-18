@@ -209,7 +209,10 @@
     "continue": "Weiterschauen",
     "shorts": "Shorts",
     "collections": "Sammlungen",
-    "watchlist": "Merkliste"
+    "watchlist": "Merkliste",
+    "more": "Mehr",
+    "allDestinations": "Alles Weitere",
+    "tabs": "Haupt"
   },
   "search": {
     "label": "Suche",
