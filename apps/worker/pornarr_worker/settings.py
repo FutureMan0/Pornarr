@@ -25,6 +25,7 @@ from pornarr_worker.jobs.automation import AUTOMATION_EXECUTION_JOB
 from pornarr_worker.jobs.backlog_search import BACKLOG_SEARCH_DISPATCH_JOB, BACKLOG_SEARCH_JOB
 from pornarr_worker.jobs.download_poll import DOWNLOAD_POLL_JOB
 from pornarr_worker.jobs.events import PRUNE_USER_EVENTS_JOB
+from pornarr_worker.jobs.import_media import IMPORT_MEDIA_JOB
 from pornarr_worker.jobs.import_trigger import IMPORT_DOWNLOAD_JOB, WATCH_DOWNLOAD_FILES_JOB
 from pornarr_worker.jobs.metadata import METADATA_RESOLVE_JOB
 from pornarr_worker.jobs.monitor_match import MONITOR_MATCH_JOB
@@ -92,6 +93,7 @@ class ImportWorkerSettings:
         QUARANTINE_JOB,
         UPGRADE_MEDIA_FILE_JOB,
         IMPORT_DOWNLOAD_JOB,
+        IMPORT_MEDIA_JOB,
         METADATA_RESOLVE_JOB,
     ]
     queue_name: ClassVar = IMPORT_QUEUE

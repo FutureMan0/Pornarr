@@ -27,7 +27,9 @@ from pornarr_worker.jobs.import_intake import (
 )
 
 IMPORT_DOWNLOAD_JOB_NAME = "import_download"
+IMPORT_MEDIA_JOB_NAME = "import_media"
 PENDING = "pending"
+READY = "ready"
 WATCH_DURATION_SECONDS = 25
 
 TriggerEnqueuer = Callable[[ImportTrigger], Awaitable[None]]
@@ -128,18 +130,23 @@ async def discover_download_files(session: AsyncSession, settings: Settings) -> 
     return discovered
 
 
-async def dispatch_pending_triggers(session: AsyncSession, enqueue: TriggerEnqueuer) -> int:
-    """Put every durable pending trigger back on the import queue after a restart."""
+async def dispatch_triggers(session: AsyncSession, status: str, enqueue: TriggerEnqueuer) -> int:
+    """Put every durable trigger in one status back on the import queue."""
     triggers = list(
         await session.scalars(
             select(ImportTrigger)
-            .where(ImportTrigger.status == PENDING)
+            .where(ImportTrigger.status == status)
             .order_by(ImportTrigger.created_at, ImportTrigger.id)
         )
     )
     for trigger in triggers:
         await enqueue(trigger)
     return len(triggers)
+
+
+async def dispatch_pending_triggers(session: AsyncSession, enqueue: TriggerEnqueuer) -> int:
+    """Put every durable pending trigger back on the import queue after a restart."""
+    return await dispatch_triggers(session, PENDING, enqueue)
 
 
 async def process_import_trigger(
@@ -249,16 +256,32 @@ async def stage_changed_download_files(
 
 
 async def dispatch_committed_triggers(redis: Any) -> int:
+    """Hand pending triggers to intake and validated ones to the importer.
+
+    Both statuses are dispatched here rather than only at the transition that
+    produced them, so a trigger that was left behind by a restart between the
+    two steps is picked up on the next sweep instead of sitting in the table
+    forever.
+    """
     async with session_scope() as session:
-        return await dispatch_pending_triggers(
-            session,
-            lambda trigger: enqueue_once(
-                redis,
-                IMPORT_DOWNLOAD_JOB_NAME,
-                str(trigger.id),
-                queue=IMPORT_QUEUE,
-            ),
-        )
+        dispatched = 0
+        for status, function in (
+            (PENDING, IMPORT_DOWNLOAD_JOB_NAME),
+            (READY, IMPORT_MEDIA_JOB_NAME),
+        ):
+            dispatched += await dispatch_triggers(
+                session,
+                status,
+                _queue_trigger(redis, function),
+            )
+        return dispatched
+
+
+def _queue_trigger(redis: Any, function: str) -> TriggerEnqueuer:
+    async def enqueue(trigger: ImportTrigger) -> None:
+        await enqueue_once(redis, function, str(trigger.id), queue=IMPORT_QUEUE)
+
+    return enqueue
 
 
 def _download_root(protocol: str, settings: Settings) -> Path:

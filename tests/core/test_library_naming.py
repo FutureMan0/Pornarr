@@ -10,6 +10,13 @@ def test_library_path_uses_sanitized_default_studio_year_title_layout() -> None:
     )
 
 
+def test_an_undated_release_is_filed_under_a_readable_year() -> None:
+    assert (
+        build_library_path("Studio", "Title", None, ".mkv").as_posix()
+        == "Studio/unknown/Title/unknown/Title.mkv"
+    )
+
+
 def test_custom_layout_can_reorder_supported_tokens() -> None:
     assert (
         build_library_path("Studio", "Title", None, ".mp4", "{title}/{studio}").as_posix()
