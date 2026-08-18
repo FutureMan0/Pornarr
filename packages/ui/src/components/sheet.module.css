@@ -1,0 +1,117 @@
+/**
+ * A sheet from the bottom edge.
+ *
+ * Tokens only. The one literal is the 4px grab handle, which is a drawn object
+ * rather than a spacing decision.
+ */
+
+/* `[open]`, and not merely `.sheet`.
+ *
+ * An author's `display` beats the user agent's outright, whatever the
+ * specificity — so an unscoped `display: flex` here overrode
+ * `dialog:not([open]) { display: none }` and left every closed sheet in the
+ * layout and in the accessibility tree. It was invisible on screen and axe
+ * found it immediately: a second banner landmark on every phone screen, from a
+ * sheet nobody had opened. */
+.sheet[open] {
+  /* The dialog element is the full viewport so the backdrop is clickable
+     everywhere; the panel inside it is what looks like a sheet. `padding: 0`
+     and `border: 0` undo the user-agent dialog box. */
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  /* Bottom-anchored: the panel sits against the edge a thumb starts from. */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.sheet::backdrop {
+  background: color-mix(in oklch, var(--pa-bg-00) 62%, transparent);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  /* Never taller than most of the screen: a sheet that fills it is a page, and
+     a page should have been a route. */
+  max-height: 82vh;
+  padding: var(--space-2) var(--space-4);
+  /* The bottom is squarer than the top, which is what makes it read as coming
+     from the edge rather than floating over it. */
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--surface-2);
+  box-shadow: var(--shadow-floating);
+
+  /* Clear of the home indicator on a phone, and of nothing on a desktop. */
+  padding-bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+
+  translate: 0 0;
+  transition: translate var(--duration-base) var(--ease);
+}
+
+/* It arrives from the edge it belongs to. No fade: the panel carries a screen's
+   worth of text, and text at partial opacity is text below its contrast
+   minimum — see DESIGN.md's Motion section. The backdrop behind it is what
+   separates the two states. */
+@starting-style {
+  .panel {
+    translate: 0 100%;
+  }
+}
+
+.handle {
+  width: calc(var(--space-8) + var(--space-2));
+  height: 4px;
+  flex: none;
+  align-self: center;
+  border-radius: var(--radius-full);
+  background: var(--border-strong);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: none;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-md);
+  line-height: var(--text-md-leading);
+  font-weight: var(--text-md-weight);
+  color: var(--ink);
+}
+
+.action {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  /* Keeps a flick inside the sheet rather than scrolling the page behind it. */
+  overscroll-behavior: contain;
+}
+
+.footer {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

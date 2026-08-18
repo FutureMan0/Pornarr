@@ -75,7 +75,11 @@
   },
   "player": {
     "label": "Player for {{title}}",
-    "unavailable": "This video cannot be played right now."
+    "unavailable": "This video cannot be played right now.",
+    "play": "Play",
+    "pause": "Pause",
+    "mute": "Mute",
+    "unmute": "Turn sound on"
   },
   "login": {
     "subtitle": "Sign in to continue.",
@@ -205,7 +209,10 @@
     "continue": "Continue",
     "shorts": "Shorts",
     "collections": "Collections",
-    "watchlist": "Watchlist"
+    "watchlist": "Watchlist",
+    "more": "More",
+    "allDestinations": "Everywhere else",
+    "tabs": "Main"
   },
   "search": {
     "label": "Search",
@@ -303,7 +310,18 @@
         "floor_other": "{{count}} stars and up",
         "unrated": "Not yet rated"
       }
-    }
+    },
+    "shortcut": "Search",
+    "shortcutHint": "Press {{keys}} from anywhere",
+    "clear": "Clear the search",
+    "suggestions": "Suggestions",
+    "seeAll": "See all results for “{{query}}”",
+    "noSuggestions": "Nothing in the library matches yet.",
+    "suggestionsBusy": "Looking…",
+    "filtersTitle": "Filters",
+    "openFilters": "Filters",
+    "clearFilters": "Clear all",
+    "applyFilters": "Show results"
   },
   "account": {
     "menu": "Account",
@@ -522,7 +540,22 @@
     "addTag": "Add corrected tag",
     "file": "File",
     "path": "Path",
-    "technical": "Technical information"
+    "technical": "Technical information",
+    "performers": "Performers",
+    "about": "About",
+    "studio": "Studio",
+    "released": "Released",
+    "runtime": "Runtime",
+    "quality": "Quality",
+    "size": "Size",
+    "added": "Added",
+    "pathHidden": "File location hidden by the owner",
+    "scenes": "Scene markers",
+    "noScenes": "No scenes detected yet.",
+    "resume": "Resume {{time}}",
+    "seeAll": "See all →",
+    "relatedFrom": "from tags, studio and performers",
+    "sceneLabel": "Scene {{index}}"
   },
   "errors": {
     "INVALID_CREDENTIALS": "That username and password do not match.",
@@ -619,8 +652,16 @@
       "at": "at {{time}}",
       "upNext": "Up next",
       "queueEmpty": "Nothing else in the feed yet.",
-      "aboutTitle": "Ratings and comments belong to the full title, not to this clip."
-    }
+      "aboutTitle": "Ratings and comments belong to the full title, not to this clip.",
+      "announce": "Clip {{index}} of {{total}}: {{title}}"
+    },
+    "save": "Save",
+    "saved": "Saved",
+    "browseAll": "Browse all →",
+    "backToFeed": "← Back to the feed",
+    "emptyHint": "Clips are cut from watch hotspots and scene markers, so they appear once the household has watched something.",
+    "comments": "Comments",
+    "closeComments": "Close comments"
   },
   "collections": {
     "title": "Collections",
@@ -676,7 +717,9 @@
     "report": "Report",
     "reported": "Reported",
     "edited": "edited",
-    "hidden": "Withheld by an administrator"
+    "hidden": "Withheld by an administrator",
+    "empty": "No comments yet. Say the first thing.",
+    "placeholder": "Add a comment…"
   },
   "artwork": {
     "shown": "Art shown",

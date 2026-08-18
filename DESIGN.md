@@ -230,21 +230,61 @@ cancelled. Same shape, same size, same position in every context.
 
 150–250ms on transitions. Users are in a task and do not want choreography.
 
-Motion conveys state only: a panel opening, a row entering the queue, a progress
-value advancing, a toast arriving. No orchestrated page-load sequences, no
-scroll-triggered reveals, no decorative movement anywhere.
-
 Easing is exponential ease-out (`cubic-bezier(0.16, 1, 0.3, 1)`). No bounce, no
 elastic.
+
+Motion carries state, and it also carries craft. Those are two claims and this
+section used to make only the first — it read "no orchestrated page-load
+sequences, no decorative movement anywhere", which described a product that felt
+correct and inert. The owner asked for the second, in as many words: light
+premium movement, not overdone. So the rule is a budget rather than a
+prohibition.
+
+**What moves.** Four things, and they are named so that a fifth has to argue for
+itself:
+
+- A **floating surface** arrives from the control that opened it — a few pixels
+  of travel, a hair of scale. `.pa-pop`.
+- A **screen** settles in once on arrival, as one piece — it rises, it does not
+  fade. `.pa-enter`.
+- A **surface under the pointer** grows very slightly and gains the shadow of
+  something nearer the reader. `.pa-raise`, and the media tile.
+- The **current navigation entry** grows a bar on its leading edge. `.pa-nav`.
+
+**What does not.** Elements arriving one after another inside a screen; anything
+triggered by scroll position; movement that repeats while idle; anything a reader
+has to wait for before they can act. A page whose parts appear in sequence is a
+page that takes longer than it did.
+
+**Only what is appearing from nothing may fade.** A floating surface has no
+readable state to degrade, so it can come up from zero opacity. Content that is
+already the page may only move: text at partial opacity over the page ground is
+text below its contrast minimum, briefly but really. The accessibility suite
+caught the first version of the screen transition doing this — a primary button
+measured at 3.68:1 mid-fade against a required 4.5:1.
+
+**Every distance is a token.** `--lift-sm`, `--lift-md`, `--hover-scale`, beside
+the durations. A component naming its own is a component that cannot be turned
+off, which is the whole reason for the paragraph below.
+
+Prefer `@starting-style` and a transition over a keyframe animation: there is
+nothing to re-trigger, nothing to interrupt, and no state to hold in JavaScript.
+An element renders at its final values and the browser interpolates from the
+starting ones exactly once, on insertion.
 
 Progress values interpolate between server events rather than jumping, so a bar
 updated every five seconds reads as continuous.
 
 ```css
 @media (prefers-reduced-motion: reduce) {
-  /* every transition becomes an instant change or a 100ms crossfade */
+  /* durations collapse to 1ms — and so do the distances */
 }
 ```
+
+The distances matter as much as the durations here. A 1ms transition over ten
+pixels is not a reduced animation, it is a jump, which is the exact thing the
+preference asks not to happen. Zeroing `--lift-*` and `--hover-scale` means the
+element is simply where it belongs from the first frame.
 
 Reduced motion is not a degraded path. It is a supported path and is tested.
 

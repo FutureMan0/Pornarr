@@ -124,13 +124,30 @@ export function formatEstimate(minSeconds: number, maxSeconds: number, locale: s
   return `${APPROXIMATELY}${range}`;
 }
 
+/**
+ * What an unreadable date prints as.
+ *
+ * `new Date("")` and `new Date(undefined)` are both valid `Date` objects whose
+ * time is NaN, and `Intl.RelativeTimeFormat` answers that with a thrown
+ * RangeError rather than a bad string. Thrown from a render, it takes the whole
+ * screen to the error boundary — a detail page going blank because one
+ * timestamp is missing is a worse answer than the page with a dash in it.
+ */
+const NO_DATE = "—";
+
+function unreadable(date: Date): boolean {
+  return Number.isNaN(date.getTime());
+}
+
 /** An absolute date: `14 Mar 2025` in English, `14.03.2025` in German. */
 export function formatDate(date: Date, locale: string): string {
+  if (unreadable(date)) return NO_DATE;
   return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date);
 }
 
 /** The same instant with the time of day, for a `title` attribute. */
 export function formatDateTime(date: Date, locale: string): string {
+  if (unreadable(date)) return NO_DATE;
   return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
@@ -139,6 +156,7 @@ export function formatDateTime(date: Date, locale: string): string {
  * turns `1 day ago` into `yesterday` where the locale has a word for it.
  */
 export function formatRelativeDate(date: Date, locale: string, now: Date = new Date()): string {
+  if (unreadable(date)) return NO_DATE;
   const seconds = (date.getTime() - now.getTime()) / 1_000;
   const format = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
 

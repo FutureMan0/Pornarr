@@ -109,8 +109,8 @@ export function FacetSidebar({
                     aria-hidden="true"
                     className={
                       selected
-                        ? "size-3.5 flex-none rounded-[3px] bg-[var(--primary)]"
-                        : "size-3.5 flex-none rounded-[3px] border border-border-control"
+                        ? "size-3.5 flex-none rounded-sm bg-[var(--primary)]"
+                        : "size-3.5 flex-none rounded-sm border border-border-control"
                     }
                   />
                   <span className={selected ? "flex-1 text-ink" : "flex-1 text-ink-muted"}>

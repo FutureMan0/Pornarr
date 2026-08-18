@@ -3376,6 +3376,11 @@ export interface components {
         };
         /** MediaDetailResponse */
         MediaDetailResponse: {
+            /**
+             * Added At
+             * Format: date-time
+             */
+            added_at: string;
             /** Bitrate */
             bitrate: number | null;
             /** Codecs */

@@ -198,7 +198,7 @@ export function CollectionDetailRoute(): JSX.Element {
       {detail.items.length === 0 ? (
         <p className="text-sm text-ink-muted">{t("collections.emptyShelf")}</p>
       ) : (
-        <ul className="grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4">
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4">
           {detail.items.map((item) => (
             <li key={item.media_id}>
               <MediaTile

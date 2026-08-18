@@ -32,9 +32,14 @@ const tokens = ((): ReadonlyMap<string, string> => {
   // Comments first: prose that names a token and a colon ("--primary-ink: white
   // on a rose...") otherwise swallows the declaration that follows it.
   const css = raw.replace(/\/\*[\s\S]*?\*\//g, "");
-  // Only the first :root block. The reduced-motion override redefines
-  // durations, and picking those up would silently shadow the real values.
-  const root = /:root\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
+  // Every top-level :root block, in source order — the file has two, one for
+  // the semantic layer and one for the delivered geometry it aliases onto, and
+  // reading only the first made the aliases in it look undefined.
+  //
+  // `\n\}` is what keeps this to top level: the reduced-motion override's
+  // :root sits inside an @media and closes on an indented brace, so it does
+  // not match. Picking those durations up would silently shadow the real ones.
+  const root = [...css.matchAll(/:root\s*\{([\s\S]*?)\n\}/g)].map((m) => m[1] ?? "").join("\n");
   // The surfaces, inks and brand colours are now aliases onto the delivered
   // ramp, which is declared further down under the default accent's selector.
   // Resolving one level of indirection is what keeps this test measuring the

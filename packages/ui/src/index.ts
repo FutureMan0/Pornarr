@@ -26,6 +26,8 @@ export {
 } from "./theme";
 
 export { Artwork, type ArtworkBlur, type ArtworkProps, hueOffset } from "./components/artwork";
+export { applyAccentFavicon, faviconDataUrl, faviconSvg } from "./favicon";
+export { applyCssFilter, parseHex } from "./lib/filter-colour";
 export { Badge, BADGE_STATUSES, type BadgeProps, type BadgeStatus } from "./components/badge";
 export { Button, type ButtonProps } from "./components/button";
 export { Checkbox, type CheckboxProps } from "./components/checkbox";
@@ -36,9 +38,11 @@ export {
   type EmptyStateProps,
 } from "./components/empty-state";
 export { Input, type InputProps } from "./components/input";
+export { Logo, LogoMark, type LogoProps, type WordmarkProps } from "./components/logo";
 export { MediaTile, type MediaTileProps } from "./components/media-tile";
-export { Menu, type MenuItem, type MenuProps } from "./components/menu";
+export { Menu, type MenuAlign, type MenuItem, type MenuProps } from "./components/menu";
 export { Select, type SelectProps } from "./components/select";
+export { Sheet, type SheetProps } from "./components/sheet";
 export { MAXIMUM_STARS, Stars, type StarsProps } from "./components/stars";
 export {
   SkeletonPoster,

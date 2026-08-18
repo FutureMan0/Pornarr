@@ -14,7 +14,7 @@
  * they have no library behind them, which is not a reason to throw away artwork
  * the scanner already produced.
  */
-import type { JSX, ReactNode } from "react";
+import type { CSSProperties, JSX, ReactNode } from "react";
 
 import { cx } from "../lib/cx";
 import { Artwork, type ArtworkBlur } from "./artwork";
@@ -31,13 +31,24 @@ export interface MediaTileProps {
   /** 0 to 1. Anything above zero draws the resume bar. */
   readonly progress?: number | undefined;
   readonly rating?: number | null | undefined;
-  /** The sentence a screen reader hears for the rating. */
-  readonly ratingLabel: string;
+  /**
+   * The sentence a screen reader hears for the rating.
+   *
+   * Omit it to leave the rating off the tile altogether — for a row where the
+   * rating is not the point and where the source has none to give.
+   */
+  readonly ratingLabel?: string | undefined;
   readonly tagCount?: number | undefined;
   readonly commentCount?: number | undefined;
   /** Any stable number from the record; drives the placeholder colour. */
   readonly seed: number;
   readonly blur?: ArtworkBlur | undefined;
+  /**
+   * CSS aspect ratio for the artwork. A clip is 9/16 and a title is 16/10, and
+   * the shape is the fastest thing telling a reader which of the two they are
+   * looking at — faster than a duration badge and faster than reading a title.
+   */
+  readonly ratio?: string | undefined;
   /** A real image for this title. Falls back to the generated placeholder. */
   readonly poster?: ReactNode | undefined;
   readonly veil?: ReactNode | undefined;
@@ -58,6 +69,7 @@ export function MediaTile({
   commentCount = 0,
   seed,
   blur = "hidden",
+  ratio,
   poster,
   veil,
   action,
@@ -85,11 +97,14 @@ export function MediaTile({
   const content = (
     <>
       {poster === undefined ? (
-        <Artwork seed={seed} blur={blur} veil={veil} className={styles.art}>
+        <Artwork seed={seed} blur={blur} veil={veil} ratio={ratio} className={styles.art}>
           {overlays}
         </Artwork>
       ) : (
-        <div className={cx(styles.art, styles.frame, blur === "hidden" && styles.blurred)}>
+        <div
+          className={cx(styles.art, styles.frame, blur === "hidden" && styles.blurred)}
+          style={ratio === undefined ? undefined : ({ "--art-ratio": ratio } as CSSProperties)}
+        >
           {poster}
           <span className={styles.scrim} aria-hidden="true" />
           {overlays}
@@ -109,16 +124,27 @@ export function MediaTile({
           ) : null}
         </span>
 
-        <span className={cx("text-2xs", styles.line)}>
-          <Stars value={rating} label={ratingLabel} />
-          <span className="tabular-nums">{rating === null ? "—" : rating.toFixed(1)}</span>
-          {commentCount > 0 ? (
-            <span className={styles.counter}>
-              <CommentIcon />
-              {commentCount}
-            </span>
-          ) : null}
-        </span>
+        {/* Omitting `ratingLabel` drops the stars entirely, which is a different
+            statement from `rating={null}`: null means "nobody has rated this",
+            and no label means "this tile is not about ratings". The continue-
+            watching row is the second case — five grey stars and a dash on every
+            tile, five times over, for a question nobody asked. */}
+        {ratingLabel === undefined && commentCount === 0 ? null : (
+          <span className={cx("text-2xs", styles.line)}>
+            {ratingLabel === undefined ? null : (
+              <>
+                <Stars value={rating} label={ratingLabel} />
+                <span className="tabular-nums">{rating === null ? "—" : rating.toFixed(1)}</span>
+              </>
+            )}
+            {commentCount > 0 ? (
+              <span className={styles.counter}>
+                <CommentIcon />
+                {commentCount}
+              </span>
+            ) : null}
+          </span>
+        )}
       </div>
     </>
   );

@@ -24,10 +24,21 @@ export type MenuItem = {
   readonly disabled?: boolean;
 };
 
+/**
+ * Which edge of the trigger the surface is pinned to.
+ *
+ * `start` grows rightwards and suits a trigger on the left. `end` grows
+ * leftwards, which is what a trigger near the right edge of the window needs —
+ * the account menu opened toward the edge and had nowhere to go.
+ */
+export type MenuAlign = "start" | "end";
+
 export type MenuProps = {
   /** Trigger text, and the accessible name of the menu it opens. */
   readonly label: string;
   readonly items: readonly MenuItem[];
+  /** Defaults to `start`. */
+  readonly align?: MenuAlign | undefined;
   /** Items are replaced by a skeleton and the menu carries `aria-busy`. */
   readonly loading?: boolean;
   /** Rendered as a live alert inside the menu. */
@@ -42,6 +53,7 @@ const SKELETON_ROWS = [0, 1, 2] as const;
 export function Menu({
   label,
   items,
+  align = "start",
   loading,
   error,
   disabled,
@@ -178,6 +190,7 @@ export function Menu({
           tabIndex={-1}
           className={cx(
             css.menu,
+            align === "end" && css.alignEnd,
             loading === true && css.loading,
             error !== undefined && css.error,
           )}

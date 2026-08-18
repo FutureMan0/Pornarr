@@ -11,7 +11,14 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
-import { renderApp, server, setViewportWidth, signedIn, useMockApi } from "../../test/harness";
+import {
+  TEST_USER,
+  renderApp,
+  server,
+  setViewportWidth,
+  signedIn,
+  useMockApi,
+} from "../../test/harness";
 
 useMockApi();
 afterEach(cleanup);
@@ -174,5 +181,49 @@ describe("what is not here", () => {
     expect(screen.getByRole("link", { name: "Quality profiles" }).getAttribute("href")).toBe(
       "/settings/quality",
     );
+  });
+});
+
+/**
+ * A guest gets the one thing on this screen that is theirs.
+ *
+ * The accent is per-device. The thirty-six runtime settings, the quality
+ * profiles, the library paths and the invitations are the server's, and asking
+ * for them as a guest is a 403 — which is what happened every time one opened
+ * this screen. It is the same mistake `/downloads` made, found the same way: by
+ * signing in as a guest and watching the network.
+ */
+describe("settings for a guest", () => {
+  test("shows the accent and does not ask the server for anything", async () => {
+    let asked = false;
+    server.use(
+      http.get("/api/auth/me", () => HttpResponse.json({ ...TEST_USER, role: "user" })),
+      http.get("/api/admin/settings", () => {
+        asked = true;
+        return HttpResponse.json({ detail: "forbidden" }, { status: 403 });
+      }),
+    );
+    renderApp("/settings");
+
+    expect(await screen.findByLabelText(/Accent/)).not.toBeNull();
+    await waitFor(() => expect(asked).toBe(false));
+  });
+
+  test("offers none of the sections that are not theirs", async () => {
+    server.use(http.get("/api/auth/me", () => HttpResponse.json({ ...TEST_USER, role: "user" })));
+    renderApp("/settings");
+
+    await screen.findByLabelText(/Accent/);
+    expect(screen.queryByRole("link", { name: /Quality profiles/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Invitations/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Housekeeping/ })).toBeNull();
+  });
+
+  test("an administrator still gets all of it", async () => {
+    server.use(http.get("/api/admin/settings", () => HttpResponse.json(SETTINGS)));
+    renderApp("/settings");
+
+    expect(await screen.findByRole("link", { name: /Quality profiles/ })).not.toBeNull();
+    expect(await screen.findByLabelText(/Accent/)).not.toBeNull();
   });
 });

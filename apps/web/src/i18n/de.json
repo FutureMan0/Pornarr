@@ -75,7 +75,11 @@
   },
   "player": {
     "label": "Player für {{title}}",
-    "unavailable": "Dieses Video kann derzeit nicht wiedergegeben werden."
+    "unavailable": "Dieses Video kann derzeit nicht wiedergegeben werden.",
+    "play": "Abspielen",
+    "pause": "Pause",
+    "mute": "Ton aus",
+    "unmute": "Ton an"
   },
   "login": {
     "subtitle": "Melde dich an, um fortzufahren.",
@@ -205,7 +209,10 @@
     "continue": "Weiterschauen",
     "shorts": "Shorts",
     "collections": "Sammlungen",
-    "watchlist": "Merkliste"
+    "watchlist": "Merkliste",
+    "more": "Mehr",
+    "allDestinations": "Alles Weitere",
+    "tabs": "Haupt"
   },
   "search": {
     "label": "Suche",
@@ -303,7 +310,18 @@
         "floor_other": "Ab {{count}} Sternen",
         "unrated": "Noch nicht bewertet"
       }
-    }
+    },
+    "shortcut": "Suche",
+    "shortcutHint": "{{keys}} von überall",
+    "clear": "Suche leeren",
+    "suggestions": "Vorschläge",
+    "seeAll": "Alle Ergebnisse für „{{query}}“",
+    "noSuggestions": "Noch kein Treffer in der Bibliothek.",
+    "suggestionsBusy": "Suche…",
+    "filtersTitle": "Filter",
+    "openFilters": "Filter",
+    "clearFilters": "Alles zurücksetzen",
+    "applyFilters": "Ergebnisse zeigen"
   },
   "account": {
     "menu": "Konto",
@@ -522,7 +540,22 @@
     "addTag": "Korrigierten Tag hinzufügen",
     "file": "Datei",
     "path": "Pfad",
-    "technical": "Technische Informationen"
+    "technical": "Technische Informationen",
+    "performers": "Mitwirkende",
+    "about": "Über",
+    "studio": "Studio",
+    "released": "Erschienen",
+    "runtime": "Laufzeit",
+    "quality": "Qualität",
+    "size": "Größe",
+    "added": "Hinzugefügt",
+    "pathHidden": "Dateipfad von der Besitzerin verborgen",
+    "scenes": "Szenenmarken",
+    "noScenes": "Noch keine Szenen erkannt.",
+    "resume": "Fortsetzen bei {{time}}",
+    "seeAll": "Alle ansehen →",
+    "relatedFrom": "nach Tags, Studio und Mitwirkenden",
+    "sceneLabel": "Szene {{index}}"
   },
   "errors": {
     "INVALID_CREDENTIALS": "Benutzername und Passwort passen nicht zusammen.",
@@ -619,8 +652,16 @@
       "at": "bei {{time}}",
       "upNext": "Als Nächstes",
       "queueEmpty": "Sonst ist noch nichts im Feed.",
-      "aboutTitle": "Bewertung und Kommentare gehören zum ganzen Titel, nicht zu diesem Clip."
-    }
+      "aboutTitle": "Bewertung und Kommentare gehören zum ganzen Titel, nicht zu diesem Clip.",
+      "announce": "Clip {{index}} von {{total}}: {{title}}"
+    },
+    "save": "Merken",
+    "saved": "Gemerkt",
+    "browseAll": "Alle ansehen →",
+    "backToFeed": "← Zurück zum Feed",
+    "emptyHint": "Clips entstehen aus viel gesehenen Stellen und Szenenmarken — sie erscheinen, sobald im Haushalt etwas gesehen wurde.",
+    "comments": "Kommentare",
+    "closeComments": "Kommentare schließen"
   },
   "collections": {
     "title": "Sammlungen",
@@ -676,7 +717,9 @@
     "report": "Melden",
     "reported": "Gemeldet",
     "edited": "bearbeitet",
-    "hidden": "Von einem Admin zurückgehalten"
+    "hidden": "Von einem Admin zurückgehalten",
+    "empty": "Noch keine Kommentare. Sag das Erste.",
+    "placeholder": "Kommentar schreiben…"
   },
   "artwork": {
     "shown": "Bilder sichtbar",

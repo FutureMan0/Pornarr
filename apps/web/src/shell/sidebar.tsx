@@ -12,8 +12,8 @@
  * ARIA and the focus trap from disagreeing.
  */
 import { cx } from "@pornarr/ui";
-import type { JSX, KeyboardEvent } from "react";
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import type { JSX } from "react";
+import { useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
@@ -54,17 +54,45 @@ export const NAV_ITEMS = [
   { id: "collections", path: "/collections" },
   { id: "watchlist", path: "/watchlist" },
   { id: "requests", path: "/requests" },
-  { id: "downloads", path: "/downloads" },
+  // `/api/queue` and `/api/queue/summary` both require the admin role, so this
+  // screen answers a guest with 403 and nothing else. It sat in everyone's
+  // navigation until today, which is the same mistake the five entries above
+  // avoid by declaring it.
+  { id: "downloads", path: "/downloads", adminOnly: true },
   { id: "settings", path: "/settings" },
 ] as const satisfies readonly NavItem[];
 
 export type NavId = (typeof NAV_ITEMS)[number]["id"];
 
+/**
+ * Entries whose path is a prefix of another entry's, and which therefore have to
+ * match exactly.
+ *
+ * `NavLink` treats a prefix as active. `/admin` is a prefix of `/admin/tags`,
+ * `/admin/scan`, `/admin/moderation` and `/admin/invites`, so Dashboard stayed
+ * marked on every administrator screen and two entries read as current at once.
+ *
+ * Derived rather than hand-marked. A list of exceptions maintained by hand goes
+ * stale the first time somebody adds a destination under an existing one, and it
+ * goes stale silently — the symptom is a highlight, not an error. This cannot.
+ *
+ * Only nav entries count. `/library/:mediaId` is not one, so Library correctly
+ * stays marked while you are reading a title; `/shorts/browse` is not one either,
+ * for the same reason.
+ */
+const NEEDS_EXACT_MATCH: ReadonlySet<string> = new Set(
+  NAV_ITEMS.filter((item) =>
+    NAV_ITEMS.some((other) => other !== item && other.path.startsWith(`${item.path}/`)),
+  ).map((item) => item.id),
+);
+
+/** Whether this destination has to match the address exactly. See above. */
+export function needsExactMatch(id: string): boolean {
+  return NEEDS_EXACT_MATCH.has(id);
+}
+
 const RAIL_QUERY = "(max-width: 1279.98px)";
 const DRAWER_QUERY = "(max-width: 767.98px)";
-
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
 
 function readLayout(): SidebarLayout {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "full";
@@ -87,21 +115,37 @@ export function useSidebarLayout(): SidebarLayout {
   return useSyncExternalStore(subscribeToLayout, readLayout, () => "full");
 }
 
-/** The drawer's element id, so the top bar's trigger can point at it. */
-export const DRAWER_ID = "app-drawer";
+/**
+ * Is this a phone?
+ *
+ * One definition, shared. Screens that have to *choose their markup* rather than
+ * restyle it — a table that becomes a list of cards, and nothing else so far —
+ * need the same answer the shell used to decide on a tab bar, or the two will
+ * disagree at the boundary and something will render twice or not at all.
+ *
+ * Restyling is still CSS's job. Reach for this only when the two layouts are
+ * different elements, because rendering both and hiding one doubles what a
+ * screen reader walks.
+ */
+export function usePhoneLayout(): boolean {
+  return useSidebarLayout() === "drawer";
+}
 
 export interface SidebarProps {
   readonly layout: SidebarLayout;
-  /** Only meaningful in the drawer layout. */
-  readonly open: boolean;
-  /** Closes the drawer. The caller returns focus to the trigger it owns. */
-  readonly onClose: () => void;
 }
 
-export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | null {
+/**
+ * The sidebar, full or as a rail.
+ *
+ * It used to have a third shape: an overlay drawer for phones, opened from a
+ * button in the top bar. A phone navigates from a tab bar now, so the drawer was
+ * unreachable — and an unreachable overlay carrying its own focus trap, its own
+ * Escape handling and its own backdrop is exactly the kind of thing that rots
+ * into a bug nobody can reproduce. It is gone rather than left in place.
+ */
+export function Sidebar({ layout }: SidebarProps): JSX.Element | null {
   const { t } = useTranslation();
-  const drawerRef = useRef<HTMLDivElement>(null);
-  const isDrawer = layout === "drawer";
   const isRail = layout === "rail";
   const counts = useNavCounts();
   const session = useSession();
@@ -111,41 +155,6 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
   // `as const` narrows each entry, so the ones without the flag do not have the
   // property at all — hence the `in` rather than a plain read.
   const items = NAV_ITEMS.filter((item) => isAdmin || !("adminOnly" in item && item.adminOnly));
-
-  // An overlay covers what the reader was reading, so focus moves into it and
-  // stays until it closes. Returning focus afterwards belongs to the caller,
-  // because the caller is what owns the trigger.
-  useEffect(() => {
-    if (!isDrawer || !open) return undefined;
-    drawerRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
-    return undefined;
-  }, [isDrawer, open]);
-
-  const onDrawerKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      onClose();
-      return;
-    }
-    if (event.key !== "Tab") return;
-
-    const node = drawerRef.current;
-    if (node === null) return;
-    const focusable = Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE));
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (first === undefined || last === undefined) return;
-
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
-
-  if (isDrawer && !open) return null;
 
   const nav = (
     <nav
@@ -157,26 +166,11 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
           ? "w-[var(--layout-sidebar-rail-width)]"
           : "w-[var(--layout-sidebar-width)]",
         // DESIGN.md: a floating layer takes the shadow, a docked one takes the
-        // rule. Never both on one element.
-        isDrawer ? "shadow-[var(--shadow-floating)]" : "border-r border-border",
+        // rule. This one is docked.
+        "border-r border-border",
         "bg-surface-2",
       )}
     >
-      {isDrawer ? (
-        <button
-          type="button"
-          className={cx(
-            "text-sm",
-            "self-end rounded-md border border-border-control px-2 py-1 text-ink-muted",
-            "transition-colors duration-[var(--duration-fast)] ease-out",
-            "hover:bg-surface-3 hover:text-ink",
-          )}
-          onClick={onClose}
-        >
-          {t("nav.close")}
-        </button>
-      ) : null}
-
       <SidebarBrand compact={isRail} />
       <SidebarIdentity compact={isRail} />
 
@@ -188,10 +182,14 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
             <li key={item.id}>
               <NavLink
                 to={item.path}
-                onClick={isDrawer ? onClose : undefined}
+                end={NEEDS_EXACT_MATCH.has(item.id)}
                 className={({ isActive }) =>
                   cx(
                     "text-sm",
+                    // `pa-nav` owns the leading accent bar; see utilities.css for
+                    // why it is a scaled pseudo-element keyed off aria-current
+                    // rather than a class this file toggles.
+                    "pa-nav",
                     "flex items-center gap-2 rounded-md px-2 py-2",
                     "transition-colors duration-[var(--duration-fast)] ease-out",
                     "hover:bg-surface-3 hover:text-ink",
@@ -229,52 +227,29 @@ export function Sidebar({ layout, open, onClose }: SidebarProps): JSX.Element | 
     </nav>
   );
 
-  if (!isDrawer) {
-    return <div className="fixed inset-y-0 left-0 z-[var(--z-sticky)]">{nav}</div>;
-  }
-
-  return (
-    <>
-      {/* A control, not a decorated div: dismissing by clicking away is an
-          action, and an action a pointer can take still needs a name. Keyboard
-          users close with Escape or the Close button inside the drawer. */}
-      <button
-        type="button"
-        className="fixed inset-0 z-[var(--z-backdrop)] bg-[color-mix(in_oklch,var(--bg)_72%,transparent)]"
-        onClick={onClose}
-      >
-        <span className="visually-hidden">{t("nav.closeNavigation")}</span>
-      </button>
-      <div
-        id={DRAWER_ID}
-        ref={drawerRef}
-        // biome-ignore lint/a11y/useSemanticElements: a native <dialog> is the better
-        // element, but showModal() is unimplemented in the jsdom this workspace pins
-        // (see packages/ui overlays.test.tsx), which would leave the drawer untestable.
-        // The trap, Escape handling and focus return below supply what it would give.
-        role="dialog"
-        aria-modal="true"
-        aria-label={t("nav.navigation")}
-        className="fixed inset-y-0 left-0 z-[var(--z-modal)]"
-        onKeyDown={onDrawerKeyDown}
-      >
-        {nav}
-      </div>
-    </>
-  );
+  return <div className="fixed inset-y-0 left-0 z-[var(--z-sticky)]">{nav}</div>;
 }
 
 /**
  * Geometry only. The rail is 56px of icons, so an icon has to stand in for its
  * destination; the label travels beside it, hidden, for readers.
  */
-function NavIcon({ id, label }: { readonly id: string; readonly label: string }): JSX.Element {
+export function NavIcon({
+  id,
+  label,
+  className,
+}: {
+  readonly id: string;
+  readonly label: string;
+  /** The rail draws these at 16px, the tab bar at 20. */
+  readonly className?: string | undefined;
+}): JSX.Element {
   return (
     <svg
       aria-hidden="true"
       focusable="false"
       viewBox="0 0 16 16"
-      className="size-4 flex-none"
+      className={cx("flex-none", className ?? "size-4")}
       fill="none"
       stroke="currentColor"
       strokeWidth="1.5"
@@ -287,7 +262,41 @@ function NavIcon({ id, label }: { readonly id: string; readonly label: string })
   );
 }
 
-const NAV_ICON_PATHS: Readonly<Record<string, JSX.Element>> = {
+export const NAV_ICON_PATHS: Readonly<Record<string, JSX.Element>> = {
+  /* The administrator's five had no glyph at all. That was invisible in the
+     sidebar, where they are indented under a heading and read as a group, and
+     obvious the moment the tab bar and the "everywhere else" sheet put them in a
+     flat list beside destinations that have one. */
+  admin: (
+    <>
+      <path d="M2.5 11.5a5.5 5.5 0 1 1 11 0" />
+      <path d="M8 11.5 10.5 7" />
+    </>
+  ),
+  moderation: (
+    <>
+      <path d="M13.5 8.5a5 5 0 0 1-5 5H3.5l1.2-2A5 5 0 1 1 13.5 8.5Z" />
+      <path d="M8 5.6l.8 1.6 1.7.25-1.25 1.2.3 1.7L8 9.55l-1.55.8.3-1.7L5.5 7.45l1.7-.25z" />
+    </>
+  ),
+  scan: (
+    <>
+      <path d="M2.5 5.5v-2a1 1 0 0 1 1-1h2M10.5 2.5h2a1 1 0 0 1 1 1v2M13.5 10.5v2a1 1 0 0 1-1 1h-2M5.5 13.5h-2a1 1 0 0 1-1-1v-2" />
+      <path d="M2.5 8h11" />
+    </>
+  ),
+  tags: (
+    <>
+      <path d="M8.3 2.5H3.5a1 1 0 0 0-1 1v4.8a1 1 0 0 0 .3.7l5 5a1 1 0 0 0 1.4 0l4.3-4.3a1 1 0 0 0 0-1.4l-5-5a1 1 0 0 0-.7-.3Z" />
+      <circle cx="5.6" cy="5.6" r="0.9" fill="currentColor" stroke="none" />
+    </>
+  ),
+  invites: (
+    <>
+      <rect x="2.5" y="3.5" width="11" height="9" rx="1" />
+      <path d="m2.8 4.3 5.2 4 5.2-4" />
+    </>
+  ),
   feed: (
     <>
       <circle cx="8" cy="12" r="1.25" fill="currentColor" stroke="none" />

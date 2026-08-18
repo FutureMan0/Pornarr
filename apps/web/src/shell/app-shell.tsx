@@ -9,15 +9,17 @@
  * finishing while the user is in settings is still worth announcing, and a
  * region that unmounts with the route announces nothing.
  */
+import { cx } from "@pornarr/ui";
 import type { JSX } from "react";
-import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
 import { ConnectionStatus, useConnectionState } from "../errors/connection-status";
 import { ErrorBoundary } from "../errors/error-boundary";
 import { useEventStream } from "../lib/events";
 import { PageTitleProvider } from "./page-title";
+import { useScreenKey } from "./screen-key";
 import { Sidebar, useSidebarLayout } from "./sidebar";
+import { TabBar } from "./tab-bar";
 import { TopBar } from "./top-bar";
 
 const CONTENT_OFFSET = {
@@ -29,29 +31,19 @@ const CONTENT_OFFSET = {
 export function AppShell(): JSX.Element {
   const { t } = useTranslation();
   const layout = useSidebarLayout();
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const triggerRef = useRef<HTMLDivElement>(null);
   const { announcement, status } = useEventStream();
   // Derived once, here. The hook refills the cache when a connection recovers,
   // so a second caller would refill twice; both the pip and the banner take the
   // answer as a prop.
   const connection = useConnectionState(status);
-
-  // Growing past the drawer breakpoint with the drawer open would leave an
-  // overlay on top of a sidebar that is already visible.
-  useEffect(() => {
-    if (layout !== "drawer") setDrawerOpen(false);
-  }, [layout]);
-
-  const closeDrawer = (): void => {
-    setDrawerOpen(false);
-    // DESIGN.md: focus is returned to the trigger on close. The trigger is a
-    // Button inside a ref'd wrapper, hence the query rather than a direct ref.
-    triggerRef.current?.querySelector("button")?.focus();
-  };
+  const screenKey = useScreenKey();
+  const phone = layout === "drawer";
 
   return (
-    <div className="min-h-full">
+    // A column exactly one viewport tall, so nothing has to guess how much of
+    // it the chrome took. `dvh` because a phone's address bar shrinks the
+    // viewport as you scroll and `vh` is the tall version.
+    <div className="flex h-dvh flex-col">
       <a
         href="#main"
         className={
@@ -61,22 +53,29 @@ export function AppShell(): JSX.Element {
         {t("shell.skipToContent")}
       </a>
 
-      <Sidebar layout={layout} open={drawerOpen} onClose={closeDrawer} />
+      {/* No sidebar on a phone, and no drawer behind a button either. Section C
+          of the design navigates from the bottom edge — see `tab-bar.tsx`. */}
+      {phone ? null : <Sidebar layout={layout} />}
 
       {/* Wraps both the bar and the content: the screen inside publishes its
           name and the bar above renders it, so the provider has to contain
           the two of them. */}
       <PageTitleProvider>
-        <div className={CONTENT_OFFSET[layout]}>
-          <TopBar
-            layout={layout}
-            drawerOpen={drawerOpen}
-            onOpenDrawer={() => setDrawerOpen(true)}
-            connection={connection}
-            triggerRef={triggerRef}
-          />
+        <div className={cx("flex min-h-0 flex-1 flex-col", CONTENT_OFFSET[layout])}>
+          <TopBar layout={layout} connection={connection} />
 
-          <main id="main" className="mx-auto w-full max-w-[var(--layout-content-max-width)] p-6">
+          {/* The scroll container. The window no longer scrolls, which is what
+              makes `h-full` inside a screen mean "the rest of the window" — the
+              shorts feed and the library grid both used to subtract a guessed
+              number of rem from `100vh` instead, and both guesses were wrong on
+              a phone. */}
+          <main
+            id="main"
+            className={cx(
+              "mx-auto flex min-h-0 w-full max-w-[var(--layout-content-max-width)] flex-1 flex-col overflow-y-auto",
+              phone ? "px-4 pt-4" : "p-6",
+            )}
+          >
             {/* Two registers of the same fact, on purpose: the pip in the bar
                 is always present and says which state we are in, this says what
                 it means and what is being done about it. The banner stays
@@ -87,11 +86,27 @@ export function AppShell(): JSX.Element {
                 the screen down, and the navigation out of it stays usable. The
                 boundary in `app.tsx` is the one that catches everything else. */}
             <ErrorBoundary>
-              <Outlet />
+              {/* The key is what makes the screen animate: `@starting-style`
+                  fires on insertion, so arriving somewhere new has to be a new
+                  element. `useScreenKey` is careful about what counts as new —
+                  see it for why this is not `location.pathname`. */}
+              {/* `flex-1` and a column, so a screen can ask for the rest of the
+                  height. Without it this wrapper is content-sized — `main` being a
+                  flex column stretches its children across, not down — and the
+                  shorts feed's `flex-1` resolved against nothing and ran 71px
+                  under the tab bar. */}
+              <div key={screenKey} className="pa-enter flex min-h-0 flex-1 flex-col">
+                <Outlet />
+              </div>
             </ErrorBoundary>
           </main>
         </div>
       </PageTitleProvider>
+
+      {/* In flow at the bottom of the column, not fixed over the content. A
+          fixed bar means every screen has to reserve its height and get that
+          number right; a flex child means none of them do. */}
+      {phone ? <TabBar /> : null}
 
       {/* Polite, and never focused: state that arrives over SSE is reported,
           not thrust in front of whatever the user is doing. */}

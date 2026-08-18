@@ -9,7 +9,7 @@ from datetime import UTC, date, datetime, timedelta
 from enum import StrEnum
 from uuid import UUID
 
-from sqlalchemy import Float, and_, case, func, literal, select, tuple_
+from sqlalchemy import Float, and_, case, func, literal, or_, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
@@ -95,15 +95,43 @@ def search_statement(search: MediaSearch) -> Select[tuple[Media, MediaFile, floa
     query = search.query.casefold()
     title_similarity = func.similarity(Media.normalized_title, query)
     title_distance = Media.normalized_title.op("<->")(query)
+
+    # Trigram similarity alone cannot answer a short query.
+    #
+    # `%` compares the whole query against the whole title, so two or three
+    # characters against a thirty-character title score far below the threshold
+    # no matter how well they match the start of it: "ni" found nothing at all
+    # while "night" found "Nightcall 04". That is fine for "did they mean this
+    # title" and useless for a suggestion list, which has to answer the third
+    # keystroke or it answers nothing anybody waits for.
+    #
+    # So a substring match is OR'd in. `autoescape` is not optional: without it a
+    # query containing `%` becomes a wildcard and matches the entire library.
+    #
+    # Still indexed. `ix_media_normalized_title_trgm` is GIN with `gin_trgm_ops`,
+    # which serves `LIKE '%…%'` for patterns of three characters or more; below
+    # that Postgres scans, and a household's library is a scan worth having.
+    contains = Media.normalized_title.contains(query, autoescape=True)
+
+    # A title *starting* with what was typed is the likeliest intent, so it is
+    # worth a point of relevance. Not part of the ordering: RELEVANCE sorts by
+    # trigram distance and the cursor pages on that column, so adding a term to
+    # the ORDER BY would silently break pagination.
+    starts = Media.normalized_title.startswith(query, autoescape=True)
+
     relevance = (
-        (title_similarity + case((Media.normalized_title == query, 1.0), else_=0.0))
+        (
+            title_similarity
+            + case((Media.normalized_title == query, 1.0), else_=0.0)
+            + case((starts, 0.5), else_=0.0)
+        )
         .cast(Float)
         .label("relevance")
     )
     statement = (
         select(Media, MediaFile, relevance)
         .join(MediaFile, and_(MediaFile.media_id == Media.id, MediaFile.is_active))
-        .where(Media.normalized_title.op("%")(query))
+        .where(or_(Media.normalized_title.op("%")(query), contains))
     )
     if search.quality:
         statement = statement.where(MediaFile.quality == search.quality)

@@ -1,55 +1,93 @@
+import type { paths } from "@pornarr/api-client";
 import { MediaTile } from "@pornarr/ui";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import type { InfiniteData } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import { getApiClient } from "../../lib/api";
+import { apiFailure } from "../../lib/api-error";
 import { tileBlur, useArtVisible } from "../../lib/art-visibility";
 import { usePageTitle } from "../../shell/page-title";
+import { ResumeTile } from "../continue/resume-tile";
 
-type Item = {
-  id: string;
-  title: string;
-  studio: string | null;
-  release_date: string | null;
-  duration_seconds: number | null;
-  quality: string | null;
-  resolution: string | null;
-  position_seconds: number | null;
-  progress_duration_seconds: number | null;
-  poster_url: string;
-  sprite_url: string | null;
-  rating: number | null;
-  rating_count: number;
-  tag_count: number;
-  comment_count: number;
-};
-type Page = { items: Item[]; next_offset: number | null };
+/**
+ * Derived from the contract, not transcribed from it.
+ *
+ * This screen carried a hand-written copy of the server's response — a copy
+ * nothing checked, which had already drifted: it was missing `completed`. Naming
+ * the types through `paths` makes a server change a compile error here, which is
+ * the whole point of generating the client.
+ */
+type Page = paths["/api/library"]["get"]["responses"]["200"]["content"]["application/json"];
+type Item = Page["items"][number];
+
+/** How many titles one page brings back. */
+const PAGE_SIZE = 48;
 
 /** The rating floors the design offers as chips. */
 const RATING_FILTERS = [4, 3] as const;
+
+/**
+ * How many half-watched titles the row shows before deferring to `/continue`.
+ *
+ * Five is the column count the design was drawn at, so the row is one row on a
+ * wide screen and wraps to two at most on a narrow one.
+ */
+const RESUME_ROW = 5;
 
 export function LibraryRoute() {
   const { t } = useTranslation();
   const [ratingFloor, setRatingFloor] = useState<number | null>(null);
 
-  const library = useInfiniteQuery<Page, Error>({
+  // The last generic is the page param. Without it `pageParam` arrives as
+  // `unknown` and the offset has to be cast, which is the cast this file was
+  // created to avoid.
+  const library = useInfiniteQuery<Page, Error, InfiniteData<Page>, readonly unknown[], number>({
     queryKey: ["library", ratingFloor],
     initialPageParam: 0,
     getNextPageParam: (page) => page.next_offset ?? undefined,
     queryFn: async ({ pageParam }): Promise<Page> => {
-      const filter = ratingFloor === null ? "" : `&rating_gte=${ratingFloor}`;
-      const response = await fetch(`/api/library?limit=48&offset=${pageParam}${filter}`);
-      if (!response.ok) throw new Error();
-      return response.json() as Promise<Page>;
+      const { data, error, response } = await getApiClient().GET("/api/library", {
+        params: {
+          query: {
+            limit: PAGE_SIZE,
+            offset: pageParam,
+            // Omitted rather than sent as null: the endpoint validates the
+            // floor, and `rating_gte=null` is a 422 on every unfiltered load.
+            ...(ratingFloor === null ? {} : { rating_gte: ratingFloor }),
+          },
+        },
+      });
+      if (!data || error) throw apiFailure(error, response);
+      return data;
     },
   });
 
-  // Resume position comes from the same rows, so "continue watching" is a
-  // partition of the page rather than a second request.
-  const resuming = (items: Item[]): Item[] =>
-    items.filter((item) => item.position_seconds !== null && item.position_seconds > 0);
+  /**
+   * What you are part-way through, from the endpoint that knows.
+   *
+   * This used to be a filter over the loaded library pages, which was wrong in
+   * both directions: the row *grew* as you scrolled, because each new page
+   * contributed more half-watched titles to a row above the one you were
+   * reading; and a title you were half-way through on page five was missing
+   * until you scrolled that far. `/api/playback/continue-watching` answers the
+   * question directly, in the order the server considers most recent, and the
+   * answer does not change while you scroll.
+   */
+  const resuming = useQuery({
+    queryKey: ["continue-watching"],
+    queryFn: async () => {
+      const { data, error, response } = await getApiClient().GET("/api/playback/continue-watching");
+      if (!data || error) throw apiFailure(error, response);
+      return data;
+    },
+    // A failing row must not take the library with it. The grid below is the
+    // screen; this is a shortcut across the top of it.
+    retry: false,
+  });
   const items = library.data?.pages.flatMap((page) => page.items) ?? [];
 
   // The count is what has loaded, not what exists: the library pages as you
@@ -101,30 +139,45 @@ export function LibraryRoute() {
         </fieldset>
       </div>
 
+      {/* Outside the empty check below, because the two answer different
+          questions. A rating filter that matches nothing says so about the
+          grid; it says nothing about what you were half-way through, and
+          hiding the row behind an empty grid meant a filter could make your
+          own unfinished titles disappear. */}
+      {resuming.data !== undefined && resuming.data.length > 0 ? (
+        <section aria-labelledby="continue-section" className="flex flex-col gap-3">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2
+              id="continue-section"
+              className="text-2xs uppercase tracking-[0.08em] text-ink-muted"
+            >
+              {t("library.sections.continue")}
+            </h2>
+            {/* The row is a shortcut, not the list. Without this link the
+                Continue destination in the navigation and the row at the top
+                of the library have no relationship to each other. */}
+            {resuming.data.length > RESUME_ROW ? (
+              <Link to="/continue" className="text-2xs text-ink-muted hover:text-ink">
+                {t("media.seeAll")}
+              </Link>
+            ) : null}
+          </div>
+          <ul className="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4">
+            {resuming.data.slice(0, RESUME_ROW).map((item) => (
+              <li key={item.media_id}>
+                <ResumeTile item={item} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {items.length === 0 ? (
         <p className="text-sm text-ink-muted">
           {ratingFloor === null ? t("library.empty") : t("library.noMatches")}
         </p>
       ) : (
         <>
-          {resuming(items).length > 0 ? (
-            <section aria-labelledby="continue-section" className="flex flex-col gap-3">
-              <h2
-                id="continue-section"
-                className="text-2xs uppercase tracking-[0.08em] text-ink-muted"
-              >
-                {t("library.sections.continue")}
-              </h2>
-              <ul className="grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4">
-                {resuming(items).map((item) => (
-                  <li key={item.id}>
-                    <MediaCard item={item} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-
           <section aria-labelledby="everything-section" className="flex flex-col gap-3">
             <h2
               id="everything-section"
@@ -147,13 +200,33 @@ export function LibraryRoute() {
 
 function VirtualGrid({ items, onEnd }: { readonly items: Item[]; readonly onEnd: () => void }) {
   const parentRef = useRef<HTMLDivElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(1);
+
+  /**
+   * How many tiles fit, counted rather than calculated.
+   *
+   * This divided the width by a hardcoded 216 — the 12.5rem minimum plus the
+   * gap. The moment a phone got a narrower minimum so that two tiles fit, the
+   * arithmetic said one and the CSS drew two: the virtualiser would have sliced
+   * one item per row and left every second tile out of the list entirely.
+   *
+   * `grid-template-columns` computes to the *used* track sizes, and `auto-fill`
+   * creates the empty tracks too — so one rendered row answers the question for
+   * the whole grid, whatever the breakpoint decides. One source of truth, and it
+   * is the stylesheet.
+   */
   useEffect(() => {
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (entry) setColumns(Math.max(1, Math.floor(entry.contentRect.width / 216)));
-    });
+    const measure = (): void => {
+      const row = rowRef.current;
+      if (row === null) return;
+      const tracks = window.getComputedStyle(row).gridTemplateColumns.split(" ").length;
+      setColumns(Math.max(1, tracks));
+    };
+
+    const observer = new ResizeObserver(measure);
     if (parentRef.current) observer.observe(parentRef.current);
+    measure();
     return () => observer.disconnect();
   }, []);
   const rows = Math.ceil(items.length / columns);
@@ -176,7 +249,9 @@ function VirtualGrid({ items, onEnd }: { readonly items: Item[]; readonly onEnd:
         {virtualizer.getVirtualItems().map((row) => (
           <div
             key={row.key}
-            className="absolute left-0 grid w-full grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4"
+            // Only the first row is measured; every row lays out identically.
+            ref={row.index === 0 ? rowRef : undefined}
+            className="absolute left-0 grid w-full grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-4 sm:grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))]"
             style={{ transform: `translateY(${row.start}px)` }}
           >
             {items.slice(row.index * columns, (row.index + 1) * columns).map((item) => (

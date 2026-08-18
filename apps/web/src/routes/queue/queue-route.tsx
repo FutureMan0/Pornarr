@@ -26,6 +26,7 @@ import { useFormat } from "../../i18n/format";
 import { getApiClient } from "../../lib/api";
 import { apiFailure } from "../../lib/api-error";
 import { usePageTitle } from "../../shell/page-title";
+import { usePhoneLayout } from "../../shell/sidebar";
 
 const REFRESH_MILLISECONDS = 5_000;
 
@@ -48,6 +49,7 @@ const FINISHED = new Set([...DONE, "failed"]);
 export function QueueRoute(): JSX.Element {
   const { t } = useTranslation();
   const format = useFormat();
+  const phone = usePhoneLayout();
   const [tab, setTab] = useState<Tab>("active");
 
   const summary = useQuery({
@@ -91,7 +93,7 @@ export function QueueRoute(): JSX.Element {
 
   return (
     <div className="flex flex-col gap-6">
-      <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <ul className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Stat label={t("queue.active")} value={summary.data?.active} />
         <Stat label={t("queue.queued")} value={summary.data?.queued} />
         <Stat
@@ -128,6 +130,45 @@ export function QueueRoute(): JSX.Element {
         <p className="text-sm text-ink-muted">{t("queue.loading")}</p>
       ) : rows.length === 0 ? (
         <p className="text-sm text-ink-muted">{t(`queue.empty.${tab}` as "queue.empty.active")}</p>
+      ) : phone ? (
+        /* C8 draws the queue as a list of cards, and it is right: five columns
+           at 46rem is a table you drag sideways on a phone, which drags the
+           whole page with it. The card carries the same five facts. */
+        <ul className="flex flex-col gap-2">
+          {rows.map((job) => (
+            <li key={job.id} className="card gap-2">
+              <div className="flex flex-col gap-0.5">
+                <span className="break-words text-sm text-ink">
+                  {job.title ?? job.release_guid}
+                </span>
+                <span className="text-2xs text-ink-muted">
+                  {job.client_name} · {job.protocol}
+                </span>
+                {job.error === null ? null : (
+                  <span role="alert" className="text-2xs text-[var(--pa-accent-300)]">
+                    {job.error}
+                  </span>
+                )}
+              </div>
+
+              <Progress
+                remaining={job.remaining_bytes}
+                size={job.size_bytes}
+                unknownLabel={t("queue.progressUnknown")}
+              />
+
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs text-ink-muted">
+                <Stage status={job.status} />
+                <span className="tabular-nums">
+                  {job.download_speed_bytes === null ? "—" : format.speed(job.download_speed_bytes)}
+                </span>
+                <span className="tabular-nums">
+                  {format.estimate(job.queue_estimate.low_seconds, job.queue_estimate.high_seconds)}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
       ) : (
         <div className="min-w-0 overflow-x-auto">
           {/* `min-w-0` on the wrapper, not just here: without it the wrapper
