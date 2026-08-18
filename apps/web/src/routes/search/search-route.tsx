@@ -195,7 +195,10 @@ function LocalResults({
       ) : search.data?.items.length === 0 ? (
         <p className="text-sm text-ink-muted">{t("search.local.empty")}</p>
       ) : (
-        <div className="overflow-x-auto border border-border">
+        // A sideways-scrolling region has to be focusable, or the columns it
+        // hides are unreachable without a pointer.
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: see the comment above.
+        <div className="overflow-x-auto border border-border" tabIndex={0}>
           <table className="w-full min-w-[44rem] text-sm">
             <thead className="bg-surface-2 text-left text-xs text-ink-muted">
               <tr>
@@ -274,7 +277,8 @@ function ExternalResults({
       ) : (
         <>
           <IndexerStatus statuses={search.data?.statuses ?? {}} names={names} />
-          <div className="overflow-x-auto border border-border">
+          {/* biome-ignore lint/a11y/noNoninteractiveTabindex: focusable for the same reason as the local results table. */}
+          <div className="overflow-x-auto border border-border" tabIndex={0}>
             <table className="w-full min-w-[68rem] text-sm">
               <thead className="bg-surface-2 text-left text-xs text-ink-muted">
                 <tr>
@@ -535,7 +539,12 @@ function value(params: URLSearchParams, key: string): string | undefined {
   return params.get(key) || undefined;
 }
 function numberValue(params: URLSearchParams, key: string): number | undefined {
-  const parsed = Number(params.get(key));
+  // ``Number(null)`` and ``Number("")`` are both zero, so an untouched filter
+  // used to send a real bound: a maximum size of zero bytes excludes every
+  // file and the search screen found nothing the API happily returns.
+  const raw = params.get(key);
+  if (raw === null || raw.trim() === "") return undefined;
+  const parsed = Number(raw);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
 function useDebouncedValue(value: string): string {

@@ -17,6 +17,15 @@ async function responseJson<T>(url: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+function releaseSession(sessionId: string): void {
+  void fetch(`/api/transcode/sessions/${sessionId}`, {
+    method: "DELETE",
+    headers: csrfHeaders(),
+    credentials: "same-origin",
+    keepalive: true,
+  });
+}
+
 export function VideoPlayer({
   mediaId,
   title,
@@ -33,15 +42,21 @@ export function VideoPlayer({
     async function load() {
       try {
         const info = await responseJson<PlaybackInfo>(`/api/media/${mediaId}/playback-info`);
-        const source = info.direct_play
-          ? `/api/media/${mediaId}/stream`
-          : await responseJson<TranscodeSession>(`/api/transcode/media/${mediaId}/sessions`, {
-              method: "POST",
-              headers: csrfHeaders(),
-            });
-        if (cancelled || video.current === null) return;
-        if (typeof source === "string") {
-          video.current.src = source;
+        if (info.direct_play) {
+          if (cancelled || video.current === null) return;
+          video.current.src = `/api/media/${mediaId}/stream`;
+          return;
+        }
+        const source = await responseJson<TranscodeSession>(
+          `/api/transcode/media/${mediaId}/sessions`,
+          { method: "POST", headers: csrfHeaders() },
+        );
+        // A session that finished being created after the player went away is
+        // still holding a transcode slot, and the cap is low enough that the
+        // next player would be refused one. The cleanup below cannot release it
+        // because it did not exist yet, so release it here.
+        if (cancelled || video.current === null) {
+          releaseSession(source.session_id);
           return;
         }
         session.current = source.session_id;
@@ -64,12 +79,7 @@ export function VideoPlayer({
       hls.current?.destroy();
       hls.current = null;
       if (session.current !== null) {
-        void fetch(`/api/transcode/sessions/${session.current}`, {
-          method: "DELETE",
-          headers: csrfHeaders(),
-          credentials: "same-origin",
-          keepalive: true,
-        });
+        releaseSession(session.current);
         session.current = null;
       }
     };
