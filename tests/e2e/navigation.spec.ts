@@ -116,6 +116,46 @@ test.describe("the designed screens render and hold their contrast", () => {
 });
 
 /**
+ * The second accent, held to the same floor as the first.
+ *
+ * The delivered token set ships rose and amber, and amber is not a filter over
+ * rose — it redefines the accent ramp, the ground stack and the text ramp. A
+ * contrast pass that only ever sees the default accent is a pass over half the
+ * product, and the half it skips is the one nobody looks at while working.
+ *
+ * The choice is seeded into storage rather than poked onto `<html>`, so this also
+ * exercises `applyStoredTheme()` on the path a returning reader takes.
+ */
+test.describe("the amber accent", () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.addInitScript(() => {
+      window.localStorage.setItem("pornarr-theme", "amber");
+    });
+  });
+
+  const screens: readonly (readonly [string, string])[] = [
+    ["/library", "Library"],
+    ["/shorts", "Shorts"],
+    ["/shorts/browse", "Shorts"],
+    ["/continue", "Continue watching"],
+    ["/settings", "Settings"],
+    ["/admin", "Dashboard"],
+  ];
+
+  for (const [path, heading] of screens) {
+    test(`${path} holds its contrast in amber`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { name: heading, level: 1 })).toBeVisible();
+      // The attribute, not just the absence of violations: a theme that failed
+      // to apply would pass an accessibility check by being the default.
+      await expect(page.locator("html")).toHaveAttribute("data-theme", "amber");
+      await expectNoAccessibilityViolations(page);
+    });
+  }
+});
+
+/**
  * Joining, which is the one flow reachable without an account.
  */
 test.describe("an invitation", () => {

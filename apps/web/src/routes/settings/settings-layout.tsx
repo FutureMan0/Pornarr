@@ -16,11 +16,19 @@ import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
 
+import { useSession } from "../../auth/session";
+
 export interface SettingsSection {
   readonly id: string;
   readonly path: string;
   /** Match the path exactly. The index section needs it; the others do not. */
   readonly end: boolean;
+  /**
+   * Hidden from guests. Not a security measure — every endpoint behind these
+   * screens checks the role itself — but a tab that answers 403 has no business
+   * being in somebody's settings.
+   */
+  readonly adminOnly?: boolean;
 }
 
 export const SETTINGS_SECTIONS = [
@@ -28,10 +36,10 @@ export const SETTINGS_SECTIONS = [
   // match the path exactly — without `end` every other tab would sit under an
   // active "general" as well.
   { id: "general", path: "/settings", end: true },
-  { id: "rootFolders", path: "/settings/root-folders", end: false },
-  { id: "quality", path: "/settings/quality", end: false },
-  { id: "metadata", path: "/settings/metadata", end: false },
-  { id: "peers", path: "/settings/peers", end: false },
+  { id: "rootFolders", adminOnly: true, path: "/settings/root-folders", end: false },
+  { id: "quality", adminOnly: true, path: "/settings/quality", end: false },
+  { id: "metadata", adminOnly: true, path: "/settings/metadata", end: false },
+  { id: "peers", adminOnly: true, path: "/settings/peers", end: false },
 ] as const satisfies readonly SettingsSection[];
 
 /** Read from the table so a link to it cannot outlive the route. */
@@ -41,12 +49,19 @@ export const ROOT_FOLDERS_PATH =
 
 export function SettingsLayout(): JSX.Element {
   const { t } = useTranslation();
+  const session = useSession();
+  // Until the session answers, show the guest set. Rendering an administrator's
+  // tab and withdrawing it is worse than adding it a beat late.
+  const isAdmin = session.data?.role === "admin";
+  const sections = SETTINGS_SECTIONS.filter(
+    (section) => isAdmin || !("adminOnly" in section && section.adminOnly),
+  );
 
   return (
     <div className="flex flex-col gap-6">
       <nav aria-label={t("settings.sections.label")}>
         <ul className="flex flex-wrap gap-1 border-b border-border pb-2">
-          {SETTINGS_SECTIONS.map((section) => (
+          {sections.map((section) => (
             <li key={section.id}>
               <NavLink
                 to={section.path}

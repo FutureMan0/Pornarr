@@ -75,12 +75,33 @@
   background: var(--surface-2);
   box-shadow: var(--shadow-floating);
   opacity: 1;
-  transition: opacity var(--duration-fast) var(--ease);
+  translate: 0 0;
+  scale: 1;
+  transform-origin: top left;
+  transition: opacity var(--duration-fast) var(--ease), translate var(--duration-fast) var(--ease),
+    scale var(--duration-fast) var(--ease);
 }
 
+/* Pinned to the trigger's right edge, so the surface grows leftwards and away
+   from the window edge instead of into it. */
+.alignEnd {
+  left: auto;
+  right: 0;
+  transform-origin: top right;
+}
+
+/* It arrives from the trigger rather than appearing on top of it: a few pixels
+   of travel and a hair of scale, over the fast duration, which is what makes the
+   surface read as belonging to the button that opened it.
+ *
+ * The distance is one space step, not a token of its own — motion this small
+ * has no business inventing a scale. Under reduced motion the duration tokens
+ * collapse to 1ms and this becomes the instant change it always was. */
 @starting-style {
   .menu {
     opacity: 0;
+    translate: 0 calc(var(--space-1) * -1);
+    scale: 0.98;
   }
 }
 

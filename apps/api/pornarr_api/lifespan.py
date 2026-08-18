@@ -9,8 +9,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import AsyncIterator
+import signal
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager, suppress
+from types import FrameType
+from typing import Any
 
 import redis.asyncio as redis
 from arq.connections import RedisSettings, create_pool
@@ -32,6 +35,60 @@ async def _reap_transcode_sessions(registry: TranscodeSessionRegistry) -> None:
     while True:
         await registry.reap_expired()
         await asyncio.sleep(TRANSCODE_REAP_INTERVAL_SECONDS)
+
+
+def _watch_for_shutdown(shutting_down: asyncio.Event) -> Callable[[], None]:
+    """Set `shutting_down` the moment a termination signal arrives.
+
+    WHY NOT THE LIFESPAN'S OWN SHUTDOWN. uvicorn closes its listening sockets,
+    then *waits for open connections to finish*, and only then runs the lifespan
+    shutdown. `/api/events` is a server-sent event stream that lives as long as
+    the browser wants it, so a flag set on the way out is set after the thing it
+    was meant to interrupt has already blocked — one idle tab was enough to make
+    SIGTERM hang until the container's kill timeout, and to hang `--reload` on
+    every code change in development.
+
+    The signal is the only notice that arrives early enough. uvicorn installs its
+    own handler before serving, so this chains rather than replaces: ours sets
+    the event, then the previous handler runs and the server shuts down exactly
+    as it would have.
+
+    Returns a callable that puts the previous handlers back.
+    """
+    loop = asyncio.get_running_loop()
+    previous: dict[signal.Signals, Any] = {}
+
+    def install(number: signal.Signals) -> None:
+        earlier = signal.getsignal(number)
+        # `getsignal` also answers with SIG_DFL or SIG_IGN, which are ints and
+        # not callables. Excluding int is what separates "a handler to chain to"
+        # from "a disposition the operating system understands".
+        chain = None if isinstance(earlier, int) or not callable(earlier) else earlier
+
+        def handle(signum: int, frame: FrameType | None) -> None:
+            # `call_soon_threadsafe`: a signal handler runs between bytecodes on
+            # the main thread and must not touch the loop's internals directly.
+            loop.call_soon_threadsafe(shutting_down.set)
+            if chain is not None:
+                chain(signum, frame)
+
+        signal.signal(number, handle)
+        previous[number] = earlier
+
+    for number in (signal.SIGTERM, signal.SIGINT):
+        try:
+            install(number)
+        except ValueError:
+            # Not the main thread — a test harness, or an embedder running the
+            # app inside a worker. The `finally` in the lifespan still covers it.
+            logger.debug("no signal handler for %s: not the main thread", number.name)
+
+    def restore() -> None:
+        for number, earlier in previous.items():
+            with suppress(ValueError):
+                signal.signal(number, earlier)
+
+    return restore
 
 
 @asynccontextmanager
@@ -72,10 +129,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     reaper = asyncio.create_task(_reap_transcode_sessions(app.state.transcode_sessions))
 
+    app.state.shutting_down = asyncio.Event()
+    restore_signals = _watch_for_shutdown(app.state.shutting_down)
+
     logger.info("api started in %s mode", settings.app_env)
     try:
         yield
     finally:
+        # Belt and braces. The signal handler above is what fires in time; this
+        # covers a shutdown that arrives some other way — a test harness exiting
+        # the context manager, or an embedder driving the lifespan directly.
+        app.state.shutting_down.set()
+        restore_signals()
         reaper.cancel()
         with suppress(asyncio.CancelledError):
             await reaper

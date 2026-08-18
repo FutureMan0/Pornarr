@@ -7,7 +7,7 @@
  * that the result count says what it means when the server admits it is a
  * floor rather than a total.
  */
-import { cleanup, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
@@ -169,5 +169,66 @@ describe("the result count", () => {
     // A capped count printed as an exact total is the same lie in a quieter
     // voice — the sentence changes, not just the number.
     expect(await screen.findByText("86 of more than 3268")).toBeTruthy();
+  });
+});
+
+/**
+ * The filters on a phone, as C3 draws them: a sheet, not a wall.
+ *
+ * Eight controls stacked above the first result is a form to fill in rather than
+ * a search, and it is what a 390px screen used to show. What is worth pinning
+ * down is that moving them behind a button did not take them away: the sheet
+ * still writes to the address, so a filtered search is still something you can
+ * bookmark and send to somebody.
+ */
+describe("filters on a phone", () => {
+  test("are behind a button, and still reach the address", async () => {
+    setViewportWidth(390);
+    const user = userEvent.setup();
+    const { router } = renderApp("/search?q=night");
+
+    // Not on the screen: the results are.
+    expect(screen.queryByLabelText("Minimum seeders")).toBeNull();
+
+    await user.click(await screen.findByRole("button", { name: /^Filters/ }));
+
+    const sheet = await screen.findByRole("dialog");
+    const quality = within(sheet).getByLabelText("Quality");
+    await user.selectOptions(quality, "1080p");
+
+    await waitFor(() => expect(currentParams(router).get("quality")).toBe("1080p"));
+  });
+
+  test("say how many are doing something", async () => {
+    setViewportWidth(390);
+    renderApp("/search?q=night&quality=1080p&sort=relevance");
+
+    // `sort=relevance` is the default, so it is set without being a filter —
+    // counting it would tell every reader they have a filter on.
+    expect(await screen.findByRole("button", { name: "Filters (1)" })).not.toBeNull();
+  });
+
+  test("clear all empties them and leaves the query alone", async () => {
+    setViewportWidth(390);
+    const user = userEvent.setup();
+    const { router } = renderApp("/search?q=night&quality=1080p&minimum_seeders=5");
+
+    await user.click(await screen.findByRole("button", { name: /^Filters/ }));
+    const sheet = await screen.findByRole("dialog");
+    await user.click(within(sheet).getByRole("button", { name: "Clear all" }));
+
+    await waitFor(() => expect(currentParams(router).get("quality")).toBeNull());
+    expect(currentParams(router).get("minimum_seeders")).toBeNull();
+    // The query is not a filter. Clearing the filters must not throw away what
+    // the reader was actually looking for.
+    expect(currentParams(router).get("q")).toBe("night");
+  });
+
+  test("a desktop keeps them on the screen", async () => {
+    setViewportWidth(1440);
+    renderApp("/search?q=night");
+
+    expect(await screen.findByLabelText("Minimum seeders")).not.toBeNull();
+    expect(screen.queryByRole("button", { name: /^Filters/ })).toBeNull();
   });
 });

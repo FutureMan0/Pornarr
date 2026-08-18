@@ -125,7 +125,12 @@ test("picking a facet filters the library by that value", async () => {
   await user.selectOptions(screen.getByLabelText("Studio"), "Probe Studio");
 
   await waitFor(() => {
-    expect(requested.some((search) => search.includes("studio=Probe+Studio"))).toBe(true);
+    // Parsed rather than matched as text: the generated client percent-encodes
+    // the space where `URLSearchParams` would write a plus, and the assertion
+    // is about which value was sent, not how it was spelled on the wire.
+    expect(
+      requested.some((search) => new URLSearchParams(search).get("studio") === "Probe Studio"),
+    ).toBe(true);
   });
   expect(
     await screen.findByRole("heading", { name: "Nothing matches these filters" }),

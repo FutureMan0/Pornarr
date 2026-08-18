@@ -15,16 +15,44 @@ import type { FormEvent, JSX } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useFormat } from "../../i18n/format";
 import { getApiClient } from "../../lib/api";
 import { apiFailure } from "../../lib/api-error";
 
 export interface CommentsPanelProps {
   readonly mediaId: string;
+  /**
+   * Where the composer sits and whether the list scrolls. Nothing else.
+   *
+   * `panel` is read top to bottom with the page, so the composer is above the
+   * conversation and the list grows as long as it likes. `column` has a fixed
+   * height beside the shorts feed, so the list scrolls inside itself and the
+   * composer sits at the bottom, where a messaging surface puts it.
+   *
+   * The remarks themselves look the same either way. They used to differ — cards
+   * here, a conversation there — which is two answers to "what does a comment
+   * look like" and a second place to fix a bug in the report button.
+   */
+  readonly layout?: "panel" | "column" | undefined;
+  /**
+   * Drop the visible heading, for a container that already has a title.
+   *
+   * The accessible name stays — the heading becomes `visually-hidden` rather
+   * than disappearing — because `aria-labelledby` still points at it and a
+   * section with no name is a section a screen reader cannot announce.
+   */
+  readonly headingVisible?: boolean | undefined;
 }
 
-export function CommentsPanel({ mediaId }: CommentsPanelProps): JSX.Element {
+export function CommentsPanel({
+  mediaId,
+  layout = "panel",
+  headingVisible = true,
+}: CommentsPanelProps): JSX.Element {
   const { t } = useTranslation();
+  const format = useFormat();
   const cache = useQueryClient();
+  const column = layout === "column";
   const key = ["comments", mediaId] as const;
   const [draft, setDraft] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
@@ -114,28 +142,51 @@ export function CommentsPanel({ mediaId }: CommentsPanelProps): JSX.Element {
     if (draft.trim().length > 0) post.mutate(draft.trim());
   };
 
+  /**
+   * One line that grows with what is typed.
+   *
+   * This was a three-row box with a full-width button under it, which took more
+   * room than the conversation it sat above and read as a form to fill in rather
+   * than somewhere to say something. `field-sizing-content` is what lets one row
+   * be honest: it grows the moment there is more to hold.
+   */
+  const composer = (
+    <form onSubmit={submit} className="flex flex-none items-start gap-2">
+      <label htmlFor="comment-draft" className="visually-hidden">
+        {t("comments.add")}
+      </label>
+      <textarea
+        id="comment-draft"
+        value={draft}
+        maxLength={4000}
+        rows={1}
+        placeholder={t("comments.placeholder")}
+        onChange={(event) => setDraft(event.target.value)}
+        className="min-h-9 flex-1 resize-none rounded-lg bg-surface-3 px-3 py-2 text-sm text-ink placeholder:text-ink-faint field-sizing-content focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--primary)]"
+      />
+      <Button type="submit" disabled={post.isPending || draft.trim().length === 0}>
+        {t("comments.post")}
+      </Button>
+    </form>
+  );
+
   return (
-    <section aria-labelledby="comments-heading" className="flex flex-col gap-4">
-      <h2 id="comments-heading" className="text-sm text-ink">
+    <section
+      aria-labelledby="comments-heading"
+      className={column ? "flex h-full min-h-0 flex-col gap-3" : "flex flex-col gap-4"}
+    >
+      <h2
+        id="comments-heading"
+        className={headingVisible ? "flex-none text-sm text-ink" : "visually-hidden"}
+      >
         {t("comments.title", { count: comments.data?.length ?? 0 })}
       </h2>
 
-      <form onSubmit={submit} className="flex flex-col gap-2">
-        <label htmlFor="comment-draft" className="text-xs text-ink-muted">
-          {t("comments.add")}
-        </label>
-        <textarea
-          id="comment-draft"
-          value={draft}
-          maxLength={4000}
-          rows={3}
-          onChange={(event) => setDraft(event.target.value)}
-          className="rounded-md border border-border bg-surface-2 p-2 text-sm text-ink"
-        />
-        <Button type="submit" disabled={post.isPending || draft.trim().length === 0}>
-          {t("comments.post")}
-        </Button>
-      </form>
+      {/* In a column the composer is at the bottom, where a messaging surface
+          puts it and where the thumb already is. In a panel it stays at the top,
+          because the panel is read from the top and the list under it can be
+          long. */}
+      {column ? null : composer}
 
       {comments.isError ? (
         <p role="alert" className="text-sm text-ink">
@@ -143,104 +194,143 @@ export function CommentsPanel({ mediaId }: CommentsPanelProps): JSX.Element {
         </p>
       ) : null}
 
-      <ul className="flex flex-col gap-3">
-        {(comments.data ?? []).map((comment) => (
-          <li key={comment.id} className="flex flex-col gap-2 rounded-md bg-surface-2 p-3">
-            <div className="flex flex-wrap items-center gap-2">
-              {/* No name under the default configuration; the server simply
-                  does not send one. `is_own` is what the buttons key off. */}
-              <span className="text-xs text-ink-muted">
-                {comment.author ?? (comment.is_own ? t("comments.you") : t("comments.someone"))}
-              </span>
-              {comment.stars === null ? null : (
-                <Stars
-                  value={comment.stars}
-                  label={t("library.rating.value", { value: comment.stars, count: 1 })}
-                />
-              )}
-              {comment.state === "hidden" ? (
-                <span className="text-2xs text-[var(--pa-accent-300)]">{t("comments.hidden")}</span>
-              ) : null}
-              {comment.edited_at === null ? null : (
-                <span className="text-2xs text-ink-muted">{t("comments.edited")}</span>
-              )}
-            </div>
+      {comments.data !== undefined && comments.data.length === 0 ? (
+        <p className="flex-none text-2xs text-ink-faint">{t("comments.empty")}</p>
+      ) : null}
 
-            {editing === comment.id ? (
-              <div className="flex flex-col gap-2">
-                <textarea
-                  value={editDraft}
-                  rows={3}
-                  maxLength={4000}
-                  onChange={(event) => setEditDraft(event.target.value)}
-                  className="rounded-md border border-border bg-surface p-2 text-sm text-ink"
-                />
-                <span className="flex gap-2">
-                  <Button
-                    onClick={() => edit.mutate({ id: comment.id, body: editDraft.trim() })}
-                    disabled={edit.isPending || editDraft.trim().length === 0}
-                  >
-                    {t("comments.save")}
-                  </Button>
-                  <Button variant="ghost" onClick={() => setEditing(null)}>
-                    {t("comments.cancel")}
-                  </Button>
-                </span>
-              </div>
-            ) : (
-              <p className="whitespace-pre-wrap text-sm text-ink">{comment.body}</p>
-            )}
-
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                aria-pressed={comment.you_liked}
-                onClick={() => like.mutate({ id: comment.id, on: !comment.you_liked })}
-                className={
-                  comment.you_liked
-                    ? "text-xs text-[var(--pa-accent-300)]"
-                    : "text-xs text-ink-muted hover:text-ink"
-                }
+      <ul
+        className={
+          column
+            ? "-mr-2 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-2"
+            : "flex flex-col gap-3"
+        }
+      >
+        {(comments.data ?? []).map((comment) => {
+          const who =
+            comment.author ?? (comment.is_own ? t("comments.you") : t("comments.someone"));
+          return (
+            <li key={comment.id} className="flex gap-2.5">
+              {/* An initial, not an avatar. There is no picture to show — the
+                server sends no author at all under the default configuration —
+                and a letter is enough to tell one remark from the next. */}
+              <span
+                aria-hidden="true"
+                className="grid size-8 flex-none place-items-center rounded-full bg-surface-3 text-2xs text-ink-muted"
               >
-                {t("comments.like", { count: comment.likes })}
-              </button>
+                {who.slice(0, 1).toUpperCase()}
+              </span>
 
-              {comment.is_own ? (
-                <>
-                  <button
-                    type="button"
-                    className="text-xs text-ink-muted hover:text-ink"
-                    onClick={() => {
-                      setEditing(comment.id);
-                      setEditDraft(comment.body);
-                    }}
-                  >
-                    {t("comments.edit")}
-                  </button>
-                  <button
-                    type="button"
-                    className="text-xs text-ink-muted hover:text-ink"
-                    onClick={() => remove.mutate(comment.id)}
-                  >
-                    {t("comments.delete")}
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  className="text-xs text-ink-muted hover:text-ink"
-                  disabled={reported.has(comment.id)}
-                  onClick={() => report.mutate(comment.id)}
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* No name under the default configuration; the server simply
+                  does not send one. `is_own` is what the buttons key off. */}
+                  <span className="text-xs text-ink-muted">{who}</span>
+                  {/* The comment carried a timestamp the panel never printed. In a
+                  conversation, when something was said is half of reading it. */}
+                  <span className="text-2xs text-ink-faint">
+                    {format.relativeDate(new Date(comment.created_at))}
+                  </span>
+                  {comment.stars === null ? null : (
+                    <Stars
+                      value={comment.stars}
+                      label={t("library.rating.value", { value: comment.stars, count: 1 })}
+                    />
+                  )}
+                  {comment.state === "hidden" ? (
+                    <span className="text-2xs text-[var(--pa-accent-300)]">
+                      {t("comments.hidden")}
+                    </span>
+                  ) : null}
+                  {comment.edited_at === null ? null : (
+                    <span className="text-2xs text-ink-muted">{t("comments.edited")}</span>
+                  )}
+                </div>
+
+                {editing === comment.id ? (
+                  <div className="flex flex-col gap-2">
+                    <textarea
+                      value={editDraft}
+                      rows={3}
+                      maxLength={4000}
+                      onChange={(event) => setEditDraft(event.target.value)}
+                      className="rounded-md border border-border bg-surface p-2 text-sm text-ink"
+                    />
+                    <span className="flex gap-2">
+                      <Button
+                        onClick={() => edit.mutate({ id: comment.id, body: editDraft.trim() })}
+                        disabled={edit.isPending || editDraft.trim().length === 0}
+                      >
+                        {t("comments.save")}
+                      </Button>
+                      <Button variant="ghost" onClick={() => setEditing(null)}>
+                        {t("comments.cancel")}
+                      </Button>
+                    </span>
+                  </div>
+                ) : (
+                  <p className="whitespace-pre-wrap text-sm text-ink">{comment.body}</p>
+                )}
+
+                <div
+                  className={
+                    column
+                      ? "flex flex-wrap items-center gap-3 pt-0.5"
+                      : "flex flex-wrap items-center gap-2"
+                  }
                 >
-                  {/* Acknowledged, never counted. How many others reported the
+                  <button
+                    type="button"
+                    aria-pressed={comment.you_liked}
+                    onClick={() => like.mutate({ id: comment.id, on: !comment.you_liked })}
+                    className={
+                      comment.you_liked
+                        ? "text-xs text-[var(--pa-accent-300)]"
+                        : "text-xs text-ink-muted hover:text-ink"
+                    }
+                  >
+                    {t("comments.like", { count: comment.likes })}
+                  </button>
+
+                  {comment.is_own ? (
+                    <>
+                      <button
+                        type="button"
+                        className="text-xs text-ink-muted hover:text-ink"
+                        onClick={() => {
+                          setEditing(comment.id);
+                          setEditDraft(comment.body);
+                        }}
+                      >
+                        {t("comments.edit")}
+                      </button>
+                      <button
+                        type="button"
+                        className="text-xs text-ink-muted hover:text-ink"
+                        onClick={() => remove.mutate(comment.id)}
+                      >
+                        {t("comments.delete")}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-xs text-ink-muted hover:text-ink"
+                      disabled={reported.has(comment.id)}
+                      onClick={() => report.mutate(comment.id)}
+                    >
+                      {/* Acknowledged, never counted. How many others reported the
                       same remark is an administrator's business. */}
-                  {reported.has(comment.id) ? t("comments.reported") : t("comments.report")}
-                </button>
-              )}
-            </div>
-          </li>
-        ))}
+                      {reported.has(comment.id) ? t("comments.reported") : t("comments.report")}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </li>
+          );
+        })}
       </ul>
+
+      {column ? composer : null}
     </section>
   );
 }

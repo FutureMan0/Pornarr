@@ -5,8 +5,24 @@
   background: var(--surface-2);
   /* A hairline, not a drop shadow. DESIGN.md: elevation is carried by surface
      lightness, and a shadow belongs only to a genuinely floating layer. The
-     delivered tile agrees — it sits on the page, it does not hover over it. */
+     delivered tile agrees — it sits on the page, it does not hover over it.
+     At rest. Under the pointer it becomes a floating layer, which is when the
+     shadow is earned. */
   box-shadow: var(--pa-shadow-sm);
+
+  /* Scale, not translate: a tile that moves leaves a gap at its old edge and
+     shifts its neighbours' apparent alignment; a tile that grows does neither.
+     Both values are tokens, so reduced motion flattens this to nothing. */
+  transition: scale var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
+}
+
+/* `:focus-within` as well as `:hover` — the whole tile is a link, so a keyboard
+   walking the grid gets the same answer a pointer does. Without it the one tile
+   the reader has actually selected is the only one that never responds. */
+.tile:hover,
+.tile:focus-within {
+  scale: var(--hover-scale);
+  box-shadow: var(--pa-shadow-md);
 }
 
 .art {
@@ -18,7 +34,9 @@
 .frame {
   position: relative;
   overflow: hidden;
-  aspect-ratio: 16 / 10;
+  /* Driven by the same custom property `Artwork` reads, so a poster and a
+     generated placeholder are the same shape for the same content. */
+  aspect-ratio: var(--art-ratio, 16 / 10);
   background: var(--surface);
 }
 

@@ -228,6 +228,26 @@ const MENU_ITEMS = [
 ];
 
 describe("Menu", () => {
+  test("an end-aligned menu is pinned to the trigger's right edge", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<Menu align="end" label="Actions" items={MENU_ITEMS} />);
+    await user.click(screen.getByRole("button", { name: "Actions" }));
+
+    // CSS modules are identity-mapped in this suite, so the class name is the
+    // assertion available: jsdom computes no layout, so `right: 0` cannot be
+    // read back off the element.
+    expect(screen.getByRole("menu").className).toContain("alignEnd");
+    expect(container.querySelector('[role="menu"]')).not.toBeNull();
+  });
+
+  test("a start-aligned menu is the default and carries no end class", async () => {
+    const user = userEvent.setup();
+    render(<Menu label="Actions" items={MENU_ITEMS} />);
+    await user.click(screen.getByRole("button", { name: "Actions" }));
+
+    expect(screen.getByRole("menu").className).not.toContain("alignEnd");
+  });
+
   test("the trigger declares what it opens", async () => {
     const user = userEvent.setup();
     render(<Menu label="Actions" items={MENU_ITEMS} />);

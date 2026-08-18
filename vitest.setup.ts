@@ -59,9 +59,100 @@ function install(name: "localStorage" | "sessionStorage"): void {
   });
 }
 
+/**
+ * And its ResizeObserver.
+ *
+ * jsdom does not implement it, and `@tanstack/react-virtual` constructs one on
+ * mount — so the virtualised library grid threw `ResizeObserver is not defined`
+ * straight to the error boundary, and every test that rendered the library with
+ * titles in it silently measured an error screen instead. The grid had never
+ * been under test with content.
+ *
+ * A no-op is the honest stub: jsdom lays nothing out, so a real implementation
+ * would only ever report zero. Tests that care about virtualisation have to
+ * drive the sizes themselves.
+ */
+class NoopResizeObserver implements ResizeObserver {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+}
+
 // Only in a browser-like environment: the node-environment suites have no
-// window, and inventing storage for them would hide a real mistake.
+// window, and inventing browser globals for them would hide a real mistake.
 if (typeof window !== "undefined" && typeof document !== "undefined") {
   install("localStorage");
   install("sessionStorage");
+
+  if (!("ResizeObserver" in globalThis)) {
+    Object.defineProperty(globalThis, "ResizeObserver", {
+      value: NoopResizeObserver,
+      configurable: true,
+      writable: true,
+    });
+  }
+}
+
+/**
+ * And the methods of `<dialog>`.
+ *
+ * jsdom constructs `HTMLDialogElement` but, before 26, implements neither
+ * `showModal()` nor `close()`. Any component built on the platform element then
+ * throws on open — which is a failure of the environment, not of the component,
+ * and one that two separate suites were about to work around separately.
+ *
+ * Installed only where the methods are genuinely missing, so this disappears on
+ * its own the day the runtime supplies them. The mechanics are the minimum:
+ * toggle `open`, move focus inward the way `showModal()` does, honour Escape via
+ * a cancellable `cancel` event, fire `close`.
+ *
+ * It deliberately does NOT restore focus on close. That is behaviour the dialog
+ * component implements itself, and a test harness that supplies it would be a
+ * harness passing its own test.
+ */
+function installDialogMethods(): void {
+  if (typeof HTMLDialogElement !== "function") return;
+  const proto = HTMLDialogElement.prototype;
+  if (typeof proto.showModal === "function" && typeof proto.close === "function") return;
+
+  const escapeHandlers = new WeakMap<HTMLDialogElement, (event: Event) => void>();
+
+  if (typeof proto.showModal !== "function") {
+    proto.showModal = function showModal(this: HTMLDialogElement): void {
+      this.open = true;
+      const onKeyDown = (event: Event): void => {
+        if (!(event instanceof KeyboardEvent) || event.key !== "Escape") return;
+        event.preventDefault();
+        const notCancelled = this.dispatchEvent(new Event("cancel", { cancelable: true }));
+        if (notCancelled) this.close();
+      };
+      this.addEventListener("keydown", onKeyDown);
+      escapeHandlers.set(this, onKeyDown);
+      const first = this.querySelector<HTMLElement>("button, [href], input, select, textarea");
+      first?.focus();
+    };
+  }
+
+  if (typeof proto.show !== "function") {
+    proto.show = function show(this: HTMLDialogElement): void {
+      this.open = true;
+    };
+  }
+
+  if (typeof proto.close !== "function") {
+    proto.close = function close(this: HTMLDialogElement): void {
+      if (!this.open) return;
+      this.open = false;
+      const handler = escapeHandlers.get(this);
+      if (handler !== undefined) {
+        this.removeEventListener("keydown", handler);
+        escapeHandlers.delete(this);
+      }
+      this.dispatchEvent(new Event("close"));
+    };
+  }
+}
+
+if (typeof window !== "undefined" && typeof document !== "undefined") {
+  installDialogMethods();
 }

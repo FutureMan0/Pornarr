@@ -20,13 +20,22 @@
  * comes from `@pornarr/ui`, which owns the accent, and is per-device rather
  * than per-server — see `theme.ts` for why that is not the server's business.
  */
-import { Input, Select, THEMES, type Theme, setTheme, storedTheme } from "@pornarr/ui";
+import {
+  Input,
+  Select,
+  THEMES,
+  type Theme,
+  applyAccentFavicon,
+  setTheme,
+  storedTheme,
+} from "@pornarr/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { JSX } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import { useSession } from "../../auth/session";
 import { getApiClient } from "../../lib/api";
 import { apiFailure, messageForError } from "../../lib/api-error";
 import { usePageTitle } from "../../shell/page-title";
@@ -218,7 +227,19 @@ export function SettingsRoute(): JSX.Element {
   const cache = useQueryClient();
   const [section, setSection] = useState<Section>("household");
 
+  const session = useSession();
+  /**
+   * Everything on this screen except Appearance belongs to the server.
+   *
+   * A guest asking for `/api/admin/settings` gets a 403 — which is what happened
+   * every time one opened this screen, the same mistake `/downloads` made. The
+   * accent is per-device and theirs; the thirty-six runtime settings are not, and
+   * neither are the links to quality profiles, library paths or invitations.
+   */
+  const isAdmin = session.data?.role === "admin";
+
   const settings = useQuery({
+    enabled: isAdmin,
     queryKey: ["admin", "settings"],
     queryFn: async () => {
       const { data, error, response } = await getApiClient().GET("/api/admin/settings");
@@ -241,6 +262,16 @@ export function SettingsRoute(): JSX.Element {
     t("settings.title"),
     t(`settings.section.${section}` as "settings.section.household"),
   );
+
+  // A guest gets the one thing here that is theirs, and no navigation for the
+  // sections that are not.
+  if (!isAdmin) {
+    return (
+      <section className="flex max-w-[46rem] flex-col gap-6">
+        <Appearance />
+      </section>
+    );
+  }
 
   return (
     <div className="grid gap-8 lg:grid-cols-[14rem_minmax(0,1fr)]">
@@ -464,6 +495,9 @@ function Appearance(): JSX.Element {
           const next = event.target.value as Theme;
           setLocal(next);
           setTheme(next, document.documentElement, globalThis.localStorage);
+          // The tab icon is drawn from the accent, so it has to be redrawn here
+          // too — otherwise the interface changes and the browser tab does not.
+          applyAccentFavicon();
         }}
       >
         {THEMES.map((option) => (

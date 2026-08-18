@@ -1,10 +1,14 @@
 /**
- * B6 — the Shorts grid.
+ * Every clip at once — the browse view, not the way in.
  *
- * Vertical clips, so the tiles are 9/16 rather than 16/10 and the grid is
- * denser. Each clip links back to the title it was cut from, which is the one
- * navigation the design insists on: a clip is an excerpt, and an excerpt with
- * no way back to the source is a dead end.
+ * `/shorts` is the feed. This is where you come when you are looking for a
+ * particular clip rather than for something to watch, which is the only job a
+ * grid of forty-second excerpts does well: nobody can judge one from a still,
+ * but you can find one you already know about.
+ *
+ * The tiles are 9/16. A clip shaped like a film is a clip that gets opened by
+ * somebody expecting a film, and the shape says "forty seconds" faster than the
+ * duration badge does.
  */
 import { MediaTile } from "@pornarr/ui";
 import { useQuery } from "@tanstack/react-query";
@@ -48,26 +52,35 @@ export function ShortsRoute(): JSX.Element {
       {/* A fieldset rather than a div carrying role="group": the grouping is
           then in the markup itself, and the legend names it for a screen
           reader without a parallel aria-label to keep in step. */}
-      <fieldset className="flex flex-wrap gap-1 border-0 p-0">
-        <legend className="sr-only">{t("shorts.sort.label")}</legend>
-        {SORTS.map((option) => (
-          <button
-            key={option}
-            type="button"
-            // aria-pressed rather than a radio group: these are filters on one
-            // list, not a choice that is submitted.
-            aria-pressed={sort === option}
-            onClick={() => setSort(option)}
-            className={
-              sort === option
-                ? "rounded-md bg-[var(--primary-weak)] px-3 py-1.5 text-sm text-[var(--pa-accent-300)]"
-                : "rounded-md px-3 py-1.5 text-sm text-ink-muted hover:bg-surface-3 hover:text-ink"
-            }
-          >
-            {t(`shorts.sort.${option}`)}
-          </button>
-        ))}
-      </fieldset>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <fieldset className="flex flex-wrap gap-1 border-0 p-0">
+          <legend className="sr-only">{t("shorts.sort.label")}</legend>
+          {SORTS.map((option) => (
+            <button
+              key={option}
+              type="button"
+              // aria-pressed rather than a radio group: these are filters on one
+              // list, not a choice that is submitted.
+              aria-pressed={sort === option}
+              onClick={() => setSort(option)}
+              className={
+                sort === option
+                  ? "rounded-md bg-[var(--primary-weak)] px-3 py-1.5 text-sm text-[var(--pa-accent-300)]"
+                  : "rounded-md px-3 py-1.5 text-sm text-ink-muted hover:bg-surface-3 hover:text-ink"
+              }
+            >
+              {t(`shorts.sort.${option}`)}
+            </button>
+          ))}
+        </fieldset>
+
+        <Link
+          to="/shorts"
+          className="rounded-full border border-border-control px-3 py-1 text-2xs text-ink-muted transition-colors hover:bg-surface-3 hover:text-ink"
+        >
+          {t("shorts.backToFeed")}
+        </Link>
+      </div>
 
       {shorts.isPending ? <p className="text-sm text-ink-muted">{t("shorts.loading")}</p> : null}
       {shorts.isError ? (
@@ -85,6 +98,9 @@ export function ShortsRoute(): JSX.Element {
               <li key={short.id}>
                 <MediaTile
                   blur={tileBlur(artVisible)}
+                  // A clip shaped like a film gets opened by somebody
+                  // expecting a film.
+                  ratio="9 / 16"
                   title={short.title}
                   meta={t("shorts.from", { title: short.media_title })}
                   duration={formatDuration(short.duration_seconds)}
@@ -100,10 +116,10 @@ export function ShortsRoute(): JSX.Element {
                   commentCount={short.comment_count}
                   seed={seedFrom(short.id)}
                   action={(content) => (
-                    // Into the player. The way back to the full title is on
-                    // that screen, where the timestamp gives it somewhere to
+                    // Into the feed, anchored on this clip. The way back to the
+                    // full title is there, where the timestamp has somewhere to
                     // land — a grid tile has no room to say "at 15:11".
-                    <Link to={`/shorts/${short.id}`} className="block rounded-md">
+                    <Link to={`/shorts/${short.id}`} className="block rounded-lg">
                       {content}
                     </Link>
                   )}

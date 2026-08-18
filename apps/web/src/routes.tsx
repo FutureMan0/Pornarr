@@ -12,7 +12,7 @@
  * shadow the real routes with "not built", so it is gone.
  */
 import type { RouteObject } from "react-router-dom";
-import { Navigate, createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import { LoginRoute } from "./auth/login-route";
 import { RequireAuth } from "./auth/require-auth";
 import { ForbiddenRoute, NotFoundRoute } from "./errors/route-errors";
@@ -25,6 +25,7 @@ import { TagsRoute } from "./routes/admin/tags-route";
 import { CollectionDetailRoute, CollectionsRoute } from "./routes/collections/collections-route";
 import { ContinueRoute } from "./routes/continue/continue-route";
 import { FeedRoute } from "./routes/feed/feed-route";
+import { HomeRedirect } from "./routes/home-redirect";
 import { JoinRoute } from "./routes/join/join-route";
 import { LibraryRoute } from "./routes/library/library-route";
 import { MediaDetailRoute } from "./routes/media/media-detail-route";
@@ -41,7 +42,7 @@ import { SettingsLayout } from "./routes/settings/settings-layout";
 import { SettingsRoute } from "./routes/settings/settings-route";
 import { SetupGate } from "./routes/setup/setup-gate";
 import { SetupRoute } from "./routes/setup/setup-route";
-import { ShortsPlayerRoute } from "./routes/shorts/shorts-player-route";
+import { ShortsFeedRoute } from "./routes/shorts/shorts-feed";
 import { ShortsRoute } from "./routes/shorts/shorts-route";
 import { WatchlistRoute } from "./routes/watchlist/watchlist-route";
 import { AppShell } from "./shell/app-shell";
@@ -67,7 +68,8 @@ export const appRoutes: RouteObject[] = [
           {
             element: <AppShell />,
             children: [
-              { index: true, element: <Navigate to="/library" replace /> },
+              // Not one destination for everybody: see `home-redirect.tsx`.
+              { index: true, element: <HomeRedirect /> },
               { path: "admin", element: <DashboardRoute /> },
               { path: "admin/quarantine", element: <QuarantineReviewRoute /> },
               { path: "admin/moderation", element: <ModerationRoute /> },
@@ -96,8 +98,12 @@ export const appRoutes: RouteObject[] = [
               { path: "downloads", element: <QueueRoute /> },
               { path: "feed", element: <FeedRoute /> },
               { path: "continue", element: <ContinueRoute /> },
-              { path: "shorts", element: <ShortsRoute /> },
-              { path: "shorts/:shortId", element: <ShortsPlayerRoute /> },
+              // The feed is the destination; the grid is where you go when you
+              // are after a particular clip. `/shorts/browse` sits before the
+              // parameterised route so "browse" is never read as an id.
+              { path: "shorts", element: <ShortsFeedRoute /> },
+              { path: "shorts/browse", element: <ShortsRoute /> },
+              { path: "shorts/:shortId", element: <ShortsFeedRoute /> },
               { path: "collections", element: <CollectionsRoute /> },
               { path: "collections/:collectionId", element: <CollectionDetailRoute /> },
               { path: "watchlist", element: <WatchlistRoute /> },

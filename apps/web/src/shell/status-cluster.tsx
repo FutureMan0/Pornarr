@@ -11,23 +11,12 @@
  * (see `lib/events.ts`), and a hard-coded "3 active" is a screenshot, not a
  * component.
  */
-import { Button, cx } from "@pornarr/ui";
+import { Button } from "@pornarr/ui";
 import type { FocusEvent, JSX } from "react";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { SidebarLayout } from "./sidebar";
 
-export interface StatusClusterProps {
-  /**
-   * Only to place the panel. Its 320px hung off the trigger's right edge, and
-   * the trigger sits mid-row, so on a 390px phone 126px of the panel was left
-   * of the viewport and unreadable. Below the drawer breakpoint it becomes a
-   * sheet spanning the bar instead — the trigger is still what opens it.
-   */
-  readonly layout: SidebarLayout;
-}
-
-export function StatusCluster({ layout }: StatusClusterProps): JSX.Element {
+export function StatusCluster(): JSX.Element {
   const { t } = useTranslation();
   const panelId = useId();
   const [open, setOpen] = useState(false);
@@ -43,13 +32,12 @@ export function StatusCluster({ layout }: StatusClusterProps): JSX.Element {
     setOpen(false);
   };
 
-  const isDrawer = layout === "drawer";
-
   return (
     // React implements onBlur with focusout, so it bubbles from the trigger.
-    // Unpositioned in the drawer layout on purpose: that hands the panel's
-    // containing block to the sticky top bar, which is the width it should span.
-    <div className={isDrawer ? undefined : "relative"} onBlur={onBlur}>
+    // The panel's 320px hangs off the trigger's right edge, which is why the
+    // phone layout leaves the cluster out of the bar altogether rather than
+    // placing it: the tab bar owns that row now.
+    <div className="relative" onBlur={onBlur}>
       <Button
         variant="ghost"
         aria-expanded={open}
@@ -63,10 +51,7 @@ export function StatusCluster({ layout }: StatusClusterProps): JSX.Element {
         <section
           id={panelId}
           aria-label={t("activity.title")}
-          className={cx(
-            "absolute top-full z-[var(--z-dropdown)] mt-2 flex flex-col gap-2 rounded-lg bg-surface p-4 shadow-[var(--shadow-floating)]",
-            isDrawer ? "inset-x-4" : "right-0 w-[calc(var(--space-16)*5)]",
-          )}
+          className="absolute top-full right-0 z-[var(--z-dropdown)] mt-2 flex w-[calc(var(--space-16)*5)] flex-col gap-2 rounded-lg bg-surface p-4 shadow-[var(--shadow-floating)]"
         >
           <p className={"text-sm text-ink"}>{t("activity.idle")}</p>
           <p className={"text-xs text-ink-muted"}>{t("activity.hint")}</p>

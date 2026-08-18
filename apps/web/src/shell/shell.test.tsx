@@ -13,12 +13,14 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import en from "../i18n/en.json";
 import {
   TEST_USER,
+  currentPath,
   renderApp,
   server,
   setViewportWidth,
   signedIn,
   useMockApi,
 } from "../test/harness";
+import { NAV_ICON_PATHS } from "./sidebar";
 import { NAV_ITEMS } from "./sidebar";
 
 useMockApi();
@@ -53,20 +55,15 @@ describe("responsive structure", () => {
     expect(nav.dataset.layout).toBe("rail");
   });
 
-  test("is a drawer just below 768px, closed until asked for", async () => {
+  test("a phone gets a tab bar, and no sidebar at all", async () => {
     setViewportWidth(767);
     renderApp("/library");
 
-    const trigger = await screen.findByRole("button", { name: "Navigation" });
-    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    // Not behind a button. A navigation you have to open before you can read it
+    // is the thing the tab bar replaced.
+    const tabs = await screen.findByRole("navigation", { name: "Main" });
     expect(screen.queryByRole("navigation", { name: "Primary" })).toBeNull();
-
-    await userEvent.setup().click(trigger);
-
-    expect(trigger.getAttribute("aria-expanded")).toBe("true");
-    const nav = screen.getByRole("navigation", { name: "Primary" });
-    expect(nav.dataset.layout).toBe("drawer");
-    expect(screen.getByRole("dialog", { name: "Navigation" })).toBeTruthy();
+    expect(tabs.querySelector('a[href="/library"]')).not.toBeNull();
   });
 });
 
@@ -92,19 +89,6 @@ describe("reaching every screen", () => {
     );
   });
 
-  test("the drawer carries the same destinations, Search included", async () => {
-    setViewportWidth(390);
-    renderApp("/library");
-    const user = userEvent.setup();
-
-    await user.click(await screen.findByRole("button", { name: en.nav.navigation }));
-
-    const nav = screen.getByRole("navigation", { name: "Primary" });
-    for (const item of NAV_ITEMS) {
-      expect(within(nav).getByRole("link", { name: en.nav[item.id] })).toBeTruthy();
-    }
-  });
-
   test("following the Monitors link opens the monitors screen, not a placeholder", async () => {
     setViewportWidth(1440);
     server.use(http.get("/api/monitors", () => HttpResponse.json([])));
@@ -128,36 +112,77 @@ describe("reaching every screen", () => {
   });
 });
 
-describe("drawer focus", () => {
-  test("moves focus inside and returns it to the trigger on Escape", async () => {
-    setViewportWidth(767);
-    renderApp("/library");
+describe("the navigation's glyphs", () => {
+  test("every destination has one", () => {
+    // The administrator's five had none. Invisible in the sidebar, where they
+    // are indented under a heading; obvious the moment a flat list — the tab bar,
+    // the "everywhere else" sheet — puts them beside destinations that do. An
+    // empty 20px box is not a smaller icon, it is a hole.
+    for (const item of NAV_ITEMS) {
+      expect(NAV_ICON_PATHS[item.id], `${item.id} has no icon`).toBeDefined();
+    }
+  });
+});
+
+describe("the tab bar", () => {
+  test("shows a guest the four the design names, and reaches the rest", async () => {
+    server.use(http.get("/api/auth/me", () => HttpResponse.json({ ...TEST_USER, role: "user" })));
+    setViewportWidth(390);
     const user = userEvent.setup();
+    renderApp("/library");
 
-    const trigger = await screen.findByRole("button", { name: "Navigation" });
-    await user.click(trigger);
+    const tabs = await screen.findByRole("navigation", { name: "Main" });
+    await waitFor(() =>
+      expect([...tabs.querySelectorAll("a")].map((a) => a.getAttribute("href"))).toEqual([
+        "/feed",
+        "/library",
+        "/shorts",
+        "/watchlist",
+      ]),
+    );
 
-    const close = screen.getByRole("button", { name: "Close" });
-    await waitFor(() => expect(document.activeElement).toBe(close));
-
-    await user.keyboard("{Escape}");
-
-    await waitFor(() => expect(document.activeElement).toBe(trigger));
-    expect(screen.queryByRole("dialog", { name: "Navigation" })).toBeNull();
+    // Four tabs cannot reach ten destinations. Settings is the one that proves
+    // it matters: it is where the accent and the language live, and the design's
+    // guest set does not include it.
+    await user.click(within(tabs).getByRole("button", { name: "More" }));
+    const sheet = await screen.findByRole("dialog");
+    expect(within(sheet).getByRole("link", { name: /Settings/ })).not.toBeNull();
+    expect(within(sheet).getByRole("link", { name: /Collections/ })).not.toBeNull();
   });
 
-  test("keeps Tab inside the drawer", async () => {
-    setViewportWidth(767);
+  test("shows an administrator the administrator's four", async () => {
+    setViewportWidth(390);
     renderApp("/library");
-    const user = userEvent.setup();
 
-    await user.click(await screen.findByRole("button", { name: "Navigation" }));
-    const drawer = screen.getByRole("dialog", { name: "Navigation" });
+    const tabs = await screen.findByRole("navigation", { name: "Main" });
+    await waitFor(() =>
+      expect([...tabs.querySelectorAll("a")].map((a) => a.getAttribute("href"))).toEqual([
+        "/admin",
+        "/library",
+        "/downloads",
+        "/settings",
+      ]),
+    );
+  });
 
-    for (let step = 0; step < 8; step += 1) {
-      await user.tab();
-      expect(drawer.contains(document.activeElement)).toBe(true);
-    }
+  test("marks one tab, and the right one, on an administrator's sub-screen", async () => {
+    setViewportWidth(390);
+    renderApp("/admin/tags");
+
+    const tabs = await screen.findByRole("navigation", { name: "Main" });
+    // The same prefix trap the sidebar had: `/admin` is a prefix of
+    // `/admin/tags`, and the tab bar derives its exactness from the same place.
+    await waitFor(() => expect(tabs.querySelector('a[href="/admin/tags"]')).toBeNull());
+    const current = [...tabs.querySelectorAll('a[aria-current="page"]')];
+    expect(current).toHaveLength(0);
+  });
+
+  test("a desktop gets no tab bar", async () => {
+    setViewportWidth(1440);
+    renderApp("/library");
+
+    await screen.findByRole("navigation", { name: "Primary" });
+    expect(screen.queryByRole("navigation", { name: "Main" })).toBeNull();
   });
 });
 
@@ -248,8 +273,8 @@ describe("the bar at phone width", () => {
   /**
    * jsdom lays nothing out, so "the search field is usable" cannot be measured
    * here — the browser walk does that. What this holds onto is the structure
-   * that makes it true: the bar names its layout the way the sidebar does, and
-   * the control that had to give up its 90px of label kept its name.
+   * that makes it true: the bar names its layout the way the sidebar does, so
+   * the two cannot disagree about which form the viewport is in.
    */
   test("names its layout so the two rows cannot drift from the sidebar's form", async () => {
     setViewportWidth(390);
@@ -259,12 +284,12 @@ describe("the bar at phone width", () => {
     expect(bar.dataset.layout).toBe("drawer");
   });
 
-  test("the drawer trigger is an icon that still announces itself", async () => {
+  test("the bar carries no navigation of its own; the tab bar has it", async () => {
     setViewportWidth(390);
     renderApp("/library");
 
-    const trigger = await screen.findByRole("button", { name: en.nav.navigation });
-    expect(trigger.textContent).toBe("");
+    const bar = await screen.findByRole("banner");
+    expect(within(bar).queryByRole("navigation")).toBeNull();
   });
 
   test("the bar is one row again above the breakpoint", async () => {
@@ -273,7 +298,6 @@ describe("the bar at phone width", () => {
 
     const bar = await screen.findByRole("banner");
     expect(bar.dataset.layout).toBe("full");
-    expect(screen.queryByRole("button", { name: en.nav.navigation })).toBeNull();
   });
 });
 
@@ -301,6 +325,56 @@ describe("who and where you are", () => {
 
     await waitFor(() => expect(nav.textContent).toContain("Guest"));
     expect(nav.textContent).not.toContain("Admin");
+  });
+
+  test("only one entry is current on an administrator's sub-screen", async () => {
+    setViewportWidth(1280);
+    renderApp("/admin/tags");
+
+    const nav = await screen.findByRole("navigation", { name: "Primary" });
+    await waitFor(() => expect(nav.querySelector('a[href="/admin/tags"]')).not.toBeNull());
+
+    // `/admin` is a prefix of `/admin/tags`, and NavLink counts a prefix as
+    // active unless told otherwise — so Dashboard stayed marked here and two
+    // entries read as current at once.
+    const current = [...nav.querySelectorAll('a[aria-current="page"]')].map((link) =>
+      link.getAttribute("href"),
+    );
+    expect(current).toEqual(["/admin/tags"]);
+  });
+
+  test("a title's own screen still marks the library it came from", async () => {
+    setViewportWidth(1280);
+    renderApp("/library/m-1");
+
+    const nav = await screen.findByRole("navigation", { name: "Primary" });
+    // The opposite case, and the reason exactness is derived rather than applied
+    // to every entry: `/library/:mediaId` is not a destination of its own, so the
+    // reader is still in the library.
+    await waitFor(() =>
+      expect(nav.querySelector('a[href="/library"]')?.getAttribute("aria-current")).toBe("page"),
+    );
+  });
+
+  test("a guest is not offered Downloads, whose endpoints are admin-only", async () => {
+    let asked = false;
+    server.use(
+      http.get("/api/auth/me", () => HttpResponse.json({ ...TEST_USER, role: "user" })),
+      http.get("/api/queue", () => {
+        asked = true;
+        return HttpResponse.json([]);
+      }),
+    );
+    setViewportWidth(1280);
+    renderApp("/library");
+
+    const nav = await screen.findByRole("navigation", { name: "Primary" });
+
+    await waitFor(() => expect(nav.textContent).toContain("Guest"));
+    expect(nav.querySelector('a[href="/downloads"]')).toBeNull();
+    // And the badge behind it is not fetched either: a 403 on every screen to
+    // decide the number on an entry nobody can see.
+    expect(asked).toBe(false);
   });
 
   test("the rail keeps the identity for readers after the pixels are gone", async () => {
@@ -363,5 +437,39 @@ describe("navigation counts", () => {
 
     expect(nav.textContent).toContain("Downloads");
     expect(nav.textContent).toContain("Library");
+  });
+});
+
+/**
+ * Signing in puts you where your account is for.
+ *
+ * Everybody used to land on the library, which is the right answer for nobody: a
+ * household member opens this to watch something, an administrator because
+ * something needs attention.
+ */
+describe("where signing in lands", () => {
+  test("a guest starts at the feed, which answers what to watch", async () => {
+    server.use(http.get("/api/auth/me", () => HttpResponse.json({ ...TEST_USER, role: "user" })));
+    setViewportWidth(1440);
+    const { router } = renderApp("/");
+
+    await waitFor(() => expect(currentPath(router)).toBe("/feed"));
+  });
+
+  test("an administrator starts at the dashboard, which is maintenance", async () => {
+    setViewportWidth(1440);
+    const { router } = renderApp("/");
+
+    await waitFor(() => expect(currentPath(router)).toBe("/admin"));
+  });
+
+  test("it replaces rather than pushes, so back does not bounce", async () => {
+    setViewportWidth(1440);
+    const { router } = renderApp("/");
+
+    await waitFor(() => expect(currentPath(router)).toBe("/admin"));
+    // A push would leave "/" in the history, and going back would redirect
+    // forward again — a trap rather than a navigation.
+    expect(router.state.historyAction).not.toBe("PUSH");
   });
 });

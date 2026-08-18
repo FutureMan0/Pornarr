@@ -103,7 +103,7 @@ export function Dialog({
         className,
       )}
     >
-      <header className={css.header}>
+      <div className={css.header}>
         <h2 id={titleId} className={css.title}>
           {title}
         </h2>
@@ -118,7 +118,7 @@ export function Dialog({
           <span aria-hidden="true">&times;</span>
           <span className={css.srOnly}>Close</span>
         </button>
-      </header>
+      </div>
 
       {error !== undefined ? (
         <p role="alert" className={css.errorMessage}>

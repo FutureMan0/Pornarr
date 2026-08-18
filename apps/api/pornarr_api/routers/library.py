@@ -130,6 +130,10 @@ class MediaDetailResponse(BaseModel):
     release_date: str | None
     confidence: float | None
     metadata_source: str
+    # When the library learned about it. The detail screen's "About" card wants
+    # it, and it is the one fact there that lives on the row rather than on the
+    # file.
+    added_at: datetime
     performers: list[str]
     tags: list[DetailTag]
     rating: float | None
@@ -518,6 +522,7 @@ async def media_detail(media_id: UUID, user: CurrentUser, session: Session) -> M
         release_date=media.release_date.isoformat() if media.release_date else None,
         confidence=media.confidence,
         metadata_source="import",
+        added_at=media.created_at,
         performers=performers,
         tags=[
             DetailTag(name=name, confidence=confidence, source=source)

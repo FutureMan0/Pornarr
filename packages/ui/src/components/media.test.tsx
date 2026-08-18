@@ -130,6 +130,26 @@ describe("a media tile", () => {
     expect(screen.getByText("—")).not.toBeNull();
   });
 
+  test("a tile with no rating label leaves the rating off, dash included", () => {
+    // Distinct from `rating={null}` above. Null says nobody has rated it; no
+    // label says the row is not about ratings — the continue-watching row, whose
+    // endpoint returns none. Five grey stars and a dash per tile would be an
+    // answer to a question nobody asked.
+    const { title, seed } = base;
+    render(<MediaTile title={title} seed={seed} duration="24:05" />);
+
+    expect(screen.getByText("24:05")).not.toBeNull();
+    expect(screen.queryByText("—")).toBeNull();
+    expect(screen.queryByRole("img", { name: /out of 5/ })).toBeNull();
+  });
+
+  test("a comment count survives a tile with no rating", () => {
+    const { title, seed } = base;
+    render(<MediaTile title={title} seed={seed} commentCount={3} />);
+
+    expect(screen.getByText("3")).not.toBeNull();
+  });
+
   test("the resume bar appears only once there is something to resume", () => {
     const { container: none } = render(<MediaTile {...base} progress={0} />);
     expect(none.querySelector("[style*='width']")).toBeNull();
