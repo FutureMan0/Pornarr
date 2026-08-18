@@ -42,6 +42,8 @@ from pornarr_api.routers.library import router as library_router
 from pornarr_api.routers.metrics import router as metrics_router
 from pornarr_api.routers.monitors import router as monitors_router
 from pornarr_api.routers.notifications import router as notifications_router
+from pornarr_api.routers.peers import proxy_router as peers_proxy_router
+from pornarr_api.routers.peers import router as admin_peers_router
 from pornarr_api.routers.playback import progress_router as playback_progress_router
 from pornarr_api.routers.playback import router as playback_router
 from pornarr_api.routers.profile import router as profile_router
@@ -97,6 +99,7 @@ api_router.include_router(admin_audit_router)
 api_router.include_router(admin_indexers_router)
 api_router.include_router(admin_metadata_router)
 api_router.include_router(admin_library_router)
+api_router.include_router(admin_peers_router)
 api_router.include_router(admin_settings_router)
 api_router.include_router(admin_comments_router)
 api_router.include_router(admin_shorts_router)
@@ -109,6 +112,7 @@ api_router.include_router(monitors_router)
 api_router.include_router(notifications_router)
 api_router.include_router(playback_router)
 api_router.include_router(playback_progress_router)
+api_router.include_router(peers_proxy_router)
 api_router.include_router(queue_router)
 api_router.include_router(requests_router)
 api_router.include_router(recommendations_router)

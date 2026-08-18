@@ -324,6 +324,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/indexers/{indexer_id}/search-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Indexer Search Categories
+         * @description Change which categories this indexer's search/rss requests are restricted to.
+         */
+        put: operations["admin_update_indexer_search_categories"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/indexers/{indexer_id}/test": {
         parameters: {
             query?: never;
@@ -477,6 +497,58 @@ export interface paths {
         put?: never;
         /** Test Provider */
         post: operations["admin_test_provider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/peers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Peers */
+        get: operations["peers_list_peers"];
+        put?: never;
+        /** Create Peer */
+        post: operations["peers_create_peer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/peers/{peer_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Peer */
+        delete: operations["peers_delete_peer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/peers/{peer_id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Peer */
+        post: operations["peers_test_peer"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1508,6 +1580,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/peers/{peer_id}/proxy/{path}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Proxy Get */
+        get: operations["peers_proxy_get"];
+        put?: never;
+        /** Proxy Post */
+        post: operations["peers_proxy_post"];
+        /** Proxy Delete */
+        delete: operations["peers_proxy_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/playback/continue-watching": {
         parameters: {
             query?: never;
@@ -1985,6 +2076,40 @@ export interface paths {
         get: operations["setup_setup_status"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/setup/test-download-client": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Setup Download Client */
+        post: operations["setup_test_setup_download_client"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/setup/test-indexer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Setup Indexer */
+        post: operations["setup_test_setup_indexer"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2871,7 +2996,14 @@ export interface components {
             priority: number;
             /** Protocol */
             protocol: string;
+            /** Search Categories */
+            search_categories: string[];
             stats: components["schemas"]["IndexerStatsResponse"];
+        };
+        /** IndexerSearchCategoriesWrite */
+        IndexerSearchCategoriesWrite: {
+            /** Search Categories */
+            search_categories: string[];
         };
         /** IndexerSearchResponse */
         IndexerSearchResponse: {
@@ -2940,6 +3072,8 @@ export interface components {
             priority: number;
             /** Protocol */
             protocol: string;
+            /** Search Categories */
+            search_categories?: string[] | null;
         };
         JsonValue: unknown;
         /** LibraryFacetsResponse */
@@ -2953,6 +3087,11 @@ export interface components {
         };
         /** LibraryItemResponse */
         LibraryItemResponse: {
+            /**
+             * Added At
+             * Format: date-time
+             */
+            added_at: string;
             /** Completed */
             completed: boolean;
             /** Duration Seconds */
@@ -2962,6 +3101,10 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Peer Id */
+            peer_id?: string | null;
+            /** Peer Name */
+            peer_name?: string | null;
             /** Position Seconds */
             position_seconds: number | null;
             /** Poster Url */
@@ -2989,8 +3132,14 @@ export interface components {
         LibraryPageResponse: {
             /** Items */
             items: components["schemas"]["LibraryItemResponse"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
             /** Next Offset */
             next_offset: number | null;
+            /** Total */
+            total: number;
+            /** Unavailable Peers */
+            unavailable_peers?: components["schemas"]["UnavailablePeerResponse"][];
         };
         /**
          * LibrarySort
@@ -3305,6 +3454,45 @@ export interface components {
             provider_id: string;
             /** Provider Name */
             provider_name: string;
+        };
+        /** PeerResponse */
+        PeerResponse: {
+            /** Base Url */
+            base_url: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Health */
+            health: string;
+            /** Health Reason */
+            health_reason: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Tested At */
+            last_tested_at: string | null;
+            /** Media Count */
+            media_count: number | null;
+            /** Name */
+            name: string;
+        };
+        /** PeerWrite */
+        PeerWrite: {
+            /**
+             * Api Key
+             * Format: password
+             */
+            api_key: string;
+            /** Base Url */
+            base_url: string;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Name */
+            name: string;
         };
         /** PerformanceInputResponse */
         PerformanceInputResponse: {
@@ -4084,6 +4272,62 @@ export interface components {
             /** Warning */
             warning: string | null;
         };
+        /** SetupDownloadClientWrite */
+        SetupDownloadClientWrite: {
+            /** Category */
+            category?: string | null;
+            /**
+             * Credentials
+             * Format: password
+             */
+            credentials: string;
+            /** Host */
+            host: string;
+            /**
+             * Implementation
+             * @enum {string}
+             */
+            implementation: "qbittorrent" | "sabnzbd";
+            /** Port */
+            port: number;
+        };
+        /** SetupIndexerTestResponse */
+        SetupIndexerTestResponse: {
+            /** Categories */
+            categories: {
+                [key: string]: string;
+            }[];
+        };
+        /** SetupIndexerWrite */
+        SetupIndexerWrite: {
+            /**
+             * Api Key
+             * Format: password
+             */
+            api_key: string;
+            /** Base Url */
+            base_url: string;
+            /**
+             * Implementation
+             * @enum {string}
+             */
+            implementation: "torznab" | "newznab";
+        };
+        /** SetupMetadataProviderWrite */
+        SetupMetadataProviderWrite: {
+            /**
+             * Api Key
+             * Format: password
+             */
+            api_key: string;
+            /** Endpoint */
+            endpoint?: string | null;
+            /**
+             * Implementation
+             * @enum {string}
+             */
+            implementation: "stashdb" | "tpdb";
+        };
         /** SetupPathValidationResponse */
         SetupPathValidationResponse: {
             /** Same Filesystem As Downloads */
@@ -4098,8 +4342,11 @@ export interface components {
         };
         /** SetupWrite */
         SetupWrite: {
+            download_client?: components["schemas"]["SetupDownloadClientWrite"] | null;
+            indexer?: components["schemas"]["SetupIndexerWrite"] | null;
             /** Library Path */
             library_path: string;
+            metadata_provider?: components["schemas"]["SetupMetadataProviderWrite"] | null;
             /**
              * Password
              * Format: password
@@ -4270,6 +4517,13 @@ export interface components {
              * Format: uuid
              */
             session_id: string;
+        };
+        /** UnavailablePeerResponse */
+        UnavailablePeerResponse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** UserEventResponse */
         UserEventResponse: {
@@ -5055,6 +5309,41 @@ export interface operations {
             };
         };
     };
+    admin_update_indexer_search_categories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                indexer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IndexerSearchCategoriesWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndexerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     admin_test_indexer: {
         parameters: {
             query?: never;
@@ -5397,6 +5686,119 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProviderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    peers_list_peers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeerResponse"][];
+                };
+            };
+        };
+    };
+    peers_create_peer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PeerWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    peers_delete_peer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                peer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    peers_test_peer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                peer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeerResponse"];
                 };
             };
             /** @description Validation Error */
@@ -7028,6 +7430,8 @@ export interface operations {
                 tag?: string | null;
                 quality?: string | null;
                 sort?: components["schemas"]["LibrarySort"];
+                source?: string;
+                cursor?: string | null;
             };
             header?: never;
             path?: never;
@@ -8058,6 +8462,102 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    peers_proxy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                peer_id: string;
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    peers_proxy_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                peer_id: string;
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    peers_proxy_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                peer_id: string;
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -9240,6 +9740,88 @@ export interface operations {
                     "application/json": {
                         [key: string]: boolean;
                     };
+                };
+            };
+        };
+    };
+    setup_test_setup_download_client: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetupDownloadClientWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    setup_test_setup_indexer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetupIndexerWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupIndexerTestResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
