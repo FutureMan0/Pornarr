@@ -235,6 +235,13 @@ async def start_session(
         raise HTTPException(status_code=404)
 
     registry = get_registry(request)
+    # One viewer watching one title needs one transcode. Without this a player
+    # that remounts - a re-render, a quick back and forward - asked for a
+    # second session while the first was still being created, and the session
+    # cap refused it with 429 while its own earlier session was still running.
+    running = await registry.session_for(user.id, media_id)
+    if running is not None:
+        return _start_response(running.id)
     capabilities = getattr(
         request.app.state, "hardware_capabilities", HardwareCapabilities((), (), ())
     )
@@ -257,6 +264,10 @@ async def start_session(
     await registry.register(
         session_id, user.id, media_id, "hls", transcode, hardware=capability is not None
     )
+    return _start_response(session_id)
+
+
+def _start_response(session_id: UUID) -> TranscodeStartResponse:
     return TranscodeStartResponse(
         session_id=session_id,
         playlist_url=f"/api/transcode/sessions/{session_id}/hls/master.m3u8",

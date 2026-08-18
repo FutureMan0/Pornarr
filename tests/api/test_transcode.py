@@ -228,3 +228,38 @@ async def test_admin_can_diagnose_sanitized_transcode_failures(app, client, tmp_
     assert failure["reason"] == "FFmpeg exited with status 23"
     assert "command" not in failure
     assert "path" not in failure
+
+
+async def test_starting_a_session_twice_reuses_the_running_one(app, client, tmp_path: Path) -> None:
+    """A player that remounts must not be refused a stream it already owns."""
+
+    from pornarr_db.models.media import MediaFile
+    from pornarr_media.sessions import TranscodeSessionRegistry
+
+    app.state.settings = app.state.settings.model_copy(update={"data_path": tmp_path})
+    registry = TranscodeSessionRegistry(app.state.redis, app.state.settings.transcode_path)
+    app.state.transcode_sessions = registry
+    user = await create_user(app)
+    source = app.state.settings.library_path / "Example.mp4"
+    source.parent.mkdir(parents=True, exist_ok=True)
+    source.write_bytes(b"not really a video")
+    async with AsyncSession(app.state.engine, expire_on_commit=False) as database_session:
+        media = Media(title="Example", normalized_title="example")
+        database_session.add(MediaFile(media=media, path=str(source), size=source.stat().st_size))
+        await database_session.commit()
+        media_id = media.id
+    session_id = uuid4()
+    directory = app.state.settings.transcode_path / str(session_id)
+    directory.mkdir(parents=True)
+    await registry.register(
+        session_id, user.id, media_id, "hls", FakeTranscode(directory), hardware=False
+    )
+    await login(client, user.username, "correct horse battery staple")
+
+    started = await client.post(
+        f"/api/transcode/media/{media_id}/sessions", headers=csrf_headers(client)
+    )
+
+    assert started.status_code == 201
+    assert started.json()["session_id"] == str(session_id)
+    assert len(await registry.active_sessions()) == 1

@@ -209,6 +209,14 @@ class TranscodeSessionRegistry:
                 sessions.append(session)
         return sorted(sessions, key=lambda session: session.created_at)
 
+    async def session_for(self, user_id: UUID, media_id: UUID) -> TranscodeSession | None:
+        """Return this user's live session for one title, if one is running."""
+
+        for session in await self.active_sessions():
+            if session.user_id == user_id and session.media_id == media_id:
+                return session
+        return None
+
     async def select_mode(self, user_id: UUID, limits: TranscodeLimits) -> TranscodeMode:
         return choose_transcode_mode(await self.active_sessions(), user_id, limits)
 
