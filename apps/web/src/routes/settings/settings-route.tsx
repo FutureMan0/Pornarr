@@ -275,7 +275,7 @@ export function SettingsRoute(): JSX.Element {
 
   return (
     <div className="grid gap-8 lg:grid-cols-[14rem_minmax(0,1fr)]">
-      <nav aria-label={t("settings.sections")} className="flex flex-col gap-1">
+      <nav aria-label={t("settings.jumpTo")} className="flex flex-col gap-1">
         {SECTIONS.map((option) => (
           <button
             key={option}
@@ -291,12 +291,9 @@ export function SettingsRoute(): JSX.Element {
             {t(`settings.section.${option}` as "settings.section.household")}
           </button>
         ))}
-        <Link
-          to="/settings/quality"
-          className="rounded-md px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-3 hover:text-ink"
-        >
-          {t("settings.section.quality")}
-        </Link>
+        {/* Quality profiles, root folders, metadata and peers are their own
+            screens and the tab bar above this one lists them. A second link to
+            the same place here would be two section lists to keep in step. */}
         <Link
           to="/admin/scan"
           className="rounded-md px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-3 hover:text-ink"

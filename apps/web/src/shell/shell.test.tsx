@@ -10,6 +10,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import en from "../i18n/en.json";
 import {
   TEST_USER,
   currentPath,
@@ -63,6 +64,51 @@ describe("responsive structure", () => {
     const tabs = await screen.findByRole("navigation", { name: "Main" });
     expect(screen.queryByRole("navigation", { name: "Primary" })).toBeNull();
     expect(tabs.querySelector('a[href="/library"]')).not.toBeNull();
+  });
+});
+
+describe("reaching every screen", () => {
+  test("the sidebar links to every destination", async () => {
+    setViewportWidth(1440);
+    renderApp("/library");
+
+    const nav = await screen.findByRole("navigation", { name: "Primary" });
+    for (const item of NAV_ITEMS) {
+      const link = within(nav).getByRole("link", { name: en.nav[item.id] });
+      expect(link.getAttribute("href")).toBe(item.path);
+    }
+  });
+
+  test("Search is one of them, not only a field in the bar", async () => {
+    setViewportWidth(1440);
+    renderApp("/library");
+
+    const nav = await screen.findByRole("navigation", { name: "Primary" });
+    expect(within(nav).getByRole("link", { name: en.nav.search }).getAttribute("href")).toBe(
+      "/search",
+    );
+  });
+
+  test("following the Monitors link opens the monitors screen, not a placeholder", async () => {
+    setViewportWidth(1440);
+    server.use(http.get("/api/monitors", () => HttpResponse.json([])));
+    renderApp("/library");
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("link", { name: en.nav.monitors }));
+
+    expect(await screen.findByText(en.monitors.empty)).toBeTruthy();
+  });
+
+  test("following the Recommendations link opens the recommendations screen", async () => {
+    setViewportWidth(1440);
+    server.use(http.get("/api/recommendations", () => HttpResponse.json([])));
+    renderApp("/library");
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("link", { name: en.nav.recommendations }));
+
+    expect(await screen.findByText(en.recommendations.empty)).toBeTruthy();
   });
 });
 
@@ -190,6 +236,68 @@ describe("status cluster", () => {
     expect(screen.getByRole("region", { name: "Activity" })).toBeTruthy();
     // Still on the same screen: a panel, not a page.
     expect(screen.getByRole("heading", { name: "Library" })).toBeTruthy();
+  });
+});
+
+describe("one popover at a time", () => {
+  test("opening a menu dismisses the panel the bar already had open", async () => {
+    setViewportWidth(1440);
+    renderApp("/library");
+    const user = userEvent.setup();
+
+    const activity = await screen.findByRole("button", { name: en.activity.title });
+    await user.click(activity);
+    expect(screen.getByRole("region", { name: en.activity.title })).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: en.locale.label }));
+
+    expect(screen.queryByRole("region", { name: en.activity.title })).toBeNull();
+    expect(activity.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByRole("menu", { name: en.locale.label })).toBeTruthy();
+  });
+
+  test("and opening the next one dismisses that menu in turn", async () => {
+    setViewportWidth(1440);
+    renderApp("/library");
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: en.locale.label }));
+    await user.click(screen.getByRole("button", { name: TEST_USER.username }));
+
+    expect(screen.queryByRole("menu", { name: en.locale.label })).toBeNull();
+    expect(screen.getByRole("menu", { name: TEST_USER.username })).toBeTruthy();
+  });
+});
+
+describe("the bar at phone width", () => {
+  /**
+   * jsdom lays nothing out, so "the search field is usable" cannot be measured
+   * here — the browser walk does that. What this holds onto is the structure
+   * that makes it true: the bar names its layout the way the sidebar does, so
+   * the two cannot disagree about which form the viewport is in.
+   */
+  test("names its layout so the two rows cannot drift from the sidebar's form", async () => {
+    setViewportWidth(390);
+    renderApp("/library");
+
+    const bar = await screen.findByRole("banner");
+    expect(bar.dataset.layout).toBe("drawer");
+  });
+
+  test("the bar carries no navigation of its own; the tab bar has it", async () => {
+    setViewportWidth(390);
+    renderApp("/library");
+
+    const bar = await screen.findByRole("banner");
+    expect(within(bar).queryByRole("navigation")).toBeNull();
+  });
+
+  test("the bar is one row again above the breakpoint", async () => {
+    setViewportWidth(1440);
+    renderApp("/library");
+
+    const bar = await screen.findByRole("banner");
+    expect(bar.dataset.layout).toBe("full");
   });
 });
 

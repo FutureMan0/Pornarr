@@ -18,6 +18,40 @@ async function responseJson<T>(url: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+/**
+ * Where this player's requests go.
+ *
+ * A title on somebody else's instance is reached through the proxy on this
+ * one, because the browser has no key for a peer and must never be given one.
+ * Everything below is written against this prefix so the two cases differ in
+ * one string rather than in every call.
+ */
+function apiBase(peerId: string | undefined): string {
+  return peerId === undefined ? "/api" : `/api/peers/${peerId}/proxy`;
+}
+
+/** A peer answers with its own address for the playlist; the proxy owns it here. */
+function playlistUrl(base: string, playlistUrl: string): string {
+  return base === "/api" ? playlistUrl : `${base}${playlistUrl.replace(/^\/api/, "")}`;
+}
+
+/**
+ * Raw `fetch`, deliberately, and the same for the heartbeat and the progress
+ * report below. `keepalive` is the whole point: these fire as the player
+ * unmounts or the tab closes, and a request the browser is free to cancel at
+ * that moment is a transcode session left running on the server. The generated
+ * client does not pass the flag through, so routing these through it would
+ * silently drop the guarantee.
+ */
+function releaseSession(base: string, sessionId: string): void {
+  void fetch(`${base}/transcode/sessions/${sessionId}`, {
+    method: "DELETE",
+    headers: csrfHeaders(),
+    credentials: "same-origin",
+    keepalive: true,
+  });
+}
+
 export interface Clip {
   readonly startSeconds: number;
   readonly endSeconds: number;
@@ -64,6 +98,8 @@ export interface VideoPlayerProps {
    * twice still does something.
    */
   readonly handleRef?: RefObject<PlayerHandle | null> | undefined;
+  /** The peer this title lives on. Absent for this instance's own library. */
+  readonly peerId?: string | undefined;
 }
 
 /**
@@ -87,11 +123,14 @@ export function VideoPlayer({
   loop,
   onEnded,
   handleRef,
+  peerId,
 }: VideoPlayerProps) {
   const { t } = useTranslation();
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
   const session = useRef<string | null>(null);
+  const starting = useRef<Promise<TranscodeSession> | null>(null);
+  const mount = useRef(0);
   const lastProgress = useRef(0);
   const [error, setError] = useState(false);
   const minimal = chrome === "minimal";
@@ -102,26 +141,39 @@ export function VideoPlayer({
 
   useEffect(() => {
     let cancelled = false;
+    const generation = ++mount.current;
+    const base = apiBase(peerId);
     async function load() {
       try {
-        const info = await responseJson<PlaybackInfo>(`/api/media/${mediaId}/playback-info`);
-        const source = info.direct_play
-          ? `/api/media/${mediaId}/stream`
-          : await responseJson<TranscodeSession>(`/api/transcode/media/${mediaId}/sessions`, {
-              method: "POST",
-              headers: csrfHeaders(),
-            });
-        if (cancelled || video.current === null) return;
-        if (typeof source === "string") {
-          video.current.src = source;
+        const info = await responseJson<PlaybackInfo>(`${base}/media/${mediaId}/playback-info`);
+        if (info.direct_play) {
+          if (cancelled || video.current === null) return;
+          video.current.src = `${base}/media/${mediaId}/stream`;
+          return;
+        }
+        // Remounting must not ask for a second session: the request the first
+        // mount sent is still in flight, and whichever of the two answers last
+        // leaves a transcode nobody is holding.
+        starting.current ??= responseJson<TranscodeSession>(
+          `${base}/transcode/media/${mediaId}/sessions`,
+          { method: "POST", headers: csrfHeaders() },
+        );
+        const source = await starting.current;
+        if (cancelled || video.current === null) {
+          // A session created after the player went away still holds a
+          // transcode slot, and the cleanup below could not release it because
+          // it did not exist yet. Release it here — but only when no later
+          // mount has taken over, because the server hands that mount the very
+          // same session and deleting it would break the player that is live.
+          if (generation === mount.current) releaseSession(base, source.session_id);
           return;
         }
         session.current = source.session_id;
         if (video.current.canPlayType("application/vnd.apple.mpegurl")) {
-          video.current.src = source.playlist_url;
+          video.current.src = playlistUrl(base, source.playlist_url);
         } else if (Hls.isSupported()) {
           hls.current = new Hls();
-          hls.current.loadSource(source.playlist_url);
+          hls.current.loadSource(playlistUrl(base, source.playlist_url));
           hls.current.attachMedia(video.current);
         } else {
           setError(true);
@@ -136,22 +188,24 @@ export function VideoPlayer({
       hls.current?.destroy();
       hls.current = null;
       if (session.current !== null) {
-        // Raw `fetch`, deliberately, and the same for the heartbeat and the
-        // progress report below. `keepalive` is the whole point: these three fire
-        // as the player unmounts or the tab closes, and a request the browser is
-        // free to cancel at that moment is a transcode session left running on
-        // the server. The generated client does not pass the flag through, so
-        // routing these through it would silently drop the guarantee.
-        void fetch(`/api/transcode/sessions/${session.current}`, {
-          method: "DELETE",
-          headers: csrfHeaders(),
-          credentials: "same-origin",
-          keepalive: true,
-        });
+        releaseSession(base, session.current);
         session.current = null;
       }
     };
-  }, [mediaId]);
+  }, [mediaId, peerId]);
+
+  // React runs no cleanup when the page itself goes away, so a reload, a hard
+  // navigation or a closed tab left the transcode running until its heartbeat
+  // expired — a slot the next viewer could not have.
+  useEffect(() => {
+    const release = (): void => {
+      if (session.current === null) return;
+      releaseSession(apiBase(peerId), session.current);
+      session.current = null;
+    };
+    window.addEventListener("pagehide", release);
+    return () => window.removeEventListener("pagehide", release);
+  }, [peerId]);
 
   useImperativeHandle(
     handleRef,
@@ -173,7 +227,7 @@ export function VideoPlayer({
   useEffect(() => {
     const timer = window.setInterval(() => {
       if (session.current !== null) {
-        void fetch(`/api/transcode/sessions/${session.current}/heartbeat`, {
+        void fetch(`${apiBase(peerId)}/transcode/sessions/${session.current}/heartbeat`, {
           method: "POST",
           headers: csrfHeaders(),
           credentials: "same-origin",
@@ -181,7 +235,7 @@ export function VideoPlayer({
       }
     }, 25_000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [peerId]);
 
   /**
    * Keep a clip inside its bounds.
@@ -239,6 +293,10 @@ export function VideoPlayer({
     // in "continue watching" at the fifteen-minute mark because someone
     // watched forty seconds of it in the shorts feed.
     if (clip !== undefined) return;
+    // Nor is a borrowed title this instance's to record. The id belongs to the
+    // peer, and posting it here would file the position against whatever
+    // happens to carry that id locally.
+    if (peerId !== undefined) return;
     if (element === null || !Number.isFinite(element.duration) || element.duration <= 0) return;
     if (element.currentTime - lastProgress.current < 10 && !element.ended) return;
     lastProgress.current = element.currentTime;

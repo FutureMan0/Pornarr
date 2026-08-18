@@ -110,6 +110,7 @@ async def app() -> AsyncIterator[FastAPI]:
     application = create_app(build_settings())
     application.state.engine = engine
     application.state.redis = MemoryRedis()
+    application.state.queue = MemoryQueue()
     yield application
     await engine.dispose()
 

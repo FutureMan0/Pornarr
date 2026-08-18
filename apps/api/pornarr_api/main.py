@@ -24,6 +24,7 @@ from pornarr_api.routers.admin_audit import router as admin_audit_router
 from pornarr_api.routers.admin_download_clients import router as admin_download_clients_router
 from pornarr_api.routers.admin_indexers import router as admin_indexers_router
 from pornarr_api.routers.admin_library import router as admin_library_router
+from pornarr_api.routers.admin_metadata import router as admin_metadata_router
 from pornarr_api.routers.admin_oidc import router as admin_oidc_router
 from pornarr_api.routers.admin_overview import router as admin_overview_router
 from pornarr_api.routers.admin_performance import router as admin_performance_router
@@ -45,6 +46,8 @@ from pornarr_api.routers.library import router as library_router
 from pornarr_api.routers.metrics import router as metrics_router
 from pornarr_api.routers.monitors import router as monitors_router
 from pornarr_api.routers.notifications import router as notifications_router
+from pornarr_api.routers.peers import proxy_router as peers_proxy_router
+from pornarr_api.routers.peers import router as admin_peers_router
 from pornarr_api.routers.playback import progress_router as playback_progress_router
 from pornarr_api.routers.playback import router as playback_router
 from pornarr_api.routers.profile import router as profile_router
@@ -64,8 +67,10 @@ from pornarr_api.routers.transcode import router as transcode_router
 from pornarr_api.routers.watchlist import router as watchlist_router
 from pornarr_api.setup import SetupMiddleware
 from pornarr_api.spa import mount_spa
+from pornarr_integrations.newznab import NewznabAdapter
 from pornarr_integrations.qbittorrent import QbittorrentAdapter
 from pornarr_integrations.sabnzbd import SabnzbdAdapter
+from pornarr_integrations.torznab import TorznabAdapter
 from pornarr_shared.config import Settings, get_settings
 
 API_PREFIX = "/api"
@@ -97,7 +102,9 @@ api_router.include_router(admin_overview_router)
 api_router.include_router(admin_quarantine_router)
 api_router.include_router(admin_audit_router)
 api_router.include_router(admin_indexers_router)
+api_router.include_router(admin_metadata_router)
 api_router.include_router(admin_library_router)
+api_router.include_router(admin_peers_router)
 api_router.include_router(admin_settings_router)
 api_router.include_router(admin_tags_router)
 api_router.include_router(admin_invites_router)
@@ -113,6 +120,7 @@ api_router.include_router(monitors_router)
 api_router.include_router(notifications_router)
 api_router.include_router(playback_router)
 api_router.include_router(playback_progress_router)
+api_router.include_router(peers_proxy_router)
 api_router.include_router(queue_router)
 api_router.include_router(requests_router)
 api_router.include_router(recommendations_router)
@@ -154,6 +162,12 @@ def create_app(
     app.state.download_client_adapters = {
         "qbittorrent": QbittorrentAdapter(),
         "sabnzbd": SabnzbdAdapter(),
+    }
+    # Never registered, so testing an indexer's connection answered "no adapter
+    # is installed" for the only two implementations there are.
+    app.state.indexer_adapters = {
+        "torznab": TorznabAdapter(),
+        "newznab": NewznabAdapter(),
     }
 
     app.add_middleware(SetupMiddleware)

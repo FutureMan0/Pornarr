@@ -54,6 +54,13 @@ export const NAV_ITEMS = [
   { id: "collections", path: "/collections" },
   { id: "watchlist", path: "/watchlist" },
   { id: "requests", path: "/requests" },
+  // Search is a destination, not only the field in the top bar. A field is a
+  // shortcut for someone who already knows they want to search; it is not how
+  // the screen is discovered, and until it was listed here `/search` could be
+  // reached only by typing or by URL.
+  { id: "search", path: "/search" },
+  { id: "monitors", path: "/monitors" },
+  { id: "recommendations", path: "/recommendations" },
   // `/api/queue` and `/api/queue/summary` both require the admin role, so this
   // screen answers a guest with 403 and nothing else. It sat in everyone's
   // navigation until today, which is the same mistake the five entries above
@@ -334,6 +341,23 @@ export const NAV_ICON_PATHS: Readonly<Record<string, JSX.Element>> = {
     <>
       <circle cx="8" cy="8" r="6" />
       <path d="M8 5.5v5M5.5 8h5" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="7" cy="7" r="4.5" />
+      <path d="m10.25 10.25 3.25 3.25" />
+    </>
+  ),
+  monitors: (
+    <>
+      <path d="M1.25 8s2.5-4.25 6.75-4.25S14.75 8 14.75 8s-2.5 4.25-6.75 4.25S1.25 8 1.25 8Z" />
+      <circle cx="8" cy="8" r="1.75" />
+    </>
+  ),
+  recommendations: (
+    <>
+      <path d="m8 1.75 1.9 3.85 4.25.62-3.08 3 .73 4.23L8 11.45l-3.8 2 .73-4.23-3.08-3 4.25-.62Z" />
     </>
   ),
   downloads: (

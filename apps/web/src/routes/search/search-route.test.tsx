@@ -109,6 +109,16 @@ describe("search workspace", () => {
     await waitFor(() => expect(calls.local.mock.calls.at(-1)?.[0].get("quality")).toBe("1080p"));
   });
 
+  test("points an owned match at the screen that shows it", async () => {
+    signedIn();
+    searchHandlers();
+    renderApp("/search?q=Example");
+
+    const link = await screen.findByRole("link", { name: "Upgrade" });
+
+    expect(link.getAttribute("href")).toBe("/library/d1541a90-7a4b-45ff-8a67-66d074e7b072");
+  });
+
   test("creates a selected request before grabbing its cached release", async () => {
     signedIn();
     const calls = searchHandlers();

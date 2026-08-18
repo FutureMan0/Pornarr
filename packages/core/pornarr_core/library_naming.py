@@ -33,7 +33,8 @@ def build_library_path(
     values = {
         "studio": sanitize_component(studio or "unknown"),
         "title": sanitize_component(title),
-        "year": sanitize_component((release_date or "unknown")[:4]),
+        # Slicing the fallback too would file undated releases under "unkn".
+        "year": sanitize_component(release_date[:4] if release_date else "unknown"),
         "quality": sanitize_component(quality or "unknown"),
     }
     _validate_layout(layout)

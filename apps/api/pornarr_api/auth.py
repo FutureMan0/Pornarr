@@ -276,7 +276,13 @@ async def enforce_csrf(request: Request) -> None:
     if (
         request.method not in _UNSAFE_METHODS
         or request.url.path
-        in {"/api/auth/login", "/api/setup/validate-library-path", "/api/setup/complete"}
+        in {
+            "/api/auth/login",
+            "/api/setup/validate-library-path",
+            "/api/setup/complete",
+            "/api/setup/test-indexer",
+            "/api/setup/test-download-client",
+        }
         or is_invite_redemption(request.url.path)
         or request.headers.get("X-Api-Key")
     ):

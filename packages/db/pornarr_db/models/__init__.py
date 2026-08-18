@@ -32,9 +32,11 @@ from pornarr_db.models.invite import Invite
 from pornarr_db.models.media import DuplicateCandidate, Media, MediaFile, MediaFileHistory
 from pornarr_db.models.metadata_correction import MetadataCorrection
 from pornarr_db.models.metadata_match import MetadataMatchLog
+from pornarr_db.models.metadata_provider import MetadataProvider
 from pornarr_db.models.monitor import Monitor, MonitorKind
 from pornarr_db.models.notification import Notification, NotificationKind, NotificationPreference
 from pornarr_db.models.oidc import OidcIdentity, OidcProvider
+from pornarr_db.models.peer import Peer
 from pornarr_db.models.playback import PlaybackProgress, UserEvent, UserEventType
 from pornarr_db.models.preferences import PreferenceAxis, UserPreference, UserPreferenceState
 from pornarr_db.models.quality import QualityDefinition, QualityProfile, QualityProfileItem
@@ -100,6 +102,7 @@ __all__ = [
     "MediaTag",
     "MetadataCorrection",
     "MetadataMatchLog",
+    "MetadataProvider",
     "Monitor",
     "MonitorKind",
     "Notification",
@@ -107,6 +110,7 @@ __all__ = [
     "NotificationPreference",
     "OidcIdentity",
     "OidcProvider",
+    "Peer",
     "PerformanceMeasurement",
     "PerformanceMetric",
     "Performer",

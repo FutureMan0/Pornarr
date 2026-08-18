@@ -52,3 +52,29 @@ async def test_newznab_rss_injects_its_key_into_downloads() -> None:
     releases = await RecordedAdapter().rss(base_url="https://indexer.example/api", api_key="secret")
 
     assert releases[0].download_url == "https://indexer.example/get?apikey=secret"
+
+
+async def test_newznab_search_and_rss_restrict_requests_to_the_configured_categories() -> None:
+    class RecordedAdapter(NewznabAdapter):
+        def __init__(self) -> None:
+            self.params: dict[str, str] | None = None
+
+        async def _request(self, base_url: str, api_key: str, params: dict[str, str]) -> str:
+            self.params = params
+            return (
+                "<rss><channel><item><title>Example</title><guid>one</guid></item></channel></rss>"
+            )
+
+    adapter = RecordedAdapter()
+    await adapter.search(
+        base_url="https://indexer.example/api",
+        api_key="secret",
+        query="example",
+        categories=("6000",),
+    )
+    assert adapter.params == {"t": "search", "q": "example", "cat": "6000"}
+
+    await adapter.rss(
+        base_url="https://indexer.example/api", api_key="secret", categories=("6000",)
+    )
+    assert adapter.params == {"t": "search", "cat": "6000"}

@@ -28,10 +28,10 @@ from pornarr_db.models.statistics import PerformanceMetric
 from pornarr_db.statistics import record_measurement
 from pornarr_db.types import set_cipher
 from pornarr_shared.crypto import CredentialCipher
-from pornarr_shared.jobs import INDEXER_QUEUE, indexer_search_state_key
+from pornarr_shared.jobs import INDEXER_QUEUE, indexer_search_state_key, job_key
 from pornarr_shared.metrics import REGISTRY
 from tests.api.test_app import SECRET
-from tests.api.test_auth import MemoryQueue, create_user, csrf_headers, login
+from tests.api.test_auth import create_user, csrf_headers, login
 
 pytest_plugins = ["tests.api.test_auth"]
 
@@ -168,12 +168,13 @@ async def test_local_search_uses_the_shared_size_age_and_quality_filters(
 async def test_indexer_search_enqueues_a_user_scoped_job_and_publishes_its_start(
     app, client
 ) -> None:
+    """The job goes to the ARQ pool, never to the plain event client.
+
+    Nothing here fakes an ``enqueue_job``: submitting through the event client
+    is exactly the mistake that turned every indexer search into a 500.
+    """
     user = await create_user(app)
-    # The queue, not the session client. Attaching `enqueue_job` to the latter
-    # is what let the API ship a call its Redis object could not answer.
-    queue = MemoryQueue()
-    app.state.queue = queue
-    calls = queue.jobs
+    assert not hasattr(app.state.redis, "enqueue_job")
     await login(client, user.username, "correct horse battery staple")
 
     response = await client.post(
@@ -184,11 +185,20 @@ async def test_indexer_search_enqueues_a_user_scoped_job_and_publishes_its_start
 
     assert response.status_code == 202
     search_id = UUID(response.json()["id"])
-    assert calls == [
+    assert app.state.queue.jobs == [
         (
             "search_indexers",
             (str(search_id), str(user.id), "Example Scene"),
-            {"_queue_name": INDEXER_QUEUE},
+            {
+                "_job_id": job_key(
+                    "search_indexers",
+                    str(search_id),
+                    str(user.id),
+                    "Example Scene",
+                    queue=INDEXER_QUEUE,
+                ),
+                "_queue_name": INDEXER_QUEUE,
+            },
         )
     ]
     assert json.loads(app.state.redis.values[indexer_search_state_key(str(search_id))]) == {

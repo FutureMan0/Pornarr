@@ -26,6 +26,8 @@ from pornarr_shared.errors import PornarrError
 
 SESSION_TTL_SECONDS = 60
 SESSION_RECORD_TTL_SECONDS = SESSION_TTL_SECONDS * 2
+START_CLAIM_TTL_SECONDS = 30
+START_POLL_SECONDS = 0.1
 SESSION_INDEX_KEY = "pornarr:transcode:sessions"
 FAILURE_RECORD_TTL_SECONDS = 7 * 24 * 60 * 60
 FAILURE_INDEX_KEY = "pornarr:transcode:failures"
@@ -76,6 +78,10 @@ class TranscodeFailure:
 
 def session_key(session_id: UUID) -> str:
     return f"pornarr:transcode:session:{session_id}"
+
+
+def starting_key(user_id: UUID, media_id: UUID) -> str:
+    return f"pornarr:transcode:starting:{user_id}:{media_id}"
 
 
 def heartbeat_key(session_id: UUID) -> str:
@@ -208,6 +214,45 @@ class TranscodeSessionRegistry:
             if session is not None:
                 sessions.append(session)
         return sorted(sessions, key=lambda session: session.created_at)
+
+    async def session_for(self, user_id: UUID, media_id: UUID) -> TranscodeSession | None:
+        """Return this user's live session for one title, if one is running."""
+
+        for session in await self.active_sessions():
+            if session.user_id == user_id and session.media_id == media_id:
+                return session
+        return None
+
+    async def begin_start(self, user_id: UUID, media_id: UUID) -> bool:
+        """Claim the right to start the one session for this viewer and title.
+
+        Two requests that arrive together both see no running session and both
+        start FFmpeg, so one of the two transcodes is left with nobody holding
+        its id and runs until its heartbeat expires. The loser of this claim
+        waits for the winner's session instead.
+        """
+
+        claimed = await self._redis.set(
+            starting_key(user_id, media_id), "1", nx=True, ex=START_CLAIM_TTL_SECONDS
+        )
+        return bool(claimed)
+
+    async def finish_start(self, user_id: UUID, media_id: UUID) -> None:
+        await self._redis.delete(starting_key(user_id, media_id))
+
+    async def await_session(
+        self, user_id: UUID, media_id: UUID, *, timeout: float = START_CLAIM_TTL_SECONDS
+    ) -> TranscodeSession | None:
+        """Wait for the session another request is currently starting."""
+
+        deadline = asyncio.get_running_loop().time() + timeout
+        while True:
+            session = await self.session_for(user_id, media_id)
+            if session is not None:
+                return session
+            if asyncio.get_running_loop().time() >= deadline:
+                return None
+            await asyncio.sleep(START_POLL_SECONDS)
 
     async def select_mode(self, user_id: UUID, limits: TranscodeLimits) -> TranscodeMode:
         return choose_transcode_mode(await self.active_sessions(), user_id, limits)

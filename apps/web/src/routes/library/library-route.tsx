@@ -1,11 +1,19 @@
 import type { paths } from "@pornarr/api-client";
-import { MediaTile } from "@pornarr/ui";
+import { EmptyState, MediaTile, Select } from "@pornarr/ui";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import type { JSX } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { NAV_ITEMS } from "../../shell/sidebar";
+import { usePeers } from "../settings/peers/peers";
+import { useRootFolders } from "../settings/root-folders/root-folders";
+import { ROOT_FOLDERS_PATH } from "../settings/settings-layout";
+
+/** Read from the nav table so the link cannot outlive the route it points at. */
+const REQUESTS_PATH = NAV_ITEMS.find((item) => item.id === "requests")?.path ?? "/requests";
 
 import { getApiClient } from "../../lib/api";
 import { apiFailure } from "../../lib/api-error";
@@ -23,12 +31,33 @@ import { ResumeTile } from "../continue/resume-tile";
  */
 type Page = paths["/api/library"]["get"]["responses"]["200"]["content"]["application/json"];
 type Item = Page["items"][number];
+type Facets =
+  paths["/api/library/facets"]["get"]["responses"]["200"]["content"]["application/json"];
+type Facet = Facets["studios"][number];
 
 /** How many titles one page brings back. */
 const PAGE_SIZE = 48;
 
+const SORTS = ["added", "title", "release", "duration"] as const;
+type Sort = (typeof SORTS)[number];
+const FILTER_KEYS = ["studio", "performer", "tag"] as const;
+
+/** Browsing your own library, or everyone's. Anything else is one peer's id. */
+const LOCAL_SOURCE = "local";
+const ALL_SOURCES = "all";
+
+function sortOf(value: string | null): Sort {
+  return SORTS.includes(value as Sort) ? (value as Sort) : "added";
+}
+
 /** The rating floors the design offers as chips. */
 const RATING_FILTERS = [4, 3] as const;
+
+/** A floor from the URL, or none. Anything the chips do not offer is none. */
+function ratingOf(value: string | null): number | null {
+  const floor = Number(value);
+  return RATING_FILTERS.includes(floor as (typeof RATING_FILTERS)[number]) ? floor : null;
+}
 
 /**
  * How many half-watched titles the row shows before deferring to `/continue`.
@@ -40,21 +69,51 @@ const RESUME_ROW = 5;
 
 export function LibraryRoute() {
   const { t } = useTranslation();
-  const [ratingFloor, setRatingFloor] = useState<number | null>(null);
-
+  const rootFolders = useRootFolders();
+  const [params, setParams] = useSearchParams();
+  // The filters live in the URL, so a filtered library is a link somebody can
+  // send, and reloading the page does not throw the selection away.
+  const filters = FILTER_KEYS.map((key) => [key, params.get(key) ?? ""] as const);
+  const sort = sortOf(params.get("sort"));
+  const source = params.get("source") ?? LOCAL_SOURCE;
+  const ratingFloor = ratingOf(params.get("rating"));
+  // The names of other people's servers are only needed once the reader has
+  // left their own library. Asking an administrator-only endpoint on every
+  // library load would be a request nobody asked for, on the one screen the
+  // application opens on.
+  const peers = usePeers(source !== LOCAL_SOURCE);
+  const facets = useQuery<Facets, Error>({
+    queryKey: ["library", "facets"],
+    queryFn: async (): Promise<Facets> => {
+      const { data, error, response } = await getApiClient().GET("/api/library/facets");
+      if (!data || error) throw apiFailure(error, response);
+      return data;
+    },
+  });
   // The last generic is the page param. Without it `pageParam` arrives as
-  // `unknown` and the offset has to be cast, which is the cast this file was
-  // created to avoid.
-  const library = useInfiniteQuery<Page, Error, InfiniteData<Page>, readonly unknown[], number>({
-    queryKey: ["library", ratingFloor],
+  // `unknown` and would have to be cast, which is the cast the derived types
+  // exist to avoid. A page is addressed by an offset or by a cursor depending
+  // on which library is being read, so it is whichever of the two the previous
+  // page handed back.
+  const library = useInfiniteQuery<
+    Page,
+    Error,
+    InfiniteData<Page>,
+    readonly unknown[],
+    number | string
+  >({
+    queryKey: ["library", Object.fromEntries(filters), sort, source, ratingFloor],
     initialPageParam: 0,
-    getNextPageParam: (page) => page.next_offset ?? undefined,
+    getNextPageParam: (page) => page.next_cursor ?? page.next_offset ?? undefined,
     queryFn: async ({ pageParam }): Promise<Page> => {
       const { data, error, response } = await getApiClient().GET("/api/library", {
         params: {
           query: {
             limit: PAGE_SIZE,
-            offset: pageParam,
+            ...(typeof pageParam === "string" ? { cursor: pageParam } : { offset: pageParam }),
+            sort,
+            source,
+            ...Object.fromEntries(filters.filter(([, value]) => value !== "")),
             // Omitted rather than sent as null: the endpoint validates the
             // floor, and `rating_gte=null` is a 422 on every unfiltered load.
             ...(ratingFloor === null ? {} : { rating_gte: ratingFloor }),
@@ -65,6 +124,15 @@ export function LibraryRoute() {
       return data;
     },
   });
+  const filtered = filters.some(([, value]) => value !== "") || ratingFloor !== null;
+  const setFilter = (key: string, value: string): void => {
+    setParams((current) => {
+      const next = new URLSearchParams(current);
+      if (value === "") next.delete(key);
+      else next.set(key, value);
+      return next;
+    });
+  };
 
   /**
    * What you are part-way through, from the endpoint that knows.
@@ -114,30 +182,18 @@ export function LibraryRoute() {
     );
   return (
     <section aria-label={t("library.title")} className="flex flex-col gap-6">
-      {/* The controls are a fieldset; the result count is not one of them, so
-          it sits beside the group rather than inside it. A screen reader
-          reaching the filters is told what they filter, and the count is not
-          announced as though it were another button. */}
-      <div className="flex flex-wrap items-center gap-2">
-        <fieldset className="flex flex-wrap items-center gap-2 border-0 p-0">
-          <legend className="sr-only">{t("library.filters")}</legend>
-          {RATING_FILTERS.map((floor) => (
-            <button
-              key={floor}
-              type="button"
-              aria-pressed={ratingFloor === floor}
-              onClick={() => setRatingFloor(ratingFloor === floor ? null : floor)}
-              className={
-                ratingFloor === floor
-                  ? "rounded-full bg-[var(--primary-weak)] px-3 py-1 text-xs text-[var(--pa-accent-300)]"
-                  : "rounded-full border border-border px-3 py-1 text-xs text-ink-muted hover:bg-surface-3 hover:text-ink"
-              }
-            >
-              {t("library.ratingFloor", { count: floor })}
-            </button>
-          ))}
-        </fieldset>
-      </div>
+      <LibraryFilters
+        facets={facets.data}
+        loading={facets.isPending}
+        studio={params.get("studio") ?? ""}
+        performer={params.get("performer") ?? ""}
+        tag={params.get("tag") ?? ""}
+        sort={sort}
+        source={source}
+        ratingFloor={ratingFloor}
+        peers={(peers.data ?? []).map((peer) => [peer.id, peer.name] as const)}
+        onChange={setFilter}
+      />
 
       {/* Outside the empty check below, because the two answer different
           questions. A rating filter that matches nothing says so about the
@@ -173,9 +229,20 @@ export function LibraryRoute() {
       ) : null}
 
       {items.length === 0 ? (
-        <p className="text-sm text-ink-muted">
-          {ratingFloor === null ? t("library.empty") : t("library.noMatches")}
-        </p>
+        // A filtered library that comes back empty is not an empty library, and
+        // telling the reader to add a root folder they already have is worse
+        // than saying nothing.
+        filtered ? (
+          <EmptyState
+            title={t("library.noMatchTitle")}
+            body={t("library.noMatchBody")}
+            action={{ label: t("library.noMatchAction"), href: "/library" }}
+          />
+        ) : (
+          // `undefined` is "not asked" — a non-administrator never asks — so only
+          // a loaded, empty list makes the root folder the thing that is missing.
+          <LibraryEmpty needsRootFolder={rootFolders.data?.length === 0} />
+        )
       ) : (
         <>
           <section aria-labelledby="everything-section" className="flex flex-col gap-3">
@@ -187,6 +254,7 @@ export function LibraryRoute() {
             </h2>
             <VirtualGrid
               items={items}
+              showSource={source === ALL_SOURCES}
               onEnd={() =>
                 library.hasNextPage && !library.isFetchingNextPage && void library.fetchNextPage()
               }
@@ -198,7 +266,194 @@ export function LibraryRoute() {
   );
 }
 
-function VirtualGrid({ items, onEnd }: { readonly items: Item[]; readonly onEnd: () => void }) {
+/**
+ * The values worth filtering by come from the library itself, so the screen
+ * never offers a filter that matches nothing, and never hides one that exists.
+ */
+function LibraryFilters({
+  facets,
+  loading,
+  studio,
+  performer,
+  tag,
+  sort,
+  source,
+  ratingFloor,
+  peers,
+  onChange,
+}: {
+  readonly facets: Facets | undefined;
+  readonly loading: boolean;
+  readonly studio: string;
+  readonly performer: string;
+  readonly tag: string;
+  readonly sort: Sort;
+  readonly source: string;
+  readonly ratingFloor: number | null;
+  readonly peers: readonly (readonly [string, string])[];
+  readonly onChange: (key: string, value: string) => void;
+}): JSX.Element {
+  const { t } = useTranslation();
+  const label = (facet: Facet): string =>
+    t("library.facetCount", { value: facet.value, count: facet.count });
+
+  return (
+    <div className="flex flex-wrap gap-4" aria-label={t("library.filters")}>
+      {/* First, because it decides what the other three are filtering. The
+          peers appear once they are known; until then the choice is between
+          this library and every library, which is what the picker is for. */}
+      <FacetSelect
+        id="library-source"
+        label={t("library.filterSource")}
+        value={source}
+        loading={false}
+        options={[
+          [LOCAL_SOURCE, t("library.sourceLocal")],
+          [ALL_SOURCES, t("library.sourceAll")],
+          ...peers,
+        ]}
+        onChange={(value) => onChange("source", value)}
+      />
+      <FacetSelect
+        id="library-studio"
+        label={t("library.filterStudio")}
+        placeholder={t("library.anyStudio")}
+        value={studio}
+        loading={loading}
+        options={(facets?.studios ?? []).map((facet) => [facet.value, label(facet)])}
+        onChange={(value) => onChange("studio", value)}
+      />
+      <FacetSelect
+        id="library-performer"
+        label={t("library.filterPerformer")}
+        placeholder={t("library.anyPerformer")}
+        value={performer}
+        loading={loading}
+        options={(facets?.performers ?? []).map((facet) => [facet.value, label(facet)])}
+        onChange={(value) => onChange("performer", value)}
+      />
+      <FacetSelect
+        id="library-tag"
+        label={t("library.filterTag")}
+        placeholder={t("library.anyTag")}
+        value={tag}
+        loading={loading}
+        options={(facets?.tags ?? []).map((facet) => [facet.value, label(facet)])}
+        onChange={(value) => onChange("tag", value)}
+      />
+      <FacetSelect
+        id="library-sort"
+        label={t("library.filterSort")}
+        value={sort}
+        loading={false}
+        options={[
+          ["added", t("library.sortAdded")],
+          ["title", t("library.sortTitle")],
+          ["release", t("library.sortRelease")],
+          ["duration", t("library.sortDuration")],
+        ]}
+        onChange={(value) => onChange("sort", value)}
+      />
+      {/* A fieldset rather than a div carrying role="group": the grouping is
+          then in the markup itself, and the legend names it for a screen
+          reader without a parallel aria-label to keep in step. */}
+      <fieldset className="flex flex-wrap items-end gap-2 border-0 p-0">
+        <legend className="sr-only">{t("library.filters")}</legend>
+        {RATING_FILTERS.map((floor) => (
+          <button
+            key={floor}
+            type="button"
+            aria-pressed={ratingFloor === floor}
+            onClick={() => onChange("rating", ratingFloor === floor ? "" : String(floor))}
+            className={
+              ratingFloor === floor
+                ? "rounded-full bg-[var(--primary-weak)] px-3 py-1 text-xs text-[var(--pa-accent-300)]"
+                : "rounded-full border border-border px-3 py-1 text-xs text-ink-muted hover:bg-surface-3 hover:text-ink"
+            }
+          >
+            {t("library.ratingFloor", { count: floor })}
+          </button>
+        ))}
+      </fieldset>
+    </div>
+  );
+}
+
+function FacetSelect({
+  id,
+  label,
+  placeholder,
+  value,
+  loading,
+  options,
+  onChange,
+}: {
+  readonly id: string;
+  readonly label: string;
+  readonly placeholder?: string;
+  readonly value: string;
+  readonly loading: boolean;
+  readonly options: readonly (readonly [string, string])[];
+  readonly onChange: (value: string) => void;
+}): JSX.Element {
+  return (
+    <div className="flex min-w-40 flex-col gap-1">
+      <label className="text-xs text-ink-muted" htmlFor={id}>
+        {label}
+      </label>
+      <Select
+        id={id}
+        value={value}
+        loading={loading}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {placeholder === undefined ? null : <option value="">{placeholder}</option>}
+        {options.map(([optionValue, optionLabel]) => (
+          <option key={optionValue} value={optionValue}>
+            {optionLabel}
+          </option>
+        ))}
+      </Select>
+    </div>
+  );
+}
+
+/**
+ * DESIGN.md: "an empty library says how to add a root folder and links to it".
+ * It used to name the fix and stop, and the screen it named was not in the
+ * client at all — which made the sentence advice nobody could follow.
+ *
+ * Nothing here mentions scanning: the API exposes no way to start one, and an
+ * empty state that asks for an action the client cannot perform is the defect
+ * this replaces rather than a smaller version of it.
+ */
+function LibraryEmpty({ needsRootFolder }: { readonly needsRootFolder: boolean }): JSX.Element {
+  const { t } = useTranslation();
+
+  return needsRootFolder ? (
+    <EmptyState
+      title={t("library.emptyTitle")}
+      body={t("library.empty")}
+      action={{ label: t("library.emptyAction"), href: ROOT_FOLDERS_PATH }}
+    />
+  ) : (
+    <EmptyState
+      title={t("library.emptyTitle")}
+      body={t("library.emptyRequestBody")}
+      action={{ label: t("library.emptyRequestAction"), href: REQUESTS_PATH }}
+    />
+  );
+}
+
+function VirtualGrid({
+  items,
+  showSource,
+  onEnd,
+}: {
+  readonly items: Item[];
+  readonly showSource: boolean;
+  readonly onEnd: () => void;
+}) {
   const parentRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(1);
@@ -255,7 +510,13 @@ function VirtualGrid({ items, onEnd }: { readonly items: Item[]; readonly onEnd:
             style={{ transform: `translateY(${row.start}px)` }}
           >
             {items.slice(row.index * columns, (row.index + 1) * columns).map((item) => (
-              <MediaCard key={item.id} item={item} />
+              // Ids are per-server: two libraries can hand back the same one,
+              // and browsing both at once made React see one card twice.
+              <MediaCard
+                key={`${item.peer_id ?? ""}:${item.id}`}
+                item={item}
+                showSource={showSource}
+              />
             ))}
           </div>
         ))}
@@ -264,7 +525,7 @@ function VirtualGrid({ items, onEnd }: { readonly items: Item[]; readonly onEnd:
   );
 }
 
-function MediaCard({ item }: { readonly item: Item }) {
+function MediaCard({ item, showSource }: { readonly item: Item; readonly showSource: boolean }) {
   const { t } = useTranslation();
   const artVisible = useArtVisible();
   const [preview, setPreview] = useState(false);
@@ -279,11 +540,26 @@ function MediaCard({ item }: { readonly item: Item }) {
     item.position_seconds !== null && item.progress_duration_seconds
       ? item.position_seconds / item.progress_duration_seconds
       : 0;
+  const from = item.peer_name ?? null;
+  // A remote title's id means nothing on this instance, so the detail screen is
+  // told which library to ask; without it the card led to the not-found screen.
+  const address =
+    item.peer_id === null || item.peer_id === undefined
+      ? `/library/${item.id}`
+      : `/library/${item.id}?peer=${item.peer_id}`;
 
   return (
     <MediaTile
       title={item.title}
-      meta={item.studio ?? undefined}
+      // Only while every library is on screen at once: on one library the
+      // answer is the same for every card and says nothing.
+      meta={
+        showSource
+          ? from === null
+            ? t("library.fromLocal")
+            : t("library.fromPeer", { name: from })
+          : (item.studio ?? undefined)
+      }
       resolution={item.quality ?? item.resolution ?? undefined}
       duration={item.duration_seconds === null ? undefined : formatDuration(item.duration_seconds)}
       progress={progress}
@@ -306,7 +582,7 @@ function MediaCard({ item }: { readonly item: Item }) {
       }
       action={(content) => (
         <Link
-          to={`/library/${item.id}`}
+          to={address}
           className="block rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
           onPointerEnter={() => setPreview(true)}
           onPointerLeave={() => setPreview(false)}

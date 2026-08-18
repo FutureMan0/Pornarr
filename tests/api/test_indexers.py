@@ -58,6 +58,9 @@ async def test_admin_can_configure_test_and_remove_an_indexer(app, client) -> No
     assert created.status_code == 201
     assert "api_key" not in created.text
     indexer_id = created.json()["id"]
+    # A general-purpose indexer defaults to the XXX range, because that is
+    # what this product is for, until an administrator narrows it.
+    assert created.json()["search_categories"] == ["6000"]
     assert created.json()["stats"] == {
         "queries": 0,
         "failures": 0,
@@ -79,6 +82,58 @@ async def test_admin_can_configure_test_and_remove_an_indexer(app, client) -> No
     assert (
         await client.delete(f"/api/admin/indexers/{indexer_id}", headers=csrf_headers(client))
     ).status_code == 204
+
+
+async def test_indexer_creation_accepts_an_explicit_category_selection(app, client) -> None:
+    admin = await create_user(app, username="admin", role=UserRole.ADMIN)
+    await login(client, admin.username, "correct horse battery staple")
+
+    created = await client.post(
+        "/api/admin/indexers",
+        json={
+            "name": "example",
+            "protocol": "torznab",
+            "implementation": "torznab",
+            "base_url": "https://indexer.example",
+            "api_key": "secret-value",
+            "search_categories": ["5000"],
+        },
+        headers=csrf_headers(client),
+    )
+
+    assert created.status_code == 201
+    assert created.json()["search_categories"] == ["5000"]
+
+
+async def test_admin_can_change_which_categories_an_indexer_is_restricted_to(app, client) -> None:
+    admin = await create_user(app, username="admin", role=UserRole.ADMIN)
+    await login(client, admin.username, "correct horse battery staple")
+    created = await client.post(
+        "/api/admin/indexers",
+        json={
+            "name": "example",
+            "protocol": "torznab",
+            "implementation": "torznab",
+            "base_url": "https://indexer.example",
+            "api_key": "secret-value",
+        },
+        headers=csrf_headers(client),
+    )
+    indexer_id = created.json()["id"]
+    assert created.json()["search_categories"] == ["6000"]
+
+    updated = await client.put(
+        f"/api/admin/indexers/{indexer_id}/search-categories",
+        json={"search_categories": ["6000", "6010"]},
+        headers=csrf_headers(client),
+    )
+
+    assert updated.status_code == 200
+    assert updated.json()["search_categories"] == ["6000", "6010"]
+    assert (await client.get("/api/admin/indexers")).json()[0]["search_categories"] == [
+        "6000",
+        "6010",
+    ]
 
 
 async def test_indexer_connection_failure_reports_a_redacted_cause(app, client) -> None:

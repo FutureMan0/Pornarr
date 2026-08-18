@@ -21,8 +21,19 @@ Weights live in configuration, not in code, so they can be tuned without a deplo
 ```
 0.30 tag match + 0.25 performer match + 0.15 studio match
 + 0.10 quality preference + 0.10 recency + 0.10 general popularity
++ 0.10 household rating
 - hard blocks
 ```
+
+## Feed switches
+
+Four administrator switches change what generation produces, on top of the weights.
+`recommendation_use_ratings` decides whether the household's stars reach the rating
+component at all. `recommendation_hide_finished` drops titles the user has completed,
+read from playback rather than the event stream because events are pruned on a
+retention schedule. `recommendation_include_friend_picks` and
+`recommendation_include_shorts` decide whether titles someone sent the user, and
+titles shorter than a clip's maximum length, are eligible candidates.
 
 ## Ranking
 

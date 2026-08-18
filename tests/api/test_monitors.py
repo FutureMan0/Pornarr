@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pornarr_db.models.entities import Performer, Studio
 from pornarr_db.models.monitor import Monitor
 from pornarr_db.models.quality import QualityDefinition, QualityProfile
-from tests.api.test_auth import MemoryQueue, create_user, csrf_headers, login
+from tests.api.test_auth import create_user, csrf_headers, login
 
 pytest_plugins = ("tests.api.test_auth",)
 
@@ -144,9 +144,6 @@ async def test_user_can_trigger_a_monitor_backlog_search(app, client) -> None:
         json={"kind": "query", "query": "Example Performer"},
         headers=csrf_headers(client),
     )
-    # On the queue client, which is the one the API enqueues through.
-    queue = MemoryQueue()
-    app.state.queue = queue
 
     response = await client.post(
         f"/api/monitors/{created.json()['id']}/backlog-search",
@@ -154,8 +151,10 @@ async def test_user_can_trigger_a_monitor_backlog_search(app, client) -> None:
     )
 
     assert response.status_code == 202
-    function, args, kwargs = queue.jobs[0]
+    function, args, kwargs = app.state.queue.jobs[0]
+    monitor_id, run_id = args
     assert function == "backlog_search"
-    assert args[0] == created.json()["id"]
-    assert isinstance(args[1], str) and args[1].startswith("manual:")
+    assert monitor_id == created.json()["id"]
+    assert isinstance(run_id, str)
+    assert run_id.startswith("manual:")
     assert kwargs["_queue_name"] == "pornarr:indexer"

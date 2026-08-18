@@ -321,9 +321,13 @@ class QbittorrentAdapter:
     ) -> None:
         async with self._authenticated_client(host, port, url_base, credentials) as (client, auth):
             response = await self._request(
-                client, auth, "POST", "torrents/add", data=data, files=files
+                client, auth, "POST", "torrents/add", data=data, files=files, allow={409}
             )
-        if response.text.strip() == "Fails.":
+        # 409 is qBittorrent saying it already has this torrent, which is the
+        # outcome the caller wanted: the release is in the client. Treating it
+        # as a failure meant grabbing something already downloading answered
+        # with a gateway error.
+        if response.status_code != 409 and response.text.strip() == "Fails.":
             raise QbittorrentProtocolError("qBittorrent rejected the torrent.")
 
     async def _control(
@@ -365,12 +369,14 @@ class QbittorrentAdapter:
         params: dict[str, str] | None = None,
         data: dict[str, str] | None = None,
         files: dict[str, tuple[str, bytes, str]] | None = None,
+        allow: frozenset[int] | set[int] = frozenset(),
     ) -> httpx.Response:
         response = await client.request(method, path, params=params, data=data, files=files)
         if response.status_code in {401, 403}:
             await self._login(client, auth)
             response = await client.request(method, path, params=params, data=data, files=files)
-        response.raise_for_status()
+        if response.status_code not in allow:
+            response.raise_for_status()
         return response
 
     async def _login(self, client: httpx.AsyncClient, auth: QbittorrentCredentials) -> None:

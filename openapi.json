@@ -1358,6 +1358,24 @@
         "title": "ExternalSearchSort",
         "type": "string"
       },
+      "FacetResponse": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "count"
+        ],
+        "title": "FacetResponse",
+        "type": "object"
+      },
       "FacetValueResponse": {
         "properties": {
           "count": {
@@ -1713,6 +1731,13 @@
             "title": "Protocol",
             "type": "string"
           },
+          "search_categories": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Search Categories",
+            "type": "array"
+          },
           "stats": {
             "$ref": "#/components/schemas/IndexerStatsResponse"
           }
@@ -1724,6 +1749,7 @@
           "implementation",
           "base_url",
           "categories",
+          "search_categories",
           "priority",
           "enabled",
           "health",
@@ -1733,6 +1759,22 @@
           "stats"
         ],
         "title": "IndexerResponse",
+        "type": "object"
+      },
+      "IndexerSearchCategoriesWrite": {
+        "properties": {
+          "search_categories": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Search Categories",
+            "type": "array"
+          }
+        },
+        "required": [
+          "search_categories"
+        ],
+        "title": "IndexerSearchCategoriesWrite",
         "type": "object"
       },
       "IndexerSearchResponse": {
@@ -1880,6 +1922,20 @@
             "minLength": 1,
             "title": "Protocol",
             "type": "string"
+          },
+          "search_categories": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search Categories"
           }
         },
         "required": [
@@ -2075,6 +2131,38 @@
         "type": "object"
       },
       "JsonValue": {},
+      "LibraryFacetsResponse": {
+        "properties": {
+          "performers": {
+            "items": {
+              "$ref": "#/components/schemas/FacetResponse"
+            },
+            "title": "Performers",
+            "type": "array"
+          },
+          "studios": {
+            "items": {
+              "$ref": "#/components/schemas/FacetResponse"
+            },
+            "title": "Studios",
+            "type": "array"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/FacetResponse"
+            },
+            "title": "Tags",
+            "type": "array"
+          }
+        },
+        "required": [
+          "studios",
+          "performers",
+          "tags"
+        ],
+        "title": "LibraryFacetsResponse",
+        "type": "object"
+      },
       "LibraryHealth": {
         "description": "Shares of the library, each out of `total`.",
         "properties": {
@@ -2111,6 +2199,11 @@
       },
       "LibraryItemResponse": {
         "properties": {
+          "added_at": {
+            "format": "date-time",
+            "title": "Added At",
+            "type": "string"
+          },
           "comment_count": {
             "title": "Comment Count",
             "type": "integer"
@@ -2134,6 +2227,28 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "peer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peer Id"
+          },
+          "peer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peer Name"
           },
           "position_seconds": {
             "anyOf": [
@@ -2245,6 +2360,7 @@
           "title",
           "studio",
           "release_date",
+          "added_at",
           "duration_seconds",
           "quality",
           "resolution",
@@ -2270,6 +2386,17 @@
             "title": "Items",
             "type": "array"
           },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
           "next_offset": {
             "anyOf": [
               {
@@ -2280,14 +2407,36 @@
               }
             ],
             "title": "Next Offset"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "unavailable_peers": {
+            "items": {
+              "$ref": "#/components/schemas/UnavailablePeerResponse"
+            },
+            "title": "Unavailable Peers",
+            "type": "array"
           }
         },
         "required": [
           "items",
+          "total",
           "next_offset"
         ],
         "title": "LibraryPageResponse",
         "type": "object"
+      },
+      "LibrarySort": {
+        "enum": [
+          "added",
+          "title",
+          "release",
+          "duration"
+        ],
+        "title": "LibrarySort",
+        "type": "string"
       },
       "LocalSearchItem": {
         "properties": {
@@ -2710,6 +2859,93 @@
         ],
         "title": "MediaSort",
         "type": "string"
+      },
+      "MetadataProviderResponse": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpoint"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "implementation": {
+            "title": "Implementation",
+            "type": "string"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "implementation",
+          "endpoint",
+          "priority",
+          "enabled"
+        ],
+        "title": "MetadataProviderResponse",
+        "type": "object"
+      },
+      "MetadataProviderWrite": {
+        "properties": {
+          "api_key": {
+            "format": "password",
+            "title": "Api Key",
+            "type": "string",
+            "writeOnly": true
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "endpoint": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpoint"
+          },
+          "implementation": {
+            "enum": [
+              "stashdb",
+              "tpdb"
+            ],
+            "title": "Implementation",
+            "type": "string"
+          },
+          "priority": {
+            "default": 0,
+            "title": "Priority",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "implementation",
+          "api_key"
+        ],
+        "title": "MetadataProviderWrite",
+        "type": "object"
       },
       "ModeratedCommentResponse": {
         "properties": {
@@ -3182,6 +3418,111 @@
           "last_scan_at"
         ],
         "title": "OverviewResponse",
+        "type": "object"
+      },
+      "PeerResponse": {
+        "properties": {
+          "base_url": {
+            "title": "Base Url",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "health": {
+            "title": "Health",
+            "type": "string"
+          },
+          "health_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Reason"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_tested_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tested At"
+          },
+          "media_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Count"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "base_url",
+          "enabled",
+          "health",
+          "health_reason",
+          "last_tested_at",
+          "media_count"
+        ],
+        "title": "PeerResponse",
+        "type": "object"
+      },
+      "PeerWrite": {
+        "properties": {
+          "api_key": {
+            "format": "password",
+            "title": "Api Key",
+            "type": "string",
+            "writeOnly": true
+          },
+          "base_url": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Base Url",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "base_url",
+          "api_key"
+        ],
+        "title": "PeerWrite",
         "type": "object"
       },
       "PerformanceInputResponse": {
@@ -5753,6 +6094,141 @@
         "title": "SetupCompleteResponse",
         "type": "object"
       },
+      "SetupDownloadClientWrite": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "credentials": {
+            "format": "password",
+            "title": "Credentials",
+            "type": "string",
+            "writeOnly": true
+          },
+          "host": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Host",
+            "type": "string"
+          },
+          "implementation": {
+            "enum": [
+              "qbittorrent",
+              "sabnzbd"
+            ],
+            "title": "Implementation",
+            "type": "string"
+          },
+          "port": {
+            "maximum": 65535.0,
+            "minimum": 1.0,
+            "title": "Port",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "implementation",
+          "host",
+          "port",
+          "credentials"
+        ],
+        "title": "SetupDownloadClientWrite",
+        "type": "object"
+      },
+      "SetupIndexerTestResponse": {
+        "properties": {
+          "categories": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Categories",
+            "type": "array"
+          }
+        },
+        "required": [
+          "categories"
+        ],
+        "title": "SetupIndexerTestResponse",
+        "type": "object"
+      },
+      "SetupIndexerWrite": {
+        "properties": {
+          "api_key": {
+            "format": "password",
+            "title": "Api Key",
+            "type": "string",
+            "writeOnly": true
+          },
+          "base_url": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Base Url",
+            "type": "string"
+          },
+          "implementation": {
+            "enum": [
+              "torznab",
+              "newznab"
+            ],
+            "title": "Implementation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "implementation",
+          "base_url",
+          "api_key"
+        ],
+        "title": "SetupIndexerWrite",
+        "type": "object"
+      },
+      "SetupMetadataProviderWrite": {
+        "properties": {
+          "api_key": {
+            "format": "password",
+            "title": "Api Key",
+            "type": "string",
+            "writeOnly": true
+          },
+          "endpoint": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpoint"
+          },
+          "implementation": {
+            "enum": [
+              "stashdb",
+              "tpdb"
+            ],
+            "title": "Implementation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "implementation",
+          "api_key"
+        ],
+        "title": "SetupMetadataProviderWrite",
+        "type": "object"
+      },
       "SetupPathValidationResponse": {
         "properties": {
           "same_filesystem_as_downloads": {
@@ -5795,11 +6271,41 @@
       },
       "SetupWrite": {
         "properties": {
+          "download_client": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SetupDownloadClientWrite"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "indexer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SetupIndexerWrite"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "library_path": {
             "maxLength": 1024,
             "minLength": 1,
             "title": "Library Path",
             "type": "string"
+          },
+          "metadata_provider": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SetupMetadataProviderWrite"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "password": {
             "format": "password",
@@ -6327,6 +6833,24 @@
           "playlist_url"
         ],
         "title": "TranscodeStartResponse",
+        "type": "object"
+      },
+      "UnavailablePeerResponse": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "UnavailablePeerResponse",
         "type": "object"
       },
       "UserEventResponse": {
@@ -7542,6 +8066,60 @@
         ]
       }
     },
+    "/api/admin/indexers/{indexer_id}/search-categories": {
+      "put": {
+        "description": "Change which categories this indexer's search/rss requests are restricted to.",
+        "operationId": "admin_update_indexer_search_categories",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "indexer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Indexer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IndexerSearchCategoriesWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Indexer Search Categories",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/admin/indexers/{indexer_id}/test": {
       "post": {
         "operationId": "admin_test_indexer",
@@ -7788,7 +8366,7 @@
     },
     "/api/admin/library/root-folders/{folder_id}/scan": {
       "post": {
-        "description": "Ask the worker to walk one folder now.\n\nIdempotent per folder: asking twice while a scan is queued does not queue a\nsecond walk of the same tree. `enqueue_once` keys on the arguments, so the\nsecond request returns the same 202 and changes nothing — which is what an\nadministrator clicking twice means, rather than two scans racing each other\nover the same files.\n\nThe progress is not returned here. The worker publishes `scan.progress` on\nthe event stream as it goes, and the screen watches that; holding the\nrequest open for a walk of ten thousand files would time out long before it\ntold anyone anything.",
+        "description": "Ask the worker to walk one root folder now, so its media can enter the library.\n\nThe progress is not returned here. The worker publishes `scan.progress` on\nthe event stream as it goes, and the screen watches that; holding the\nrequest open for a walk of ten thousand files would time out long before it\ntold anyone anything.",
         "operationId": "admin_scan_root_folder",
         "parameters": [
           {
@@ -7804,9 +8382,88 @@
         ],
         "responses": {
           "202": {
+            "description": "Successful Response"
+          },
+          "404": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Scan Root Folder",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/metadata-providers": {
+      "get": {
+        "operationId": "admin_list_metadata_providers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MetadataProviderResponse"
+                  },
+                  "title": "Response Admin List Metadata Providers",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Metadata Providers",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "admin_configure_metadata_provider",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetadataProviderWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataProviderResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -7822,7 +8479,43 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Scan Root Folder",
+        "summary": "Configure Metadata Provider",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/metadata-providers/{provider_id}": {
+      "delete": {
+        "operationId": "admin_remove_metadata_provider",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Metadata Provider",
         "tags": [
           "admin"
         ]
@@ -7989,6 +8682,149 @@
         "summary": "Overview",
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/api/admin/peers": {
+      "get": {
+        "operationId": "peers_list_peers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PeerResponse"
+                  },
+                  "title": "Response Peers List Peers",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Peers",
+        "tags": [
+          "peers"
+        ]
+      },
+      "post": {
+        "operationId": "peers_create_peer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PeerWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Peer",
+        "tags": [
+          "peers"
+        ]
+      }
+    },
+    "/api/admin/peers/{peer_id}": {
+      "delete": {
+        "operationId": "peers_delete_peer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "peer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Peer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Peer",
+        "tags": [
+          "peers"
+        ]
+      }
+    },
+    "/api/admin/peers/{peer_id}/test": {
+      "post": {
+        "operationId": "peers_test_peer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "peer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Peer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Test Peer",
+        "tags": [
+          "peers"
         ]
       }
     },
@@ -10378,6 +11214,111 @@
               ],
               "title": "Rating Gte"
             }
+          },
+          {
+            "in": "query",
+            "name": "studio",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Studio"
+            }
+          },
+          {
+            "in": "query",
+            "name": "performer",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Performer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag"
+            }
+          },
+          {
+            "in": "query",
+            "name": "quality",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Quality"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/LibrarySort",
+              "default": "added"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "default": "local",
+              "maxLength": 64,
+              "title": "Source",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
           }
         ],
         "responses": {
@@ -10403,6 +11344,28 @@
           }
         },
         "summary": "Browse Library",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/library/facets": {
+      "get": {
+        "description": "The values worth filtering by, so the screen offers them instead of a blank box.",
+        "operationId": "library_library_filter_values",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryFacetsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Library Filter Values",
         "tags": [
           "library"
         ]
@@ -11896,6 +12859,152 @@
         ]
       }
     },
+    "/api/peers/{peer_id}/proxy/{path}": {
+      "delete": {
+        "operationId": "peers_proxy_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "peer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Peer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "title": "Path",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Proxy Delete",
+        "tags": [
+          "peers"
+        ]
+      },
+      "get": {
+        "operationId": "peers_proxy_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "peer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Peer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "title": "Path",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Proxy Get",
+        "tags": [
+          "peers"
+        ]
+      },
+      "post": {
+        "operationId": "peers_proxy_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "peer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Peer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "title": "Path",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Proxy Post",
+        "tags": [
+          "peers"
+        ]
+      }
+    },
     "/api/playback/continue-watching": {
       "get": {
         "operationId": "playback_continue_watching",
@@ -12479,6 +13588,26 @@
               }
             },
             "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
           },
           "409": {
             "content": {
@@ -13977,6 +15106,101 @@
           }
         },
         "summary": "Setup Status",
+        "tags": [
+          "setup"
+        ]
+      }
+    },
+    "/api/setup/test-download-client": {
+      "post": {
+        "operationId": "setup_test_setup_download_client",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetupDownloadClientWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Test Setup Download Client",
+        "tags": [
+          "setup"
+        ]
+      }
+    },
+    "/api/setup/test-indexer": {
+      "post": {
+        "operationId": "setup_test_setup_indexer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetupIndexerWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupIndexerTestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Test Setup Indexer",
         "tags": [
           "setup"
         ]

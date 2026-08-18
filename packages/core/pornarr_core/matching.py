@@ -104,9 +104,15 @@ def _source(title: str) -> str | None:
 
 
 def _performers(title: str, date_start: int | None) -> tuple[str, ...]:
-    prefix = title[:date_start] if date_start is not None else title
+    # Only a dated release names its performers in a knowable place: the
+    # segment before the date. Without one, "Studio - Some Title" has a last
+    # segment too, and reading it as a performer files the title itself as a
+    # person - which is what every undated scene release used to get.
+    if date_start is None:
+        return ()
+    prefix = title[:date_start]
     segments = [segment.strip() for segment in re.split(r"\s+-\s+", prefix) if segment.strip()]
-    people = segments[-1] if segments else ""
+    people = segments[-1] if len(segments) > 1 else ""
     return tuple(
         person.strip().title() for person in re.split(r"\s+(?:and|&)|,", people) if person.strip()
     )

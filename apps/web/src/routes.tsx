@@ -6,12 +6,11 @@
  * rather than repeating a guard per route is what makes "you cannot reach a
  * screen signed out" a property of the table instead of a convention.
  *
- * The destinations come from `NAV_ITEMS`, so a link in the sidebar and a route
- * that answers it cannot fall out of step. The screens behind them belong to
- * later issues; what stands there now says so plainly rather than 404ing.
+ * Every destination in `NAV_ITEMS` is answered by one of the routes below. The
+ * table used to end with a `NAV_ITEMS`-derived placeholder for screens that had
+ * not been written yet; now that all of them have, that spread would only
+ * shadow the real routes with "not built", so it is gone.
  */
-import type { JSX } from "react";
-import { useTranslation } from "react-i18next";
 import type { RouteObject } from "react-router-dom";
 import { createBrowserRouter } from "react-router-dom";
 import { LoginRoute } from "./auth/login-route";
@@ -35,7 +34,11 @@ import { QueueRoute } from "./routes/queue/queue-route";
 import { RecommendationsRoute } from "./routes/recommendations/recommendations-route";
 import { RequestsRoute } from "./routes/requests/requests-route";
 import { SearchRoute } from "./routes/search/search-route";
+import { MetadataProvidersRoute } from "./routes/settings/metadata/metadata-providers-route";
+import { PeersRoute } from "./routes/settings/peers/peers-route";
 import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles-route";
+import { RootFoldersRoute } from "./routes/settings/root-folders/root-folders-route";
+import { SettingsLayout } from "./routes/settings/settings-layout";
 import { SettingsRoute } from "./routes/settings/settings-route";
 import { SetupGate } from "./routes/setup/setup-gate";
 import { SetupRoute } from "./routes/setup/setup-route";
@@ -43,18 +46,6 @@ import { ShortsFeedRoute } from "./routes/shorts/shorts-feed";
 import { ShortsRoute } from "./routes/shorts/shorts-route";
 import { WatchlistRoute } from "./routes/watchlist/watchlist-route";
 import { AppShell } from "./shell/app-shell";
-import { NAV_ITEMS, type NavId } from "./shell/sidebar";
-
-/** Titled from the destination's own key, so it reads the same as its link. */
-function Placeholder({ navId }: { readonly navId: NavId }): JSX.Element {
-  const { t } = useTranslation();
-  return (
-    <section className="flex flex-col gap-2">
-      <h1 className={"text-lg text-ink"}>{t(`nav.${navId}`)}</h1>
-      <p className={"text-sm text-ink-muted"}>{t("screen.notBuilt")}</p>
-    </section>
-  );
-}
 
 /**
  * `/forbidden` is a real address rather than a component a screen renders in
@@ -62,23 +53,6 @@ function Placeholder({ navId }: { readonly navId: NavId }): JSX.Element {
  * a link can point at — a state held only in a component's memory is neither.
  */
 export const FORBIDDEN_PATH = "/forbidden";
-
-/** Sidebar destinations with a screen of their own. */
-const BUILT = new Set([
-  "admin",
-  "moderation",
-  "scan",
-  "tags",
-  "invites",
-  "feed",
-  "continue",
-  "library",
-  "shorts",
-  "collections",
-  "watchlist",
-  "downloads",
-  "settings",
-]);
 
 export const appRoutes: RouteObject[] = [
   { path: "/setup", element: <SetupRoute /> },
@@ -102,8 +76,21 @@ export const appRoutes: RouteObject[] = [
               { path: "admin/scan", element: <ScanRoute /> },
               { path: "admin/tags", element: <TagsRoute /> },
               { path: "admin/invites", element: <InvitesRoute /> },
-              { path: "settings", element: <SettingsRoute /> },
-              { path: "settings/quality", element: <QualityProfilesRoute /> },
+              // The server's own settings are the index of the section, not a
+              // sibling of it: `/settings` has to answer with something, and
+              // bouncing it to root folders is what made every other section
+              // unreachable by navigation in the first place.
+              {
+                path: "settings",
+                element: <SettingsLayout />,
+                children: [
+                  { index: true, element: <SettingsRoute /> },
+                  { path: "root-folders", element: <RootFoldersRoute /> },
+                  { path: "quality", element: <QualityProfilesRoute /> },
+                  { path: "metadata", element: <MetadataProvidersRoute /> },
+                  { path: "peers", element: <PeersRoute /> },
+                ],
+              },
               { path: "search", element: <SearchRoute /> },
               { path: "monitors", element: <MonitorsRoute /> },
               { path: "requests", element: <RequestsRoute /> },
@@ -122,13 +109,6 @@ export const appRoutes: RouteObject[] = [
               { path: "watchlist", element: <WatchlistRoute /> },
               { path: "library", element: <LibraryRoute /> },
               { path: "library/:mediaId", element: <MediaDetailRoute /> },
-              // Destinations in the sidebar that nothing has built yet. Listing
-              // the built ones here too would be harmless — the real route is
-              // declared first and wins — but it hides which are still stubs.
-              ...NAV_ITEMS.filter((item) => !BUILT.has(item.id)).map((item) => ({
-                path: item.path.slice(1),
-                element: <Placeholder navId={item.id} />,
-              })),
               { path: FORBIDDEN_PATH.slice(1), element: <ForbiddenRoute /> },
               { path: "*", element: <NotFoundRoute /> },
             ],

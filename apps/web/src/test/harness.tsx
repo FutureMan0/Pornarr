@@ -37,6 +37,9 @@ function apiError(code: string, status: number) {
 export const defaultHandlers = [
   http.get("/api/setup/status", () => HttpResponse.json({ configured: true })),
   http.get("/api/library", () => HttpResponse.json({ items: [], next_offset: null })),
+  // The empty library asks whether a root folder exists before it decides which
+  // way out to offer, so every signed-in render of `/library` reaches this.
+  http.get("/api/admin/library/root-folders", () => HttpResponse.json([])),
   // The shell reads both of these for its navigation counts, so every screen
   // test pays for them whether or not it cares about the numbers.
   http.get("/api/queue", () => HttpResponse.json([])),

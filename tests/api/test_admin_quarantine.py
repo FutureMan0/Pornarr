@@ -10,8 +10,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_db.models.audit import AuditLog
+from pornarr_db.models.download import DownloadJob, ImportTrigger
 from pornarr_db.models.media import Media, MediaFile
 from pornarr_db.models.quarantine import QuarantineItem
+from pornarr_db.models.request import Request, RequestStatus
 from pornarr_db.models.user import UserRole
 from pornarr_worker.jobs.quarantine import (
     QuarantineReason,
@@ -175,6 +177,47 @@ async def test_bulk_approval_requires_a_preview_and_only_accepts_a_shared_reason
             select(AuditLog).where(AuditLog.action == "quarantine.bulk_approved")
         )
         assert audit is not None
+
+
+async def test_approval_lands_in_the_library_the_request_aimed_at(
+    app, client, tmp_path: Path
+) -> None:
+    item = await _quarantine_item(app, tmp_path, "aimed.mkv")
+    bob = await create_user(app, username="bob")
+    admin = await create_user(app, username="root", role=UserRole.ADMIN)
+    async with AsyncSession(app.state.engine, expire_on_commit=False) as session:
+        job = DownloadJob(
+            client_name="qbittorrent",
+            protocol="torrent",
+            release_guid="release-1",
+            client_job_id="client-job-1",
+        )
+        session.add(job)
+        await session.flush()
+        session.add_all(
+            (
+                ImportTrigger(download_job_id=job.id, source_path=item.original_path),
+                Request(
+                    user_id=admin.id,
+                    target_owner_id=bob.id,
+                    query="Aimed",
+                    status=RequestStatus.QUEUED,
+                    download_job_id=job.id,
+                ),
+            )
+        )
+        await session.commit()
+    await login(client, admin.username, "correct horse battery staple")
+
+    approved = await client.post(
+        f"/api/admin/quarantine/items/{item.id}/approve", json={}, headers=csrf_headers(client)
+    )
+
+    assert approved.status_code == 200
+    async with AsyncSession(app.state.engine) as session:
+        media = await session.get(Media, UUID(approved.json()["media_id"]))
+    assert media is not None
+    assert media.owner_id == bob.id
 
 
 async def _quarantine_item(app, tmp_path: Path, filename: str) -> QuarantineItem:

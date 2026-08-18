@@ -8,7 +8,10 @@ on:
   # post-merge E2E run on develop caught it. Anything that can change how a
   # container comes up now pays for a full start here, on the pull request.
   pull_request:
-    branches: [develop, main]
+    # Stacked pull requests target another feature branch, and with only
+    # develop and main listed here they ran no checks at all: #279 through
+    # #284 arrived on develop as one red pipeline. See #309.
+    branches: [develop, main, "feat/**", "fix/**", "chore/**", "docs/**", "test/**"]
     paths:
       - "Dockerfile"
       - "docker-compose*.yml"

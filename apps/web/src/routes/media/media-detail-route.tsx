@@ -19,17 +19,26 @@
  * `in_my_library`, no `added_at`). The generated client makes a server change a
  * compile error here.
  */
+import type { paths } from "@pornarr/api-client";
 import { Button, Input } from "@pornarr/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { JSX } from "react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 
 import type { PlayerHandle } from "../../components/player/video-player";
 import { VideoPlayer } from "../../components/player/video-player";
+import { ErrorScreen } from "../../errors/error-screen";
+import { NotFoundRoute } from "../../errors/route-errors";
 import { getApiClient } from "../../lib/api";
-import { apiFailure } from "../../lib/api-error";
+import {
+  ApiRequestError,
+  apiFailure,
+  isRetryableError,
+  messageForError,
+  nextStepForError,
+} from "../../lib/api-error";
 import { usePageTitle } from "../../shell/page-title";
 import { CommentsPanel } from "./comments-panel";
 import { DetailRail } from "./detail-rail";
@@ -38,8 +47,24 @@ import { RelatedPanel } from "./related-panel";
 import { SceneMarkers } from "./scene-markers";
 import { WatchlistToggle } from "./watchlist-toggle";
 
+/** What the detail endpoint answers, whichever instance answers it. */
+type Detail =
+  paths["/api/media/{media_id}"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/** The contract error body, when the response carries one. */
+async function failureBody(response: Response): Promise<unknown> {
+  try {
+    return await response.clone().json();
+  } catch {
+    return null;
+  }
+}
+
 export function MediaDetailRoute(): JSX.Element {
   const { mediaId = "" } = useParams();
+  // A title in a shared library lives on another instance, and this browser has
+  // no key for it: everything about it is fetched through this instance's proxy.
+  const peerId = useSearchParams()[0].get("peer") ?? undefined;
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [tag, setTag] = useState("");
@@ -47,8 +72,16 @@ export function MediaDetailRoute(): JSX.Element {
   const player = useRef<PlayerHandle | null>(null);
 
   const detail = useQuery({
-    queryKey: ["media", mediaId],
-    queryFn: async () => {
+    queryKey: ["media", mediaId, peerId ?? null],
+    queryFn: async (): Promise<Detail> => {
+      // The proxy path is not in this instance's own contract — it is a route
+      // to somebody else's — so the generated client cannot express it and
+      // this one call is a raw fetch. The shape on the other end is the same.
+      if (peerId !== undefined) {
+        const response = await fetch(`/api/peers/${peerId}/proxy/media/${mediaId}`);
+        if (!response.ok) throw apiFailure(await failureBody(response), response);
+        return response.json() as Promise<Detail>;
+      }
       const { data, error, response } = await getApiClient().GET("/api/media/{media_id}", {
         params: { path: { media_id: mediaId } },
       });
@@ -82,12 +115,21 @@ export function MediaDetailRoute(): JSX.Element {
   );
 
   if (detail.isPending) return <p className="text-sm text-ink-muted">{t("media.loading")}</p>;
-  if (detail.isError || !detail.data)
+  if (detail.isError || !detail.data) {
+    // The status is the whole difference between a title that does not exist
+    // and a server that is having a bad day, and the reader needs to be told
+    // which one they are looking at.
+    if (detail.error instanceof ApiRequestError && detail.error.status === 404) {
+      return <NotFoundRoute />;
+    }
     return (
-      <p role="alert" className="text-sm text-ink">
-        {t("errors.generic")}
-      </p>
+      <ErrorScreen
+        title={messageForError(detail.error)}
+        nextStep={nextStepForError(detail.error)}
+        onRetry={isRetryableError(detail.error) ? () => void detail.refetch() : undefined}
+      />
     );
+  }
 
   const media = detail.data;
 
@@ -99,7 +141,12 @@ export function MediaDetailRoute(): JSX.Element {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-5">
           {media.playable ? (
-            <VideoPlayer mediaId={media.id} title={media.title} handleRef={player} />
+            <VideoPlayer
+              mediaId={media.id}
+              title={media.title}
+              handleRef={player}
+              peerId={peerId}
+            />
           ) : (
             <p className="rounded-lg bg-surface-2 p-4 text-sm text-ink-muted">
               {t("media.unavailable")}
@@ -107,7 +154,12 @@ export function MediaDetailRoute(): JSX.Element {
           )}
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <WatchlistToggle mediaId={media.id} />
+            {/* Watchlist, scene markers, ratings, comments and "related" are
+                all records of this instance, keyed by an id that only means
+                something here. A title borrowed from a peer has none of them,
+                and asking under a foreign id would answer about whatever
+                happens to share the number. */}
+            {peerId === undefined ? <WatchlistToggle mediaId={media.id} /> : null}
             <p className="text-2xs text-ink-faint">
               {t("media.confidence", {
                 value:
@@ -122,7 +174,7 @@ export function MediaDetailRoute(): JSX.Element {
 
           {/* Only rendered once there is something to jump to, and only useful
               while a player exists to be moved. */}
-          {media.playable ? (
+          {media.playable && peerId === undefined ? (
             <SceneMarkers
               mediaId={media.id}
               onSeek={(seconds) => {
@@ -149,8 +201,12 @@ export function MediaDetailRoute(): JSX.Element {
                 </li>
               ))}
             </ul>
+            {/* Correcting a tag writes to the instance that owns the title, and
+                a peer is read-only from here, so the form is only offered at
+                home. */}
             <form
               className="flex gap-2 pt-1"
+              hidden={peerId !== undefined}
               onSubmit={(event) => {
                 event.preventDefault();
                 correct.mutate();
@@ -171,10 +227,12 @@ export function MediaDetailRoute(): JSX.Element {
           {/* Rating and comments side by side on a wide screen, stacked below
               it. They are the two halves of "what the household thinks" and
               reading one without the other is half the picture. */}
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
-            <RatingPanel mediaId={media.id} />
-            <CommentsPanel mediaId={media.id} />
-          </div>
+          {peerId === undefined ? (
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
+              <RatingPanel mediaId={media.id} />
+              <CommentsPanel mediaId={media.id} />
+            </div>
+          ) : null}
         </div>
 
         <DetailRail
@@ -192,7 +250,7 @@ export function MediaDetailRoute(): JSX.Element {
 
       {/* Full width, below both columns: a row of artwork reads as a row, and
           squeezing it into the main column would cut it to three tiles. */}
-      <RelatedPanel mediaId={media.id} />
+      {peerId === undefined ? <RelatedPanel mediaId={media.id} /> : null}
     </section>
   );
 }

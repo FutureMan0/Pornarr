@@ -16,6 +16,8 @@ _ALLOWED = frozenset(
         "/health",
         "/api/setup/status",
         "/api/setup/validate-library-path",
+        "/api/setup/test-indexer",
+        "/api/setup/test-download-client",
         "/api/setup/complete",
         "/api/openapi.json",
     }

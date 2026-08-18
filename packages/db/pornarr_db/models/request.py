@@ -37,6 +37,13 @@ class Request(TimestampMixin, Base):
     user_id: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
+    # Whose library the result should land in. Null means the shared pool, which
+    # is what a server without private libraries keeps producing. `SET NULL`
+    # rather than cascade: deleting the target guest must not delete the request
+    # history that explains where a title came from.
+    target_owner_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     query: Mapped[str] = mapped_column(String(512), nullable=False)
     selected_release_guid: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     status: Mapped[RequestStatus] = mapped_column(

@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from pornarr_core.scoring import RecommendationWeights
 from pornarr_db.models.user import User
-from pornarr_db.recommendations import generate_recommendations
+from pornarr_db.recommendations import RecommendationOptions, generate_recommendations
 from pornarr_db.session import session_scope
 from pornarr_db.settings import get_runtime_settings
 from pornarr_shared.config import get_settings
@@ -29,9 +29,15 @@ async def refresh_recommendations_job(_: dict[str, Any]) -> int:
             recency=settings.recommendation_recency_weight,
             popularity=settings.recommendation_popularity_weight,
         )
+        options = RecommendationOptions(
+            use_ratings=settings.recommendation_use_ratings,
+            include_friend_picks=settings.recommendation_include_friend_picks,
+            hide_finished=settings.recommendation_hide_finished,
+            include_shorts=settings.recommendation_include_shorts,
+        )
         user_ids = list(await session.scalars(select(User.id)))
         for user_id in user_ids:
-            await generate_recommendations(session, user_id, weights=weights)
+            await generate_recommendations(session, user_id, weights=weights, options=options)
         return len(user_ids)
 
 

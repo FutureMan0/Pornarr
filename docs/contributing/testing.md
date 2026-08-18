@@ -43,6 +43,30 @@ At release: multi-architecture build, Trivy, SBOM.
 Coverage is enforced on changed lines at 80%, not globally. A global threshold
 punishes the wrong changes and gets disabled the first time it is inconvenient.
 
+## The acquisition stack
+
+Searching an indexer, grabbing a release, handing it to a download client and
+importing what comes back is the chain the product exists for, and the default
+compose stack has neither an indexer nor a client, so every test of it was
+skipped.
+
+```
+docker compose -f docker-compose.yml -f docker-compose.override.yml \
+  -f docker-compose.testing.yml up -d
+```
+
+That adds qBittorrent and a Torznab indexer with one release. The end-to-end
+suite configures both through the same routes an operator uses, and skips the
+tests that need them when the file is not running.
+
+A torrent needs a peer and there is none on an isolated network, so the indexer
+plays the seeder: it watches the client for the magnet Pornarr just handed it
+and supplies the metadata and the data a peer would have. The client verifies
+them itself and moves the finished file into the download tree, so everything
+from the completion onwards is the product doing its own work. The Web UI has
+no password and the release is invented - none of it belongs near a real
+deployment.
+
 ## Writing tests
 
 Tests state behaviour, not implementation. A test that breaks when a function is

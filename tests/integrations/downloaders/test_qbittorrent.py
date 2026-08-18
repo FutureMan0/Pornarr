@@ -177,6 +177,27 @@ async def test_adds_magnet_and_torrent_file_with_category_and_paused_start() -> 
     assert b'name="paused"' in add_requests[1].content
 
 
+async def test_a_torrent_the_client_already_has_is_not_a_failure() -> None:
+    """qBittorrent answers 409 for a duplicate, and that is the wanted outcome."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/auth/login"):
+            return response(request, 204, text="Ok.")
+        return response(request, 409, text="Torrent is already present.")
+
+    adapter = QbittorrentAdapter(transport=httpx.MockTransport(handler))
+
+    await adapter.add_magnet(
+        host="qbittorrent.example",
+        port=8080,
+        url_base="",
+        credentials=CREDENTIALS,
+        magnet="magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567",
+        category="pornarr",
+        paused=False,
+    )
+
+
 async def test_controls_and_seeding_policy_protected_removal() -> None:
     recorded = json.loads((FIXTURES / "qbittorrent-torrents-info.json").read_text())[0]
     recorded.update(state="uploading", progress=1, max_ratio=1, ratio=0.5)

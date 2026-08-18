@@ -7,6 +7,9 @@ import json
 from contextlib import asynccontextmanager
 from uuid import UUID, uuid4
 
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+
+from pornarr_db.base import Base
 from pornarr_db.models.indexer import Indexer, IndexerStats
 from pornarr_integrations.indexers import IndexerCategory, Release
 from pornarr_worker import search
@@ -58,7 +61,9 @@ class Adapter:
     async def test_connection(self, *, base_url: str, api_key: str) -> list[IndexerCategory]:
         return []
 
-    async def search(self, *, base_url: str, api_key: str, query: str) -> list[Release]:
+    async def search(
+        self, *, base_url: str, api_key: str, query: str, categories: tuple[str, ...] = ()
+    ) -> list[Release]:
         try:
             await asyncio.sleep(self.delay)
         except asyncio.CancelledError:
@@ -68,8 +73,12 @@ class Adapter:
             raise RuntimeError
         return [Release("one", "Example", None, None, None, None, ())]
 
-    async def rss(self, *, base_url: str, api_key: str) -> list[Release]:
-        return await self.search(base_url=base_url, api_key=api_key, query="")
+    async def rss(
+        self, *, base_url: str, api_key: str, categories: tuple[str, ...] = ()
+    ) -> list[Release]:
+        return await self.search(
+            base_url=base_url, api_key=api_key, query="", categories=categories
+        )
 
 
 async def test_results_are_progressive_and_one_timeout_does_not_block_others() -> None:
@@ -241,3 +250,72 @@ async def test_worker_outcomes_persist_failure_health_and_redacted_error(monkeyp
     assert indexer.health == "healthy"
     assert indexer.health_reason is None
     assert indexer.last_error is None
+
+
+async def test_configured_targets_carries_each_indexers_search_category_selection(
+    monkeypatch,
+) -> None:
+    engine = create_async_engine("sqlite+aiosqlite://")
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.create_all)
+    async with AsyncSession(engine, expire_on_commit=False) as session:
+        session.add(
+            Indexer(
+                name="example",
+                protocol="torznab",
+                implementation="torznab",
+                base_url="https://indexer.example",
+                api_key="secret",
+                search_categories=["6000", "6010"],
+            )
+        )
+        await session.commit()
+
+    @asynccontextmanager
+    async def session_scope():
+        async with AsyncSession(engine, expire_on_commit=False) as session:
+            yield session
+
+    monkeypatch.setattr(search, "session_scope", session_scope)
+
+    targets = await search.configured_targets(Redis())
+
+    assert targets[0].search_categories == ("6000", "6010")
+    await engine.dispose()
+
+
+async def test_search_sends_each_targets_categories_to_its_adapter() -> None:
+    redis = Redis()
+
+    class RecordingAdapter:
+        def __init__(self) -> None:
+            self.categories: tuple[str, ...] | None = None
+
+        async def test_connection(self, *, base_url: str, api_key: str) -> list[IndexerCategory]:
+            return []
+
+        async def search(
+            self, *, base_url: str, api_key: str, query: str, categories: tuple[str, ...] = ()
+        ) -> list[Release]:
+            self.categories = categories
+            return []
+
+        async def rss(
+            self, *, base_url: str, api_key: str, categories: tuple[str, ...] = ()
+        ) -> list[Release]:
+            raise NotImplementedError
+
+    adapter = RecordingAdapter()
+    await run_search(
+        redis,
+        search_id="search-5",
+        user_id="user-1",
+        query="example",
+        targets=[
+            SearchTarget(
+                "indexer-1", "https://example", "key", adapter, search_categories=("6000",)
+            )
+        ],
+    )
+
+    assert adapter.categories == ("6000",)

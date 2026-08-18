@@ -16,9 +16,11 @@ from pornarr_db.base import utcnow
 from pornarr_db.models.media import Media, MediaFile
 from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.session import session_scope
+from pornarr_shared.config import Settings, get_settings
 from pornarr_shared.events import publish_event
-from pornarr_shared.jobs import job
+from pornarr_shared.jobs import TRANSCODE_QUEUE, enqueue_once, job
 
+ARTWORK_JOB_NAME = "generate_artwork_job"
 MEDIA_EXTENSIONS = frozenset({".avi", ".m4v", ".mkv", ".mov", ".mp4", ".webm", ".wmv"})
 MINIMUM_MEDIA_FILE_SIZE_BYTES = 1
 
@@ -102,14 +104,52 @@ async def scan_root_folder(
             media_file.is_missing = True
             result["missing"] += 1
 
-    if result["imported"] or result["changed"] or result["missing"]:
-        folder.last_scanned_at = utcnow()
+    # Stamped even when nothing changed: a clean scan of an unchanged library is
+    # still a scan, and leaving the column null would tell the operator it never
+    # ran.
+    folder.last_scanned_at = utcnow()
     return result
 
 
-async def scan(context: dict[str, Any], root_folder_id: str) -> dict[str, int]:
+async def queue_missing_artwork(
+    redis: Any, session: AsyncSession, folder: RootFolder, settings: Settings
+) -> int:
+    """Ask for artwork for every file in this root that still has none.
+
+    A scanned file arrives without a poster, and the library screen is a grid of
+    posters, so every card was a broken image and a 404 in the console. Asking
+    by absence rather than only for new files also repairs a library scanned
+    before artwork existed.
+    """
+
+    path_prefix = f"{Path(folder.path)}{os.sep}"
+    queued = 0
+    for media_file in await session.scalars(
+        select(MediaFile).where(
+            MediaFile.path.startswith(path_prefix),
+            MediaFile.is_active.is_(True),
+            MediaFile.is_missing.is_(False),
+        )
+    ):
+        poster = settings.thumbnail_path / str(media_file.media_id) / "poster.jpg"
+        if poster.is_file():
+            continue
+        await enqueue_once(
+            redis,
+            ARTWORK_JOB_NAME,
+            media_file.path,
+            str(settings.thumbnail_path),
+            str(media_file.media_id),
+            queue=TRANSCODE_QUEUE,
+        )
+        queued += 1
+    return queued
+
+
+async def scan(context: dict[str, Any], root_folder_id: str, run_id: str) -> dict[str, int]:
     """Run one transactional scan; ARQ retries cancellation or write races safely."""
 
+    del run_id
     async with session_scope() as session:
         folder = await session.get(RootFolder, UUID(root_folder_id))
         if folder is None or not folder.enabled:
@@ -119,6 +159,8 @@ async def scan(context: dict[str, Any], root_folder_id: str) -> dict[str, int]:
             await publish_event(context["redis"], event_type, data)
 
         result = await scan_root_folder(session, folder, progress)
+        await session.flush()
+        await queue_missing_artwork(context["redis"], session, folder, get_settings())
         # Without this the only way to know a scan ended is to notice the
         # progress events stopping, which is indistinguishable from a worker
         # that died mid-walk.

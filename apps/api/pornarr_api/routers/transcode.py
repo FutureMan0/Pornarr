@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
@@ -188,12 +189,31 @@ async def stop_session(
     await get_registry(request).terminate(session_id)
 
 
+PLAYLIST_WAIT_SECONDS = 15
+PLAYLIST_POLL_SECONDS = 0.1
+
+
 def _hls_asset_path(request: Request, session_id: UUID, asset: str) -> Path | None:
     valid_segment = asset.startswith("segment_") and asset.endswith(".ts") and asset[8:-3].isdigit()
     if asset not in {"master.m3u8", "variant.m3u8"} and not valid_segment:
         return None
-    path = request.app.state.settings.transcode_path / str(session_id) / asset
-    return path if path.is_file() else None
+    return request.app.state.settings.transcode_path / str(session_id) / asset
+
+
+async def _await_playlist(path: Path) -> bool:
+    """Wait out the gap between accepting a session and FFmpeg writing it.
+
+    A player asks for the playlist the moment it is told the session exists,
+    which is before FFmpeg has produced a first segment. Answering 404 there
+    ends playback: hls.js treats a missing manifest as fatal and the viewer is
+    told the video cannot be played, seconds before it could have been.
+    """
+    deadline = asyncio.get_running_loop().time() + PLAYLIST_WAIT_SECONDS
+    while not path.is_file():
+        if asyncio.get_running_loop().time() >= deadline:
+            return False
+        await asyncio.sleep(PLAYLIST_POLL_SECONDS)
+    return True
 
 
 @router.get("/sessions/{session_id}/hls/{asset}")
@@ -210,6 +230,8 @@ async def hls_asset(
         raise ForbiddenError("Only the session owner can view its stream.")
     path = _hls_asset_path(request, session_id, asset)
     if path is None:
+        raise HTTPException(status_code=404)
+    if not path.is_file() and (not asset.endswith(".m3u8") or not await _await_playlist(path)):
         raise HTTPException(status_code=404)
     media_type = "application/vnd.apple.mpegurl" if asset.endswith(".m3u8") else "video/mp2t"
     return FileResponse(path, media_type=media_type)
@@ -235,6 +257,26 @@ async def start_session(
         raise HTTPException(status_code=404)
 
     registry = get_registry(request)
+    # One viewer watching one title needs one transcode. Without this a player
+    # that remounts - a re-render, a quick back and forward - asked for a
+    # second session while the first was still being created, and the session
+    # cap refused it with 429 while its own earlier session was still running.
+    running = await registry.session_for(user.id, media_id)
+    if running is not None:
+        return _start_response(running.id)
+    if not await registry.begin_start(user.id, media_id):
+        pending = await registry.await_session(user.id, media_id)
+        if pending is None:
+            raise HTTPException(status_code=503, detail="The stream could not be started.")
+        return _start_response(pending.id)
+    try:
+        return _start_response(await _start_transcode(request, user, media_id, source))
+    finally:
+        await registry.finish_start(user.id, media_id)
+
+
+async def _start_transcode(request: Request, user: User, media_id: UUID, source: Path) -> UUID:
+    registry = get_registry(request)
     capabilities = getattr(
         request.app.state, "hardware_capabilities", HardwareCapabilities((), (), ())
     )
@@ -257,6 +299,10 @@ async def start_session(
     await registry.register(
         session_id, user.id, media_id, "hls", transcode, hardware=capability is not None
     )
+    return session_id
+
+
+def _start_response(session_id: UUID) -> TranscodeStartResponse:
     return TranscodeStartResponse(
         session_id=session_id,
         playlist_url=f"/api/transcode/sessions/{session_id}/hls/master.m3u8",

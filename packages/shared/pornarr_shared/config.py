@@ -164,6 +164,28 @@ class Settings(BaseSettings):
     def transcode_cache_max_bytes(self) -> int:
         return self.transcode_cache_max_gb * 1024**3
 
+    @property
+    def data_directories(self) -> tuple[Path, ...]:
+        """Every directory the product writes into below the data mount."""
+        return (
+            self.torrents_path,
+            self.usenet_path,
+            self.library_path,
+            self.quarantine_path,
+            self.thumbnail_path,
+            self.transcode_path,
+        )
+
+    def ensure_data_directories(self) -> None:
+        """Create the data tree so a first start is not reported as unhealthy.
+
+        Only the mount itself is the operator's to provide. Nothing else
+        created these, so a fresh install answered every health check with
+        "data path is unavailable" until someone made the directories by hand.
+        """
+        for directory in self.data_directories:
+            directory.mkdir(parents=True, exist_ok=True)
+
 
 def load_settings() -> Settings:
     """Build settings, turning validation failures into a readable message.

@@ -25,6 +25,12 @@ from pornarr_worker.jobs.import_trigger import (
 )
 
 TERMINAL_STATUSES = frozenset({"completed", "failed", "removed"})
+# A torrent client that is told to keep seeding reports a finished download as
+# "seeding", never as "completed". Waiting for "completed" therefore meant a
+# fully downloaded file was never imported at all under the default settings of
+# every torrent client there is - and hardlinking exists precisely so that
+# seeding and importing can happen at the same time.
+IMPORTABLE_STATUSES = frozenset({"completed", "seeding"})
 NON_POLLABLE_STATUSES = frozenset({"failed", "removed"})
 EventPublisher = Callable[[str, dict[str, Any]], Awaitable[None]]
 ImportEnqueuer = Callable[[DownloadJob, str | None], Awaitable[None]]
@@ -193,7 +199,10 @@ async def _transition(
     job_row.error = error
     if status in TERMINAL_STATUSES:
         await _record_history(session, job_row)
-    if status == "completed":
+    if status in IMPORTABLE_STATUSES:
+        # Not gated on the status having changed: the trigger is keyed by the
+        # download job, so asking twice costs one query and asking never costs
+        # the import.
         await enqueue_import(job_row, output_path)
     if not changed:
         return False

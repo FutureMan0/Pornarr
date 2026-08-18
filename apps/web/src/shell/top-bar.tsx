@@ -1,7 +1,7 @@
 /**
  * The top bar: the screen's name, global search, the artwork control, the live
- * status cluster, the account menu, and — in the drawer layout only — the
- * control that opens the navigation.
+ * status cluster and the account menu. Navigation is not in it — the sidebar
+ * owns it above the phone breakpoint and the tab bar below one.
  *
  * Search lives in `global-search.tsx`. It grew a suggestion list and a keyboard
  * shortcut hint of its own, which is more state than a bar that is otherwise a
@@ -10,6 +10,12 @@
  * The screen's name is a real `<h1>` here rather than a copy of one rendered by
  * the route; see `page-title.tsx` for why the heading moved with the design
  * instead of being duplicated.
+ *
+ * The bar wraps rather than shrinking. On a 390px phone the controls and a
+ * usable search field measured 412px of minimum width, so a single row could
+ * only be paid for out of the one item that shrinks — leaving the search 26px
+ * wide, about one character of its own placeholder. Search takes a line of its
+ * own instead.
  */
 import { Menu } from "@pornarr/ui";
 import type { JSX } from "react";
@@ -72,6 +78,10 @@ export function TopBar({ layout, connection }: TopBarProps): JSX.Element {
 
   return (
     <header
+      // The layout is named on the element for the same reason the sidebar
+      // names its own: one viewport width produces one structure, and the name
+      // is what a test and a reader can hold onto where jsdom lays nothing out.
+      data-layout={layout}
       className={
         phone
           ? // Two rows on a phone, which is what fits: the screen's name and the

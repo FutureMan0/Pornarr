@@ -236,7 +236,10 @@ export function QualityProfilesRoute(): JSX.Element {
   usePageTitle(t("quality.title"));
   const session = useSession();
   const queryClient = useQueryClient();
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  // `undefined` is "nothing chosen yet", `null` is "editing a new profile".
+  // One value for both meant the effect below adopted the first profile the
+  // instant New profile cleared the selection, so the button did nothing.
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null | undefined>(undefined);
   const [draft, setDraft] = useState<ProfileDraft | null>(null);
   const [formatDrafts, setFormatDrafts] = useState<readonly FormatDraft[]>([]);
   const [removedFormatIds, setRemovedFormatIds] = useState<readonly string[]>([]);
@@ -292,7 +295,7 @@ export function QualityProfilesRoute(): JSX.Element {
 
   useEffect(() => {
     if (profilesQuery.data === undefined || definitionsQuery.data === undefined) return;
-    if (selectedProfileId !== null) return;
+    if (selectedProfileId !== undefined) return;
     const first = profilesQuery.data[0];
     if (first !== undefined) {
       setSelectedProfileId(first.id);
@@ -517,9 +520,14 @@ export function QualityProfilesRoute(): JSX.Element {
                 <button
                   type="button"
                   className={cx(
-                    "flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm text-ink-muted",
+                    "flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm",
                     "transition-colors duration-[var(--duration-fast)] ease-out hover:bg-surface-3 hover:text-ink",
-                    selectedProfileId === profile.id && "bg-[var(--primary-weak)] text-ink",
+                    // Exclusive rather than layered: the two ink classes have
+                    // equal specificity, and the muted one that won measured
+                    // 3.76:1 on --primary-weak, which axe fails.
+                    selectedProfileId === profile.id
+                      ? "bg-[var(--primary-weak)] text-ink"
+                      : "text-ink-muted",
                   )}
                   onClick={() => selectProfile(profile)}
                 >

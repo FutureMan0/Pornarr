@@ -177,9 +177,13 @@ describe("what is not here", () => {
     for (const section of ["Household", "Playback", "Recommendations", "Downloads"]) {
       expect(nav.textContent).toContain(section);
     }
-    // The two that live on their own routes are links, not tabs.
+    // The screens of their own are reached from the tab bar over the areas,
+    // not from this list, so there is exactly one link to each.
     expect(screen.getByRole("link", { name: "Quality profiles" }).getAttribute("href")).toBe(
       "/settings/quality",
+    );
+    expect(screen.getByRole("link", { name: "Scan & import" }).getAttribute("href")).toBe(
+      "/admin/scan",
     );
   });
 });

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import shutil
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID
@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import database_session, require_role
+from pornarr_api.errors import ErrorResponse
 from pornarr_db.audit import write_audit
 from pornarr_db.models.media import MediaFile
 from pornarr_db.models.root_folders import RootFolder
@@ -55,6 +56,11 @@ class RootFolderInUseError(PornarrError):
     status = 409
 
 
+class RootFolderDisabledError(PornarrError):
+    code = "ROOT_FOLDER_DISABLED"
+    status = 409
+
+
 @router.get("/root-folders", response_model=list[RootFolderResponse])
 async def list_root_folders(
     request: Request, _: Admin, session: Session
@@ -86,6 +92,56 @@ async def create_root_folder(
     await session.flush()
     write_audit(session, actor_id=user.id, action="root_folder.created", target=str(folder.id))
     return _folder_response(folder, request.app.state.settings.torrents_path, same_filesystem)
+
+
+@router.post(
+    "/root-folders/{folder_id}/scan",
+    status_code=202,
+    response_class=Response,
+    responses={404: {"model": ErrorResponse}, 409: {"model": ErrorResponse}},
+)
+async def scan_root_folder(
+    folder_id: UUID, request: Request, user: Admin, session: Session
+) -> Response:
+    """Ask the worker to walk one root folder now, so its media can enter the library.
+
+    The progress is not returned here. The worker publishes `scan.progress` on
+    the event stream as it goes, and the screen watches that; holding the
+    request open for a walk of ten thousand files would time out long before it
+    told anyone anything.
+    """
+
+    folder = await session.get(RootFolder, folder_id)
+    if folder is None:
+        raise HTTPException(status_code=404)
+    if not folder.enabled:
+        # A disabled folder is one the household has switched off. Scanning it
+        # anyway would quietly reimport what somebody chose to exclude.
+        raise RootFolderDisabledError("The root folder is disabled.")
+    # `enqueue_once` keys on the arguments, so an administrator clicking twice
+    # gets one walk rather than two racing over the same files. The minute
+    # stamp is what lets them scan again once the previous run finished, while
+    # still collapsing the impatient double click.
+    minute = datetime.now(UTC).replace(second=0, microsecond=0).isoformat()
+    # The import queue, not the default one: `scan` is registered on the import
+    # worker, and a job on a queue nothing listens to waits forever without
+    # anyone being told.
+    await enqueue_once(
+        request.app.state.queue,
+        SCAN_JOB_NAME,
+        str(folder_id),
+        f"manual:{minute}",
+        queue=IMPORT_QUEUE,
+    )
+    write_audit(
+        session,
+        actor_id=user.id,
+        action="root_folder.scanned",
+        target=str(folder_id),
+        context={"path": folder.path},
+    )
+    await session.flush()
+    return Response(status_code=202)
 
 
 @router.delete("/root-folders/{folder_id}", status_code=204)
@@ -162,43 +218,3 @@ def _folder_response(
         same_filesystem_as_downloads=same_filesystem,
         warning=warning,
     )
-
-
-@router.post("/root-folders/{folder_id}/scan", status_code=202)
-async def scan_root_folder(
-    folder_id: UUID, request: Request, admin: Admin, session: Session
-) -> Response:
-    """Ask the worker to walk one folder now.
-
-    Idempotent per folder: asking twice while a scan is queued does not queue a
-    second walk of the same tree. `enqueue_once` keys on the arguments, so the
-    second request returns the same 202 and changes nothing — which is what an
-    administrator clicking twice means, rather than two scans racing each other
-    over the same files.
-
-    The progress is not returned here. The worker publishes `scan.progress` on
-    the event stream as it goes, and the screen watches that; holding the
-    request open for a walk of ten thousand files would time out long before it
-    told anyone anything.
-    """
-    folder = await session.get(RootFolder, folder_id)
-    if folder is None:
-        raise HTTPException(status_code=404)
-    if not folder.enabled:
-        # A disabled folder is one the household has switched off. Scanning it
-        # anyway would quietly reimport what somebody chose to exclude.
-        raise HTTPException(status_code=409, detail="This folder is disabled.")
-
-    # The import queue, not the default one: `scan` is registered on the import
-    # worker, and a job on a queue nothing listens to waits forever without
-    # anyone being told.
-    await enqueue_once(request.app.state.queue, SCAN_JOB_NAME, str(folder_id), queue=IMPORT_QUEUE)
-    write_audit(
-        session,
-        actor_id=admin.id,
-        action="library.scan_requested",
-        target=str(folder_id),
-        context={"path": folder.path},
-    )
-    await session.flush()
-    return Response(status_code=202)

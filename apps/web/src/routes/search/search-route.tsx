@@ -594,7 +594,7 @@ function ExternalRow({
         {item.match.kind === "new" ? null : (
           <a
             className="ml-2 font-sans text-ink-muted underline decoration-border-control underline-offset-2"
-            href={`/library?media=${item.match.media_id}`}
+            href={`/library/${item.match.media_id}`}
           >
             {t(`search.match.${item.match.kind}`)}
           </a>
@@ -765,10 +765,11 @@ function value(params: URLSearchParams, key: string): string | undefined {
   return params.get(key) || undefined;
 }
 function numberValue(params: URLSearchParams, key: string): number | undefined {
-  // A parameter that is not there is not zero. `Number(null)` is 0, which is
-  // finite and non-negative, so the obvious version turns every absent numeric
-  // filter into an explicit zero — harmless for a size floor, and a rejected
-  // request for a rating floor, which the API requires to be at least 1.
+  // A parameter that is not there is not zero. `Number(null)` and `Number("")`
+  // are both 0, which is finite and non-negative, so the obvious version turns
+  // every absent numeric filter into an explicit zero — a maximum size of zero
+  // bytes excludes every file, and a rating floor of zero is a request the API
+  // rejects outright.
   const raw = params.get(key);
   if (raw === null || raw.trim() === "") return undefined;
   const parsed = Number(raw);
