@@ -3,6 +3,15 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { VideoPlayer } from "../../components/player/video-player";
+import { ErrorScreen } from "../../errors/error-screen";
+import { NotFoundRoute } from "../../errors/route-errors";
+import {
+  ApiRequestError,
+  apiFailure,
+  isRetryableError,
+  messageForError,
+  nextStepForError,
+} from "../../lib/api-error";
 
 type Tag = { name: string; confidence: number; source: string };
 type Detail = {
@@ -23,6 +32,15 @@ type Detail = {
   playable: boolean;
 };
 
+/** The contract error body, when the response carries one. */
+async function failureBody(response: Response): Promise<unknown> {
+  try {
+    return await response.clone().json();
+  } catch {
+    return null;
+  }
+}
+
 export function MediaDetailRoute() {
   const { mediaId = "" } = useParams();
   const { t } = useTranslation();
@@ -32,7 +50,10 @@ export function MediaDetailRoute() {
     queryKey: ["media", mediaId],
     queryFn: async (): Promise<Detail> => {
       const response = await fetch(`/api/media/${mediaId}`);
-      if (!response.ok) throw new Error();
+      // The status is the whole difference between a title that does not exist
+      // and a server that is having a bad day, and the reader needs to be told
+      // which one they are looking at.
+      if (!response.ok) throw apiFailure(await failureBody(response), response);
       return response.json() as Promise<Detail>;
     },
   });
@@ -51,7 +72,18 @@ export function MediaDetailRoute() {
     },
   });
   if (detail.isPending) return <p>{t("media.loading")}</p>;
-  if (detail.isError || !detail.data) return <p role="alert">{t("errors.generic")}</p>;
+  if (detail.isError || !detail.data) {
+    if (detail.error instanceof ApiRequestError && detail.error.status === 404) {
+      return <NotFoundRoute />;
+    }
+    return (
+      <ErrorScreen
+        title={messageForError(detail.error)}
+        nextStep={nextStepForError(detail.error)}
+        onRetry={isRetryableError(detail.error) ? () => void detail.refetch() : undefined}
+      />
+    );
+  }
   const media = detail.data;
   return (
     <section className="flex flex-col gap-6" aria-labelledby="media-heading">

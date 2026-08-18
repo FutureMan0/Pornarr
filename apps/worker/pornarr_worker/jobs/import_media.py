@@ -41,7 +41,7 @@ from pornarr_media.hashing import oshash
 from pornarr_media.probe import MediaProbeError, ProbeResult, probe
 from pornarr_shared.config import Settings, get_settings
 from pornarr_shared.events import publish_event
-from pornarr_shared.jobs import job
+from pornarr_shared.jobs import TRANSCODE_QUEUE, enqueue_once, job
 from pornarr_worker.jobs.metadata import MetadataSubject, resolve_metadata_cascade
 from pornarr_worker.jobs.quarantine import (
     QuarantineReason,
@@ -58,12 +58,16 @@ Prober = Callable[[Path], ProbeResult]
 Fingerprinter = Callable[[Path], str | None]
 
 
+ARTWORK_JOB_NAME = "generate_artwork_job"
+
+
 @dataclass(frozen=True, slots=True)
 class ImportOutcome:
     """The terminal status of one import, and the media it produced."""
 
     status: str
     media_id: UUID | None = None
+    media_path: str | None = None
 
 
 async def import_ready_trigger(
@@ -159,7 +163,7 @@ async def import_ready_trigger(
     trigger.status = IMPORTED
     trigger.error_code = None
     trigger.error_detail = None
-    return ImportOutcome(trigger.status, media.id)
+    return ImportOutcome(trigger.status, media.id, str(placement.path))
 
 
 async def import_media(context: dict[str, Any], trigger_id: str) -> str:
@@ -175,6 +179,18 @@ async def import_media(context: dict[str, Any], trigger_id: str) -> str:
             session, UUID(trigger_id), get_settings(), adapters=adapters
         )
     media_id = None if outcome.media_id is None else str(outcome.media_id)
+    if media_id is not None and outcome.media_path is not None:
+        # Step 10 of the pipeline. The library is a grid of posters, so an item
+        # without one is a broken image on the screen it lands on.
+        settings = get_settings()
+        await enqueue_once(
+            redis,
+            ARTWORK_JOB_NAME,
+            outcome.media_path,
+            str(settings.thumbnail_path),
+            media_id,
+            queue=TRANSCODE_QUEUE,
+        )
     await publish_event(
         redis,
         "import.completed",

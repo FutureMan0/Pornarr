@@ -13,7 +13,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from pornarr_db.base import Base
 from pornarr_db.models.media import MediaFile
 from pornarr_db.models.root_folders import RootFolder
-from pornarr_worker.jobs.scan import scan_root_folder
+from pornarr_shared.config import Settings
+from pornarr_worker.jobs.scan import queue_missing_artwork, scan_root_folder
 
 ProgressPublisher = Callable[[str, dict[str, object]], Awaitable[None]]
 
@@ -199,3 +200,49 @@ async def test_scanner_cancellation_rolls_back_partial_imports(
 
     assert files == []
     assert result == {"imported": 2, "changed": 0, "missing": 0, "scanned": 2}
+
+
+class RecordingRedis:
+    """Enough of ARQ's client to see which artwork was asked for."""
+
+    def __init__(self) -> None:
+        self.jobs: list[tuple[str, tuple[object, ...]]] = []
+
+    async def enqueue_job(self, function: str, *args: object, **_: object) -> None:
+        self.jobs.append((function, args))
+
+
+async def test_a_scanned_file_without_a_poster_is_queued_for_artwork(
+    session_factory, tmp_path: Path
+) -> None:
+    library = tmp_path / "library"
+    library.mkdir()
+    (library / "With Poster.mp4").write_bytes(b"video")
+    (library / "Without Poster.mp4").write_bytes(b"video")
+    settings = Settings(
+        app_secret="0123456789abcdef0123456789abcdef",
+        database_url="sqlite+aiosqlite://",
+        redis_url="redis://localhost:6379/7",
+        data_path=tmp_path,
+    )
+    redis = RecordingRedis()
+
+    async with session_factory() as session:
+        folder = RootFolder(path=str(library), free_space_bytes=0)
+        session.add(folder)
+        await session.flush()
+        await scan_root_folder(session, folder, _recorded_progress([]))
+        await session.flush()
+
+        with_poster = await session.scalar(
+            select(MediaFile).where(MediaFile.path.endswith("With Poster.mp4"))
+        )
+        assert with_poster is not None
+        poster = settings.thumbnail_path / str(with_poster.media_id) / "poster.jpg"
+        poster.parent.mkdir(parents=True)
+        poster.write_bytes(b"jpeg")
+
+        queued = await queue_missing_artwork(redis, session, folder, settings)
+
+    assert queued == 1
+    assert [args[0] for _, args in redis.jobs] == [str(library / "Without Poster.mp4")]
