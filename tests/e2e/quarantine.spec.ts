@@ -42,11 +42,16 @@ test.describe("quarantine review", () => {
 
     // Approval is a decision, not a dismissal: the item leaves the review queue
     // for good, which the API confirms independently of what the screen shows.
+    // Approving is real work - the file is moved out of quarantine and a media
+    // record is created - so the queue empties a moment after the click.
     await expect
-      .poll(async () => {
-        const remaining = await firstQuarantineItem(page);
-        return remaining === null || remaining.id !== item.id;
-      })
+      .poll(
+        async () => {
+          const remaining = await firstQuarantineItem(page);
+          return remaining === null || remaining.id !== item.id;
+        },
+        { timeout: 30_000, intervals: [1_000] },
+      )
       .toBe(true);
     await expectNoAccessibilityViolations(page);
   });
