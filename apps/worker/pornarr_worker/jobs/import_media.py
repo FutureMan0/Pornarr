@@ -49,6 +49,7 @@ from pornarr_worker.jobs.quarantine import (
     QuarantineReasonCode,
     quarantine_file,
 )
+from pornarr_worker.metadata_providers import configured_providers
 
 READY = "ready"
 IMPORTED = "imported"
@@ -170,14 +171,14 @@ async def import_ready_trigger(
 async def import_media(context: dict[str, Any], trigger_id: str) -> str:
     """ARQ entrypoint: import one ready trigger and announce what happened."""
 
-    adapters = context.get("metadata_providers", ())
-    if not isinstance(adapters, Sequence):
-        raise TypeError("metadata_providers must be a sequence of provider adapters")
     redis = context["redis"]
     await publish_event(redis, "import.started", {"trigger_id": trigger_id})
     async with session_scope() as session:
         outcome = await import_ready_trigger(
-            session, UUID(trigger_id), get_settings(), adapters=adapters
+            session,
+            UUID(trigger_id),
+            get_settings(),
+            adapters=await configured_providers(session),
         )
     media_id = None if outcome.media_id is None else str(outcome.media_id)
     if media_id is not None and outcome.media_path is not None:

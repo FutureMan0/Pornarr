@@ -135,7 +135,7 @@
     "metadata": {
       "title": "Metadatenanbieter",
       "body": "Externe Metadatenanbieter sind optional. Pornarr kann ohne einen solchen Anbieter starten.",
-      "skipped": "Während dieser Einrichtung wird kein Metadatenanbieter konfiguriert.",
+      "skipped": "Während der Einrichtung wird kein Anbieter konfiguriert. StashDB oder ThePornDB lassen sich später unter Einstellungen, Metadaten hinzufügen.",
       "skipAction": "Vorerst überspringen"
     },
     "summary": {
@@ -348,7 +348,8 @@
     "sections": {
       "label": "Einstellungsbereiche",
       "rootFolders": "Stammordner",
-      "quality": "Qualitätsprofile"
+      "quality": "Qualitätsprofile",
+      "metadata": "Metadaten"
     }
   },
   "rootFolders": {
@@ -569,5 +570,25 @@
     "NETWORK_UNREACHABLE": "Prüfe, ob der Server läuft und erreichbar ist, und versuche es erneut.",
     "unknown": "Versuche es erneut und nenne diesen Code, wenn es weiter passiert.",
     "generic": "Versuche es erneut. Wenn es weiter passiert, lade die Seite neu."
+  },
+  "metadataProviders": {
+    "title": "Metadaten-Anbieter",
+    "intro": "Ein Anbieter gibt einer importierten Datei ihren echten Titel, das Studio, die Darsteller und Tags. Ohne einen kann Pornarr nur den Dateinamen lesen.",
+    "loading": "Metadaten-Anbieter werden geladen",
+    "configured": "Eingerichtete Anbieter",
+    "none": "Kein Anbieter eingerichtet, also verlassen sich Importe auf den Dateinamen.",
+    "add": "Anbieter hinzufügen oder ersetzen",
+    "provider": "Anbieter",
+    "apiKey": "API-Schlüssel",
+    "endpoint": "Endpunkt",
+    "endpointPlaceholder": "Leer lassen für die Standardadresse des Anbieters",
+    "defaultEndpoint": "Standardendpunkt",
+    "save": "Anbieter speichern",
+    "remove": "Entfernen",
+    "removeProvider": "{{name}} entfernen",
+    "implementations": {
+      "stashdb": "StashDB",
+      "tpdb": "ThePornDB"
+    }
   }
 }

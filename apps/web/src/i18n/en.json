@@ -135,7 +135,7 @@
     "metadata": {
       "title": "Metadata providers",
       "body": "External metadata providers are optional. Pornarr can start without one.",
-      "skipped": "No metadata provider will be configured during this setup.",
+      "skipped": "No provider is configured during setup. Add StashDB or ThePornDB later under Settings, Metadata.",
       "skipAction": "Skip for now"
     },
     "summary": {
@@ -348,7 +348,8 @@
     "sections": {
       "label": "Settings sections",
       "rootFolders": "Root folders",
-      "quality": "Quality profiles"
+      "quality": "Quality profiles",
+      "metadata": "Metadata"
     }
   },
   "rootFolders": {
@@ -569,5 +570,25 @@
     "NETWORK_UNREACHABLE": "Check that the server is running and reachable, then try again.",
     "unknown": "Try again, and quote this code if it keeps happening.",
     "generic": "Try again. If it keeps happening, reload the page."
+  },
+  "metadataProviders": {
+    "title": "Metadata providers",
+    "intro": "A provider gives an imported file its real title, studio, performers and tags. Without one, Pornarr can only read the file name.",
+    "loading": "Loading metadata providers",
+    "configured": "Configured providers",
+    "none": "No provider is configured, so imports fall back to what the file name says.",
+    "add": "Add or replace a provider",
+    "provider": "Provider",
+    "apiKey": "API key",
+    "endpoint": "Endpoint",
+    "endpointPlaceholder": "Leave empty for the provider's own address",
+    "defaultEndpoint": "Default endpoint",
+    "save": "Save provider",
+    "remove": "Remove",
+    "removeProvider": "Remove {{name}}",
+    "implementations": {
+      "stashdb": "StashDB",
+      "tpdb": "ThePornDB"
+    }
   }
 }

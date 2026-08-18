@@ -396,6 +396,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/metadata-providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Metadata Providers */
+        get: operations["admin_list_metadata_providers"];
+        put?: never;
+        /** Configure Metadata Provider */
+        post: operations["admin_configure_metadata_provider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/metadata-providers/{provider_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Metadata Provider */
+        delete: operations["admin_remove_metadata_provider"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/oidc": {
         parameters: {
             query?: never;
@@ -3078,6 +3113,47 @@ export interface components {
          * @enum {string}
          */
         MediaSort: "relevance" | "age" | "date_added" | "title" | "size" | "quality" | "duration";
+        /** MetadataProviderResponse */
+        MetadataProviderResponse: {
+            /** Enabled */
+            enabled: boolean;
+            /** Endpoint */
+            endpoint: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Implementation */
+            implementation: string;
+            /** Priority */
+            priority: number;
+        };
+        /** MetadataProviderWrite */
+        MetadataProviderWrite: {
+            /**
+             * Api Key
+             * Format: password
+             */
+            api_key: string;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Endpoint */
+            endpoint?: string | null;
+            /**
+             * Implementation
+             * @enum {string}
+             */
+            implementation: "stashdb" | "tpdb";
+            /**
+             * Priority
+             * @default 0
+             */
+            priority: number;
+        };
         /** ModeratedCommentResponse */
         ModeratedCommentResponse: {
             /** Author */
@@ -5127,6 +5203,88 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_metadata_providers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetadataProviderResponse"][];
+                };
+            };
+        };
+    };
+    admin_configure_metadata_provider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MetadataProviderWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetadataProviderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_remove_metadata_provider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

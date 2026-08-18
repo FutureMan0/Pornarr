@@ -24,6 +24,7 @@ import { QueueRoute } from "./routes/queue/queue-route";
 import { RecommendationsRoute } from "./routes/recommendations/recommendations-route";
 import { RequestsRoute } from "./routes/requests/requests-route";
 import { SearchRoute } from "./routes/search/search-route";
+import { MetadataProvidersRoute } from "./routes/settings/metadata/metadata-providers-route";
 import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles-route";
 import { RootFoldersRoute } from "./routes/settings/root-folders/root-folders-route";
 import { ROOT_FOLDERS_PATH, SettingsLayout } from "./routes/settings/settings-layout";
@@ -60,6 +61,7 @@ export const appRoutes: RouteObject[] = [
                   { index: true, element: <Navigate to={ROOT_FOLDERS_PATH} replace /> },
                   { path: "root-folders", element: <RootFoldersRoute /> },
                   { path: "quality", element: <QualityProfilesRoute /> },
+                  { path: "metadata", element: <MetadataProvidersRoute /> },
                 ],
               },
               { path: "search", element: <SearchRoute /> },

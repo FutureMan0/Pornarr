@@ -2457,6 +2457,93 @@
         "title": "MediaSort",
         "type": "string"
       },
+      "MetadataProviderResponse": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpoint"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "implementation": {
+            "title": "Implementation",
+            "type": "string"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "implementation",
+          "endpoint",
+          "priority",
+          "enabled"
+        ],
+        "title": "MetadataProviderResponse",
+        "type": "object"
+      },
+      "MetadataProviderWrite": {
+        "properties": {
+          "api_key": {
+            "format": "password",
+            "title": "Api Key",
+            "type": "string",
+            "writeOnly": true
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "endpoint": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpoint"
+          },
+          "implementation": {
+            "enum": [
+              "stashdb",
+              "tpdb"
+            ],
+            "title": "Implementation",
+            "type": "string"
+          },
+          "priority": {
+            "default": 0,
+            "title": "Priority",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "implementation",
+          "api_key"
+        ],
+        "title": "MetadataProviderWrite",
+        "type": "object"
+      },
       "ModeratedCommentResponse": {
         "properties": {
           "author": {
@@ -7093,6 +7180,106 @@
           }
         },
         "summary": "Scan Root Folder",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/metadata-providers": {
+      "get": {
+        "operationId": "admin_list_metadata_providers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MetadataProviderResponse"
+                  },
+                  "title": "Response Admin List Metadata Providers",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Metadata Providers",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "admin_configure_metadata_provider",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetadataProviderWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataProviderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Configure Metadata Provider",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/metadata-providers/{provider_id}": {
+      "delete": {
+        "operationId": "admin_remove_metadata_provider",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Metadata Provider",
         "tags": [
           "admin"
         ]

@@ -24,6 +24,7 @@ from pornarr_integrations.metadata import (
     MetadataRateLimitError,
 )
 from pornarr_shared.jobs import job
+from pornarr_worker.metadata_providers import configured_providers
 
 
 class MetadataTier(StrEnum):
@@ -183,17 +184,15 @@ async def resolve_metadata_job(
     oshash: str | None = None,
     perceptual_hash: str | None = None,
 ) -> dict[str, object]:
-    """Resolve one source; later provider configuration supplies the concrete adapters."""
-    adapters = context.get("metadata_providers", ())
-    if not isinstance(adapters, Sequence):
-        raise TypeError("metadata_providers must be a sequence of provider adapters")
+    """Resolve one source against whichever providers the operator configured."""
+    del context
     async with session_scope() as session:
         result = await resolve_metadata_cascade(
             session,
             MetadataSubject.from_path(
                 Path(source_path), oshash=oshash, perceptual_hash=perceptual_hash
             ),
-            adapters,
+            await configured_providers(session),
             import_trigger_id=UUID(import_trigger_id) if import_trigger_id else None,
         )
     return result.as_payload()
