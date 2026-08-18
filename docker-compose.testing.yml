@@ -1,0 +1,52 @@
+# An indexer and a download client, so the acquisition chain can be run.
+#
+# `docker compose -f docker-compose.yml -f docker-compose.override.yml \
+#    -f docker-compose.testing.yml up -d` brings these up alongside the stack.
+# Nothing here is meant for a real deployment: the indexer publishes one made-up
+# release and the client's Web UI has no password. See
+# infrastructure/testing/fake_indexer.py for why the transfer is simulated.
+services:
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: UTC
+      WEBUI_PORT: "8080"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - "mkdir -p /config/qBittorrent && cp /seed/qBittorrent.conf /config/qBittorrent/qBittorrent.conf && exec /init"
+    volumes:
+      - ./infrastructure/testing/qbittorrent.conf:/seed/qBittorrent.conf:ro
+      - qbt-config:/config
+      # The one mount rule applies here too: incomplete downloads and the
+      # library have to share a filesystem or the import cannot hardlink.
+      - ${DATA_PATH_HOST:-./data}:/data
+    ports:
+      # 8080 is a busy port on a developer machine; the client is reached
+      # inside the network by name, so the published port is only for looking.
+      - "8181:8080"
+
+  fake-indexer:
+    image: ghcr.io/futureman0/pornarr:${PORNARR_TAG:-latest}-dev
+    build:
+      context: .
+      target: development
+    # The image dispatches roles from its entrypoint; this is not one of them.
+    # Root, because the fixture volume starts out owned by root and the file
+    # has to end up owned by the uid qBittorrent runs as.
+    user: "0:0"
+    entrypoint: ["python"]
+    command: ["/app/infrastructure/testing/fake_indexer.py"]
+    environment:
+      FAKE_INDEXER_QBITTORRENT_URL: http://qbittorrent:8080
+    volumes:
+      - ./infrastructure:/app/infrastructure
+      - ${DATA_PATH_HOST:-./data}:/data
+    depends_on:
+      - qbittorrent
+    ports:
+      - "9117:9117"
+
+volumes:
+  qbt-config:

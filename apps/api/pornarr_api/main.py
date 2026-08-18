@@ -61,8 +61,10 @@ from pornarr_api.routers.transcode import router as transcode_router
 from pornarr_api.routers.watchlist import router as watchlist_router
 from pornarr_api.setup import SetupMiddleware
 from pornarr_api.spa import mount_spa
+from pornarr_integrations.newznab import NewznabAdapter
 from pornarr_integrations.qbittorrent import QbittorrentAdapter
 from pornarr_integrations.sabnzbd import SabnzbdAdapter
+from pornarr_integrations.torznab import TorznabAdapter
 from pornarr_shared.config import Settings, get_settings
 
 API_PREFIX = "/api"
@@ -148,6 +150,12 @@ def create_app(
     app.state.download_client_adapters = {
         "qbittorrent": QbittorrentAdapter(),
         "sabnzbd": SabnzbdAdapter(),
+    }
+    # Never registered, so testing an indexer's connection answered "no adapter
+    # is installed" for the only two implementations there are.
+    app.state.indexer_adapters = {
+        "torznab": TorznabAdapter(),
+        "newznab": NewznabAdapter(),
     }
 
     app.add_middleware(SetupMiddleware)

@@ -402,3 +402,61 @@ async def test_poll_records_failure_without_collapsing_a_stalled_job(session: As
         select(DownloadHistory).where(DownloadHistory.download_job_id == failed.id)
     )
     assert history is not None and history.error == "client error"
+
+
+async def test_a_finished_torrent_that_keeps_seeding_is_still_imported(
+    session: AsyncSession,
+) -> None:
+    """Every torrent client reports a finished download as seeding by default."""
+
+    client = DownloadClient(
+        name="qbittorrent",
+        protocol="torrent",
+        implementation="seeding-adapter",
+        host="qbittorrent.example",
+        port=8080,
+        credentials="secret",
+        health="unknown",
+    )
+    session.add(client)
+    await session.flush()
+    job = DownloadJob(
+        download_client_id=client.id,
+        client_name=client.name,
+        protocol=client.protocol,
+        release_guid="seeding-release",
+        client_job_id="seeding-client-job",
+        status="downloading",
+    )
+    session.add(job)
+    await session.commit()
+    adapter = PollingAdapter(
+        [
+            DownloadClientJob(
+                client_job_id="seeding-client-job",
+                state=DownloadState.SEEDING,
+                size_bytes=100,
+                remaining_bytes=0,
+                download_speed_bytes=0,
+                estimated_seconds=0,
+                output_path="/data/torrents/completed/seeding-release.mp4",
+            )
+        ]
+    )
+    imports: list[tuple[str, str | None]] = []
+
+    async def publish(event_type: str, data: dict[str, Any]) -> None:
+        del event_type, data
+
+    async def enqueue_import(job_row: DownloadJob, output_path: str | None) -> None:
+        imports.append((str(job_row.id), output_path))
+
+    await poll_downloads(
+        session,
+        adapters={"seeding-adapter": adapter},
+        publish=publish,
+        enqueue_import=enqueue_import,
+    )
+
+    assert job.status == "seeding"
+    assert imports == [(str(job.id), "/data/torrents/completed/seeding-release.mp4")]
