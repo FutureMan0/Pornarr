@@ -31,6 +31,7 @@ from pornarr_core.filters import FilterRule as CoreFilterRule
 from pornarr_core.filters import FilterRuleKind as CoreFilterRuleKind
 from pornarr_core.library_placement import Placement, place_file
 from pornarr_core.matching import ParsedRelease, parse_release
+from pornarr_core.naming import normalize_title
 from pornarr_db.models.download import ImportTrigger
 from pornarr_db.models.filters import ContentFilterProfile, ContentFilterRule, FilterProfileScope
 from pornarr_db.models.media import Media, MediaFile
@@ -254,7 +255,7 @@ def _record_media(
     file_stat = placement.path.stat()
     media = Media(
         title=candidate.title,
-        normalized_title=candidate.title.casefold(),
+        normalized_title=normalize_title(candidate.title),
         studio=candidate.studio,
         release_date=candidate.release_date,
         confidence=confidence,

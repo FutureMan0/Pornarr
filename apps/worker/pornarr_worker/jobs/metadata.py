@@ -15,6 +15,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_core.matching import parse_release
+from pornarr_core.naming import split_release_name
 from pornarr_db.models.metadata_match import MetadataMatchLog
 from pornarr_db.session import session_scope
 from pornarr_integrations.metadata import (
@@ -300,8 +301,13 @@ def _is_exact_site_date_title(subject: MetadataSubject, candidate: MetadataCandi
 
 
 def _filename_candidate(subject: MetadataSubject) -> MetadataCandidate:
+    # The file name is all there is at this tier, so it is worth reading
+    # properly: the studio a scene release states, and a title without the
+    # resolution, source, codec and release group nobody wants to see.
+    name = split_release_name(subject.title)
     return MetadataCandidate(
-        title=subject.title,
+        title=name.title,
+        studio=name.studio,
         release_date=subject.release_date,
         performers=subject.performers,
     )

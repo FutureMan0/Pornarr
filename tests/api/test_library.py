@@ -78,3 +78,43 @@ async def test_library_browses_active_media_with_user_progress(app, client: Asyn
     assert detail.status_code == 200
     assert detail.json()["tags"] == [correction.json()]
     assert detail.json()["path"] == "/data/library/sample.mp4"
+
+
+async def test_library_filters_and_orders_by_what_the_screen_offers(app, client) -> None:
+    """The facet list and the filters have to agree, or the screen offers dead ends."""
+
+    from pornarr_db.models.entities import MediaTag, Tag
+
+    user: User = await create_user(app)
+    factory = async_sessionmaker(app.state.engine, class_=AsyncSession, expire_on_commit=False)
+    async with factory() as session:
+        older = Media(title="Alpha", normalized_title="alpha", studio="Probe Studio")
+        newer = Media(title="Beta", normalized_title="beta", studio="Other Studio")
+        session.add(MediaFile(media=older, path="/data/library/a.mp4", size=1, quality="1080p"))
+        session.add(MediaFile(media=newer, path="/data/library/b.mp4", size=1, quality="720p"))
+        tag = Tag(name="Solo", normalized_name="solo")
+        session.add(tag)
+        await session.flush()
+        session.add(MediaTag(media_id=older.id, tag_id=tag.id, confidence=1, source="manual"))
+        await session.commit()
+    await login(client, user.username, "correct horse battery staple")
+
+    facets = await client.get("/api/library/facets")
+    assert facets.status_code == 200
+    assert {facet["value"] for facet in facets.json()["studios"]} == {
+        "Probe Studio",
+        "Other Studio",
+    }
+    assert facets.json()["tags"] == [{"value": "Solo", "count": 1}]
+
+    by_studio = await client.get("/api/library", params={"studio": "probe studio"})
+    assert [item["title"] for item in by_studio.json()["items"]] == ["Alpha"]
+
+    by_tag = await client.get("/api/library", params={"tag": "solo"})
+    assert [item["title"] for item in by_tag.json()["items"]] == ["Alpha"]
+
+    by_quality = await client.get("/api/library", params={"quality": "720p"})
+    assert [item["title"] for item in by_quality.json()["items"]] == ["Beta"]
+
+    by_title = await client.get("/api/library", params={"sort": "title"})
+    assert [item["title"] for item in by_title.json()["items"]] == ["Alpha", "Beta"]

@@ -1096,6 +1096,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/library/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Library Filter Values
+         * @description The values worth filtering by, so the screen offers them instead of a blank box.
+         */
+        get: operations["library_library_filter_values"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/media/{media_id}": {
         parameters: {
             query?: never;
@@ -2699,6 +2719,13 @@ export interface components {
          * @enum {string}
          */
         ExternalSearchSort: "relevance" | "age" | "size" | "quality" | "seeders" | "estimated_time";
+        /** FacetResponse */
+        FacetResponse: {
+            /** Count */
+            count: number;
+            /** Value */
+            value: string;
+        };
         /**
          * GenerateShortsWrite
          * @description How many clips to cut, and how long each should be.
@@ -2880,6 +2907,15 @@ export interface components {
             protocol: string;
         };
         JsonValue: unknown;
+        /** LibraryFacetsResponse */
+        LibraryFacetsResponse: {
+            /** Performers */
+            performers: components["schemas"]["FacetResponse"][];
+            /** Studios */
+            studios: components["schemas"]["FacetResponse"][];
+            /** Tags */
+            tags: components["schemas"]["FacetResponse"][];
+        };
         /** LibraryItemResponse */
         LibraryItemResponse: {
             /** Completed */
@@ -2921,6 +2957,11 @@ export interface components {
             /** Next Offset */
             next_offset: number | null;
         };
+        /**
+         * LibrarySort
+         * @enum {string}
+         */
+        LibrarySort: "added" | "title" | "release" | "duration";
         /** LocalSearchItem */
         LocalSearchItem: {
             /** Duration Seconds */
@@ -6824,6 +6865,11 @@ export interface operations {
                 limit?: number;
                 offset?: number;
                 rating_gte?: number | null;
+                studio?: string | null;
+                performer?: string | null;
+                tag?: string | null;
+                quality?: string | null;
+                sort?: components["schemas"]["LibrarySort"];
             };
             header?: never;
             path?: never;
@@ -6847,6 +6893,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    library_library_filter_values: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFacetsResponse"];
                 };
             };
         };

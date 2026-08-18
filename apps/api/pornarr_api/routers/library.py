@@ -14,6 +14,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pornarr_api.auth import database_session, get_current_user
 from pornarr_api.ratings_summary import rating_filter, rating_summaries
 from pornarr_api.scoping import library_scope, owns
+from pornarr_db.library_browse import (
+    Facet,
+    LibraryBrowse,
+    LibraryFacets,
+    LibrarySort,
+    browse_conditions,
+    browse_order,
+    library_facets,
+)
 from pornarr_db.models.entities import MediaPerformer, MediaTag, Performer, Tag
 from pornarr_db.models.media import Media, MediaFile
 from pornarr_db.models.playback import PlaybackProgress
@@ -46,6 +55,17 @@ class LibraryItemResponse(BaseModel):
 class LibraryPageResponse(BaseModel):
     items: list[LibraryItemResponse]
     next_offset: int | None
+
+
+class FacetResponse(BaseModel):
+    value: str
+    count: int
+
+
+class LibraryFacetsResponse(BaseModel):
+    studios: list[FacetResponse]
+    performers: list[FacetResponse]
+    tags: list[FacetResponse]
 
 
 class DetailTag(BaseModel):
@@ -91,6 +111,11 @@ async def browse_library(
     limit: Annotated[int, Query(ge=1, le=100)] = 48,
     offset: Annotated[int, Query(ge=0)] = 0,
     rating_gte: Annotated[float | None, Query(ge=1, le=5)] = None,
+    studio: Annotated[str | None, Query(max_length=256)] = None,
+    performer: Annotated[str | None, Query(max_length=256)] = None,
+    tag: Annotated[str | None, Query(max_length=256)] = None,
+    quality: Annotated[str | None, Query(max_length=64)] = None,
+    sort: LibrarySort = LibrarySort.ADDED,
 ) -> LibraryPageResponse:
     settings = await get_runtime_settings(session, request.app.state.settings)
     statement = (
@@ -108,11 +133,11 @@ async def browse_library(
         # A subquery rather than a join, so the page size still comes from the
         # outer statement and pagination stays in the database.
         statement = statement.where(Media.id.in_(rating_filter(rating_gte)))
+    browse = LibraryBrowse(studio=studio, performer=performer, tag=tag, quality=quality, sort=sort)
+    statement = statement.where(*browse_conditions(browse))
     rows = list(
         await session.execute(
-            statement.order_by(Media.updated_at.desc(), Media.id.desc())
-            .offset(offset)
-            .limit(limit + 1)
+            statement.order_by(*browse_order(sort)).offset(offset).limit(limit + 1)
         )
     )
     ratings = await rating_summaries(session, [row[0].id for row in rows])
@@ -140,6 +165,28 @@ async def browse_library(
     return LibraryPageResponse(
         items=[item(*row) for row in rows[:limit]],
         next_offset=offset + limit if len(rows) > limit else None,
+    )
+
+
+@router.get("/facets", response_model=LibraryFacetsResponse)
+async def library_filter_values(
+    request: Request, user: CurrentUser, session: Session
+) -> LibraryFacetsResponse:
+    """The values worth filtering by, so the screen offers them instead of a blank box."""
+
+    settings = await get_runtime_settings(session, request.app.state.settings)
+    facets = await library_facets(session, scope=library_scope(user, settings))
+    return _facets_response(facets)
+
+
+def _facets_response(facets: LibraryFacets) -> LibraryFacetsResponse:
+    def values(items: tuple[Facet, ...]) -> list[FacetResponse]:
+        return [FacetResponse(value=item.value, count=item.count) for item in items]
+
+    return LibraryFacetsResponse(
+        studios=values(facets.studios),
+        performers=values(facets.performers),
+        tags=values(facets.tags),
     )
 
 

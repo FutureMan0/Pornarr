@@ -1358,6 +1358,24 @@
         "title": "ExternalSearchSort",
         "type": "string"
       },
+      "FacetResponse": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "count"
+        ],
+        "title": "FacetResponse",
+        "type": "object"
+      },
       "GenerateShortsWrite": {
         "description": "How many clips to cut, and how long each should be.",
         "properties": {
@@ -1811,6 +1829,38 @@
         "type": "object"
       },
       "JsonValue": {},
+      "LibraryFacetsResponse": {
+        "properties": {
+          "performers": {
+            "items": {
+              "$ref": "#/components/schemas/FacetResponse"
+            },
+            "title": "Performers",
+            "type": "array"
+          },
+          "studios": {
+            "items": {
+              "$ref": "#/components/schemas/FacetResponse"
+            },
+            "title": "Studios",
+            "type": "array"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/FacetResponse"
+            },
+            "title": "Tags",
+            "type": "array"
+          }
+        },
+        "required": [
+          "studios",
+          "performers",
+          "tags"
+        ],
+        "title": "LibraryFacetsResponse",
+        "type": "object"
+      },
       "LibraryItemResponse": {
         "properties": {
           "completed": {
@@ -1980,6 +2030,16 @@
         ],
         "title": "LibraryPageResponse",
         "type": "object"
+      },
+      "LibrarySort": {
+        "enum": [
+          "added",
+          "title",
+          "release",
+          "duration"
+        ],
+        "title": "LibrarySort",
+        "type": "string"
       },
       "LocalSearchItem": {
         "properties": {
@@ -9242,6 +9302,83 @@
               ],
               "title": "Rating Gte"
             }
+          },
+          {
+            "in": "query",
+            "name": "studio",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Studio"
+            }
+          },
+          {
+            "in": "query",
+            "name": "performer",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Performer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag"
+            }
+          },
+          {
+            "in": "query",
+            "name": "quality",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Quality"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/LibrarySort",
+              "default": "added"
+            }
           }
         ],
         "responses": {
@@ -9267,6 +9404,28 @@
           }
         },
         "summary": "Browse Library",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/library/facets": {
+      "get": {
+        "description": "The values worth filtering by, so the screen offers them instead of a blank box.",
+        "operationId": "library_library_filter_values",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryFacetsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Library Filter Values",
         "tags": [
           "library"
         ]

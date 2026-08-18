@@ -1,4 +1,5 @@
-import { cleanup, screen } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, expect, test } from "vitest";
 import { renderApp, server, signedIn, useMockApi } from "../../test/harness";
@@ -45,4 +46,35 @@ test("once a root folder exists the empty library asks for a request instead", a
   const action = await screen.findByRole("link", { name: "Open requests" });
   expect(action.getAttribute("href")).toBe("/requests");
   expect(screen.queryByRole("link", { name: "Add a root folder" })).toBeNull();
+});
+
+
+test("picking a facet filters the library by that value", async () => {
+  signedIn();
+  const requested: string[] = [];
+  server.use(
+    http.get("/api/library/facets", () =>
+      HttpResponse.json({
+        studios: [{ value: "Probe Studio", count: 2 }],
+        performers: [],
+        tags: [{ value: "Solo", count: 1 }],
+      }),
+    ),
+    http.get("/api/library", ({ request }) => {
+      requested.push(new URL(request.url).search);
+      return HttpResponse.json({ items: [], next_offset: null });
+    }),
+  );
+
+  renderApp("/library");
+  const user = userEvent.setup();
+
+  // The options are the library's own values, with how many carry them.
+  await screen.findByRole("option", { name: "Probe Studio (2)" });
+  await user.selectOptions(screen.getByLabelText("Studio"), "Probe Studio");
+
+  await waitFor(() => {
+    expect(requested.some((search) => search.includes("studio=Probe+Studio"))).toBe(true);
+  });
+  expect(await screen.findByRole("heading", { name: "Nothing matches these filters" })).toBeTruthy();
 });
