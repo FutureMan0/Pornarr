@@ -103,24 +103,44 @@ async def create_root_folder(
 async def scan_root_folder(
     folder_id: UUID, request: Request, user: Admin, session: Session
 ) -> Response:
-    """Queue a filesystem scan of one root folder so its media can enter the library."""
+    """Ask the worker to walk one root folder now, so its media can enter the library.
+
+    The progress is not returned here. The worker publishes `scan.progress` on
+    the event stream as it goes, and the screen watches that; holding the
+    request open for a walk of ten thousand files would time out long before it
+    told anyone anything.
+    """
 
     folder = await session.get(RootFolder, folder_id)
     if folder is None:
         raise HTTPException(status_code=404)
     if not folder.enabled:
+        # A disabled folder is one the household has switched off. Scanning it
+        # anyway would quietly reimport what somebody chose to exclude.
         raise RootFolderDisabledError("The root folder is disabled.")
-    # The minute stamp is what lets an operator scan again after the previous
-    # run finished, while still collapsing an impatient double click.
+    # `enqueue_once` keys on the arguments, so an administrator clicking twice
+    # gets one walk rather than two racing over the same files. The minute
+    # stamp is what lets them scan again once the previous run finished, while
+    # still collapsing the impatient double click.
     minute = datetime.now(UTC).replace(second=0, microsecond=0).isoformat()
+    # The import queue, not the default one: `scan` is registered on the import
+    # worker, and a job on a queue nothing listens to waits forever without
+    # anyone being told.
     await enqueue_once(
-        request.app.state.job_queue,
+        request.app.state.queue,
         SCAN_JOB_NAME,
         str(folder_id),
         f"manual:{minute}",
         queue=IMPORT_QUEUE,
     )
-    write_audit(session, actor_id=user.id, action="root_folder.scanned", target=str(folder_id))
+    write_audit(
+        session,
+        actor_id=user.id,
+        action="root_folder.scanned",
+        target=str(folder_id),
+        context={"path": folder.path},
+    )
+    await session.flush()
     return Response(status_code=202)
 
 
@@ -168,11 +188,21 @@ def _validate_root_folder(path_value: str, downloads_path: Path) -> tuple[Path, 
 def _folder_response(
     folder: RootFolder, downloads_path: Path, same_filesystem: bool | None = None
 ) -> RootFolderResponse:
-    same_filesystem = (
-        Path(folder.path).stat().st_dev == downloads_path.stat().st_dev
-        if same_filesystem is None
-        else same_filesystem
-    )
+    """One folder, and whether an import from downloads can hardlink into it.
+
+    A missing path — either side — is reported rather than raised. Nothing
+    creates the download directories, so a fresh deployment has a root folder
+    and no `/data/torrents`, and answering 500 there makes the whole screen
+    unreachable over a condition it exists to describe. Treated as "not the same
+    filesystem", which is the cautious reading: it says imports will copy, and
+    copying always works.
+    """
+    if same_filesystem is None:
+        try:
+            same_filesystem = Path(folder.path).stat().st_dev == downloads_path.stat().st_dev
+        except OSError:
+            same_filesystem = False
+
     warning = (
         None if same_filesystem else "different filesystem from downloads; imports cannot hardlink"
     )

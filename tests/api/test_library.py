@@ -84,6 +84,8 @@ async def test_library_browses_active_media_with_user_progress(app, client: Asyn
             "rating_count": 0,
             "peer_id": None,
             "peer_name": None,
+            "tag_count": 0,
+            "comment_count": 0,
         }
     ]
     correction = await client.post(

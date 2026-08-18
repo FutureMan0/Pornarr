@@ -1,210 +1,118 @@
 /**
- * The shorts feed: one clip at a time, filling the stage.
+ * B6 — the Shorts grid.
  *
- * `GET /api/shorts` has been served since the first release with nothing in the
- * client pointed at it, so every clip the server cut was unreachable. This is
- * that screen.
- *
- * A short is an offset pair into a title rather than a file of its own, so the
- * feed is `VideoPlayer` told where to begin and where to stop — never a second
- * player, and never a second transcode session per clip. Only the clip on
- * screen is mounted, and the player is keyed by the title it comes from, so two
- * clips cut from the same file are a seek rather than a new session.
- *
- * Moving is a swipe, an arrow key or a button, and all three do the same thing.
- * The buttons are not decoration: a feed whose only affordance is a gesture is
- * a feed a keyboard cannot reach, and the key hint below the stage is how a
- * reader learns the gesture exists at all.
+ * Vertical clips, so the tiles are 9/16 rather than 16/10 and the grid is
+ * denser. Each clip links back to the title it was cut from, which is the one
+ * navigation the design insists on: a clip is an excerpt, and an excerpt with
+ * no way back to the source is a dead end.
  */
-import type { paths } from "@pornarr/api-client";
-import { Button, EmptyState } from "@pornarr/ui";
+import { MediaTile } from "@pornarr/ui";
 import { useQuery } from "@tanstack/react-query";
-import type { JSX, TouchEvent } from "react";
-import { useCallback, useEffect, useState } from "react";
+import type { JSX } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { VideoPlayer } from "../../components/player/video-player";
-import { ErrorScreen } from "../../errors/error-screen";
-import { useFormat } from "../../i18n/format";
+
 import { getApiClient } from "../../lib/api";
-import {
-  type ApiRequestError,
-  apiFailure,
-  isRetryableError,
-  messageForError,
-  nextStepForError,
-} from "../../lib/api-error";
-import { NAV_ITEMS } from "../../shell/sidebar";
+import { apiFailure } from "../../lib/api-error";
+import { tileBlur, useArtVisible } from "../../lib/art-visibility";
+import { formatDuration, seedFrom } from "../../lib/format";
+import { usePageTitle } from "../../shell/page-title";
 
-export type Short =
-  paths["/api/shorts"]["get"]["responses"][200]["content"]["application/json"][number];
-
-export const SHORTS_KEY = ["shorts"] as const;
-
-/** Read from the nav table so the link cannot outlive the route it points at. */
-const LIBRARY_PATH = NAV_ITEMS[0].path;
-
-/** How far a finger has to travel before it is a swipe rather than a tap. */
-const SWIPE_THRESHOLD_PX = 48;
-
-export function useShorts() {
-  return useQuery<Short[], ApiRequestError>({
-    queryKey: SHORTS_KEY,
-    queryFn: async () => {
-      const { data, error, response } = await getApiClient().GET("/api/shorts");
-      if (error !== undefined || data === undefined) throw apiFailure(error, response);
-      return data;
-    },
-  });
-}
+const SORTS = ["trending", "newest", "top", "duration"] as const;
+type Sort = (typeof SORTS)[number];
 
 export function ShortsRoute(): JSX.Element {
   const { t } = useTranslation();
-  const format = useFormat();
-  const shorts = useShorts();
-  const [index, setIndex] = useState(0);
-  const count = shorts.data?.length ?? 0;
+  const artVisible = useArtVisible();
+  const [sort, setSort] = useState<Sort>("trending");
 
-  // Wrapping rather than stopping: a feed that refuses the next swipe reads as
-  // broken, and there is no further page to fetch behind the last clip.
-  const move = useCallback(
-    (delta: number): void => {
-      if (count === 0) return;
-      setIndex((current) => (current + delta + count) % count);
+  const shorts = useQuery({
+    queryKey: ["shorts", sort],
+    queryFn: async () => {
+      const { data, error, response } = await getApiClient().GET("/api/shorts", {
+        params: { query: { sort, limit: 60 } },
+      });
+      if (!data || error) throw apiFailure(error, response);
+      return data;
     },
-    [count],
+  });
+
+  usePageTitle(
+    t("shorts.title"),
+    shorts.data === undefined ? undefined : t("shorts.count", { count: shorts.data.length }),
   );
-
-  // Bound to the window rather than to the stage: the clip is the whole screen,
-  // so arrowing through it must not depend on which part of it holds focus. A
-  // field is the one place the same key means something else.
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.altKey || event.ctrlKey || event.metaKey) return;
-      const target = event.target;
-      if (target instanceof HTMLElement && target.closest("input, select, textarea")) return;
-      if (event.key === "ArrowDown") {
-        event.preventDefault();
-        move(1);
-      } else if (event.key === "ArrowUp") {
-        event.preventDefault();
-        move(-1);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [move]);
-
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const onTouchStart = (event: TouchEvent<HTMLDivElement>): void => {
-    setTouchStart(event.touches[0]?.clientY ?? null);
-  };
-  const onTouchEnd = (event: TouchEvent<HTMLDivElement>): void => {
-    const end = event.changedTouches[0]?.clientY;
-    if (touchStart === null || end === undefined) return;
-    setTouchStart(null);
-    const travelled = touchStart - end;
-    if (Math.abs(travelled) < SWIPE_THRESHOLD_PX) return;
-    // Up means forward, the way every vertical feed reads: the next clip comes
-    // from below.
-    move(travelled > 0 ? 1 : -1);
-  };
-
-  const heading = (
-    <h1 id="shorts-heading" className="text-xl text-ink">
-      {t("shorts.title")}
-    </h1>
-  );
-
-  if (shorts.isPending)
-    return (
-      <section aria-labelledby="shorts-heading" className="flex flex-col gap-4">
-        {heading}
-        <p className="text-sm text-ink-muted">{t("shorts.loading")}</p>
-      </section>
-    );
-
-  if (shorts.isError)
-    return (
-      <section aria-labelledby="shorts-heading" className="flex flex-col gap-4">
-        {heading}
-        <ErrorScreen
-          title={messageForError(shorts.error)}
-          nextStep={nextStepForError(shorts.error)}
-          onRetry={isRetryableError(shorts.error) ? () => void shorts.refetch() : undefined}
-        />
-      </section>
-    );
-
-  const current = shorts.data[Math.min(index, count - 1)];
-  if (current === undefined)
-    return (
-      <section aria-labelledby="shorts-heading" className="flex flex-col gap-4">
-        {heading}
-        <EmptyState
-          title={t("shorts.emptyTitle")}
-          body={t("shorts.empty")}
-          action={{ label: t("shorts.emptyAction"), href: LIBRARY_PATH }}
-        />
-      </section>
-    );
 
   return (
-    <section aria-labelledby="shorts-heading" className="flex flex-col gap-4">
-      <header className="flex flex-wrap items-baseline justify-between gap-2">
-        {heading}
-        <p className="text-sm text-ink-muted tabular">
-          {t("shorts.position", { position: index + 1, count })}
+    <section aria-label={t("shorts.title")} className="flex flex-col gap-6">
+      {/* A fieldset rather than a div carrying role="group": the grouping is
+          then in the markup itself, and the legend names it for a screen
+          reader without a parallel aria-label to keep in step. */}
+      <fieldset className="flex flex-wrap gap-1 border-0 p-0">
+        <legend className="sr-only">{t("shorts.sort.label")}</legend>
+        {SORTS.map((option) => (
+          <button
+            key={option}
+            type="button"
+            // aria-pressed rather than a radio group: these are filters on one
+            // list, not a choice that is submitted.
+            aria-pressed={sort === option}
+            onClick={() => setSort(option)}
+            className={
+              sort === option
+                ? "rounded-md bg-[var(--primary-weak)] px-3 py-1.5 text-sm text-[var(--pa-accent-300)]"
+                : "rounded-md px-3 py-1.5 text-sm text-ink-muted hover:bg-surface-3 hover:text-ink"
+            }
+          >
+            {t(`shorts.sort.${option}`)}
+          </button>
+        ))}
+      </fieldset>
+
+      {shorts.isPending ? <p className="text-sm text-ink-muted">{t("shorts.loading")}</p> : null}
+      {shorts.isError ? (
+        <p role="alert" className="text-sm text-ink">
+          {t("errors.generic")}
         </p>
-      </header>
-      <p className="max-w-[70ch] text-sm text-ink-muted">{t("shorts.intro")}</p>
+      ) : null}
 
-      {/* A tap-target region, not a control: the swipe is a shortcut for the
-          buttons below, which are what carries the accessible name. */}
-      <div
-        className="h-[calc(100vh-22rem)] min-h-72 border border-border bg-black"
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-      >
-        {/* A clip is vertical, so the column is capped rather than stretched
-            across a desktop width the footage would be letterboxed into. */}
-        <div className="mx-auto h-full w-full max-w-[28rem]">
-          <VideoPlayer
-            key={current.media_id}
-            mediaId={current.media_id}
-            title={current.title}
-            startSeconds={current.start_seconds}
-            endSeconds={current.end_seconds}
-            autoPlay
-            fill
-          />
-        </div>
-      </div>
-
-      <div
-        aria-live="polite"
-        className="flex flex-wrap items-start justify-between gap-4 border border-border bg-surface p-4"
-      >
-        <div className="min-w-0">
-          <h2 className="text-lg text-ink">{current.title}</h2>
-          <p className="text-sm text-ink-muted">
-            {current.media_title} · {format.duration(current.duration_seconds)}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button variant="ghost" onClick={() => move(-1)}>
-            {t("shorts.previous")}
-          </Button>
-          <Button variant="ghost" onClick={() => move(1)}>
-            {t("shorts.next")}
-          </Button>
-          <Link className="text-sm text-primary underline" to={`/library/${current.media_id}`}>
-            {t("shorts.openTitle")}
-          </Link>
-        </div>
-      </div>
-
-      <p className="text-xs text-ink-muted">{t("shorts.hint")}</p>
+      {shorts.data !== undefined ? (
+        shorts.data.length === 0 ? (
+          <p className="text-sm text-ink-muted">{t("shorts.empty")}</p>
+        ) : (
+          <ul className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-3">
+            {shorts.data.map((short) => (
+              <li key={short.id}>
+                <MediaTile
+                  blur={tileBlur(artVisible)}
+                  title={short.title}
+                  meta={t("shorts.from", { title: short.media_title })}
+                  duration={formatDuration(short.duration_seconds)}
+                  rating={short.average_stars}
+                  ratingLabel={
+                    short.average_stars === null
+                      ? t("library.rating.none")
+                      : t("library.rating.value", {
+                          value: short.average_stars,
+                          count: short.comment_count,
+                        })
+                  }
+                  commentCount={short.comment_count}
+                  seed={seedFrom(short.id)}
+                  action={(content) => (
+                    // Into the player. The way back to the full title is on
+                    // that screen, where the timestamp gives it somewhere to
+                    // land — a grid tile has no room to say "at 15:11".
+                    <Link to={`/shorts/${short.id}`} className="block rounded-md">
+                      {content}
+                    </Link>
+                  )}
+                />
+              </li>
+            ))}
+          </ul>
+        )
+      ) : null}
     </section>
   );
 }

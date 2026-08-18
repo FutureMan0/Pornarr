@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from pornarr_api.auth import database_session, get_current_user
+from pornarr_api.facets import FACET_CAP, Counted, tally, was_capped, widened
 from pornarr_api.ratings_summary import rating_filter, rating_summaries
 from pornarr_api.scoping import owns, search_scope
 from pornarr_core.dedup import IndexedRelease, deduplicate
@@ -92,6 +93,31 @@ class LocalSearchItem(BaseModel):
 class LocalSearchResponse(BaseModel):
     items: list[LocalSearchItem]
     next_cursor: str | None
+
+
+class FacetValueResponse(BaseModel):
+    value: str
+    count: int
+
+
+class FacetsResponse(BaseModel):
+    """The numbers beside the filters, and how far they can be trusted."""
+
+    studio: list[FacetValueResponse]
+    resolution: list[FacetValueResponse]
+    # Band names — `under_10`, `10_20`, `20_40`, `over_40`. The boundaries are
+    # the server's to decide; the wording is the client's.
+    duration: list[FacetValueResponse]
+    # Cumulative floors as strings ("5", "4", "3"), plus "unrated".
+    rating: list[FacetValueResponse]
+    tag: list[FacetValueResponse]
+    # How many titles the current selection actually matches.
+    matched: int
+    # The whole library within reach of this search, before any facet applies.
+    total: int
+    # True when the search matched more than the walk is willing to count. The
+    # interface has to say so rather than print a number that is not the answer.
+    capped: bool
 
 
 class IndexerSearchWrite(BaseModel):
@@ -199,7 +225,7 @@ async def start_indexer_search(
         ex=3600,
     )
     await enqueue_once(
-        request.app.state.job_queue,
+        request.app.state.queue,
         INDEXER_SEARCH_JOB_NAME,
         str(search_id),
         str(user.id),
@@ -337,6 +363,79 @@ async def local_search(
         next_cursor = _next_cursor(results, limit, sort, q)
         await record_user_event(session, user.id, UserEventType.SEARCH, value=float(len(items)))
         return LocalSearchResponse(items=items, next_cursor=next_cursor)
+
+
+@router.get("/local/facets", response_model=FacetsResponse)
+async def local_search_facets(
+    request: Request,
+    user: CurrentUser,
+    session: Session,
+    q: Annotated[str, Query(min_length=1, max_length=512)],
+    quality: str | None = None,
+    studio: str | None = None,
+    tag: str | None = None,
+    duration: str | None = None,
+    rating_gte: Annotated[int | None, Query(ge=1, le=5)] = None,
+) -> FacetsResponse:
+    """Counts for the filter sidebar, from the same pipeline as the results.
+
+    Everything the list does to a row — the visibility scope, the content filter
+    rules — happens here too. A count the list cannot deliver is worse than no
+    count, because a reader will click it.
+    """
+    with measure("search"):
+        try:
+            search = widened(MediaSearch(query=q, sort=MediaSort.RELEVANCE, limit=FACET_CAP + 1))
+            results = await search_media(session, search)
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+
+        capped = was_capped(results)
+        results = results[:FACET_CAP]
+
+        settings = await get_runtime_settings(session, request.app.state.settings)
+        scope = search_scope(user, settings)
+        visible = [result for result in results if scope is None or owns(result.media, user)]
+
+        media_ids = [result.media.id for result in visible]
+        metadata = await search_metadata(session, media_ids)
+        ratings = await rating_summaries(session, media_ids)
+        rules = await _rules_for_user(session, user.id)
+
+        rows = [
+            Counted(
+                studio=result.media.studio,
+                resolution=result.media_file.quality or result.media_file.resolution,
+                duration_seconds=result.media_file.duration_seconds,
+                rating=ratings.get(result.media.id, (None, 0))[0],
+                tags=metadata[result.media.id].tags,
+            )
+            for result in visible
+            if _filter_decision(result, metadata[result.media.id], rules).action
+            is CoreFilterAction.ALLOW
+        ]
+
+        facets = tally(
+            rows,
+            selected_studio=studio,
+            selected_resolution=quality,
+            selected_duration=duration,
+            selected_rating=rating_gte,
+            selected_tag=tag,
+            capped=capped,
+        )
+        return FacetsResponse(
+            studio=[FacetValueResponse(value=v.value, count=v.count) for v in facets.studio],
+            resolution=[
+                FacetValueResponse(value=v.value, count=v.count) for v in facets.resolution
+            ],
+            duration=[FacetValueResponse(value=v.value, count=v.count) for v in facets.duration],
+            rating=[FacetValueResponse(value=v.value, count=v.count) for v in facets.rating],
+            tag=[FacetValueResponse(value=v.value, count=v.count) for v in facets.tag],
+            matched=facets.matched,
+            total=len(rows),
+            capped=facets.capped,
+        )
 
 
 def _validate_size_range(minimum_size_bytes: int | None, maximum_size_bytes: int | None) -> None:

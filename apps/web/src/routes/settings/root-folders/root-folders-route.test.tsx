@@ -24,7 +24,7 @@ function folder(overrides: Record<string, unknown> = {}) {
   };
 }
 
-test("settings offers its sections and opens on root folders", async () => {
+test("settings offers its areas and root folders is one of them", async () => {
   signedIn();
   server.use(
     http.get("/api/admin/library/root-folders", () => HttpResponse.json([])),
@@ -38,9 +38,12 @@ test("settings offers its sections and opens on root folders", async () => {
 
   // A bare redirect to quality profiles used to be the whole of settings, which
   // is what kept root folders unreachable.
-  await screen.findByRole("heading", { name: "Root folders", level: 1 });
-  const sections = screen.getByRole("navigation", { name: "Settings sections" });
+  const sections = await screen.findByRole("navigation", { name: "Settings areas" });
   expect(sections).not.toBeNull();
+
+  await user.click(screen.getByRole("link", { name: "Root folders" }));
+
+  await screen.findByRole("heading", { name: "Root folders", level: 1 });
 
   await user.click(screen.getByRole("link", { name: "Quality profiles" }));
 

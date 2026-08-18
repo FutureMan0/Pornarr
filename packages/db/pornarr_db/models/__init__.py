@@ -28,6 +28,7 @@ from pornarr_db.models.filters import (
     FilterRuleKind,
 )
 from pornarr_db.models.indexer import Indexer, IndexerStats
+from pornarr_db.models.invite import Invite
 from pornarr_db.models.media import DuplicateCandidate, Media, MediaFile, MediaFileHistory
 from pornarr_db.models.metadata_correction import MetadataCorrection
 from pornarr_db.models.metadata_match import MetadataMatchLog
@@ -92,6 +93,7 @@ __all__ = [
     "ImportTrigger",
     "Indexer",
     "IndexerStats",
+    "Invite",
     "Media",
     "MediaFile",
     "MediaFileHistory",

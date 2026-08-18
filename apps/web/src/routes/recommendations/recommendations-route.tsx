@@ -1,8 +1,10 @@
 import { Button, SkeletonRegion, SkeletonText } from "@pornarr/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { getApiClient } from "../../lib/api";
 import { apiFailure } from "../../lib/api-error";
+import { usePageTitle } from "../../shell/page-title";
 type Item = {
   media_id: string;
   title: string;
@@ -10,6 +12,7 @@ type Item = {
 };
 export function RecommendationsRoute() {
   const { t } = useTranslation();
+  usePageTitle(t("recommendations.title"));
   const client = useQueryClient();
   const recommendations = useQuery({
     queryKey: ["recommendations"],
@@ -34,11 +37,9 @@ export function RecommendationsRoute() {
   });
   const items = recommendations.data ?? [];
   return (
-    <section aria-labelledby="recommendations-heading" className="flex flex-col gap-4">
+    // The heading is the top bar's, declared with `usePageTitle` above.
+    <section aria-label={t("recommendations.title")} className="flex flex-col gap-4">
       <header>
-        <h1 id="recommendations-heading" className="text-xl text-ink">
-          {t("recommendations.title")}
-        </h1>
         <p className="text-sm text-ink-muted">{t("recommendations.intro")}</p>
       </header>
       {recommendations.isPending ? (

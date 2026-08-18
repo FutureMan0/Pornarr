@@ -49,11 +49,16 @@
      on the rose accent, accent-900 measures 4.29:1, which is under the bar for
      a button label. The delivered design sidesteps this by drawing its primary
      button as an outline; this application fills it, so it needs an ink that
-     actually holds — 5.51:1 in rose, 6.39:1 in amber. */
+     actually holds — 5.51:1 in rose, 6.39:1 in amber.
+
+     --primary-weak is a background, so what matters is the darkest ink that can
+     land on it. The 800 step carries --ink at 8.87:1 but --ink-muted at only
+     3.76:1, and muted secondary text on a tinted background is exactly what a
+     -weak surface is for. The 900 step carries both: 12.52:1 and 5.31:1. */
   --primary: var(--pa-accent-500);
   --primary-hover: var(--pa-accent-400);
   --primary-ink: var(--pa-bg-00);
-  --primary-weak: var(--pa-accent-800);
+  --primary-weak: var(--pa-accent-900);
 
   /* Semantic. The -weak variants are backgrounds. Text on them is --ink, never
      the matching hue — see contrast.test.ts. */

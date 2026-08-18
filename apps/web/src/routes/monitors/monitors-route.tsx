@@ -1,8 +1,10 @@
 import { Button, SkeletonRegion, SkeletonText } from "@pornarr/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { getApiClient } from "../../lib/api";
 import { apiFailure } from "../../lib/api-error";
+import { usePageTitle } from "../../shell/page-title";
 type Monitor = {
   id: string;
   kind: string;
@@ -13,6 +15,7 @@ type Monitor = {
 };
 export function MonitorsRoute() {
   const { t } = useTranslation();
+  usePageTitle(t("monitors.title"));
   const cache = useQueryClient();
   const monitors = useQuery({
     queryKey: ["monitors"],
@@ -43,11 +46,11 @@ export function MonitorsRoute() {
   });
   const items = monitors.data ?? [];
   return (
-    <section aria-labelledby="monitors-heading" className="flex flex-col gap-4">
+    // The heading is the top bar's, declared with `usePageTitle` above: the
+    // design puts the screen's name there, and a second one here would announce
+    // it twice to anyone navigating by heading.
+    <section aria-label={t("monitors.title")} className="flex flex-col gap-4">
       <header>
-        <h1 id="monitors-heading" className="text-xl text-ink">
-          {t("monitors.title")}
-        </h1>
         <p className="text-sm text-ink-muted">{t("monitors.intro")}</p>
       </header>
       {monitors.isPending ? (

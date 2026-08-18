@@ -1,4 +1,4 @@
-import { EmptyState, Select } from "@pornarr/ui";
+import { EmptyState, MediaTile, Select } from "@pornarr/ui";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { JSX } from "react";
@@ -11,7 +11,10 @@ import { useRootFolders } from "../settings/root-folders/root-folders";
 import { ROOT_FOLDERS_PATH } from "../settings/settings-layout";
 
 /** Read from the nav table so the link cannot outlive the route it points at. */
-const REQUESTS_PATH = NAV_ITEMS[1].path;
+const REQUESTS_PATH = NAV_ITEMS.find((item) => item.id === "requests")?.path ?? "/requests";
+
+import { tileBlur, useArtVisible } from "../../lib/art-visibility";
+import { usePageTitle } from "../../shell/page-title";
 
 type Item = {
   id: string;
@@ -25,6 +28,10 @@ type Item = {
   progress_duration_seconds: number | null;
   poster_url: string;
   sprite_url: string | null;
+  rating: number | null;
+  rating_count: number;
+  tag_count: number;
+  comment_count: number;
   /**
    * Which library the title came from. Absent or null means this one — a
    * remote item carries the peer it was borrowed from, and its `poster_url`
@@ -55,6 +62,15 @@ function sortOf(value: string | null): Sort {
   return SORTS.includes(value as Sort) ? (value as Sort) : "added";
 }
 
+/** The rating floors the design offers as chips. */
+const RATING_FILTERS = [4, 3] as const;
+
+/** A floor from the URL, or none. Anything the chips do not offer is none. */
+function ratingOf(value: string | null): number | null {
+  const floor = Number(value);
+  return RATING_FILTERS.includes(floor as (typeof RATING_FILTERS)[number]) ? floor : null;
+}
+
 export function LibraryRoute() {
   const { t } = useTranslation();
   const rootFolders = useRootFolders();
@@ -64,6 +80,7 @@ export function LibraryRoute() {
   const filters = FILTER_KEYS.map((key) => [key, params.get(key) ?? ""] as const);
   const sort = sortOf(params.get("sort"));
   const source = params.get("source") ?? LOCAL_SOURCE;
+  const ratingFloor = ratingOf(params.get("rating"));
   // The names of other people's servers are only needed once the reader has
   // left their own library. Asking an administrator-only endpoint on every
   // library load would be a request nobody asked for, on the one screen the
@@ -78,7 +95,7 @@ export function LibraryRoute() {
     },
   });
   const library = useInfiniteQuery({
-    queryKey: ["library", Object.fromEntries(filters), sort, source],
+    queryKey: ["library", Object.fromEntries(filters), sort, source, ratingFloor],
     // A page is addressed by an offset or by a cursor depending on which
     // library is being read, so the page parameter is whichever of the two the
     // previous page handed back.
@@ -89,12 +106,13 @@ export function LibraryRoute() {
       if (typeof pageParam === "string") query.set("cursor", pageParam);
       else query.set("offset", String(pageParam));
       for (const [key, value] of filters) if (value !== "") query.set(key, value);
+      if (ratingFloor !== null) query.set("rating_gte", String(ratingFloor));
       const response = await fetch(`/api/library?${query.toString()}`);
       if (!response.ok) throw new Error();
       return response.json() as Promise<Page>;
     },
   });
-  const filtered = filters.some(([, value]) => value !== "");
+  const filtered = filters.some(([, value]) => value !== "") || ratingFloor !== null;
   const setFilter = (key: string, value: string): void => {
     setParams((current) => {
       const next = new URLSearchParams(current);
@@ -103,32 +121,37 @@ export function LibraryRoute() {
       return next;
     });
   };
+
+  // Resume position comes from the same rows, so "continue watching" is a
+  // partition of the page rather than a second request.
+  const resuming = (items: Item[]): Item[] =>
+    items.filter((item) => item.position_seconds !== null && item.position_seconds > 0);
   const items = library.data?.pages.flatMap((page) => page.items) ?? [];
+
+  // The count is what has loaded, not what exists: the library pages as you
+  // scroll, and claiming a total the server never sent would be a number made
+  // up in the browser.
+  usePageTitle(
+    t("library.title"),
+    library.isPending ? undefined : t("library.results", { count: items.length }),
+  );
+
   if (library.isPending)
     return (
-      <section aria-labelledby="library-heading">
-        <h1 id="library-heading" className="text-xl text-ink">
-          {t("library.title")}
-        </h1>
+      <section aria-label={t("library.title")}>
         <p className="text-sm text-ink-muted">{t("library.loading")}</p>
       </section>
     );
   if (library.isError)
     return (
-      <section aria-labelledby="library-heading">
-        <h1 id="library-heading" className="text-xl text-ink">
-          {t("library.title")}
-        </h1>
+      <section aria-label={t("library.title")}>
         <p role="alert" className="text-sm text-ink">
           {t("errors.generic")}
         </p>
       </section>
     );
   return (
-    <section aria-labelledby="library-heading" className="flex flex-col gap-6">
-      <h1 id="library-heading" className="text-xl text-ink">
-        {t("library.title")}
-      </h1>
+    <section aria-label={t("library.title")} className="flex flex-col gap-6">
       <LibraryFilters
         facets={facets.data}
         loading={facets.isPending}
@@ -137,6 +160,7 @@ export function LibraryRoute() {
         tag={params.get("tag") ?? ""}
         sort={sort}
         source={source}
+        ratingFloor={ratingFloor}
         peers={(peers.data ?? []).map((peer) => [peer.id, peer.name] as const)}
         onChange={setFilter}
       />
@@ -156,13 +180,41 @@ export function LibraryRoute() {
           <LibraryEmpty needsRootFolder={rootFolders.data?.length === 0} />
         )
       ) : (
-        <VirtualGrid
-          items={items}
-          showSource={source === ALL_SOURCES}
-          onEnd={() =>
-            library.hasNextPage && !library.isFetchingNextPage && void library.fetchNextPage()
-          }
-        />
+        <>
+          {resuming(items).length > 0 ? (
+            <section aria-labelledby="continue-section" className="flex flex-col gap-3">
+              <h2
+                id="continue-section"
+                className="text-2xs uppercase tracking-[0.08em] text-ink-muted"
+              >
+                {t("library.sections.continue")}
+              </h2>
+              <ul className="grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4">
+                {resuming(items).map((item) => (
+                  <li key={`${item.peer_id ?? ""}:${item.id}`}>
+                    <MediaCard item={item} showSource={source === ALL_SOURCES} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          <section aria-labelledby="everything-section" className="flex flex-col gap-3">
+            <h2
+              id="everything-section"
+              className="text-2xs uppercase tracking-[0.08em] text-ink-muted"
+            >
+              {t("library.sections.everything")}
+            </h2>
+            <VirtualGrid
+              items={items}
+              showSource={source === ALL_SOURCES}
+              onEnd={() =>
+                library.hasNextPage && !library.isFetchingNextPage && void library.fetchNextPage()
+              }
+            />
+          </section>
+        </>
       )}
     </section>
   );
@@ -180,6 +232,7 @@ function LibraryFilters({
   tag,
   sort,
   source,
+  ratingFloor,
   peers,
   onChange,
 }: {
@@ -190,6 +243,7 @@ function LibraryFilters({
   readonly tag: string;
   readonly sort: Sort;
   readonly source: string;
+  readonly ratingFloor: number | null;
   readonly peers: readonly (readonly [string, string])[];
   readonly onChange: (key: string, value: string) => void;
 }): JSX.Element {
@@ -254,6 +308,27 @@ function LibraryFilters({
         ]}
         onChange={(value) => onChange("sort", value)}
       />
+      {/* A fieldset rather than a div carrying role="group": the grouping is
+          then in the markup itself, and the legend names it for a screen
+          reader without a parallel aria-label to keep in step. */}
+      <fieldset className="flex flex-wrap items-end gap-2 border-0 p-0">
+        <legend className="sr-only">{t("library.filters")}</legend>
+        {RATING_FILTERS.map((floor) => (
+          <button
+            key={floor}
+            type="button"
+            aria-pressed={ratingFloor === floor}
+            onClick={() => onChange("rating", ratingFloor === floor ? "" : String(floor))}
+            className={
+              ratingFloor === floor
+                ? "rounded-full bg-[var(--primary-weak)] px-3 py-1 text-xs text-[var(--pa-accent-300)]"
+                : "rounded-full border border-border px-3 py-1 text-xs text-ink-muted hover:bg-surface-3 hover:text-ink"
+            }
+          >
+            {t("library.ratingFloor", { count: floor })}
+          </button>
+        ))}
+      </fieldset>
     </div>
   );
 }
@@ -384,8 +459,19 @@ function VirtualGrid({
 
 function MediaCard({ item, showSource }: { readonly item: Item; readonly showSource: boolean }) {
   const { t } = useTranslation();
+  const artVisible = useArtVisible();
   const [preview, setPreview] = useState(false);
-  const source = preview && item.sprite_url ? item.sprite_url : item.poster_url;
+  // A poster is generated by a background job, so a freshly scanned title has
+  // none yet. Falling back to the placeholder keeps the grid readable instead
+  // of filling it with black rectangles that look like a rendering fault.
+  const [posterFailed, setPosterFailed] = useState(false);
+  // The sprite is a strip of frames; swapping the source on hover is the
+  // cheapest possible preview and it predates the design. Keeping it.
+  const source = preview && item.sprite_url !== null ? item.sprite_url : item.poster_url;
+  const progress =
+    item.position_seconds !== null && item.progress_duration_seconds
+      ? item.position_seconds / item.progress_duration_seconds
+      : 0;
   const from = item.peer_name ?? null;
   // A remote title's id means nothing on this instance, so the detail screen is
   // told which library to ask; without it the card led to the not-found screen.
@@ -393,39 +479,65 @@ function MediaCard({ item, showSource }: { readonly item: Item; readonly showSou
     item.peer_id === null || item.peer_id === undefined
       ? `/library/${item.id}`
       : `/library/${item.id}?peer=${item.peer_id}`;
+
   return (
-    <Link
-      to={address}
-      className="overflow-hidden border border-border bg-surface"
-      onPointerEnter={() => setPreview(true)}
-      onPointerLeave={() => setPreview(false)}
-    >
-      <div className="relative aspect-video bg-surface-2">
-        <img src={source} alt="" className="h-full w-full object-cover" loading="lazy" />
-        {item.position_seconds !== null && item.progress_duration_seconds ? (
-          <span
-            className="absolute bottom-0 left-0 h-1 bg-ink"
-            style={{
-              width: `${Math.min(100, (item.position_seconds * 100) / item.progress_duration_seconds)}%`,
-            }}
-          />
-        ) : null}
-      </div>
-      <div className="min-h-24 p-3">
-        <h2 className="truncate text-sm font-medium text-ink">{item.title}</h2>
-        <p className="truncate text-xs text-ink-muted">
-          {item.studio ?? "—"}
-          {item.release_date ? ` · ${item.release_date}` : ""}
-        </p>
-        <p className="text-xs text-ink-muted">{item.quality ?? item.resolution ?? "—"}</p>
-        {/* Only while every library is on screen at once: on one library the
-            answer is the same for every card and says nothing. */}
-        {showSource ? (
-          <p className="truncate text-xs text-ink-muted">
-            {from === null ? t("library.fromLocal") : t("library.fromPeer", { name: from })}
-          </p>
-        ) : null}
-      </div>
-    </Link>
+    <MediaTile
+      title={item.title}
+      // Only while every library is on screen at once: on one library the
+      // answer is the same for every card and says nothing.
+      meta={
+        showSource
+          ? from === null
+            ? t("library.fromLocal")
+            : t("library.fromPeer", { name: from })
+          : (item.studio ?? undefined)
+      }
+      resolution={item.quality ?? item.resolution ?? undefined}
+      duration={item.duration_seconds === null ? undefined : formatDuration(item.duration_seconds)}
+      progress={progress}
+      rating={item.rating}
+      ratingLabel={
+        item.rating === null
+          ? t("library.rating.none")
+          : t("library.rating.value", { value: item.rating, count: item.rating_count })
+      }
+      tagCount={item.tag_count}
+      commentCount={item.comment_count}
+      blur={tileBlur(artVisible)}
+      // The id is already a stable per-title number; hashing it again buys
+      // nothing. Only the digits, so a UUID's letters do not skew the band.
+      seed={seedFrom(item.id)}
+      poster={
+        posterFailed ? undefined : (
+          <img src={source} alt="" loading="lazy" onError={() => setPosterFailed(true)} />
+        )
+      }
+      action={(content) => (
+        <Link
+          to={address}
+          className="block rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
+          onPointerEnter={() => setPreview(true)}
+          onPointerLeave={() => setPreview(false)}
+        >
+          {content}
+        </Link>
+      )}
+    />
   );
+}
+
+/** Digits of the id, folded into a number the artwork can key off. */
+function seedFrom(id: string): number {
+  let total = 0;
+  for (const character of id) total = (total * 31 + character.charCodeAt(0)) % 100_000;
+  return total;
+}
+
+function formatDuration(seconds: number): string {
+  const whole = Math.max(0, Math.round(seconds));
+  const hours = Math.floor(whole / 3600);
+  const minutes = Math.floor((whole % 3600) / 60);
+  const rest = whole % 60;
+  const pad = (value: number): string => String(value).padStart(2, "0");
+  return hours > 0 ? `${hours}:${pad(minutes)}:${pad(rest)}` : `${minutes}:${pad(rest)}`;
 }

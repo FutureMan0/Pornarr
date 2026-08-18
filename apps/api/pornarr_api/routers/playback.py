@@ -146,15 +146,22 @@ class PlaybackProgressWrite(BaseModel):
 class PlaybackProgressResponse(BaseModel):
     device_label: str | None
     media_id: UUID
+    # Resolved for the caller. A resume list that shows identifiers is a resume
+    # list nobody can use, and making every client fetch the title separately
+    # turns one screen into one request per row.
+    title: str | None
     position_seconds: float
     duration_seconds: float
     completed: bool
 
 
-def progress_response(progress: PlaybackProgress) -> PlaybackProgressResponse:
+def progress_response(
+    progress: PlaybackProgress, title: str | None = None
+) -> PlaybackProgressResponse:
     return PlaybackProgressResponse(
         device_label=progress.device_label,
         media_id=progress.media_id,
+        title=title,
         position_seconds=progress.position_seconds,
         duration_seconds=progress.duration_seconds,
         completed=progress.completed,
@@ -240,12 +247,15 @@ async def playback_progress(
 
 @progress_router.get("/continue-watching", response_model=list[PlaybackProgressResponse])
 async def continue_watching(user: CurrentUser, session: Session) -> list[PlaybackProgressResponse]:
-    progress = await session.scalars(
-        select(PlaybackProgress)
-        .where(PlaybackProgress.user_id == user.id, PlaybackProgress.completed.is_(False))
-        .order_by(PlaybackProgress.updated_at.desc())
+    rows = list(
+        await session.execute(
+            select(PlaybackProgress, Media.title)
+            .join(Media, Media.id == PlaybackProgress.media_id)
+            .where(PlaybackProgress.user_id == user.id, PlaybackProgress.completed.is_(False))
+            .order_by(PlaybackProgress.updated_at.desc())
+        )
     )
-    return [progress_response(item) for item in progress]
+    return [progress_response(item, title) for item, title in rows]
 
 
 class PlayingOnResponse(BaseModel):

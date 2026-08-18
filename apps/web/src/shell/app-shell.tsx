@@ -13,9 +13,10 @@ import type { JSX } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
-import { ConnectionStatus } from "../errors/connection-status";
+import { ConnectionStatus, useConnectionState } from "../errors/connection-status";
 import { ErrorBoundary } from "../errors/error-boundary";
 import { useEventStream } from "../lib/events";
+import { PageTitleProvider } from "./page-title";
 import { Sidebar, useSidebarLayout } from "./sidebar";
 import { TopBar } from "./top-bar";
 
@@ -31,6 +32,10 @@ export function AppShell(): JSX.Element {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
   const { announcement, status } = useEventStream();
+  // Derived once, here. The hook refills the cache when a connection recovers,
+  // so a second caller would refill twice; both the pip and the banner take the
+  // answer as a prop.
+  const connection = useConnectionState(status);
 
   // Growing past the drawer breakpoint with the drawer open would leave an
   // overlay on top of a sidebar that is already visible.
@@ -58,25 +63,35 @@ export function AppShell(): JSX.Element {
 
       <Sidebar layout={layout} open={drawerOpen} onClose={closeDrawer} />
 
-      <div className={CONTENT_OFFSET[layout]}>
-        <TopBar
-          layout={layout}
-          drawerOpen={drawerOpen}
-          onOpenDrawer={() => setDrawerOpen(true)}
-          triggerRef={triggerRef}
-        />
+      {/* Wraps both the bar and the content: the screen inside publishes its
+          name and the bar above renders it, so the provider has to contain
+          the two of them. */}
+      <PageTitleProvider>
+        <div className={CONTENT_OFFSET[layout]}>
+          <TopBar
+            layout={layout}
+            drawerOpen={drawerOpen}
+            onOpenDrawer={() => setDrawerOpen(true)}
+            connection={connection}
+            triggerRef={triggerRef}
+          />
 
-        <main id="main" className="mx-auto w-full max-w-[var(--layout-content-max-width)] p-6">
-          <ConnectionStatus status={status} />
+          <main id="main" className="mx-auto w-full max-w-[var(--layout-content-max-width)] p-6">
+            {/* Two registers of the same fact, on purpose: the pip in the bar
+                is always present and says which state we are in, this says what
+                it means and what is being done about it. The banner stays
+                absent while the connection is healthy. */}
+            <ConnectionStatus state={connection} />
 
-          {/* Inside the shell rather than around it: a screen that throws takes
-              the screen down, and the navigation out of it stays usable. The
-              boundary in `app.tsx` is the one that catches everything else. */}
-          <ErrorBoundary>
-            <Outlet />
-          </ErrorBoundary>
-        </main>
-      </div>
+            {/* Inside the shell rather than around it: a screen that throws takes
+                the screen down, and the navigation out of it stays usable. The
+                boundary in `app.tsx` is the one that catches everything else. */}
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
+          </main>
+        </div>
+      </PageTitleProvider>
 
       {/* Polite, and never focused: state that arrives over SSE is reported,
           not thrust in front of whatever the user is doing. */}

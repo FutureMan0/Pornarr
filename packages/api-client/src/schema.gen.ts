@@ -361,6 +361,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Invites */
+        get: operations["admin_list_invites"];
+        put?: never;
+        /** Create Invite */
+        post: operations["admin_create_invite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/invites/{invite_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke Invite
+         * @description Withdraw an unused invitation.
+         *
+         *     A redeemed one is left alone: the row is the record of who joined through
+         *     which link, and deleting it would lose the fact somebody would want later.
+         */
+        delete: operations["admin_revoke_invite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/library/root-folders": {
         parameters: {
             query?: never;
@@ -407,7 +448,12 @@ export interface paths {
         put?: never;
         /**
          * Scan Root Folder
-         * @description Queue a filesystem scan of one root folder so its media can enter the library.
+         * @description Ask the worker to walk one root folder now, so its media can enter the library.
+         *
+         *     The progress is not returned here. The worker publishes `scan.progress` on
+         *     the event stream as it goes, and the screen watches that; holding the
+         *     request open for a walk of ten thousand files would time out long before it
+         *     told anyone anything.
          */
         post: operations["admin_scan_root_folder"];
         delete?: never;
@@ -497,6 +543,23 @@ export interface paths {
         put?: never;
         /** Test Provider */
         post: operations["admin_test_provider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Overview */
+        get: operations["admin_overview"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -767,6 +830,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/ratings/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ratings Overview */
+        get: operations["admin_ratings_overview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/settings": {
         parameters: {
             query?: never;
@@ -814,6 +894,74 @@ export interface paths {
         post?: never;
         /** Delete Short */
         delete: operations["admin_delete_short"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Tags
+         * @description Every tag with its weight, commonest first.
+         *
+         *     Ordered by use rather than alphabetically: the reason to open this screen is
+         *     almost always to deal with the long tail, and a list sorted by name buries
+         *     it among the tags that are working fine.
+         */
+        get: operations["admin_list_tags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/tags/{tag_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Tag
+         * @description Remove a tag and every assignment of it.
+         *
+         *     No confirmation here — that belongs to the interface. What this does
+         *     guarantee is that no title is left pointing at a tag that no longer exists.
+         */
+        delete: operations["admin_delete_tag"];
+        options?: never;
+        head?: never;
+        /** Rename Tag */
+        patch: operations["admin_rename_tag"];
+        trace?: never;
+    };
+    "/api/admin/tags/{tag_id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Merge Tags
+         * @description Fold other tags into this one, then remove them.
+         */
+        post: operations["admin_merge_tags"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1186,6 +1334,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/invites/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Invite State
+         * @description Whether a link still works. Reachable without an account, by design.
+         *
+         *     A 404 for a bad token and a 200 for a good one already distinguish the two;
+         *     there is nothing further to hide by pretending otherwise, and returning 200
+         *     for everything would make the join form unable to say "this link has
+         *     expired" before somebody types a password into it.
+         */
+        get: operations["invites_invite_state"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invites/{token}/redeem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Redeem Invite
+         * @description Create the guest's account and spend the invitation.
+         *
+         *     The row is locked for the duration. Two people opening the same link at the
+         *     same moment would otherwise both pass the "not yet redeemed" check and both
+         *     get an account from one invitation.
+         */
+        post: operations["invites_redeem_invite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/library": {
         parameters: {
             query?: never;
@@ -1363,6 +1560,30 @@ export interface paths {
          * @description Idempotent: withdrawing a rating you never gave is not an error.
          */
         delete: operations["ratings_clear_rating"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/media/{media_id}/related": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Media Related
+         * @description Titles like this one.
+         *
+         *     Scoped the same way the library is: a neighbour you are not allowed to see
+         *     in the grid must not appear here either, or the related row becomes a way
+         *     to enumerate someone else's private titles.
+         */
+        get: operations["library_media_related"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1680,6 +1901,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/queue/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Queue Summary */
+        get: operations["queue_queue_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/recommendations": {
         parameters: {
             query?: never;
@@ -1949,6 +2187,30 @@ export interface paths {
         };
         /** Local Search */
         get: operations["search_local_search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/search/local/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Local Search Facets
+         * @description Counts for the filter sidebar, from the same pipeline as the results.
+         *
+         *     Everything the list does to a row — the visibility scope, the content filter
+         *     rules — happens here too. A count the list cannot deliver is worse than no
+         *     count, because a reader will click it.
+         */
+        get: operations["search_local_search_facets"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2886,6 +3148,35 @@ export interface components {
             /** Value */
             value: string;
         };
+        /** FacetValueResponse */
+        FacetValueResponse: {
+            /** Count */
+            count: number;
+            /** Value */
+            value: string;
+        };
+        /**
+         * FacetsResponse
+         * @description The numbers beside the filters, and how far they can be trusted.
+         */
+        FacetsResponse: {
+            /** Capped */
+            capped: boolean;
+            /** Duration */
+            duration: components["schemas"]["FacetValueResponse"][];
+            /** Matched */
+            matched: number;
+            /** Rating */
+            rating: components["schemas"]["FacetValueResponse"][];
+            /** Resolution */
+            resolution: components["schemas"]["FacetValueResponse"][];
+            /** Studio */
+            studio: components["schemas"]["FacetValueResponse"][];
+            /** Tag */
+            tag: components["schemas"]["FacetValueResponse"][];
+            /** Total */
+            total: number;
+        };
         /**
          * GenerateShortsWrite
          * @description How many clips to cut, and how long each should be.
@@ -3075,6 +3366,77 @@ export interface components {
             /** Search Categories */
             search_categories?: string[] | null;
         };
+        /** InviteCreate */
+        InviteCreate: {
+            /** Note */
+            note?: string | null;
+            /**
+             * Valid Days
+             * @default 7
+             */
+            valid_days: number;
+        };
+        /** InviteCreated */
+        InviteCreated: {
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Note */
+            note: string | null;
+            /** Token */
+            token: string;
+        };
+        /** InviteRedeem */
+        InviteRedeem: {
+            /** Display Name */
+            display_name?: string | null;
+            /**
+             * Password
+             * Format: password
+             */
+            password: string;
+            /** Username */
+            username: string;
+        };
+        /**
+         * InviteResponse
+         * @description What an administrator sees. Never the token.
+         */
+        InviteResponse: {
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Note */
+            note: string | null;
+            /** Redeemed At */
+            redeemed_at: string | null;
+            /** Redeemed Username */
+            redeemed_username: string | null;
+        };
+        /**
+         * InviteState
+         * @description What somebody holding a link is told before they commit to anything.
+         */
+        InviteState: {
+            /** Expires At */
+            expires_at: string | null;
+            /** Valid */
+            valid: boolean;
+        };
         JsonValue: unknown;
         /** LibraryFacetsResponse */
         LibraryFacetsResponse: {
@@ -3085,6 +3447,22 @@ export interface components {
             /** Tags */
             tags: components["schemas"]["FacetResponse"][];
         };
+        /**
+         * LibraryHealth
+         * @description Shares of the library, each out of `total`.
+         */
+        LibraryHealth: {
+            /** Artwork Present */
+            artwork_present: number;
+            /** Duplicates Flagged */
+            duplicates_flagged: number;
+            /** Metadata Matched */
+            metadata_matched: number;
+            /** Tagged */
+            tagged: number;
+            /** Total */
+            total: number;
+        };
         /** LibraryItemResponse */
         LibraryItemResponse: {
             /**
@@ -3092,6 +3470,8 @@ export interface components {
              * Format: date-time
              */
             added_at: string;
+            /** Comment Count */
+            comment_count: number;
             /** Completed */
             completed: boolean;
             /** Duration Seconds */
@@ -3125,6 +3505,8 @@ export interface components {
             sprite_url: string | null;
             /** Studio */
             studio: string | null;
+            /** Tag Count */
+            tag_count: number;
             /** Title */
             title: string;
         };
@@ -3455,6 +3837,21 @@ export interface components {
             /** Provider Name */
             provider_name: string;
         };
+        /** OverviewResponse */
+        OverviewResponse: {
+            /** Guests */
+            guests: number;
+            health: components["schemas"]["LibraryHealth"];
+            /** Last Scan At */
+            last_scan_at: string | null;
+            storage: components["schemas"]["StorageTotals"];
+            /** Titles */
+            titles: number;
+            /** Titles Added This Week */
+            titles_added_this_week: number;
+            /** Untagged */
+            untagged: number;
+        };
         /** PeerResponse */
         PeerResponse: {
             /** Base Url */
@@ -3536,6 +3933,8 @@ export interface components {
             media_id: string;
             /** Position Seconds */
             position_seconds: number;
+            /** Title */
+            title: string | null;
         };
         /** PlaybackProgressWrite */
         PlaybackProgressWrite: {
@@ -3854,6 +4253,8 @@ export interface components {
             size_bytes: number | null;
             /** Status */
             status: string;
+            /** Title */
+            title: string | null;
         };
         /** QueueListResponse */
         QueueListResponse: {
@@ -3867,6 +4268,26 @@ export interface components {
          * @enum {string}
          */
         QueueSort: "priority" | "created_at" | "status";
+        /**
+         * QueueSummaryResponse
+         * @description The four cards above the queue.
+         *
+         *     Counted over the whole queue rather than over the page. A card that
+         *     describes what happened to load is a card that changes when you scroll,
+         *     which is the one thing a summary must not do.
+         */
+        QueueSummaryResponse: {
+            /** Active */
+            active: number;
+            /** Completed */
+            completed: number;
+            /** Failed */
+            failed: number;
+            /** Queued */
+            queued: number;
+            /** Speed Bytes */
+            speed_bytes: number;
+        };
         /** RatingSummaryResponse */
         RatingSummaryResponse: {
             /** Average */
@@ -3889,6 +4310,22 @@ export interface components {
         RatingWrite: {
             /** Stars */
             stars: number;
+        };
+        /**
+         * RatingsOverviewResponse
+         * @description A6's right-hand column: what the household thinks of the library.
+         */
+        RatingsOverviewResponse: {
+            /** Average */
+            average: number | null;
+            /** Breakdown */
+            breakdown: {
+                [key: string]: number;
+            };
+            /** Count */
+            count: number;
+            /** Top */
+            top: components["schemas"]["TopRated"][];
         };
         /** RecommendationFeedbackWrite */
         RecommendationFeedbackWrite: {
@@ -3920,6 +4357,38 @@ export interface components {
             reasons: string[];
             /** Score */
             score: number;
+            /** Title */
+            title: string;
+        };
+        /** RedeemedResponse */
+        RedeemedResponse: {
+            /** Display Name */
+            display_name: string | null;
+            role: components["schemas"]["UserRole"];
+            /** Username */
+            username: string;
+        };
+        /** RelatedResponse */
+        RelatedResponse: {
+            /** Duration Seconds */
+            duration_seconds: number | null;
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Rating */
+            rating: number | null;
+            /** Rating Count */
+            rating_count: number;
+            /** Reason */
+            reason: string;
+            /** Shared Performers */
+            shared_performers: number;
+            /** Shared Tags */
+            shared_tags: number;
+            /** Studio */
+            studio: string | null;
             /** Title */
             title: string;
         };
@@ -4416,10 +4885,57 @@ export interface components {
          * @enum {string}
          */
         ShortSource: "marker" | "manual" | "hotspot";
+        /** StorageTotals */
+        StorageTotals: {
+            /** Total Bytes */
+            total_bytes: number | null;
+            /** Used Bytes */
+            used_bytes: number | null;
+            /** Volumes */
+            volumes: number;
+        };
         /** TagCorrectionWrite */
         TagCorrectionWrite: {
             /** Name */
             name: string;
+        };
+        /**
+         * TagMerge
+         * @description Fold `source_ids` into this tag.
+         */
+        TagMerge: {
+            /** Source Ids */
+            source_ids: string[];
+        };
+        /** TagRename */
+        TagRename: {
+            /** Name */
+            name: string;
+        };
+        /** TagResponse */
+        TagResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Used At */
+            last_used_at: string | null;
+            /** Media Count */
+            media_count: number;
+            /** Name */
+            name: string;
+        };
+        /** TopRated */
+        TopRated: {
+            /** Average */
+            average: number;
+            /** Count */
+            count: number;
+            /** Media Id */
+            media_id: string;
+            /** Title */
+            title: string;
         };
         /** TranscodeFailureResponse */
         TranscodeFailureResponse: {
@@ -5375,6 +5891,88 @@ export interface operations {
             };
         };
     };
+    admin_list_invites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteResponse"][];
+                };
+            };
+        };
+    };
+    admin_create_invite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_revoke_invite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invite_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     admin_list_root_folders: {
         parameters: {
             query?: never;
@@ -5695,6 +6293,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_overview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverviewResponse"];
                 };
             };
         };
@@ -6300,6 +6918,26 @@ export interface operations {
             };
         };
     };
+    admin_ratings_overview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingsOverviewResponse"];
+                };
+            };
+        };
+    };
     admin_read_settings: {
         parameters: {
             query?: never;
@@ -6429,6 +7067,137 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_tags: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_delete_tag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_rename_tag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagRename"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_merge_tags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagMerge"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagResponse"];
                 };
             };
             /** @description Validation Error */
@@ -7419,6 +8188,72 @@ export interface operations {
             };
         };
     };
+    invites_invite_state: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invites_redeem_invite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteRedeem"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedeemedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     library_browse_library: {
         parameters: {
             query?: {
@@ -7920,6 +8755,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    library_media_related: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelatedResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -8712,6 +9580,26 @@ export interface operations {
             };
         };
     };
+    queue_queue_summary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueSummaryResponse"];
+                };
+            };
+        };
+    };
     recommendations_list_recommendations: {
         parameters: {
             query?: never;
@@ -9473,6 +10361,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LocalSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_local_search_facets: {
+        parameters: {
+            query: {
+                q: string;
+                quality?: string | null;
+                studio?: string | null;
+                tag?: string | null;
+                duration?: string | null;
+                rating_gte?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FacetsResponse"];
                 };
             };
             /** @description Validation Error */

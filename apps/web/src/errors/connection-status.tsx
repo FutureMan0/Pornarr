@@ -89,7 +89,13 @@ const COPY = {
 } as const;
 
 export interface ConnectionStatusProps {
-  readonly status: EventStreamStatus;
+  /**
+   * The already-derived state, not the raw stream status. `useConnectionState`
+   * invalidates the cache when a connection recovers, so it must have exactly
+   * one caller; the shell owns that call and hands the answer to everything
+   * that displays it.
+   */
+  readonly state: ConnectionState;
 }
 
 /**
@@ -98,9 +104,8 @@ export interface ConnectionStatusProps {
  * that is already there and then changes is announced everywhere. Nothing here
  * takes focus — DESIGN.md wants this reported, not thrust in front of the reader.
  */
-export function ConnectionStatus({ status }: ConnectionStatusProps): JSX.Element {
+export function ConnectionStatus({ state }: ConnectionStatusProps): JSX.Element {
   const { t } = useTranslation();
-  const state = useConnectionState(status);
 
   return (
     <div

@@ -19,17 +19,25 @@ import { NavLink, Outlet } from "react-router-dom";
 export interface SettingsSection {
   readonly id: string;
   readonly path: string;
+  /** Match the path exactly. The index section needs it; the others do not. */
+  readonly end: boolean;
 }
 
 export const SETTINGS_SECTIONS = [
-  { id: "rootFolders", path: "/settings/root-folders" },
-  { id: "quality", path: "/settings/quality" },
-  { id: "metadata", path: "/settings/metadata" },
-  { id: "peers", path: "/settings/peers" },
+  // The server's own settings are the index of this section, so the tab has to
+  // match the path exactly — without `end` every other tab would sit under an
+  // active "general" as well.
+  { id: "general", path: "/settings", end: true },
+  { id: "rootFolders", path: "/settings/root-folders", end: false },
+  { id: "quality", path: "/settings/quality", end: false },
+  { id: "metadata", path: "/settings/metadata", end: false },
+  { id: "peers", path: "/settings/peers", end: false },
 ] as const satisfies readonly SettingsSection[];
 
 /** Read from the table so a link to it cannot outlive the route. */
-export const ROOT_FOLDERS_PATH = SETTINGS_SECTIONS[0].path;
+export const ROOT_FOLDERS_PATH =
+  SETTINGS_SECTIONS.find((section) => section.id === "rootFolders")?.path ??
+  "/settings/root-folders";
 
 export function SettingsLayout(): JSX.Element {
   const { t } = useTranslation();
@@ -42,6 +50,7 @@ export function SettingsLayout(): JSX.Element {
             <li key={section.id}>
               <NavLink
                 to={section.path}
+                end={section.end}
                 className={({ isActive }) =>
                   cx(
                     "text-sm",

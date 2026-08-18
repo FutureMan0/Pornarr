@@ -151,7 +151,7 @@ async def test_user_can_trigger_a_monitor_backlog_search(app, client) -> None:
     )
 
     assert response.status_code == 202
-    function, args, kwargs = app.state.job_queue.calls[0]
+    function, args, kwargs = app.state.queue.jobs[0]
     monitor_id, run_id = args
     assert function == "backlog_search"
     assert monitor_id == created.json()["id"]

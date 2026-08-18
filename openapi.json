@@ -1376,6 +1376,88 @@
         "title": "FacetResponse",
         "type": "object"
       },
+      "FacetValueResponse": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "count"
+        ],
+        "title": "FacetValueResponse",
+        "type": "object"
+      },
+      "FacetsResponse": {
+        "description": "The numbers beside the filters, and how far they can be trusted.",
+        "properties": {
+          "capped": {
+            "title": "Capped",
+            "type": "boolean"
+          },
+          "duration": {
+            "items": {
+              "$ref": "#/components/schemas/FacetValueResponse"
+            },
+            "title": "Duration",
+            "type": "array"
+          },
+          "matched": {
+            "title": "Matched",
+            "type": "integer"
+          },
+          "rating": {
+            "items": {
+              "$ref": "#/components/schemas/FacetValueResponse"
+            },
+            "title": "Rating",
+            "type": "array"
+          },
+          "resolution": {
+            "items": {
+              "$ref": "#/components/schemas/FacetValueResponse"
+            },
+            "title": "Resolution",
+            "type": "array"
+          },
+          "studio": {
+            "items": {
+              "$ref": "#/components/schemas/FacetValueResponse"
+            },
+            "title": "Studio",
+            "type": "array"
+          },
+          "tag": {
+            "items": {
+              "$ref": "#/components/schemas/FacetValueResponse"
+            },
+            "title": "Tag",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "studio",
+          "resolution",
+          "duration",
+          "rating",
+          "tag",
+          "matched",
+          "total",
+          "capped"
+        ],
+        "title": "FacetsResponse",
+        "type": "object"
+      },
       "GenerateShortsWrite": {
         "description": "How many clips to cut, and how long each should be.",
         "properties": {
@@ -1866,6 +1948,188 @@
         "title": "IndexerWrite",
         "type": "object"
       },
+      "InviteCreate": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "valid_days": {
+            "default": 7,
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Valid Days",
+            "type": "integer"
+          }
+        },
+        "title": "InviteCreate",
+        "type": "object"
+      },
+      "InviteCreated": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "token",
+          "expires_at",
+          "note"
+        ],
+        "title": "InviteCreated",
+        "type": "object"
+      },
+      "InviteRedeem": {
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "password": {
+            "format": "password",
+            "minLength": 12,
+            "title": "Password",
+            "type": "string",
+            "writeOnly": true
+          },
+          "username": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "InviteRedeem",
+        "type": "object"
+      },
+      "InviteResponse": {
+        "description": "What an administrator sees. Never the token.",
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "redeemed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redeemed At"
+          },
+          "redeemed_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redeemed Username"
+          }
+        },
+        "required": [
+          "id",
+          "expires_at",
+          "redeemed_at",
+          "redeemed_username",
+          "note"
+        ],
+        "title": "InviteResponse",
+        "type": "object"
+      },
+      "InviteState": {
+        "description": "What somebody holding a link is told before they commit to anything.",
+        "properties": {
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "valid",
+          "expires_at"
+        ],
+        "title": "InviteState",
+        "type": "object"
+      },
       "JsonValue": {},
       "LibraryFacetsResponse": {
         "properties": {
@@ -1899,12 +2163,50 @@
         "title": "LibraryFacetsResponse",
         "type": "object"
       },
+      "LibraryHealth": {
+        "description": "Shares of the library, each out of `total`.",
+        "properties": {
+          "artwork_present": {
+            "title": "Artwork Present",
+            "type": "integer"
+          },
+          "duplicates_flagged": {
+            "title": "Duplicates Flagged",
+            "type": "integer"
+          },
+          "metadata_matched": {
+            "title": "Metadata Matched",
+            "type": "integer"
+          },
+          "tagged": {
+            "title": "Tagged",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "metadata_matched",
+          "artwork_present",
+          "tagged",
+          "duplicates_flagged"
+        ],
+        "title": "LibraryHealth",
+        "type": "object"
+      },
       "LibraryItemResponse": {
         "properties": {
           "added_at": {
             "format": "date-time",
             "title": "Added At",
             "type": "string"
+          },
+          "comment_count": {
+            "title": "Comment Count",
+            "type": "integer"
           },
           "completed": {
             "title": "Completed",
@@ -2044,6 +2346,10 @@
             ],
             "title": "Studio"
           },
+          "tag_count": {
+            "title": "Tag Count",
+            "type": "integer"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -2064,7 +2370,9 @@
           "poster_url",
           "sprite_url",
           "rating",
-          "rating_count"
+          "rating_count",
+          "tag_count",
+          "comment_count"
         ],
         "title": "LibraryItemResponse",
         "type": "object"
@@ -3057,6 +3365,55 @@
         "title": "OidcIdentityResponse",
         "type": "object"
       },
+      "OverviewResponse": {
+        "properties": {
+          "guests": {
+            "title": "Guests",
+            "type": "integer"
+          },
+          "health": {
+            "$ref": "#/components/schemas/LibraryHealth"
+          },
+          "last_scan_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Scan At"
+          },
+          "storage": {
+            "$ref": "#/components/schemas/StorageTotals"
+          },
+          "titles": {
+            "title": "Titles",
+            "type": "integer"
+          },
+          "titles_added_this_week": {
+            "title": "Titles Added This Week",
+            "type": "integer"
+          },
+          "untagged": {
+            "title": "Untagged",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "titles",
+          "titles_added_this_week",
+          "untagged",
+          "guests",
+          "storage",
+          "health",
+          "last_scan_at"
+        ],
+        "title": "OverviewResponse",
+        "type": "object"
+      },
       "PeerResponse": {
         "properties": {
           "base_url": {
@@ -3272,11 +3629,23 @@
           "position_seconds": {
             "title": "Position Seconds",
             "type": "number"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           }
         },
         "required": [
           "device_label",
           "media_id",
+          "title",
           "position_seconds",
           "duration_seconds",
           "completed"
@@ -4117,11 +4486,23 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           }
         },
         "required": [
           "id",
           "request_id",
+          "title",
           "client_name",
           "protocol",
           "release_guid",
@@ -4174,6 +4555,40 @@
         ],
         "title": "QueueSort",
         "type": "string"
+      },
+      "QueueSummaryResponse": {
+        "description": "The four cards above the queue.\n\nCounted over the whole queue rather than over the page. A card that\ndescribes what happened to load is a card that changes when you scroll,\nwhich is the one thing a summary must not do.",
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "integer"
+          },
+          "completed": {
+            "title": "Completed",
+            "type": "integer"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "queued": {
+            "title": "Queued",
+            "type": "integer"
+          },
+          "speed_bytes": {
+            "title": "Speed Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "active",
+          "queued",
+          "failed",
+          "completed",
+          "speed_bytes"
+        ],
+        "title": "QueueSummaryResponse",
+        "type": "object"
       },
       "RatingSummaryResponse": {
         "properties": {
@@ -4239,6 +4654,48 @@
           "stars"
         ],
         "title": "RatingWrite",
+        "type": "object"
+      },
+      "RatingsOverviewResponse": {
+        "description": "A6's right-hand column: what the household thinks of the library.",
+        "properties": {
+          "average": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average"
+          },
+          "breakdown": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Breakdown",
+            "type": "object"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "top": {
+            "items": {
+              "$ref": "#/components/schemas/TopRated"
+            },
+            "title": "Top",
+            "type": "array"
+          }
+        },
+        "required": [
+          "average",
+          "count",
+          "breakdown",
+          "top"
+        ],
+        "title": "RatingsOverviewResponse",
         "type": "object"
       },
       "RecommendationFeedbackWrite": {
@@ -4317,6 +4774,110 @@
           "expires_at"
         ],
         "title": "RecommendationResponse",
+        "type": "object"
+      },
+      "RedeemedResponse": {
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "display_name",
+          "role"
+        ],
+        "title": "RedeemedResponse",
+        "type": "object"
+      },
+      "RelatedResponse": {
+        "properties": {
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "media_id": {
+            "format": "uuid",
+            "title": "Media Id",
+            "type": "string"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "rating_count": {
+            "title": "Rating Count",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "shared_performers": {
+            "title": "Shared Performers",
+            "type": "integer"
+          },
+          "shared_tags": {
+            "title": "Shared Tags",
+            "type": "integer"
+          },
+          "studio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Studio"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "media_id",
+          "title",
+          "studio",
+          "duration_seconds",
+          "reason",
+          "shared_performers",
+          "shared_tags",
+          "rating",
+          "rating_count"
+        ],
+        "title": "RelatedResponse",
         "type": "object"
       },
       "RequestCreate": {
@@ -5902,6 +6463,43 @@
         "title": "ShortSource",
         "type": "string"
       },
+      "StorageTotals": {
+        "properties": {
+          "total_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Bytes"
+          },
+          "used_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Used Bytes"
+          },
+          "volumes": {
+            "title": "Volumes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "used_bytes",
+          "total_bytes",
+          "volumes"
+        ],
+        "title": "StorageTotals",
+        "type": "object"
+      },
       "TagCorrectionWrite": {
         "properties": {
           "name": {
@@ -5915,6 +6513,106 @@
           "name"
         ],
         "title": "TagCorrectionWrite",
+        "type": "object"
+      },
+      "TagMerge": {
+        "description": "Fold `source_ids` into this tag.",
+        "properties": {
+          "source_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "title": "Source Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "source_ids"
+        ],
+        "title": "TagMerge",
+        "type": "object"
+      },
+      "TagRename": {
+        "properties": {
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "TagRename",
+        "type": "object"
+      },
+      "TagResponse": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "media_count": {
+            "title": "Media Count",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "media_count",
+          "last_used_at"
+        ],
+        "title": "TagResponse",
+        "type": "object"
+      },
+      "TopRated": {
+        "properties": {
+          "average": {
+            "title": "Average",
+            "type": "number"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "media_id": {
+            "title": "Media Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "media_id",
+          "title",
+          "average",
+          "count"
+        ],
+        "title": "TopRated",
         "type": "object"
       },
       "TranscodeFailureResponse": {
@@ -7459,6 +8157,107 @@
         ]
       }
     },
+    "/api/admin/invites": {
+      "get": {
+        "operationId": "admin_list_invites",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InviteResponse"
+                  },
+                  "title": "Response Admin List Invites",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Invites",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "admin_create_invite",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteCreated"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Invite",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/invites/{invite_id}": {
+      "delete": {
+        "description": "Withdraw an unused invitation.\n\nA redeemed one is left alone: the row is the record of who joined through\nwhich link, and deleting it would lose the fact somebody would want later.",
+        "operationId": "admin_revoke_invite",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invite_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Invite Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revoke Invite",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/admin/library/root-folders": {
       "get": {
         "operationId": "admin_list_root_folders",
@@ -7561,7 +8360,7 @@
     },
     "/api/admin/library/root-folders/{folder_id}/scan": {
       "post": {
-        "description": "Queue a filesystem scan of one root folder so its media can enter the library.",
+        "description": "Ask the worker to walk one root folder now, so its media can enter the library.\n\nThe progress is not returned here. The worker publishes `scan.progress` on\nthe event stream as it goes, and the screen watches that; holding the\nrequest open for a walk of ten thousand files would time out long before it\ntold anyone anything.",
         "operationId": "admin_scan_root_folder",
         "parameters": [
           {
@@ -7854,6 +8653,27 @@
           }
         },
         "summary": "Test Provider",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/overview": {
+      "get": {
+        "operationId": "admin_overview",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverviewResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Overview",
         "tags": [
           "admin"
         ]
@@ -8633,6 +9453,27 @@
         ]
       }
     },
+    "/api/admin/ratings/overview": {
+      "get": {
+        "operationId": "admin_ratings_overview",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingsOverviewResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ratings Overview",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/admin/settings": {
       "get": {
         "operationId": "admin_read_settings",
@@ -8795,6 +9636,214 @@
           }
         },
         "summary": "Delete Short",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/tags": {
+      "get": {
+        "description": "Every tag with its weight, commonest first.\n\nOrdered by use rather than alphabetically: the reason to open this screen is\nalmost always to deal with the long tail, and a list sorted by name buries\nit among the tags that are working fine.",
+        "operationId": "admin_list_tags",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 200,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TagResponse"
+                  },
+                  "title": "Response Admin List Tags",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Tags",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/tags/{tag_id}": {
+      "delete": {
+        "description": "Remove a tag and every assignment of it.\n\nNo confirmation here — that belongs to the interface. What this does\nguarantee is that no title is left pointing at a tag that no longer exists.",
+        "operationId": "admin_delete_tag",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Tag Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Tag",
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "admin_rename_tag",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Tag Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagRename"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rename Tag",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/tags/{tag_id}/merge": {
+      "post": {
+        "description": "Fold other tags into this one, then remove them.",
+        "operationId": "admin_merge_tags",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Tag Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagMerge"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Merge Tags",
         "tags": [
           "admin"
         ]
@@ -10019,6 +11068,102 @@
         ]
       }
     },
+    "/api/invites/{token}": {
+      "get": {
+        "description": "Whether a link still works. Reachable without an account, by design.\n\nA 404 for a bad token and a 200 for a good one already distinguish the two;\nthere is nothing further to hide by pretending otherwise, and returning 200\nfor everything would make the join form unable to say \"this link has\nexpired\" before somebody types a password into it.",
+        "operationId": "invites_invite_state",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Invite State",
+        "tags": [
+          "invites"
+        ]
+      }
+    },
+    "/api/invites/{token}/redeem": {
+      "post": {
+        "description": "Create the guest's account and spend the invitation.\n\nThe row is locked for the duration. Two people opening the same link at the\nsame moment would otherwise both pass the \"not yet redeemed\" check and both\nget an account from one invitation.",
+        "operationId": "invites_redeem_invite",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteRedeem"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedeemedResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Redeem Invite",
+        "tags": [
+          "invites"
+        ]
+      }
+    },
     "/api/library": {
       "get": {
         "operationId": "library_browse_library",
@@ -10953,6 +12098,66 @@
         "summary": "Set Rating",
         "tags": [
           "ratings"
+        ]
+      }
+    },
+    "/api/media/{media_id}/related": {
+      "get": {
+        "description": "Titles like this one.\n\nScoped the same way the library is: a neighbour you are not allowed to see\nin the grid must not appear here either, or the related row becomes a way\nto enumerate someone else's private titles.",
+        "operationId": "library_media_related",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 8,
+              "maximum": 24,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RelatedResponse"
+                  },
+                  "title": "Response Library Media Related",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Media Related",
+        "tags": [
+          "library"
         ]
       }
     },
@@ -12038,6 +13243,27 @@
           }
         },
         "summary": "List Queue",
+        "tags": [
+          "queue"
+        ]
+      }
+    },
+    "/api/queue/summary": {
+      "get": {
+        "operationId": "queue_queue_summary",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueSummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Queue Summary",
         "tags": [
           "queue"
         ]
@@ -13379,6 +14605,133 @@
           }
         },
         "summary": "Local Search",
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/api/search/local/facets": {
+      "get": {
+        "description": "Counts for the filter sidebar, from the same pipeline as the results.\n\nEverything the list does to a row — the visibility scope, the content filter\nrules — happens here too. A count the list cannot deliver is worse than no\ncount, because a reader will click it.",
+        "operationId": "search_local_search_facets",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "maxLength": 512,
+              "minLength": 1,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "quality",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Quality"
+            }
+          },
+          {
+            "in": "query",
+            "name": "studio",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Studio"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag"
+            }
+          },
+          {
+            "in": "query",
+            "name": "duration",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Duration"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rating_gte",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 5,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rating Gte"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacetsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Local Search Facets",
         "tags": [
           "search"
         ]

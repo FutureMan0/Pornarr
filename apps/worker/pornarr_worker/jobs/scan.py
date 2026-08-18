@@ -161,6 +161,16 @@ async def scan(context: dict[str, Any], root_folder_id: str, run_id: str) -> dic
         result = await scan_root_folder(session, folder, progress)
         await session.flush()
         await queue_missing_artwork(context["redis"], session, folder, get_settings())
+        # Without this the only way to know a scan ended is to notice the
+        # progress events stopping, which is indistinguishable from a worker
+        # that died mid-walk.
+        await progress(
+            "scan.completed",
+            {
+                "root_folder_id": str(folder.id),
+                **{key: int(value) for key, value in result.items()},
+            },
+        )
         return result
 
 

@@ -16,7 +16,16 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 import { LoginRoute } from "./auth/login-route";
 import { RequireAuth } from "./auth/require-auth";
 import { ForbiddenRoute, NotFoundRoute } from "./errors/route-errors";
+import { DashboardRoute } from "./routes/admin/dashboard-route";
+import { InvitesRoute } from "./routes/admin/invites-route";
+import { ModerationRoute } from "./routes/admin/moderation-route";
 import { QuarantineReviewRoute } from "./routes/admin/quarantine/quarantine-review-route";
+import { ScanRoute } from "./routes/admin/scan-route";
+import { TagsRoute } from "./routes/admin/tags-route";
+import { CollectionDetailRoute, CollectionsRoute } from "./routes/collections/collections-route";
+import { ContinueRoute } from "./routes/continue/continue-route";
+import { FeedRoute } from "./routes/feed/feed-route";
+import { JoinRoute } from "./routes/join/join-route";
 import { LibraryRoute } from "./routes/library/library-route";
 import { MediaDetailRoute } from "./routes/media/media-detail-route";
 import { MonitorsRoute } from "./routes/monitors/monitors-route";
@@ -28,10 +37,13 @@ import { MetadataProvidersRoute } from "./routes/settings/metadata/metadata-prov
 import { PeersRoute } from "./routes/settings/peers/peers-route";
 import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles-route";
 import { RootFoldersRoute } from "./routes/settings/root-folders/root-folders-route";
-import { ROOT_FOLDERS_PATH, SettingsLayout } from "./routes/settings/settings-layout";
+import { SettingsLayout } from "./routes/settings/settings-layout";
+import { SettingsRoute } from "./routes/settings/settings-route";
 import { SetupGate } from "./routes/setup/setup-gate";
 import { SetupRoute } from "./routes/setup/setup-route";
+import { ShortsPlayerRoute } from "./routes/shorts/shorts-player-route";
 import { ShortsRoute } from "./routes/shorts/shorts-route";
+import { WatchlistRoute } from "./routes/watchlist/watchlist-route";
 import { AppShell } from "./shell/app-shell";
 
 /**
@@ -48,6 +60,7 @@ export const appRoutes: RouteObject[] = [
     element: <SetupGate />,
     children: [
       { path: "login", element: <LoginRoute /> },
+      { path: "join/:token", element: <JoinRoute /> },
       {
         element: <RequireAuth />,
         children: [
@@ -55,12 +68,21 @@ export const appRoutes: RouteObject[] = [
             element: <AppShell />,
             children: [
               { index: true, element: <Navigate to="/library" replace /> },
+              { path: "admin", element: <DashboardRoute /> },
               { path: "admin/quarantine", element: <QuarantineReviewRoute /> },
+              { path: "admin/moderation", element: <ModerationRoute /> },
+              { path: "admin/scan", element: <ScanRoute /> },
+              { path: "admin/tags", element: <TagsRoute /> },
+              { path: "admin/invites", element: <InvitesRoute /> },
+              // The server's own settings are the index of the section, not a
+              // sibling of it: `/settings` has to answer with something, and
+              // bouncing it to root folders is what made every other section
+              // unreachable by navigation in the first place.
               {
                 path: "settings",
                 element: <SettingsLayout />,
                 children: [
-                  { index: true, element: <Navigate to={ROOT_FOLDERS_PATH} replace /> },
+                  { index: true, element: <SettingsRoute /> },
                   { path: "root-folders", element: <RootFoldersRoute /> },
                   { path: "quality", element: <QualityProfilesRoute /> },
                   { path: "metadata", element: <MetadataProvidersRoute /> },
@@ -72,8 +94,14 @@ export const appRoutes: RouteObject[] = [
               { path: "requests", element: <RequestsRoute /> },
               { path: "recommendations", element: <RecommendationsRoute /> },
               { path: "downloads", element: <QueueRoute /> },
-              { path: "library", element: <LibraryRoute /> },
+              { path: "feed", element: <FeedRoute /> },
+              { path: "continue", element: <ContinueRoute /> },
               { path: "shorts", element: <ShortsRoute /> },
+              { path: "shorts/:shortId", element: <ShortsPlayerRoute /> },
+              { path: "collections", element: <CollectionsRoute /> },
+              { path: "collections/:collectionId", element: <CollectionDetailRoute /> },
+              { path: "watchlist", element: <WatchlistRoute /> },
+              { path: "library", element: <LibraryRoute /> },
               { path: "library/:mediaId", element: <MediaDetailRoute /> },
               { path: FORBIDDEN_PATH.slice(1), element: <ForbiddenRoute /> },
               { path: "*", element: <NotFoundRoute /> },

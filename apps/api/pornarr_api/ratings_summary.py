@@ -1,4 +1,4 @@
-"""Aggregate ratings for a page of titles, in one query.
+"""Aggregate counts for a page of titles, one query each.
 
 The library, local search and the shorts feed all want an average and a count
 beside each title. Fetching them per row is the obvious way to turn a
@@ -14,7 +14,8 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pornarr_db.models.social import Rating
+from pornarr_db.models.entities import MediaTag
+from pornarr_db.models.social import Comment, Rating
 
 
 async def rating_summaries(
@@ -41,3 +42,37 @@ def rating_filter(minimum_stars: float):
         .group_by(Rating.media_id)
         .having(func.avg(Rating.stars) >= minimum_stars)
     )
+
+
+async def tag_counts(session: AsyncSession, media_ids: Iterable[UUID]) -> dict[UUID, int]:
+    """How many tags each title carries. One query for the page, not per row."""
+    ids = list(media_ids)
+    if not ids:
+        return {}
+    rows = (
+        await session.execute(
+            select(MediaTag.media_id, func.count())
+            .where(MediaTag.media_id.in_(ids))
+            .group_by(MediaTag.media_id)
+        )
+    ).tuples()
+    return dict(rows.all())
+
+
+async def comment_counts(session: AsyncSession, media_ids: Iterable[UUID]) -> dict[UUID, int]:
+    """How many comments each title has, hidden ones included.
+
+    The tile shows a conversation size, not a reading list: withholding a
+    comment from a reader does not mean it was never written.
+    """
+    ids = list(media_ids)
+    if not ids:
+        return {}
+    rows = (
+        await session.execute(
+            select(Comment.media_id, func.count())
+            .where(Comment.media_id.in_(ids))
+            .group_by(Comment.media_id)
+        )
+    ).tuples()
+    return dict(rows.all())

@@ -157,6 +157,22 @@ describe("Input", () => {
     expect(input.getAttribute("aria-invalid")).toBeNull();
   });
 
+  test("a leading glyph is decoration, never the field's name", () => {
+    render(<Input aria-label="Search" leading={<svg data-testid="glyph" aria-hidden="true" />} />);
+
+    // A field that needs a picture to say what it is has a labelling problem
+    // the picture will not fix, so the glyph is hidden and the label stands.
+    expect(screen.getByRole("textbox", { name: "Search" })).toBeTruthy();
+    const wrapper = screen.getByTestId("glyph").parentElement;
+    expect(wrapper?.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  test("without a leading glyph nothing is rendered in its place", () => {
+    render(<Input aria-label="Root folder" />);
+
+    expect(screen.queryByTestId("glyph")).toBeNull();
+  });
+
   test("disabled: refuses interaction and says so", () => {
     render(<Input aria-label="Root folder" disabled />);
     const input = screen.getByRole<HTMLInputElement>("textbox", { name: "Root folder" });

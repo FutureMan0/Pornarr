@@ -3,14 +3,18 @@ import { Button, Input, Select, SkeletonRegion } from "@pornarr/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
+
 import { Numeric, useFormat } from "../../i18n/format";
 import { messageForError } from "../../lib/api-error";
+import { usePageTitle } from "../../shell/page-title";
+import { FacetSidebar } from "./facet-sidebar";
 import {
   type ExternalSearchItem,
   type SearchFilters,
   useGrabRelease,
   useIndexerSearch,
   useLocalSearch,
+  useSearchFacets,
   useStartIndexerSearch,
 } from "./search";
 
@@ -27,11 +31,13 @@ const STATUS_KEYS = {
 
 export function SearchRoute() {
   const { t } = useTranslation();
+  usePageTitle(t("search.title"));
   const [params, setParams] = useSearchParams();
   const query = params.get("q") ?? "";
   const deferredQuery = useDebouncedValue(query.trim());
   const filters = useMemo(() => readFilters(params), [params]);
   const localSearch = useLocalSearch(deferredQuery, filters);
+  const facets = useSearchFacets(deferredQuery, filters);
   const startIndexerSearch = useStartIndexerSearch();
   const start = startIndexerSearch.mutate;
   const [searchId, setSearchId] = useState<string | null>(null);
@@ -42,6 +48,24 @@ export function SearchRoute() {
     if (deferredQuery === "") return;
     start(deferredQuery, { onSuccess: setSearchId });
   }, [deferredQuery, start]);
+
+  /** Selecting the value already on clears it; see the note in the sidebar. */
+  const toggleFacet = (key: string, value: string): void => {
+    setValue(key, params.get(key) === value ? "" : value);
+  };
+
+  const clearFacets = (): void => {
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        for (const key of ["studio", "quality", "duration", "rating_gte", "tag"]) {
+          next.delete(key);
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  };
 
   const setValue = (key: string, value: string): void => {
     setParams(
@@ -56,11 +80,8 @@ export function SearchRoute() {
   };
 
   return (
-    <section className="flex flex-col gap-10" aria-labelledby="search-heading">
+    <section className="flex flex-col gap-10" aria-label={t("search.title")}>
       <header className="flex flex-col gap-2">
-        <h1 id="search-heading" className="text-xl text-ink">
-          {t("search.title")}
-        </h1>
         <p className="max-w-[70ch] text-sm text-ink-muted">{t("search.intro")}</p>
       </header>
 
@@ -155,7 +176,24 @@ export function SearchRoute() {
         />
       </form>
 
-      <LocalResults query={deferredQuery} search={localSearch} />
+      {/* The sidebar beside the results, as the design lays it out; stacked
+          below the breakpoint, where a 15rem column would leave the table
+          nothing to be wide in. */}
+      {/* `min-w-0` on the children, not just `minmax(0,1fr)` on the track: a
+          grid item defaults to `min-width: auto`, so the results table would
+          widen the column past the viewport however the track is declared. */}
+      <div className="grid gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
+        <FacetSidebar
+          facets={facets.data}
+          filters={filters}
+          onToggle={toggleFacet}
+          onClearAll={clearFacets}
+        />
+        <div className="min-w-0">
+          <LocalResults query={deferredQuery} search={localSearch} facets={facets.data} />
+        </div>
+      </div>
+
       <ExternalResults
         query={deferredQuery}
         search={indexerSearch}
@@ -169,7 +207,12 @@ export function SearchRoute() {
 function LocalResults({
   query,
   search,
-}: { readonly query: string; readonly search: ReturnType<typeof useLocalSearch> }) {
+  facets,
+}: {
+  readonly query: string;
+  readonly search: ReturnType<typeof useLocalSearch>;
+  readonly facets: ReturnType<typeof useSearchFacets>["data"];
+}) {
   const { t } = useTranslation();
   const format = useFormat();
   return (
@@ -178,6 +221,16 @@ function LocalResults({
         <h2 id="local-results-heading" className="text-lg text-ink">
           {t("search.local.title")}
         </h2>
+        {/* "86 of 3,268" — what the filters kept, out of what the search
+            reached. `capped` says the second number is a floor, not a total,
+            and the sentence changes rather than the number quietly lying. */}
+        {facets === undefined ? null : (
+          <span className="text-xs text-ink-muted">
+            {facets.capped
+              ? t("search.local.countCapped", { matched: facets.matched, total: facets.total })
+              : t("search.local.count", { matched: facets.matched, total: facets.total })}
+          </span>
+        )}
         {search.isFetching ? (
           <span className="text-xs text-ink-muted">{t("search.searching")}</span>
         ) : null}
@@ -196,9 +249,11 @@ function LocalResults({
         <p className="text-sm text-ink-muted">{t("search.local.empty")}</p>
       ) : (
         // A sideways-scrolling region has to be focusable, or the columns it
-        // hides are unreachable without a pointer.
+        // hides are unreachable without a pointer. `min-w-0` on the wrapper:
+        // without it the wrapper stretches to the table and its own overflow
+        // never engages.
         // biome-ignore lint/a11y/noNoninteractiveTabindex: see the comment above.
-        <div className="overflow-x-auto border border-border" tabIndex={0}>
+        <div className="min-w-0 overflow-x-auto border border-border" tabIndex={0}>
           <table className="w-full min-w-[44rem] text-sm">
             <thead className="bg-surface-2 text-left text-xs text-ink-muted">
               <tr>
@@ -278,7 +333,7 @@ function ExternalResults({
         <>
           <IndexerStatus statuses={search.data?.statuses ?? {}} names={names} />
           {/* biome-ignore lint/a11y/noNoninteractiveTabindex: focusable for the same reason as the local results table. */}
-          <div className="overflow-x-auto border border-border" tabIndex={0}>
+          <div className="min-w-0 overflow-x-auto border border-border" tabIndex={0}>
             <table className="w-full min-w-[68rem] text-sm">
               <thead className="bg-surface-2 text-left text-xs text-ink-muted">
                 <tr>
@@ -518,6 +573,10 @@ function readFilters(params: URLSearchParams): SearchFilters {
   const sort = params.get("sort");
   return {
     quality: value(params, "quality"),
+    studio: value(params, "studio"),
+    tag: value(params, "tag"),
+    duration: value(params, "duration"),
+    ratingFloor: numberValue(params, "rating_gte"),
     minimumSize: numberValue(params, "minimum_size"),
     maximumSize: numberValue(params, "maximum_size"),
     maximumAgeDays: numberValue(params, "maximum_age_days"),
@@ -539,9 +598,11 @@ function value(params: URLSearchParams, key: string): string | undefined {
   return params.get(key) || undefined;
 }
 function numberValue(params: URLSearchParams, key: string): number | undefined {
-  // ``Number(null)`` and ``Number("")`` are both zero, so an untouched filter
-  // used to send a real bound: a maximum size of zero bytes excludes every
-  // file and the search screen found nothing the API happily returns.
+  // A parameter that is not there is not zero. `Number(null)` and `Number("")`
+  // are both 0, which is finite and non-negative, so the obvious version turns
+  // every absent numeric filter into an explicit zero — a maximum size of zero
+  // bytes excludes every file, and a rating floor of zero is a request the API
+  // rejects outright.
   const raw = params.get(key);
   if (raw === null || raw.trim() === "") return undefined;
   const parsed = Number(raw);

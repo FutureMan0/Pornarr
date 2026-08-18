@@ -185,7 +185,7 @@ async def test_indexer_search_enqueues_a_user_scoped_job_and_publishes_its_start
 
     assert response.status_code == 202
     search_id = UUID(response.json()["id"])
-    assert app.state.job_queue.calls == [
+    assert app.state.queue.jobs == [
         (
             "search_indexers",
             (str(search_id), str(user.id), "Example Scene"),

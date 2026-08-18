@@ -17,8 +17,13 @@ import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 import { NAV_ITEMS } from "../shell/sidebar";
 
-/** Read from the nav table so the link cannot outlive the route it points at. */
-const LIBRARY_PATH = NAV_ITEMS[0].path;
+/**
+ * Read from the nav table so the link cannot outlive the route it points at —
+ * but looked up by identity, not by position. The table is ordered for the
+ * sidebar, and that order has already changed once; the library is the index
+ * route regardless of where it happens to sit in the list.
+ */
+const LIBRARY_PATH = NAV_ITEMS.find((item) => item.id === "library")?.path ?? "/library";
 
 export function NotFoundRoute(): JSX.Element {
   const { t } = useTranslation();
