@@ -35,7 +35,7 @@ from pornarr_worker.jobs.quarantine import PRUNE_QUARANTINE_JOB, QUARANTINE_JOB
 from pornarr_worker.jobs.recommendation import REFRESH_RECOMMENDATIONS_JOB
 from pornarr_worker.jobs.request_search import REQUEST_SEARCH_DISPATCH_JOB, REQUEST_SEARCH_JOB
 from pornarr_worker.jobs.rss_sync import RSS_SYNC_DISPATCH_JOB, RSS_SYNC_JOB
-from pornarr_worker.jobs.scan import SCAN_JOB
+from pornarr_worker.jobs.scan import PROBE_MEDIA_FILE_JOB, SCAN_JOB
 from pornarr_worker.jobs.storage import REFRESH_STORAGE_JOB
 from pornarr_worker.jobs.upgrade import UPGRADE_MEDIA_FILE_JOB
 from pornarr_worker.scenes import PREVIEW_AND_SCENES_JOB
@@ -114,6 +114,7 @@ class TranscodeWorkerSettings:
         ARTWORK_JOB,
         LIBRARY_ARTWORK_JOB,
         PERCEPTUAL_HASH_JOB,
+        PROBE_MEDIA_FILE_JOB,
     ]
     queue_name: ClassVar = TRANSCODE_QUEUE
     redis_settings: ClassVar = REDIS_SETTINGS

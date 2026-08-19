@@ -68,6 +68,30 @@ export function DashboardRoute(): JSX.Element {
     },
   });
 
+  // transcode.md L38-40: what the machine actually supports "is shown in the
+  // administration area, because 'why is it transcoding on CPU' is otherwise
+  // unanswerable". The endpoint already reports it; this is the one screen
+  // that reads it.
+  const capabilities = useQuery({
+    queryKey: ["admin", "transcode", "capabilities"],
+    queryFn: async () => {
+      const { data, error, response } = await getApiClient().GET(
+        "/api/admin/transcode/capabilities",
+      );
+      if (!data || error) throw apiFailure(error, response);
+      return data;
+    },
+  });
+
+  const transcodeLimits = useQuery({
+    queryKey: ["admin", "transcode", "limits"],
+    queryFn: async () => {
+      const { data, error, response } = await getApiClient().GET("/api/admin/transcode/limits");
+      if (!data || error) throw apiFailure(error, response);
+      return data;
+    },
+  });
+
   usePageTitle(
     t("dashboard.title"),
     overview.data === undefined
@@ -211,6 +235,61 @@ export function DashboardRoute(): JSX.Element {
           )}
         </section>
       </div>
+
+      {/* Absent while the request is still in flight, the same way "recently
+          added" is: a placeholder heading with nothing under it answers
+          nothing, and the panel below is supplementary to the four cards
+          above rather than something the page depends on. */}
+      {capabilities.data === undefined ? null : (
+        <section aria-labelledby="transcoding-heading" className="flex flex-col gap-3">
+          <h2 id="transcoding-heading" className="text-sm text-ink">
+            {t("dashboard.transcoding")}
+          </h2>
+          {capabilities.data.methods.length === 0 && capabilities.data.rejections.length === 0 ? (
+            <p className="text-sm text-ink-muted">{t("dashboard.transcodingEmpty")}</p>
+          ) : (
+            <>
+              {capabilities.data.methods.length === 0 ? (
+                <p className="text-sm text-ink-muted">{t("dashboard.transcodingSoftwareOnly")}</p>
+              ) : null}
+              <ul className="flex flex-col gap-1.5 text-sm">
+                {capabilities.data.methods.map((method) => (
+                  <li key={method.acceleration} className="text-ink">
+                    {t("dashboard.transcodingAvailable", {
+                      acceleration: method.acceleration.toUpperCase(),
+                      codecs: method.codecs.map((codec) => codec.codec.toUpperCase()).join(", "),
+                    })}
+                  </li>
+                ))}
+                {/* The reason is rendered exactly as the endpoint gave it,
+                    never reworded here: a client-side rewrite is a second
+                    place that reason could go stale against what FFmpeg
+                    actually said. */}
+                {capabilities.data.rejections.map((rejection, index) => (
+                  <li key={rejection.acceleration ?? `general-${index}`} className="text-ink-muted">
+                    {rejection.acceleration === null
+                      ? t("dashboard.transcodingRejectedGeneral", { reason: rejection.reason })
+                      : t("dashboard.transcodingRejected", {
+                          acceleration: rejection.acceleration.toUpperCase(),
+                          reason: rejection.reason,
+                        })}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {transcodeLimits.data === undefined ? null : (
+            <p className="text-2xs text-ink-faint">
+              {t("dashboard.transcodingSlots", {
+                hardwareInUse: transcodeLimits.data.hardware_in_use,
+                hardwareLimit: transcodeLimits.data.effective_hardware,
+                softwareInUse: transcodeLimits.data.software_in_use,
+                softwareLimit: transcodeLimits.data.effective_software,
+              })}
+            </p>
+          )}
+        </section>
+      )}
     </div>
   );
 }
@@ -299,7 +378,10 @@ function RecentTile({ item }: { readonly item: RecentItem }): JSX.Element {
       seed={seedFrom(item.id)}
       blur={tileBlur(artVisible)}
       action={(content) => (
-        <Link to={`/library/${item.id}`} className="block rounded-md">
+        // `article`, the tile's root, does not contribute to an accessible
+        // name from content, so the link needs one of its own or a screen
+        // reader hears nothing but "link".
+        <Link to={`/library/${item.id}`} className="block rounded-md" aria-label={item.title}>
           {content}
         </Link>
       )}

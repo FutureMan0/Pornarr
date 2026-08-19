@@ -13,13 +13,16 @@ from collections.abc import AsyncIterator
 import pytest
 from fastapi import APIRouter, Depends, FastAPI
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from pydantic import SecretStr, ValidationError
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
+import pornarr_api.auth as auth_module
 from pornarr_api.auth import CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE, hash_password, require_role
 from pornarr_api.main import create_app
 from pornarr_db.base import Base
 from pornarr_db.models.user import User, UserRole
-from tests.api.test_app import build_settings
+from pornarr_shared.config import Settings
+from tests.api.test_app import SECRET, build_settings
 
 
 class MemoryQueue:
@@ -101,16 +104,45 @@ class MemoryRedis:
         return 1
 
 
-@pytest.fixture
-async def app() -> AsyncIterator[FastAPI]:
+BOOTSTRAP_VARIABLES = ("APP_ENV", "SESSION_COOKIE_SECURE", "TRUSTED_PROXIES")
+
+
+def settings_from_environment(monkeypatch: pytest.MonkeyPatch, **variables: str) -> Settings:
+    """Settings built from a chosen environment and nothing else.
+
+    `.env` is ignored and the three variables below are cleared first, because a
+    developer's `.env` sets `SESSION_COOKIE_SECURE=false` so a browser accepts the
+    cookie over plain HTTP, and a test that asserts a default must not read the
+    answer out of the machine it happens to run on. Values are the strings an
+    operator writes, so the coercion is exercised too.
+    """
+    for name in BOOTSTRAP_VARIABLES:
+        monkeypatch.delenv(name, raising=False)
+    for name, value in variables.items():
+        monkeypatch.setenv(name, value)
+    return Settings(
+        _env_file=None,
+        app_secret=SecretStr(SECRET),
+        database_url="postgresql+psycopg://pornarr:pornarr@localhost:5432/pornarr",
+        redis_url="redis://localhost:6379/0",
+    )
+
+
+async def build_app(settings: Settings | None = None) -> tuple[FastAPI, AsyncEngine]:
     engine = create_async_engine("sqlite+aiosqlite://")
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
 
-    application = create_app(build_settings())
+    application = create_app(settings or build_settings())
     application.state.engine = engine
     application.state.redis = MemoryRedis()
     application.state.queue = MemoryQueue()
+    return application, engine
+
+
+@pytest.fixture
+async def app() -> AsyncIterator[FastAPI]:
+    application, engine = await build_app()
     yield application
     await engine.dispose()
 
@@ -291,3 +323,255 @@ def test_auth_contract_declares_structured_error_responses(app: FastAPI) -> None
     assert responses["401"]["content"]["application/json"]["schema"] == {
         "$ref": "#/components/schemas/ErrorResponse"
     }
+
+
+async def test_an_unproven_api_key_header_does_not_switch_off_csrf(
+    app: FastAPI, client: AsyncClient
+) -> None:
+    """api-contract.md L62-63 exempts API-key requests because they carry no
+    ambient credential. A request holding a session cookie carries one, so it has
+    not earned the exemption whatever header it also names."""
+    user = await create_user(app)
+    await login(client, user.username, "correct horse battery staple")
+
+    response = await client.post("/api/auth/logout", headers={"X-Api-Key": "pnr_not-a-real-key"})
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "CSRF_FAILED"
+    assert (await client.get("/api/auth/me")).status_code == 200
+
+
+def test_the_session_cookie_is_secure_unless_a_deployment_opts_out(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The default is the TLS one, and the opt-out is refused in production.
+
+    `_cookie_is_secure` used to read `app_env == "production"` while
+    `.env.example` -- the file `make setup` writes -- ships
+    `APP_ENV=development`, so an operator who followed installation.md to a TLS
+    reverse proxy served the session cookie without `Secure` and one plain-HTTP
+    request handed it to anybody on the path.
+    """
+    # The shape `.env.example` and installation.md produce, and the one an
+    # operator who sets nothing at all gets.
+    assert settings_from_environment(monkeypatch).session_cookie_secure is True
+    assert (
+        settings_from_environment(monkeypatch, APP_ENV="development").session_cookie_secure is True
+    )
+    assert (
+        settings_from_environment(monkeypatch, APP_ENV="production").session_cookie_secure is True
+    )
+    assert (
+        settings_from_environment(monkeypatch, SESSION_COOKIE_SECURE="false").session_cookie_secure
+        is False
+    )
+
+    with pytest.raises(ValidationError) as refused:
+        settings_from_environment(monkeypatch, APP_ENV="production", SESSION_COOKIE_SECURE="false")
+
+    assert "SESSION_COOKIE_SECURE" in str(refused.value)
+
+
+@pytest.mark.parametrize(("configured", "secure"), [("true", True), ("false", False)])
+async def test_login_marks_both_cookies_secure_when_the_setting_says_so(
+    monkeypatch: pytest.MonkeyPatch, configured: str, secure: bool
+) -> None:
+    application, engine = await build_app(
+        settings_from_environment(monkeypatch, APP_ENV="test", SESSION_COOKIE_SECURE=configured)
+    )
+    try:
+        user = await create_user(application)
+        async with AsyncClient(
+            transport=ASGITransport(app=application), base_url="http://test"
+        ) as client:
+            response = await client.post(
+                "/api/auth/login",
+                json={"username": user.username, "password": "correct horse battery staple"},
+            )
+
+            assert response.status_code == 200
+            cookies = response.headers.get_list("set-cookie")
+            assert len(cookies) == 2
+            assert all(("Secure" in cookie) is secure for cookie in cookies), cookies
+    finally:
+        await engine.dispose()
+
+
+def test_trusted_proxies_must_be_addresses_or_blocks(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Empty by default: believe nobody.
+    assert settings_from_environment(monkeypatch).trusted_proxy_networks == ()
+    parsed = settings_from_environment(
+        monkeypatch, TRUSTED_PROXIES=" 127.0.0.1 , 172.18.0.0/16 "
+    ).trusted_proxy_networks
+    assert [str(network) for network in parsed] == ["127.0.0.1/32", "172.18.0.0/16"]
+
+    with pytest.raises(ValidationError) as refused:
+        settings_from_environment(monkeypatch, TRUSTED_PROXIES="proxy.example.test")
+
+    assert "TRUSTED_PROXIES" in str(refused.value)
+
+
+async def failed_login(client: AsyncClient, username: str, forwarded: str | None = None) -> int:
+    headers = {"X-Forwarded-For": forwarded} if forwarded is not None else {}
+    response = await client.post(
+        "/api/auth/login",
+        json={"username": username, "password": "wrong"},
+        headers=headers,
+    )
+    return response.status_code
+
+
+async def test_the_login_limit_counts_each_client_behind_a_trusted_proxy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Behind the documented reverse proxy the peer is the proxy for everybody.
+
+    `ASGITransport` presents 127.0.0.1 as the peer, so naming it as the trusted
+    proxy is the same shape as nginx reaching the API on the loopback address.
+    Six wrong guesses from one forwarded client must fill that client's bucket
+    and nobody else's.
+    """
+    application, engine = await build_app(
+        settings_from_environment(monkeypatch, APP_ENV="test", TRUSTED_PROXIES="127.0.0.1")
+    )
+    try:
+        # SetupMiddleware answers 503 until an account exists, and this file's
+        # `app` fixture leaves that to each test.
+        await create_user(application, username="resident")
+        async with AsyncClient(
+            transport=ASGITransport(app=application), base_url="http://test"
+        ) as client:
+            attacker = [
+                await failed_login(client, f"ghost-{index}", "203.0.113.7") for index in range(6)
+            ]
+            assert attacker == [401, 401, 401, 401, 401, 429]
+
+            # Same forwarded client, a name it has not tried: still refused, so
+            # the address bucket is what filled up and not one account's.
+            assert await failed_login(client, "ghost-elsewhere", "203.0.113.7") == 429
+            # A different forwarded client, from the same proxy: unaffected.
+            assert await failed_login(client, "ghost-elsewhere", "198.51.100.4") == 401
+            # And the hops the proxy itself added are skipped, so a client that
+            # writes its own header cannot hide behind the trusted one.
+            assert await failed_login(client, "ghost-chained", "198.51.100.9, 127.0.0.1") == 401
+            assert await failed_login(client, "ghost-chained", "203.0.113.7, 127.0.0.1") == 429
+    finally:
+        await engine.dispose()
+
+
+async def test_a_forwarded_header_from_an_untrusted_client_cannot_split_the_bucket(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The default trusts nobody, so a forged header must change nothing.
+
+    This is the other half of the fix and the more important one: an instance
+    that believed `X-Forwarded-For` from any caller would let an attacker put
+    every guess in a bucket of its own, and the login rate limit would stop
+    existing.
+    """
+    application, engine = await build_app(settings_from_environment(monkeypatch, APP_ENV="test"))
+    try:
+        await create_user(application, username="resident")
+        assert application.state.settings.trusted_proxies == ""
+        async with AsyncClient(
+            transport=ASGITransport(app=application), base_url="http://test"
+        ) as client:
+            statuses = [
+                await failed_login(client, f"ghost-{index}", f"203.0.113.{index + 1}")
+                for index in range(6)
+            ]
+
+            assert statuses == [401, 401, 401, 401, 401, 429]
+            counters = [
+                key
+                for key in application.state.redis.values
+                if key.startswith("pornarr:auth:login:ip:")
+            ]
+            assert len(counters) == 1, counters
+            assert await failed_login(client, "ghost-fresh", "198.51.100.4") == 429
+    finally:
+        await engine.dispose()
+
+
+async def test_a_password_is_verified_even_for_a_username_nobody_has(
+    app: FastAPI, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Enumeration by stopwatch: an unknown name answered in 9ms, a known one 56ms.
+
+    The timing itself is asserted end to end, over a distribution, in
+    `tests/e2e/auth.spec.ts`. What is pinned here is the mechanism that makes the
+    two equal -- that the Argon2 verification runs whether or not the row exists,
+    and against a real encoded hash rather than `PASSWORDLESS_PASSWORD_HASH`,
+    which raises `InvalidHashError` before deriving anything and costs nothing.
+    """
+    verified: list[str] = []
+    real = auth_module.verify_password
+
+    def record(password_hash: str, password: str) -> bool:
+        verified.append(password_hash)
+        return real(password_hash, password)
+
+    monkeypatch.setattr(auth_module, "verify_password", record)
+    known = await create_user(app, username="present")
+    await create_user(app, username="passwordless", password="unused")
+    async with AsyncSession(app.state.engine) as session:
+        row = await session.get(User, (await create_user(app, username="oidc-only")).id)
+        assert row is not None
+        row.password_hash = auth_module.PASSWORDLESS_PASSWORD_HASH
+        await session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        for username in ("nobody-at-all", known.username, "oidc-only"):
+            assert await failed_login(client, username) == 401
+
+    assert len(verified) == 3
+    assert verified[0] == auth_module._ABSENT_PASSWORD_HASH
+    assert verified[1].startswith("$argon2id$") and verified[1] != auth_module._ABSENT_PASSWORD_HASH
+    # The account with no local password is charged the same work, so it is not
+    # distinguishable from a name nobody has either.
+    assert verified[2] == auth_module._ABSENT_PASSWORD_HASH
+    assert auth_module._ABSENT_PASSWORD_HASH.startswith("$argon2id$")
+
+
+def test_the_contract_declares_how_to_authenticate(app: FastAPI) -> None:
+    """Contradiction C3: the document declared no security scheme at all.
+
+    ADR 0009 makes `openapi.json` the boundary the TypeScript client and the MSW
+    handlers are generated from, and api-contract.md names three authentication
+    paths, so a client generated strictly from the document could not know that
+    anything on the instance was protected.
+    """
+    document = app.openapi()
+    schemes = document["components"]["securitySchemes"]
+
+    assert schemes["SessionCookie"]["in"] == "cookie"
+    assert schemes["SessionCookie"]["name"] == SESSION_COOKIE
+    assert schemes["ApiKey"] == {**schemes["ApiKey"], "in": "header", "name": "X-Api-Key"}
+
+    both = [{"SessionCookie": []}, {"ApiKey": []}]
+    assert document["paths"]["/api/library"]["get"]["security"] == both
+    assert document["paths"]["/api/admin/users/{user_id}"]["patch"]["security"] == both
+    # `/api/auth/*` refuses API keys, and says so rather than offering both.
+    assert document["paths"]["/api/auth/me"]["get"]["security"] == [{"SessionCookie": []}]
+    # And the genuinely anonymous operations carry none, so the document is a
+    # description of the product rather than a blanket assertion.
+    unsecured = sorted(
+        path
+        for path, methods in document["paths"].items()
+        for operation in methods.values()
+        if "security" not in operation
+    )
+    assert unsecured == [
+        "/api/auth/login",
+        "/api/auth/oidc/callback",
+        "/api/auth/oidc/providers",
+        "/api/auth/oidc/{provider_id}/login",
+        "/api/health",
+        "/api/invites/{token}",
+        "/api/invites/{token}/redeem",
+        "/api/setup/complete",
+        "/api/setup/status",
+        "/api/setup/test-download-client",
+        "/api/setup/test-indexer",
+        "/api/setup/validate-library-path",
+    ]

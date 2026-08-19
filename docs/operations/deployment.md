@@ -70,6 +70,22 @@ reverse_proxy pornarr:8000 {
 
 Sub-path deployment is supported through the configured base path.
 
+Two settings exist because of the proxy, and both matter:
+
+- `SESSION_COOKIE_SECURE` defaults to `true`, so the session and CSRF cookies are
+  never sent over a plain HTTP connection. Terminate TLS in the proxy and leave it
+  alone. The opt-out is for local development over `http://localhost`, where a
+  browser will not store a `Secure` cookie at all; it is refused outright when
+  `APP_ENV=production`, so a production instance cannot be run without it.
+- `TRUSTED_PROXIES` names the addresses whose `X-Forwarded-For` this instance may
+  believe, comma-separated, as addresses or CIDR blocks. It is empty by default,
+  which means the login rate limiter sees the proxy as the source of every request
+  and counts the whole instance in one bucket: six wrong guesses from one
+  anonymous caller then refuse every account's sign-in for fifteen minutes. Set it
+  to the address the proxy reaches the API from. Name only addresses you control —
+  any caller can write that header, and an instance that believes it from an
+  arbitrary client has no login rate limit at all.
+
 ## Configuration
 
 Only bootstrap values live in the environment: the secret key, database and Redis

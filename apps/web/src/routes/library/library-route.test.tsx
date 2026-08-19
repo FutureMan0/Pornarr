@@ -206,3 +206,17 @@ test("the source picker browses every library and each card says where it came f
     expect(requested.some((query) => query.includes("cursor=page-2"))).toBe(true),
   );
 });
+
+test("a tile is a link named for its title, not a nameless one a screen reader cannot announce", async () => {
+  signedIn();
+  server.use(
+    http.get("/api/library/facets", () =>
+      HttpResponse.json({ studios: [], performers: [], tags: [] }),
+    ),
+    http.get("/api/library", () => HttpResponse.json({ items: [item()], next_offset: null })),
+  );
+
+  renderApp("/library");
+
+  expect(await screen.findByRole("link", { name: "Local title" })).not.toBeNull();
+});

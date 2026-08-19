@@ -24,9 +24,16 @@ import i18n from "../i18n";
  * before our own code sees the request; the last is this client's own, for a
  * request that never got an answer in the contract's shape.
  *
- * Unknown codes are not an error here — a new backend code must never be able to
- * blank a screen, so anything absent falls through to a generic sentence that
- * still shows the code.
+ * Completeness is enforced, not remembered: `api-error.test.ts` reads every
+ * `code = "..."` out of the Python sources and fails when one of them is missing
+ * from this list, and `i18n.test.tsx` fails when a listed code has no sentence or
+ * no next step in either locale. A backend code cannot reach a screen untranslated
+ * without a red test naming it.
+ *
+ * The fallback below still exists, because a code from a newer server must never
+ * be able to blank a screen. It is no longer silent: reaching it writes a console
+ * error naming the code, so an untranslated code is visible in a browser session
+ * as well as in CI.
  */
 export const ERROR_CODES = [
   "INVALID_CREDENTIALS",
@@ -46,6 +53,46 @@ export const ERROR_CODES = [
   "SETUP_REQUIRED",
   "SETUP_ALREADY_COMPLETED",
   "SETUP_PATH_INVALID",
+  "SETUP_PASSWORD_TOO_WEAK",
+  "ROOT_FOLDER_DISABLED",
+  "OIDC_AUTHENTICATION_FAILED",
+  "OIDC_STATE_INVALID",
+  "OIDC_IDENTITY_NOT_ALLOWED",
+  "OIDC_IDENTITY_ALREADY_LINKED",
+  "OIDC_USERNAME_CONFLICT",
+  "OIDC_UNLINK_WOULD_LOCK_ACCOUNT",
+  "USER_CANNOT_DEACTIVATE_SELF",
+  "INDEXER_CONNECTION_FAILED",
+  "DOWNLOAD_CLIENT_CONNECTION_FAILED",
+  "DOWNLOAD_CLIENT_UNAVAILABLE",
+  "TORZNAB_RESPONSE_INVALID",
+  "STASHDB_RESPONSE_INVALID",
+  "TPDB_RESPONSE_INVALID",
+  "PEER_UNAVAILABLE",
+  "REQUEST_QUOTA_EXCEEDED",
+  "REQUEST_ACTION_INVALID",
+  "REQUEST_NOT_GRABBABLE",
+  "REQUEST_CANCELLATION_FAILED",
+  "REQUEST_CONTROL_FAILED",
+  "REQUEST_PRIORITY_UPDATE_FAILED",
+  "RELEASE_NOT_FOUND",
+  "RELEASE_EXPIRED",
+  "RELEASE_BLOCKED",
+  "RELEASE_IN_LIBRARY",
+  "RELEASE_FILTERED",
+  "RELEASE_PROTOCOL_UNSUPPORTED",
+  "GRAB_SUBMISSION_FAILED",
+  "MONITOR_QUALITY_PROFILE_REQUIRED",
+  "MONITOR_ALREADY_EXISTS",
+  "QUARANTINE_REVIEW_INVALID",
+  "FILTER_CONFIGURATION_INVALID",
+  "COLLECTION_ALREADY_EXISTS",
+  "SEND_ALREADY_EXISTS",
+  "SEND_TO_SELF",
+  "SHORT_ALREADY_EXISTS",
+  "SHORTS_NO_MARKERS",
+  "TRANSCODE_LIMIT_REACHED",
+  "RANGE_NOT_SATISFIABLE",
 
   "BAD_REQUEST",
   "NOT_FOUND",
@@ -84,6 +131,20 @@ export const RETRYABLE_ERROR_CODES = [
   "INTERNAL_ERROR",
   "SERVICE_UNAVAILABLE",
   "NETWORK_UNREACHABLE",
+  // Something downstream of the API — a download client, a peer, an indexer or a
+  // metadata provider — did not answer. The request is well formed and nothing
+  // about it would change on a second attempt, which is exactly the case a retry
+  // is for.
+  "REQUEST_CANCELLATION_FAILED",
+  "REQUEST_CONTROL_FAILED",
+  "REQUEST_PRIORITY_UPDATE_FAILED",
+  "GRAB_SUBMISSION_FAILED",
+  "PEER_UNAVAILABLE",
+  "TORZNAB_RESPONSE_INVALID",
+  "STASHDB_RESPONSE_INVALID",
+  "TPDB_RESPONSE_INVALID",
+  // A limit that expires on its own, like the two rate limits above.
+  "TRANSCODE_LIMIT_REACHED",
 ] as const satisfies readonly ErrorCode[];
 
 const RETRYABLE: ReadonlySet<string> = new Set(RETRYABLE_ERROR_CODES);
@@ -132,15 +193,36 @@ export function isClientError(value: unknown): boolean {
   return status !== null && status >= 400 && status < 500;
 }
 
+/** Codes already reported, so one broken endpoint cannot flood the console. */
+const reportedUnknownCodes = new Set<string>();
+
+/**
+ * Say out loud that a code reached a screen with no sentence behind it.
+ *
+ * PRODUCT.md: "Errors state the cause and the next step, never just that something
+ * failed." The fallback breaks that promise by construction, so it is treated as a
+ * defect in this build rather than as an outcome — once per code, because the
+ * point is to be noticed, not to be shouted.
+ */
+function reportUntranslatedCode(code: string): void {
+  if (reportedUnknownCodes.has(code)) return;
+  reportedUnknownCodes.add(code);
+  console.error(
+    `[pornarr] no translated message for error code ${code}; add it to ERROR_CODES, errors and errorSteps`,
+  );
+}
+
 /**
  * The sentence for a code.
  *
  * A code this build has never heard of still produces a sentence, and that
  * sentence carries the code: an operator reading a screenshot needs the token to
- * search for, and a blank alert is the one outcome that helps nobody.
+ * search for, and a blank alert is the one outcome that helps nobody. Reaching
+ * that fallback is a defect, so it reports itself on the way past.
  */
 export function messageForErrorCode(code: string): string {
   if (isKnownErrorCode(code)) return i18n.t(`errors.${code}`);
+  reportUntranslatedCode(code);
   return i18n.t("errors.unknown", { code });
 }
 
@@ -160,10 +242,12 @@ export function messageForError(value: unknown): string {
  * translator needs to move them independently.
  *
  * Every code in `ERROR_CODES` has one, enforced by the walk in `i18n.test.tsx`,
- * so a new backend code cannot be added with a cause and no way out.
+ * so a new backend code cannot be added with a cause and no way out. The unknown
+ * branch reports itself for the same reason `messageForErrorCode` does.
  */
 export function nextStepForErrorCode(code: string): string {
   if (isKnownErrorCode(code)) return i18n.t(`errorSteps.${code}`);
+  reportUntranslatedCode(code);
   return i18n.t("errorSteps.unknown");
 }
 

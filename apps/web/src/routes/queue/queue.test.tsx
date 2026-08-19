@@ -141,4 +141,47 @@ describe("the queue", () => {
     // to discover is one nobody discovers.
     expect(await screen.findByText("Broken")).toBeTruthy();
   });
+
+  /**
+   * ADR 0031's consequence, on the second screen that shows an estimate.
+   *
+   * "Every estimate is returned as a range with a confidence level. A single
+   * exact figure would claim precision the system does not have, and the
+   * interface is built to display the range." PRODUCT.md L57-59 and
+   * DESIGN.md L219-221 say the same thing, and DESIGN.md L219-221 says how:
+   * three states, told apart by icon and label rather than by colour.
+   *
+   * The search row was fixed for this in piece 03. The queue was not, and it is
+   * the screen where an estimate is read most often — `/api/queue` has always
+   * returned `queue_estimate.confidence`, and `queue-route.tsx` dropped it on
+   * the floor twice, in the phone list and in the table.
+   */
+  test("a measured estimate carries its confidence, not just its range", async () => {
+    stub([job({ queue_estimate: { low_seconds: 240, high_seconds: 300, confidence: "high" } })]);
+    renderApp("/downloads");
+
+    const row = (await screen.findByText("The Long Way")).closest("tr") as HTMLElement;
+
+    // The range, and then the half that says how much to trust it. Asserted on
+    // the row rather than the document so a confidence rendered somewhere else
+    // on the screen cannot pass for this one.
+    expect(row.textContent).toContain("~4\u20135 min");
+    expect(row.textContent).toContain("High");
+  });
+
+  test("an unknown estimate says so once, without a confidence beside it", async () => {
+    // DESIGN.md L221: "Unknown estimates say 'unknown', never '0'". The
+    // indicator has exactly three states, so an unknown range gets the word and
+    // nothing else — "Unknown Unknown" would be the fix reading worse than the
+    // defect.
+    stub([
+      job({ queue_estimate: { low_seconds: null, high_seconds: null, confidence: "unknown" } }),
+    ]);
+    renderApp("/downloads");
+
+    const row = (await screen.findByText("The Long Way")).closest("tr") as HTMLElement;
+
+    expect(row.textContent).toContain("Unknown");
+    expect(row.textContent?.match(/Unknown/g)?.length).toBe(1);
+  });
 });

@@ -50,6 +50,12 @@ class FilterRule:
 class FilterDecision:
     action: FilterAction
     rule: FilterRule | None
+    # Every rule that matched, not only the one whose action won.
+    # docs/pipelines/import.md L31 asks for "every firing rule" in the audit log,
+    # and a decision that reported one of them could not answer that: two rules
+    # firing and one being written down is a record of the outcome, not of what
+    # the instance actually decided against.
+    matched: tuple[FilterRule, ...] = ()
 
 
 _ACTION_PRIORITY = {
@@ -75,7 +81,7 @@ def evaluate_filters(candidate: ContentCandidate, rules: Iterable[FilterRule]) -
     # `max` keeps the first item on an equal key, so the order resolved above
     # deterministically makes an equally strict global rule win over a user rule.
     rule = max(matching_rules, key=lambda candidate_rule: _ACTION_PRIORITY[candidate_rule.action])
-    return FilterDecision(action=rule.action, rule=rule)
+    return FilterDecision(action=rule.action, rule=rule, matched=matching_rules)
 
 
 def _matches(rule: FilterRule, candidate: ContentCandidate) -> bool:

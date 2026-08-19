@@ -20,6 +20,7 @@ from arq.connections import RedisSettings, create_pool
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pornarr_api.routers.health import configured_data_paths, separate_mounts
 from pornarr_db.backup import ensure_app_secret_matches
 from pornarr_db.session import dispose_engine, get_engine
 from pornarr_media.capabilities import detect_hardware_capabilities
@@ -35,6 +36,36 @@ async def _reap_transcode_sessions(registry: TranscodeSessionRegistry) -> None:
     while True:
         await registry.reap_expired()
         await asyncio.sleep(TRANSCODE_REAP_INTERVAL_SECONDS)
+
+
+def _warn_about_separate_mounts(settings: Settings) -> None:
+    """ADR 0004: compare the configured paths' devices at startup, and warn loudly.
+
+    deployment.md tells operators the comparison happens here, and
+    troubleshooting.md tells them to "check the startup warning" when imports
+    copy instead of hardlinking. Until this existed there was no such line: a
+    mis-mounted instance booted to `running` with nothing in its log, and the
+    only place the mismatch was ever named was the body of a health response
+    nobody had asked for yet.
+
+    A warning rather than a refusal, because the ADR says warn: copying is slower
+    and uses more disk, and it still works. `/api/health` is the half that
+    refuses.
+    """
+    try:
+        mismatch = separate_mounts(configured_data_paths(settings))
+    except OSError as error:
+        logger.warning("could not compare the data paths' devices: %s", error)
+        return
+    if mismatch is None:
+        return
+    logger.warning(
+        "data paths are on separate mounts: %s and %s. Imports cannot hardlink and will "
+        "copy instead, which is slower and uses twice the disk. Mount one volume at %s.",
+        mismatch[0],
+        mismatch[1],
+        settings.data_path,
+    )
 
 
 def _watch_for_shutdown(shutting_down: asyncio.Event) -> Callable[[], None]:
@@ -102,6 +133,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     install_redaction()
 
     settings.ensure_data_directories()
+    _warn_about_separate_mounts(settings)
 
     app.state.engine = get_engine(settings)
     try:

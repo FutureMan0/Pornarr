@@ -44,6 +44,7 @@ from pornarr_integrations.submission import (
     submit_release,
 )
 from pornarr_shared.errors import PornarrError
+from pornarr_shared.events import publish_event
 
 router = APIRouter(prefix="/requests", tags=["requests"])
 CurrentUser = Annotated[User, Depends(get_current_user)]
@@ -353,13 +354,20 @@ async def create_request(
         if payload.target_owner_id is not None
         else None
     )
-    return await _create_request(
+    created = await _create_request(
         payload,
         user,
         session,
         request_search_max_age_days=runtime_settings.request_search_max_age_days,
         target_owner_id=target_owner_id,
     )
+    await publish_event(
+        http_request.app.state.redis,
+        "request.created",
+        {"request_id": str(created.id)},
+        user_id=str(user.id),
+    )
+    return created
 
 
 async def _create_request(
@@ -493,6 +501,12 @@ async def grab_release(
     stats = await session.get(IndexerStats, release.indexer_id)
     if stats is not None:
         stats.grabs += 1
+    # Two facts, not one: the row now exists in the queue, and `submit_release`
+    # above already handed it to the client - a download job can be shared by
+    # more than one request (defect 10), so both are about the job rather than
+    # scoped to this request the way `request.created` is.
+    await publish_event(http_request.app.state.redis, "download.queued", {"job_id": str(job.id)})
+    await publish_event(http_request.app.state.redis, "download.started", {"job_id": str(job.id)})
     return GrabResponse(request_id=request.id, download_job_id=job.id, status=request.status)
 
 

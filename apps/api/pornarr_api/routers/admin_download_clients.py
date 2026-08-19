@@ -124,6 +124,10 @@ async def test_download_client(
         client.health = "unhealthy"
         client.last_error = str(error).replace(client.credentials, "[redacted]")
         client.last_tested_at = datetime.now(UTC)
+        # `database_session` rolls back on any exception it sees, and this
+        # handler is about to raise one - so the diagnosis has to be committed
+        # here or the operator's failed test leaves no trace on the row.
+        await session.commit()
         raise DownloadClientConnectionError("The download client connection failed.") from error
     client.health = "healthy"
     client.last_error = None

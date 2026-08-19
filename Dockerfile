@@ -117,6 +117,24 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
 # ---------------------------------------------------------------------------
+# Stage 3b — the same environment with the dev group, for development only
+#
+# The repository's own checks run inside the container: `make lint`,
+# `make typecheck` and `make test` are all `docker compose exec api uv run ...`.
+# Against a `--no-dev` environment every one of them installed the group into
+# `/app/.venv` at the moment it ran, and the development API watches its tree for
+# reloads while all four workers run under `--watch /app` — so running the tests
+# restarted the server and every worker underneath whatever was in flight, and
+# requests that had already answered 2xx lost their transactions with the
+# process. Built here rather than in the development stage because the workspace
+# sources are present here, and a sync that cannot see them uninstalls them.
+# ---------------------------------------------------------------------------
+FROM python-deps AS python-dev-deps
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen
+
+# ---------------------------------------------------------------------------
 # Stage 4 — runtime base, shared by development and production
 # ---------------------------------------------------------------------------
 FROM python:3.13-alpine3.22 AS base
@@ -164,9 +182,9 @@ ENV UV_COMPILE_BYTECODE=0 \
     UV_PYTHON_DOWNLOADS=never \
     APP_ENV=development
 
-COPY --from=python-deps --chown=pornarr:pornarr /app/.venv /app/.venv
+COPY --from=python-dev-deps --chown=pornarr:pornarr /app/.venv /app/.venv
 COPY --chown=pornarr:pornarr alembic alembic
-COPY --chown=pornarr:pornarr alembic.ini pyproject.toml ./
+COPY --chown=pornarr:pornarr alembic.ini pyproject.toml uv.lock ./
 # `uv pip`, not `python -m pip`: a uv-created virtual environment has no pip in
 # it, so the usual invocation fails with "No module named pip".
 RUN uv pip install --python /app/.venv/bin/python --no-cache debugpy

@@ -13,16 +13,15 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from pornarr_api.auth import database_session, get_current_user
+from pornarr_api.auth import get_streaming_user, streaming_session
 from pornarr_api.errors import ErrorResponse, error_body
 from pornarr_db.models.media import MediaFile
 from pornarr_db.models.user import User
+from pornarr_db.root_folders import file_within, library_roots
 
 router = APIRouter(prefix="/media", tags=["playback"])
-CurrentUser = Annotated[User, Depends(get_current_user)]
-Session = Annotated[AsyncSession, Depends(database_session)]
+CurrentUser = Annotated[User, Depends(get_streaming_user)]
 _CHUNK_SIZE = 64 * 1024
 
 
@@ -66,14 +65,6 @@ def parse_byte_ranges(header: str | None, size: int) -> tuple[ByteRange, ...]:
                 raise RangeNotSatisfiableError
         ranges.append(ByteRange(start, end))
     return tuple(ranges)
-
-
-def _library_file(path: str, library_path: Path) -> Path | None:
-    candidate = Path(path).resolve()
-    root = library_path.resolve()
-    if not candidate.is_relative_to(root) or not candidate.is_file():
-        return None
-    return candidate
 
 
 def _read_range(path: Path, byte_range: ByteRange) -> Iterator[bytes]:
@@ -153,13 +144,20 @@ def _stream_response(path: Path, ranges: tuple[ByteRange, ...], size: int) -> St
         416: {"model": ErrorResponse},
     },
 )
-async def stream(media_id: UUID, request: Request, _: CurrentUser, session: Session) -> Response:
-    media_file = await session.scalar(
-        select(MediaFile).where(MediaFile.media_id == media_id, MediaFile.is_active.is_(True))
-    )
+async def stream(media_id: UUID, request: Request, _: CurrentUser) -> Response:
+    # The session is closed before the response is returned: the body outlives
+    # the request, and a held connection would outlive it too. See
+    # `streaming_session`.
+    async with streaming_session(request) as session:
+        media_file = await session.scalar(
+            select(MediaFile).where(MediaFile.media_id == media_id, MediaFile.is_active.is_(True))
+        )
+        # Read inside the same block: the session is gone by the next line, and
+        # which directories hold library files is a question for the database.
+        roots = await library_roots(session, request.app.state.settings.library_path)
     if media_file is None:
         raise HTTPException(status_code=404)
-    path = _library_file(media_file.path, request.app.state.settings.library_path)
+    path = file_within(media_file.path, roots)
     if path is None:
         raise HTTPException(status_code=404)
     size = path.stat().st_size

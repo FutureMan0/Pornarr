@@ -36,10 +36,15 @@ export const SETTINGS_SECTIONS = [
   // match the path exactly — without `end` every other tab would sit under an
   // active "general" as well.
   { id: "general", path: "/settings", end: true },
+  // Every account has keys, not just an administrator's, so this one sits with
+  // "general" outside the `adminOnly` group below.
+  { id: "apiKeys", path: "/settings/api-keys", end: false },
   { id: "rootFolders", adminOnly: true, path: "/settings/root-folders", end: false },
   { id: "quality", adminOnly: true, path: "/settings/quality", end: false },
+  { id: "indexers", adminOnly: true, path: "/settings/indexers", end: false },
   { id: "metadata", adminOnly: true, path: "/settings/metadata", end: false },
   { id: "peers", adminOnly: true, path: "/settings/peers", end: false },
+  { id: "oidc", adminOnly: true, path: "/settings/oidc", end: false },
 ] as const satisfies readonly SettingsSection[];
 
 /** Read from the table so a link to it cannot outlive the route. */

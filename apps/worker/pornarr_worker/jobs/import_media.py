@@ -17,10 +17,11 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from pornarr_core.dedup import DuplicateClassification, MediaCandidate, detect_duplicate
 from pornarr_core.filters import (
     ContentCandidate,
     FilterAction,
@@ -32,6 +33,7 @@ from pornarr_core.filters import FilterRuleKind as CoreFilterRuleKind
 from pornarr_core.library_placement import Placement, place_file
 from pornarr_core.matching import ParsedRelease, parse_release
 from pornarr_core.naming import normalize_title
+from pornarr_db.audit import write_audit
 from pornarr_db.models.download import ImportTrigger
 from pornarr_db.models.filters import ContentFilterProfile, ContentFilterRule, FilterProfileScope
 from pornarr_db.models.media import Media, MediaFile
@@ -39,7 +41,8 @@ from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.session import session_scope
 from pornarr_integrations.metadata import MetadataCandidate, MetadataProviderAdapter
 from pornarr_media.hashing import oshash
-from pornarr_media.probe import MediaProbeError, ProbeResult, probe
+from pornarr_media.probe import MediaProbeError, ProbeResult, codec_payload, probe
+from pornarr_shared.audit import AuditSource
 from pornarr_shared.config import Settings, get_settings
 from pornarr_shared.events import publish_event
 from pornarr_shared.jobs import TRANSCODE_QUEUE, enqueue_once, job
@@ -49,6 +52,7 @@ from pornarr_worker.jobs.quarantine import (
     QuarantineReasonCode,
     quarantine_file,
 )
+from pornarr_worker.jobs.upgrade import upgrade_media_file
 from pornarr_worker.metadata_providers import configured_providers
 
 READY = "ready"
@@ -61,6 +65,7 @@ Fingerprinter = Callable[[Path], str | None]
 
 
 ARTWORK_JOB_NAME = "generate_artwork_job"
+SPRITE_JOB_NAME = "generate_preview_sprite_job"
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,6 +134,28 @@ async def import_ready_trigger(
         ),
         await _global_filter_rules(session),
     )
+    # Written before the branch, so the record exists whichever way the decision
+    # goes and a rule that only ever quarantines is not invisible next to one
+    # that rejects. docs/pipelines/import.md L31. No actor: nobody asked for
+    # this, the pipeline reached it on its own.
+    for fired in decision.matched:
+        write_audit(
+            session,
+            actor_id=None,
+            source=AuditSource.AUTOMATION,
+            action="filter.matched",
+            target=str(fired.id),
+            # The rule's identity and what it asked for, never its pattern: a
+            # term rule's pattern is the content vocabulary an operator chose to
+            # keep out, and an audit log is read by more people than configure
+            # one.
+            context={
+                "kind": fired.kind.value,
+                "rule_action": fired.action.value,
+                "outcome": decision.action.value,
+                "import_trigger_id": str(trigger.id),
+            },
+        )
 
     if decision.action is FilterAction.REJECT:
         _fail(trigger, "filter_rule", "A content filter rejected this download before placement.")
@@ -146,6 +173,28 @@ async def import_ready_trigger(
         return ImportOutcome(trigger.status)
 
     parsed = parse_release(source.stem)
+
+    duplicate = await _fuzzy_duplicate(session, candidate, technical)
+    if duplicate is not None:
+        # Step 3's fuzzy half: title, studio, date and duration all cleared the
+        # threshold, so this is a better file for a title already in the
+        # library, not a second one. Adopt the newer scrape's metadata, then
+        # replace the active file the same way an explicit upgrade would -
+        # verified before the old file is ever touched.
+        _adopt_candidate(duplicate, candidate, resolution.confidence)
+        upgraded = await upgrade_media_file(
+            session,
+            duplicate.id,
+            source,
+            await _library_root(session, settings),
+            quality=parsed.resolution,
+            probe_file=probe_file,
+        )
+        trigger.status = IMPORTED
+        trigger.error_code = None
+        trigger.error_detail = None
+        return ImportOutcome(trigger.status, duplicate.id, str(upgraded.path))
+
     placement = await asyncio.to_thread(
         place_file,
         source,
@@ -191,6 +240,16 @@ async def import_media(context: dict[str, Any], trigger_id: str) -> str:
             outcome.media_path,
             str(settings.thumbnail_path),
             media_id,
+            queue=TRANSCODE_QUEUE,
+        )
+        # Same step: the library grid also swaps a poster for a hover preview
+        # on the fly, and nothing produced the sprite or its VTT index for it
+        # to swap in.
+        await enqueue_once(
+            redis,
+            SPRITE_JOB_NAME,
+            outcome.media_path,
+            str(settings.thumbnail_path / media_id),
             queue=TRANSCODE_QUEUE,
         )
     await publish_event(
@@ -244,6 +303,53 @@ def _core_rule(rule: ContentFilterRule) -> CoreFilterRule:
     )
 
 
+async def _fuzzy_duplicate(
+    session: AsyncSession, candidate: MetadataCandidate, technical: ProbeResult
+) -> Media | None:
+    """Step 3's fuzzy half: a near-identical release already active in the library.
+
+    Every threshold - title similarity, studio, release date and duration - lives
+    in `detect_duplicate`; this only narrows which active media are worth running
+    it against, since a real match always shares the studio the release states.
+    """
+
+    if not candidate.studio:
+        return None
+    incoming = MediaCandidate(
+        title=candidate.title,
+        studio=candidate.studio,
+        release_date=candidate.release_date,
+        duration_seconds=technical.duration,
+    )
+    rows = await session.execute(
+        select(Media, MediaFile.duration_seconds, MediaFile.oshash)
+        .join(MediaFile, (MediaFile.media_id == Media.id) & MediaFile.is_active.is_(True))
+        .where(func.lower(Media.studio) == candidate.studio.strip().casefold())
+    )
+    for media, duration_seconds, existing_oshash in rows:
+        existing = MediaCandidate(
+            title=media.title,
+            studio=media.studio,
+            release_date=media.release_date,
+            duration_seconds=duration_seconds,
+            oshash=existing_oshash,
+        )
+        decision = detect_duplicate(incoming, existing)
+        if decision.classification is DuplicateClassification.UPGRADE_CANDIDATE:
+            return media
+    return None
+
+
+def _adopt_candidate(media: Media, candidate: MetadataCandidate, confidence: float) -> None:
+    """A fuzzy match is the newer scrape of the same title, so its metadata wins."""
+
+    media.title = candidate.title
+    media.normalized_title = normalize_title(candidate.title)
+    media.studio = candidate.studio
+    media.release_date = candidate.release_date
+    media.confidence = confidence
+
+
 def _record_media(
     session: AsyncSession,
     placement: Placement,
@@ -267,7 +373,7 @@ def _record_media(
             path=str(placement.path),
             size=file_stat.st_size,
             modified_at_ns=file_stat.st_mtime_ns,
-            codecs=_codec_payload(technical),
+            codecs=codec_payload(technical),
             resolution=technical.resolution,
             duration_seconds=technical.duration,
             bitrate=technical.bitrate,
@@ -278,28 +384,6 @@ def _record_media(
         )
     )
     return media
-
-
-def _codec_payload(technical: ProbeResult) -> dict[str, object]:
-    """The shape `/api/media/{id}/playback-info` reads to decide direct play."""
-
-    video = _stream(technical, "video")
-    audio = _stream(technical, "audio")
-    return {
-        "container": technical.container,
-        "video": {
-            "codec": video.get("codec_name"),
-            "profile": video.get("profile"),
-            "level": video.get("level"),
-        },
-        "audio": {"codec": audio.get("codec_name")},
-    }
-
-
-def _stream(technical: ProbeResult, codec_type: str) -> dict[str, object]:
-    return next(
-        (stream for stream in technical.streams if stream.get("codec_type") == codec_type), {}
-    )
 
 
 def _quarantine_reason(

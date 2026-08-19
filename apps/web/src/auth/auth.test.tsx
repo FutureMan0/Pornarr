@@ -10,7 +10,7 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { CSRF_COOKIE, CSRF_HEADER } from "../lib/api";
-import { messageForError, messageForErrorCode } from "../lib/api-error";
+import { messageForError, messageForErrorCode, nextStepForErrorCode } from "../lib/api-error";
 import {
   TEST_USER,
   VALID_PASSWORD,
@@ -82,7 +82,11 @@ describe("login", () => {
     await signIn("wrong");
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toBe(messageForErrorCode("INVALID_CREDENTIALS"));
+    // Two sentences, not one. PRODUCT.md L59-60: "Errors state the cause and the
+    // next step, never just that something failed." The step used to exist only
+    // in the map, which is not a place a reader can see it.
+    expect(alert.textContent).toContain(messageForErrorCode("INVALID_CREDENTIALS"));
+    expect(alert.textContent).toContain(nextStepForErrorCode("INVALID_CREDENTIALS"));
     expect(document.body.textContent).not.toContain("INVALID_CREDENTIALS");
     expect(screen.queryByRole("navigation", { name: "Primary" })).toBeNull();
   });
@@ -100,8 +104,33 @@ describe("login", () => {
     await signIn(VALID_PASSWORD);
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toBe(messageForErrorCode("LOGIN_RATE_LIMITED"));
+    expect(alert.textContent).toContain(messageForErrorCode("LOGIN_RATE_LIMITED"));
+    expect(alert.textContent).toContain(nextStepForErrorCode("LOGIN_RATE_LIMITED"));
     expect(document.body.textContent).not.toContain("LOGIN_RATE_LIMITED");
+  });
+});
+
+describe("OIDC sign-in", () => {
+  test("offers a configured provider as a real navigation, not a fetch", async () => {
+    server.use(
+      http.get("/api/auth/oidc/providers", () =>
+        HttpResponse.json([{ id: "provider-1", name: "Piece 02 provider" }]),
+      ),
+    );
+    renderApp("/login");
+
+    const link = await screen.findByRole("link", { name: /Piece 02 provider/ });
+    // A real `<a>` to the API's own redirect, so the browser follows the 307
+    // to the provider itself. A click handler that called `fetch` instead
+    // could not have done that.
+    expect(link.getAttribute("href")).toBe("/api/auth/oidc/provider-1/login");
+  });
+
+  test("offers nothing extra when no provider is configured", async () => {
+    renderApp("/login");
+
+    await screen.findByRole("button", { name: "Sign in" });
+    expect(screen.queryByRole("link", { name: /Sign in with/ })).toBeNull();
   });
 });
 

@@ -163,3 +163,61 @@ def test_empty_layout_is_rejected_instead_of_becoming_the_default(tmp_path: Path
 
     with pytest.raises(ValueError, match="non-empty"):
         place_file(source, tmp_path / "library", "Studio", "Title", None, layout="")
+
+
+def test_a_cross_device_link_falls_back_to_a_copy_and_warns(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Step 9: "If the link fails because the paths are on different filesystems,
+    the file is copied and a warning is raised."
+
+    Driven by the error the kernel would raise rather than by a second mount, so
+    it executes everywhere instead of skipping wherever `/dev/shm` happens not to
+    be its own filesystem.
+    """
+    monkeypatch.setattr(library_placement, "_copy_fallback_warned", False)
+    source = tmp_path / "source.mkv"
+    source.write_bytes(b"media bytes")
+
+    def cross_device_link(_: Path, __: Path) -> None:
+        raise OSError(errno.EXDEV, "Invalid cross-device link")
+
+    monkeypatch.setattr(library_placement.os, "link", cross_device_link)
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        placed = place_file(
+            source, tmp_path / "library", "Studio", "Title", "2024-01-01", quality="1080p"
+        )
+
+    assert placed.method is PlacementMethod.COPY
+    # A copy, not a link: same bytes, different inode, source untouched.
+    assert placed.path.read_bytes() == b"media bytes"
+    assert placed.path.stat().st_ino != source.stat().st_ino
+    assert source.stat().st_nlink == 1
+    assert placed.path.stat().st_nlink == 1
+    assert placed.path.relative_to(tmp_path / "library").as_posix() == (
+        "Studio/2024/Title/1080p/Title.mkv"
+    )
+    # And the operator is told, once, in terms that name the cause.
+    messages = [str(warning.message) for warning in caught]
+    assert messages == [
+        "library and download paths are on different filesystems; imports will copy"
+    ]
+
+
+def test_an_error_that_is_not_cross_device_is_never_quietly_copied(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The negative space: only EXDEV is a reason to stop hardlinking."""
+    source = tmp_path / "source.mkv"
+    source.write_bytes(b"media bytes")
+
+    def permission_denied(_: Path, __: Path) -> None:
+        raise OSError(errno.EACCES, "Permission denied")
+
+    monkeypatch.setattr(library_placement.os, "link", permission_denied)
+
+    with pytest.raises(OSError, match="Permission denied"):
+        place_file(source, tmp_path / "library", "Studio", "Title", "2024-01-01")
+    assert not list((tmp_path / "library").rglob("*"))

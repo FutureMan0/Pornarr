@@ -37,6 +37,7 @@ def json_response(request: httpx.Request, payload: object) -> httpx.Response:
         ("missingFiles", DownloadState.FAILED),
         ("uploading", DownloadState.SEEDING),
         ("pausedUP", DownloadState.PAUSED),
+        ("stoppedUP", DownloadState.PAUSED),
         ("queuedUP", DownloadState.COMPLETED),
         ("stalledUP", DownloadState.SEEDING),
         ("checkingUP", DownloadState.CHECKING),
@@ -44,7 +45,9 @@ def json_response(request: httpx.Request, payload: object) -> httpx.Response:
         ("allocating", DownloadState.QUEUED),
         ("downloading", DownloadState.DOWNLOADING),
         ("metaDL", DownloadState.METADATA),
+        ("forcedMetaDL", DownloadState.METADATA),
         ("pausedDL", DownloadState.PAUSED),
+        ("stoppedDL", DownloadState.PAUSED),
         ("queuedDL", DownloadState.QUEUED),
         ("stalledDL", DownloadState.STALLED),
         ("checkingDL", DownloadState.CHECKING),
@@ -61,7 +64,7 @@ def test_all_documented_qbittorrent_states_map_explicitly(
 
 
 def test_qbittorrent_state_mapping_has_no_silent_fallback() -> None:
-    assert len(QBITTORRENT_STATE_MAP) == 19
+    assert len(QBITTORRENT_STATE_MAP) == 22
     with pytest.raises(ValueError, match="unsupported qBittorrent state"):
         map_qbittorrent_state("new-state")
 

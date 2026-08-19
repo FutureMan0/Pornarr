@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from contextlib import asynccontextmanager
+from pathlib import Path
 from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -14,6 +15,8 @@ from pornarr_db.models.indexer import Indexer, IndexerStats
 from pornarr_integrations.indexers import IndexerCategory, Release
 from pornarr_worker import search
 from pornarr_worker.search import SearchTarget, read_search_state, run_search
+
+API_CONTRACT = Path(__file__).resolve().parents[2] / "docs" / "api-contract.md"
 
 
 class Redis:
@@ -319,3 +322,76 @@ async def test_search_sends_each_targets_categories_to_its_adapter() -> None:
     )
 
     assert adapter.categories == ("6000",)
+
+
+async def test_a_cached_indexer_does_not_remove_the_others_from_the_fan_out(monkeypatch) -> None:
+    """README.md L12-13: one search reaches every configured indexer.
+
+    The cache answers for the indexer that holds a matching release; every other
+    configured indexer is still queried live, and the search reports both.
+    """
+    redis = Redis()
+    cached = Release("one", "Cached Example", None, None, None, None, ())
+    live = Adapter(0)
+
+    async def cached_targets(_: str) -> list[SearchTarget]:
+        return [SearchTarget("cached-one", "", "", None, cached_releases=[cached])]
+
+    async def configured_targets(_: Redis) -> list[SearchTarget]:
+        return [
+            # The same indexer the cache can answer for: it must not be asked twice.
+            SearchTarget("cached-one", "https://one", "key", Adapter(0)),
+            SearchTarget("live-two", "https://two", "key", live),
+        ]
+
+    async def record_search_outcome(*_: object, **__: object) -> None:
+        return None
+
+    monkeypatch.setattr(search, "cached_targets", cached_targets)
+    monkeypatch.setattr(search, "configured_targets", configured_targets)
+    # The outcome recorder wants the database and a real indexer id; what is
+    # under test here is which targets the job composes, not what it writes.
+    monkeypatch.setattr(search, "record_search_outcome", record_search_outcome)
+
+    state = await search.SEARCH_INDEXERS_JOB.coroutine(
+        {"redis": redis}, "search-6", "user-1", "example"
+    )
+
+    assert state.statuses == {"cached-one": "cached", "live-two": "completed"}
+    assert state.results["cached-one"][0]["title"] == "Cached Example"
+    assert state.results["live-two"][0]["title"] == "Example"
+
+
+async def test_a_timing_out_or_unhealthy_indexer_is_a_status_the_contract_documents() -> None:
+    """docs/api-contract.md: a failing indexer is reported, never raised.
+
+    `INDEXER_TIMEOUT` and `INDEXER_UNHEALTHY` were listed there as error codes
+    and existed nowhere in the product. They could not: a fan-out across every
+    configured indexer cannot fail as a whole because one of them timed out, so
+    both outcomes are per-indexer statuses on a search that still succeeds. The
+    contract now documents that vocabulary, and this is what it has to match.
+    """
+    redis = Redis()
+
+    state = await run_search(
+        redis,
+        search_id="search-7",
+        user_id="user-1",
+        query="example",
+        targets=[
+            SearchTarget("slow", "https://slow", "key", Adapter(1)),
+            SearchTarget("down", "https://down", "key", None, "unhealthy"),
+        ],
+        timeout=0.01,
+    )
+
+    assert state.statuses == {"slow": "timed_out", "down": "unhealthy"}
+    assert state.cancelled is False
+    assert redis.events[-1][0] == "search.completed"
+
+    contract = API_CONTRACT.read_text(encoding="utf-8")
+
+    assert "INDEXER_TIMEOUT" not in contract
+    assert "INDEXER_UNHEALTHY" not in contract
+    for status in sorted(state.statuses.values()):
+        assert f"`{status}`" in contract

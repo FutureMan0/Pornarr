@@ -134,7 +134,14 @@ export function FeedRoute(): JSX.Element {
                       <img src={`/api/media/${item.media_id}/poster`} alt="" loading="lazy" />
                     }
                     action={(content) => (
-                      <Link to={`/library/${item.media_id}`} className="block rounded-md">
+                      // `article`, the tile's root, does not contribute to an
+                      // accessible name from content, so the link needs one of
+                      // its own or a screen reader hears nothing but "link".
+                      <Link
+                        to={`/library/${item.media_id}`}
+                        className="block rounded-md"
+                        aria-label={item.title}
+                      >
                         {content}
                       </Link>
                     )}

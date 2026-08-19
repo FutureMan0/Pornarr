@@ -185,6 +185,54 @@ describe("what is not here", () => {
     expect(screen.getByRole("link", { name: "Scan & import" }).getAttribute("href")).toBe(
       "/admin/scan",
     );
+    // The two screens the OIDC and API-key gap left unreachable: both sit in
+    // the tab bar over the areas, the same as every other section here.
+    expect(screen.getByRole("link", { name: "API keys" }).getAttribute("href")).toBe(
+      "/settings/api-keys",
+    );
+    expect(screen.getByRole("link", { name: "Single sign-on" }).getAttribute("href")).toBe(
+      "/settings/oidc",
+    );
+  });
+});
+
+describe("the OIDC and API-key sections", () => {
+  test("API keys is reachable from the tab bar and open to every account", async () => {
+    signedIn();
+    server.use(http.get("/api/account/api-keys", () => HttpResponse.json([])));
+    const user = userEvent.setup();
+
+    // Starts away from the index screen, which needs an administrator's
+    // `/api/admin/settings` this test has no reason to stub.
+    renderApp("/settings/root-folders");
+
+    await user.click(await screen.findByRole("link", { name: "API keys" }));
+
+    await screen.findByRole("heading", { name: "API keys", level: 1 });
+  });
+
+  test("Single sign-on is reachable from the tab bar", async () => {
+    signedIn();
+    server.use(http.get("/api/admin/oidc", () => HttpResponse.json([])));
+    const user = userEvent.setup();
+
+    renderApp("/settings/root-folders");
+
+    await user.click(await screen.findByRole("link", { name: "Single sign-on" }));
+
+    await screen.findByRole("heading", { name: "Single sign-on", level: 1 });
+  });
+
+  test("a guest sees API keys but not Single sign-on", async () => {
+    // `/settings/root-folders` redirects a guest to `/forbidden` and takes the
+    // tab bar with it, so this starts on the index screen instead, which a
+    // guest may see (`settings for a guest` above).
+    server.use(http.get("/api/auth/me", () => HttpResponse.json({ ...TEST_USER, role: "user" })));
+
+    renderApp("/settings");
+
+    await screen.findByRole("link", { name: "API keys" });
+    expect(screen.queryByRole("link", { name: "Single sign-on" })).toBeNull();
   });
 });
 

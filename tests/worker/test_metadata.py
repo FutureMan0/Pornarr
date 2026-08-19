@@ -259,3 +259,216 @@ async def test_wrong_match_keeps_the_provider_query_and_result_traceable(
         "tags": [],
         "provider_id": "wrong",
     }
+
+
+# --- The cascade as a table (ADR 0005, docs/pipelines/import.md step 5) -------
+#
+# "fingerprint 0.95, site plus date plus title 0.80, fuzzy title plus performer
+# 0.55, filename alone 0.30." One row per tier, each asserting the confidence
+# *and* which provider methods were reached, so a tier that answers correctly
+# for the wrong reason fails.
+
+
+class RecordingProvider(Provider):
+    """A provider that also remembers what it was asked, not only that it was asked."""
+
+    def __init__(
+        self,
+        *,
+        fingerprint: MetadataCandidate | Exception | None = None,
+        exact: MetadataCandidate | None = None,
+        fuzzy: list[MetadataCandidate] | None = None,
+    ) -> None:
+        super().__init__(fingerprint=fingerprint, exact=exact, fuzzy=fuzzy)
+        self.fingerprint_queries: list[tuple[str | None, str | None]] = []
+
+    async def find_by_fingerprint(
+        self, *, oshash: str | None, perceptual_hash: str | None
+    ) -> MetadataCandidate | None:
+        self.fingerprint_queries.append((oshash, perceptual_hash))
+        return await super().find_by_fingerprint(oshash=oshash, perceptual_hash=perceptual_hash)
+
+
+FUZZY_SUBJECT = MetadataSubject(
+    source_path="/data/torrents/Studio - Scene Title 1080p.mkv",
+    title="Scene Title",
+    performers=("Performer One",),
+)
+
+
+@pytest.mark.parametrize(
+    ("tier", "provider", "subject", "confidence", "reached"),
+    [
+        (
+            "fingerprint",
+            Provider(fingerprint=MetadataCandidate(title="Hashed Scene")),
+            MetadataSubject(
+                source_path="/data/torrents/scene.mkv",
+                title="Scene",
+                site="Studio",
+                release_date=date(2026, 1, 2),
+                performers=("Performer One",),
+                oshash="abc",
+            ),
+            0.95,
+            ["fingerprint"],
+        ),
+        (
+            "site, date and title",
+            Provider(
+                exact=MetadataCandidate(
+                    title="Scene", site="Studio", release_date=date(2026, 1, 2)
+                ),
+                fuzzy=[MetadataCandidate(title="Scene", performers=("Performer One",))],
+            ),
+            MetadataSubject(
+                source_path="/data/torrents/scene.mkv",
+                title="Scene",
+                site="Studio",
+                release_date=date(2026, 1, 2),
+                performers=("Performer One",),
+            ),
+            0.80,
+            ["site_date_title"],
+        ),
+        (
+            "fuzzy title plus performer",
+            Provider(fuzzy=[MetadataCandidate(title="Scene Title", performers=("Performer One",))]),
+            FUZZY_SUBJECT,
+            0.55,
+            ["fuzzy"],
+        ),
+        (
+            "the filename alone",
+            Provider(),
+            FUZZY_SUBJECT,
+            0.30,
+            ["fuzzy"],
+        ),
+    ],
+)
+async def test_each_cascade_tier_carries_its_documented_confidence(
+    session: AsyncSession,
+    tier: str,
+    provider: Provider,
+    subject: MetadataSubject,
+    confidence: float,
+    reached: list[str],
+) -> None:
+    resolution = await resolve_metadata_cascade(session, subject, [provider])
+
+    assert resolution.confidence == confidence, tier
+    # The tiers below the one that answered are never asked, and the tiers above
+    # it are asked exactly once.
+    assert provider.calls == reached, tier
+
+
+async def test_a_fingerprint_match_stops_the_cascade_before_the_cheaper_tiers(
+    session: AsyncSession,
+) -> None:
+    """The `Times.Never` half: a certain answer must not be second-guessed."""
+    provider = Provider(
+        fingerprint=MetadataCandidate(title="Hashed Scene"),
+        exact=MetadataCandidate(title="Other", site="Studio", release_date=date(2026, 1, 2)),
+        fuzzy=[MetadataCandidate(title="Other", performers=("Performer One",))],
+    )
+
+    resolution = await resolve_metadata_cascade(
+        session,
+        MetadataSubject(
+            source_path="/data/torrents/scene.mkv",
+            title="Scene",
+            site="Studio",
+            release_date=date(2026, 1, 2),
+            performers=("Performer One",),
+            oshash="abc",
+        ),
+        [provider],
+    )
+
+    assert resolution.candidate.title == "Hashed Scene"
+    assert "site_date_title" not in provider.calls
+    assert "fuzzy" not in provider.calls
+
+
+async def test_the_fingerprint_the_import_computed_is_the_key_the_provider_is_given(
+    session: AsyncSession,
+) -> None:
+    """ADR 0034: the oshash doubles as the StashDB lookup key, so it is computed once."""
+    provider = RecordingProvider(fingerprint=MetadataCandidate(title="Hashed Scene"))
+
+    await resolve_metadata_cascade(
+        session,
+        MetadataSubject(source_path="/data/torrents/scene.mkv", title="Scene", oshash="7e086add"),
+        [provider],
+    )
+
+    assert provider.fingerprint_queries == [("7e086add", None)]
+
+
+@pytest.mark.parametrize(
+    ("what", "candidate_title", "matched"),
+    [
+        ("an exact title", "The Midnight Session", True),
+        ("a title well above the 0.85 gate", "The Moonlight Session", True),
+        ("a title below it", "The Midnight Seance", False),
+        ("a different scene entirely", "An Afternoon Elsewhere", False),
+    ],
+)
+async def test_the_fuzzy_tier_only_accepts_a_title_above_the_documented_similarity(
+    session: AsyncSession, what: str, candidate_title: str, matched: bool
+) -> None:
+    provider = Provider(
+        fuzzy=[MetadataCandidate(title=candidate_title, performers=("Performer One",))]
+    )
+
+    resolution = await resolve_metadata_cascade(
+        session,
+        MetadataSubject(
+            source_path="/data/torrents/scene.mkv",
+            title="The Midnight Session",
+            performers=("Performer One",),
+        ),
+        [provider],
+    )
+
+    assert (resolution.tier is MetadataTier.FUZZY) is matched, what
+    assert resolution.confidence == (0.55 if matched else 0.30), what
+
+
+async def test_the_fuzzy_tier_also_requires_a_performer_in_common(session: AsyncSession) -> None:
+    """ "Fuzzy title plus performer": the title alone is not enough."""
+    provider = Provider(
+        fuzzy=[MetadataCandidate(title="The Midnight Session", performers=("Somebody Else",))]
+    )
+
+    resolution = await resolve_metadata_cascade(
+        session,
+        MetadataSubject(
+            source_path="/data/torrents/scene.mkv",
+            title="The Midnight Session",
+            performers=("Performer One",),
+        ),
+        [provider],
+    )
+
+    assert resolution.tier is MetadataTier.FILENAME
+
+
+async def test_the_filename_parser_answers_even_with_no_provider_configured(
+    session: AsyncSession,
+) -> None:
+    """ADR 0005: the filename parser is always on, beside the two remote adapters."""
+    resolution = await resolve_metadata_cascade(
+        session,
+        MetadataSubject.from_path(
+            Path("/data/torrents/Vixen - Golden Hour (2025-11-02) 1080p WEB-DL x264-GRP.mkv")
+        ),
+        [],
+    )
+
+    assert resolution.tier is MetadataTier.FILENAME
+    assert (resolution.candidate.studio, resolution.candidate.title) == ("Vixen", "Golden Hour")
+    assert resolution.candidate.release_date == date(2025, 11, 2)
+    log = await session.scalar(select(MetadataMatchLog))
+    assert log is not None and log.provider == "filename"

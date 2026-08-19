@@ -26,6 +26,12 @@ from tests.api.test_auth import login
 
 pytest_plugins = ("tests.api.test_auth",)
 
+# The rule `/api/setup/complete` enforces, met: twelve characters and more than
+# one character class. The old fixture value, "correct horse battery staple", is
+# long but is lower case only, and the server now refuses it for the same reason
+# the wizard always did.
+ADMIN_PASSWORD = "Correct-Horse-Battery-2026"
+
 
 @pytest.fixture(autouse=True)
 def _cipher() -> Iterator[None]:
@@ -74,7 +80,7 @@ async def test_fresh_instance_serves_only_setup_then_unlocks(app, client, tmp_pa
         "/api/setup/complete",
         json={
             "username": "admin",
-            "password": "correct horse battery staple",
+            "password": ADMIN_PASSWORD,
             "library_path": str(library_path),
         },
     )
@@ -109,7 +115,7 @@ async def test_fresh_instance_serves_only_setup_then_unlocks(app, client, tmp_pa
         "/api/setup/complete",
         json={
             "username": "second-admin",
-            "password": "correct horse battery staple",
+            "password": ADMIN_PASSWORD,
             "library_path": str(library_path),
         },
     )
@@ -120,7 +126,7 @@ async def test_fresh_instance_serves_only_setup_then_unlocks(app, client, tmp_pa
     )
     assert validation_after_setup.status_code == 409
     assert validation_after_setup.json()["code"] == "SETUP_ALREADY_COMPLETED"
-    await login(client, "admin", "correct horse battery staple")
+    await login(client, "admin", ADMIN_PASSWORD)
     assert (await client.get("/api/auth/me")).status_code == 200
 
 
@@ -146,7 +152,7 @@ async def test_setup_reports_a_different_filesystem(
         "/api/setup/complete",
         json={
             "username": "admin",
-            "password": "correct horse battery staple",
+            "password": ADMIN_PASSWORD,
             "library_path": str(library_path),
         },
     )
@@ -281,7 +287,7 @@ async def test_the_new_test_endpoints_refuse_once_the_instance_is_configured(
         "/api/setup/complete",
         json={
             "username": "admin",
-            "password": "correct horse battery staple",
+            "password": ADMIN_PASSWORD,
             "library_path": str(library_path),
         },
     )
@@ -325,7 +331,7 @@ async def test_completing_setup_configures_an_indexer_a_download_client_and_a_pr
         "/api/setup/complete",
         json={
             "username": "admin",
-            "password": "correct horse battery staple",
+            "password": ADMIN_PASSWORD,
             "library_path": str(library_path),
             "indexer": {
                 "implementation": "torznab",
@@ -386,7 +392,7 @@ async def test_completing_setup_rolls_back_everything_if_the_indexer_never_answe
         "/api/setup/complete",
         json={
             "username": "admin",
-            "password": "correct horse battery staple",
+            "password": ADMIN_PASSWORD,
             "library_path": str(library_path),
             "indexer": {
                 "implementation": "torznab",
@@ -417,7 +423,7 @@ async def test_setup_completes_without_any_of_the_optional_integrations(
         "/api/setup/complete",
         json={
             "username": "admin",
-            "password": "correct horse battery staple",
+            "password": ADMIN_PASSWORD,
             "library_path": str(library_path),
         },
     )
@@ -427,3 +433,79 @@ async def test_setup_completes_without_any_of_the_optional_integrations(
         assert await connection.scalar(select(Indexer.id)) is None
         assert await connection.scalar(select(DownloadClient.id)) is None
         assert await connection.scalar(select(MetadataProvider.id)) is None
+
+
+@pytest.mark.parametrize(
+    ("password", "why"),
+    [
+        ("x", "one character"),
+        ("Short1Weak!", "eleven characters, and the wizard refuses it too"),
+        ("correct horse battery staple", "long, but lower case only"),
+        ("ALLUPPERCASELETTERS", "long, but upper case only"),
+    ],
+)
+async def test_setup_refuses_a_password_the_wizard_would_refuse(
+    app, client, tmp_path: Path, password: str, why: str
+) -> None:
+    """The account step's rule, enforced where it cannot be skipped.
+
+    `/api/setup/complete` is exempt from CSRF and reachable by anything that can
+    see the port, so `passwordStrength` in the browser was the whole of the
+    twelve-character rule the product states. Each case here is refused for a
+    different half of that rule.
+    """
+    app.state.settings = app.state.settings.model_copy(update={"data_path": tmp_path})
+    app.state.settings.torrents_path.mkdir()
+    library_path = tmp_path / "library"
+    library_path.mkdir()
+
+    refused = await client.post(
+        "/api/setup/complete",
+        json={
+            "username": "admin",
+            "password": password,
+            "library_path": str(library_path),
+        },
+    )
+
+    assert refused.status_code == 422, why
+    body = refused.json()
+    # Its own code, not VALIDATION_FAILED: the frontend turns this one into "at
+    # least 12 characters from two kinds" and a next step, which a generic field
+    # error cannot say. The rule travels with the refusal so a client that is not
+    # the wizard can state it too.
+    assert body["code"] == "SETUP_PASSWORD_TOO_WEAK"
+    assert body["context"] == {"minimum_length": 12, "minimum_character_classes": 2}
+    # And nothing was created, so the refusal is not a message over a side effect.
+    async with app.state.engine.connect() as connection:
+        assert await connection.scalar(select(User.id)) is None
+        assert await connection.scalar(select(RootFolder.id)) is None
+    # The password is never echoed back, not even to say what was wrong with it.
+    # Only for the cases long enough for the search to mean something — a single
+    # character is a substring of half the words in any response.
+    if len(password) >= 8:
+        assert password not in refused.text
+
+
+async def test_setup_accepts_the_weakest_password_the_rule_allows(
+    app, client, tmp_path: Path
+) -> None:
+    """The boundary from the other side, so the refusal above is the rule and not a wall."""
+    app.state.settings = app.state.settings.model_copy(update={"data_path": tmp_path})
+    app.state.settings.torrents_path.mkdir()
+    library_path = tmp_path / "library"
+    library_path.mkdir()
+
+    completed = await client.post(
+        "/api/setup/complete",
+        # Exactly twelve characters, exactly two classes.
+        json={
+            "username": "admin",
+            "password": "abcdefghijk1",
+            "library_path": str(library_path),
+        },
+    )
+
+    assert completed.status_code == 201
+    await login(client, "admin", "abcdefghijk1")
+    assert (await client.get("/api/auth/me")).status_code == 200

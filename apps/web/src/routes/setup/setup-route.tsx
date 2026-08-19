@@ -1,18 +1,23 @@
 /** A focused first-run flow that records only configuration the API can honour. */
-import { Button, Input, Select, SkeletonRegion, SkeletonText } from "@pornarr/ui";
+import { Button, Checkbox, Input, Select, SkeletonRegion, SkeletonText } from "@pornarr/ui";
 import type { FormEvent, JSX } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Navigate } from "react-router-dom";
+import { useLogin } from "../../auth/session";
 import { ErrorScreen } from "../../errors/error-screen";
 import { isRetryableError, messageForError, nextStepForError } from "../../lib/api-error";
 import {
+  type FilterAction,
+  type FilterRuleKind,
+  type FilterRuleWrite,
   type SetupDownloadClientImplementation,
   type SetupDownloadClientWrite,
   type SetupIndexerImplementation,
   type SetupIndexerWrite,
   type SetupMetadataProviderImplementation,
   type SetupPathValidation,
+  useApplyFilterProfile,
   useCompleteSetup,
   useLibraryPathValidation,
   useSetupStatus,
@@ -32,14 +37,52 @@ const STEPS = [
 type SetupStep = (typeof STEPS)[number];
 type PasswordStrength = "weak" | "fair" | "strong";
 
+/**
+ * The six rules the database ships, in the order it ships them.
+ *
+ * `name` is the translation key and `kind` is what the API calls the rule.
+ * They differ only in case convention, and spelling both out here is what keeps
+ * a rename on either side from silently writing a rule nobody asked for.
+ */
 const FILTER_RULES = [
-  "term",
-  "tag",
-  "performer",
-  "minimumConfidence",
-  "unknownPerformerAge",
-  "unknownFileType",
-] as const;
+  { name: "term", kind: "term", patternLabel: "setup.filters.rules.term.pattern" },
+  { name: "tag", kind: "tag", patternLabel: "setup.filters.rules.tag.pattern" },
+  { name: "performer", kind: "performer", patternLabel: "setup.filters.rules.performer.pattern" },
+  {
+    name: "minimumConfidence",
+    kind: "minimum_confidence",
+    patternLabel: "setup.filters.rules.minimumConfidence.pattern",
+  },
+  { name: "unknownPerformerAge", kind: "unknown_performer_age" },
+  { name: "unknownFileType", kind: "unknown_file_type" },
+] as const satisfies readonly {
+  name: string;
+  kind: FilterRuleKind;
+  patternLabel?: string;
+}[];
+
+/**
+ * The kinds that match on something typed. The other three read a property of
+ * the file, which is also why they are the ones without a pattern label.
+ */
+const PATTERN_KINDS: ReadonlySet<FilterRuleKind> = new Set<FilterRuleKind>(
+  FILTER_RULES.filter((rule) => "patternLabel" in rule).map((rule) => rule.kind),
+);
+
+const FILTER_ACTIONS = ["reject", "quarantine", "allow"] as const;
+
+interface FilterDraft {
+  readonly enabled: boolean;
+  readonly pattern: string;
+  readonly action: FilterAction;
+}
+
+/** What migration 0004 inserts: every rule off, empty, and set to reject. */
+function shippedFilters(): Record<FilterRuleKind, FilterDraft> {
+  return Object.fromEntries(
+    FILTER_RULES.map((rule) => [rule.kind, { enabled: false, pattern: "", action: "reject" }]),
+  ) as Record<FilterRuleKind, FilterDraft>;
+}
 
 type IndexerFieldError = { baseUrl?: string; apiKey?: string };
 type DownloadClientFieldError = {
@@ -66,6 +109,8 @@ export function SetupRoute(): JSX.Element {
   const testIndexerConnection = useTestIndexerConnection();
   const testDownloadClientConnection = useTestDownloadClientConnection();
   const completeSetup = useCompleteSetup();
+  const login = useLogin();
+  const applyFilterProfile = useApplyFilterProfile();
   const [step, setStep] = useState<SetupStep>("account");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -106,6 +151,10 @@ export function SetupRoute(): JSX.Element {
       ? downloadClientUsername.trim() !== "" || downloadClientPassword !== ""
       : downloadClientApiKey.trim() !== "");
 
+  const [filters, setFilters] = useState<Record<FilterRuleKind, FilterDraft>>(shippedFilters);
+  const [filterError, setFilterError] = useState<Partial<Record<FilterRuleKind, string>>>({});
+  const enabledFilters = FILTER_RULES.filter((rule) => filters[rule.kind].enabled);
+
   const [metadataImplementation, setMetadataImplementation] =
     useState<SetupMetadataProviderImplementation>("stashdb");
   const [metadataApiKey, setMetadataApiKey] = useState("");
@@ -122,6 +171,15 @@ export function SetupRoute(): JSX.Element {
     setAccountError((current) => {
       if (current[field] === undefined) return current;
       const { [field]: _cleared, ...rest } = current;
+      return rest;
+    });
+  };
+
+  const editFilter = (kind: FilterRuleKind, change: Partial<FilterDraft>): void => {
+    setFilters((current) => ({ ...current, [kind]: { ...current[kind], ...change } }));
+    setFilterError((current) => {
+      if (current[kind] === undefined) return current;
+      const { [kind]: _cleared, ...rest } = current;
       return rest;
     });
   };
@@ -190,6 +248,15 @@ export function SetupRoute(): JSX.Element {
               {t("setup.library.crossFilesystem")}
             </p>
           )}
+          {/* The instance is up either way, so this is a warning rather than a
+              failure — but it must be said, because the rules the operator
+              turned on are the ones that are not running. */}
+          {login.isError || applyFilterProfile.isError ? (
+            <p role="alert" className="rounded-sm bg-warning-weak p-3 text-sm text-ink">
+              {t("setup.filters.applyFailed")}{" "}
+              {messageForError(applyFilterProfile.error ?? login.error)}
+            </p>
+          ) : null}
           <Link className="text-sm text-primary underline" to="/login">
             {t("setup.complete.signIn")}
           </Link>
@@ -329,17 +396,51 @@ export function SetupRoute(): JSX.Element {
       }
       return;
     }
+    if (step === "filters") {
+      // The same rule the API enforces, said before the request rather than
+      // after it: an enabled rule that matches on nothing matches everything or
+      // nothing, and either way it is not what the operator meant.
+      const nextError: Partial<Record<FilterRuleKind, string>> = {};
+      for (const rule of enabledFilters) {
+        if (!PATTERN_KINDS.has(rule.kind)) continue;
+        const pattern = filters[rule.kind].pattern.trim();
+        if (rule.kind === "minimum_confidence") {
+          const threshold = Number(pattern);
+          if (pattern === "" || Number.isNaN(threshold) || threshold < 0 || threshold > 1) {
+            nextError[rule.kind] = t("setup.filters.confidenceInvalid");
+          }
+          continue;
+        }
+        if (pattern === "") nextError[rule.kind] = t("setup.filters.patternRequired");
+      }
+      setFilterError(nextError);
+      if (Object.keys(nextError).length > 0) return;
+    }
     if (stepIndex < STEPS.length - 1) setStep(STEPS[stepIndex + 1] as SetupStep);
   };
 
-  const previous = (): void => {
-    if (stepIndex > 0) setStep(STEPS[stepIndex - 1] as SetupStep);
-  };
+  const filterWrites = (): FilterRuleWrite[] =>
+    FILTER_RULES.map((rule) => ({
+      kind: rule.kind,
+      // A rule that reads a property of the file takes no pattern, and the API
+      // refuses one rather than storing a value it would never read.
+      pattern: PATTERN_KINDS.has(rule.kind) ? filters[rule.kind].pattern.trim() : "",
+      action: filters[rule.kind].action,
+      enabled: filters[rule.kind].enabled,
+    }));
 
-  const submit = (event: FormEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    if (step === "summary") {
-      completeSetup.mutate({
+  /**
+   * Create the instance, then write the filter rules onto it.
+   *
+   * Two requests because `/api/setup/complete` does not carry them and the
+   * profile they belong to is administrator-owned (ADR 0018). Signing in
+   * between the two is the same request the "Sign in" link on the next screen
+   * makes, and it only happens when the operator turned something on: an
+   * instance with every rule off is already exactly what the migration seeded.
+   */
+  const completeAndApplyFilters = async (): Promise<void> => {
+    try {
+      await completeSetup.mutateAsync({
         username: username.trim(),
         password,
         library_path: libraryPath.trim(),
@@ -355,6 +456,28 @@ export function SetupRoute(): JSX.Element {
               },
             }),
       });
+    } catch {
+      // Nothing was created; the summary renders `completeSetup.error`.
+      return;
+    }
+    if (enabledFilters.length === 0) return;
+    try {
+      await login.mutateAsync({ username: username.trim(), password });
+      await applyFilterProfile.mutateAsync(filterWrites());
+    } catch {
+      // The instance exists and the rules did not land. The completion screen
+      // says both rather than reporting a success it cannot vouch for.
+    }
+  };
+
+  const previous = (): void => {
+    if (stepIndex > 0) setStep(STEPS[stepIndex - 1] as SetupStep);
+  };
+
+  const submit = (event: FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    if (step === "summary") {
+      void completeAndApplyFilters();
       return;
     }
     void next();
@@ -717,12 +840,67 @@ export function SetupRoute(): JSX.Element {
             <p className="text-base text-ink-muted">{t("setup.filters.body")}</p>
             <ul className="flex flex-col gap-2" aria-label={t("setup.filters.listLabel")}>
               {FILTER_RULES.map((rule) => (
-                <li key={rule} className="flex flex-col gap-1 rounded-sm bg-surface p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <h2 className="text-md text-ink">{t(`setup.filters.rules.${rule}.title`)}</h2>
-                    <span className="text-sm text-ink-muted">{t("setup.filters.off")}</span>
-                  </div>
-                  <p className="text-sm text-ink-muted">{t(`setup.filters.rules.${rule}.body`)}</p>
+                <li key={rule.kind} className="flex flex-col gap-2 rounded-sm bg-surface p-3">
+                  <Checkbox
+                    label={t(`setup.filters.rules.${rule.name}.title`)}
+                    checked={filters[rule.kind].enabled}
+                    aria-describedby={`setup-filter-${rule.kind}-body`}
+                    onChange={(event) => editFilter(rule.kind, { enabled: event.target.checked })}
+                  />
+                  <p id={`setup-filter-${rule.kind}-body`} className="text-sm text-ink-muted">
+                    {t(`setup.filters.rules.${rule.name}.body`)}
+                  </p>
+                  {/* The controls appear only once the rule is on. A pattern box
+                      beside a rule nobody turned on is a field that does
+                      nothing, six times over. */}
+                  {filters[rule.kind].enabled ? (
+                    <div className="flex flex-col gap-2">
+                      {"patternLabel" in rule ? (
+                        <div className="flex flex-col gap-2">
+                          <label
+                            className="text-sm text-ink-muted"
+                            htmlFor={`setup-filter-${rule.kind}-pattern`}
+                          >
+                            {t(rule.patternLabel)}
+                          </label>
+                          <Input
+                            id={`setup-filter-${rule.kind}-pattern`}
+                            name={`filter-${rule.kind}-pattern`}
+                            inputMode={rule.kind === "minimum_confidence" ? "decimal" : undefined}
+                            value={filters[rule.kind].pattern}
+                            {...(filterError[rule.kind] === undefined
+                              ? {}
+                              : { error: filterError[rule.kind] })}
+                            onChange={(event) =>
+                              editFilter(rule.kind, { pattern: event.target.value })
+                            }
+                          />
+                        </div>
+                      ) : null}
+                      <div className="flex flex-col gap-2">
+                        <label
+                          className="text-sm text-ink-muted"
+                          htmlFor={`setup-filter-${rule.kind}-action`}
+                        >
+                          {t("setup.filters.action")}
+                        </label>
+                        <Select
+                          id={`setup-filter-${rule.kind}-action`}
+                          name={`filter-${rule.kind}-action`}
+                          value={filters[rule.kind].action}
+                          onChange={(event) =>
+                            editFilter(rule.kind, { action: event.target.value as FilterAction })
+                          }
+                        >
+                          {FILTER_ACTIONS.map((action) => (
+                            <option key={action} value={action}>
+                              {t(`setup.filters.actions.${action}`)}
+                            </option>
+                          ))}
+                        </Select>
+                      </div>
+                    </div>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -805,7 +983,13 @@ export function SetupRoute(): JSX.Element {
                     )}
               </dd>
               <dt className="text-ink-muted">{t("setup.summary.filters")}</dt>
-              <dd className="m-0 text-ink">{t("setup.summary.filtersOff")}</dd>
+              <dd className="m-0 text-ink">
+                {enabledFilters.length === 0
+                  ? t("setup.summary.filtersOff")
+                  : enabledFilters
+                      .map((rule) => t(`setup.filters.rules.${rule.name}.title`))
+                      .join(", ")}
+              </dd>
               <dt className="text-ink-muted">{t("setup.summary.metadata")}</dt>
               <dd className="m-0 text-ink">
                 {metadataApiKey.trim() === ""
@@ -830,7 +1014,10 @@ export function SetupRoute(): JSX.Element {
             <span />
           )}
           {step === "summary" ? (
-            <Button type="submit" loading={completeSetup.isPending}>
+            <Button
+              type="submit"
+              loading={completeSetup.isPending || login.isPending || applyFilterProfile.isPending}
+            >
               {t("setup.complete.action")}
             </Button>
           ) : (

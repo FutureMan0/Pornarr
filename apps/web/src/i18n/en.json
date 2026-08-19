@@ -89,7 +89,11 @@
     "subtitle": "Sign in to continue.",
     "username": "Username",
     "password": "Password",
-    "submit": "Sign in"
+    "submit": "Sign in",
+    "oidc": {
+      "heading": "Or sign in with",
+      "signIn": "Sign in with {{name}}"
+    }
   },
   "setup": {
     "checking": "Checking setup",
@@ -131,33 +135,45 @@
     },
     "filters": {
       "title": "Review content filters",
-      "body": "Every filter starts off. You can configure rules after setup without changing what is already imported.",
-      "listLabel": "Content filters that start off",
-      "off": "Off",
+      "body": "Every filter starts off. Turn on the ones this instance should apply; they act on what is searched, grabbed and imported from now on, and never on what is already in the library.",
+      "listLabel": "Content filters",
+      "action": "When it matches",
+      "actions": {
+        "reject": "Reject it",
+        "quarantine": "Hold it for review",
+        "allow": "Allow it"
+      },
+      "patternRequired": "Say what this rule should match.",
+      "confidenceInvalid": "Enter a number between 0 and 1.",
+      "applyFailed": "The instance was created, but the content filters could not be saved. Sign in and set them again.",
       "rules": {
         "term": {
           "title": "Words and phrases",
-          "body": "Blocks media whose title or description matches a rule you add later."
+          "body": "Acts on media whose title or description contains this text.",
+          "pattern": "Word or phrase"
         },
         "tag": {
           "title": "Tags",
-          "body": "Blocks media carrying a tag you choose later."
+          "body": "Acts on media carrying this tag.",
+          "pattern": "Tag"
         },
         "performer": {
           "title": "Performers",
-          "body": "Blocks media featuring a performer you choose later."
+          "body": "Acts on media featuring this performer.",
+          "pattern": "Performer"
         },
         "minimumConfidence": {
           "title": "Metadata confidence",
-          "body": "Holds media whose metadata match falls below a threshold you choose later."
+          "body": "Acts on media whose metadata match falls below this threshold.",
+          "pattern": "Threshold between 0 and 1"
         },
         "unknownPerformerAge": {
           "title": "Unknown performer age",
-          "body": "Holds media when a matched performer’s age is not known."
+          "body": "Acts on media when a matched performer’s age is not known."
         },
         "unknownFileType": {
           "title": "Unknown file type",
-          "body": "Holds media when the imported file type is not recognised."
+          "body": "Acts on media when the imported file type is not recognised."
         }
       }
     },
@@ -324,7 +340,8 @@
       "title": "From indexers",
       "notSearched": "Indexer results will appear after you search.",
       "empty": "No indexer has returned a matching release yet.",
-      "indexerStatus": "Indexer search status"
+      "indexerStatus": "Indexer search status",
+      "scrollRegion": "Indexer results"
     },
     "status": {
       "pending": "Waiting",
@@ -333,7 +350,11 @@
       "failed": "Failed",
       "timedOut": "Timed out",
       "unhealthy": "Unavailable",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "malformedResponse": "Malformed response",
+      "authenticationFailed": "Authentication failed",
+      "unavailable": "Unsupported indexer type",
+      "unknown": "Unknown state"
     },
     "match": {
       "present": "In library",
@@ -373,7 +394,13 @@
     "filtersTitle": "Filters",
     "openFilters": "Filters",
     "clearFilters": "Clear all",
-    "applyFilters": "Show results"
+    "applyFilters": "Show results",
+    "confidence": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low",
+      "unknown": "Unknown"
+    }
   },
   "account": {
     "menu": "Account",
@@ -480,10 +507,13 @@
     "sections": {
       "label": "Settings areas",
       "general": "General",
+      "apiKeys": "API keys",
       "rootFolders": "Root folders",
       "quality": "Quality profiles",
+      "indexers": "Indexers",
       "metadata": "Metadata",
-      "peers": "Shared libraries"
+      "peers": "Shared libraries",
+      "oidc": "Single sign-on"
     },
     "title": "Settings",
     "loading": "Reading the settings…",
@@ -548,6 +578,59 @@
     "eventDays": "Keep watch events",
     "eventDaysHint": "Days of viewing history the recommender may use",
     "jumpTo": "Settings sections"
+  },
+  "indexers": {
+    "title": "Indexers",
+    "intro": "The indexers this server asks for releases. A search goes out to every one of them at once; the ones that answer fastest fill the results in first.",
+    "loading": "Loading indexers",
+    "configured": "Configured indexers",
+    "none": "No indexer is configured yet, so a search can only find what is already in the library. Add one below.",
+    "status": "Status",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "health": "Health",
+    "healthUnknown": "Not tested yet",
+    "healthHealthy": "Answering",
+    "healthUnhealthy": "Not answering",
+    "healthHalfOpen": "Being tried again",
+    "healthOther": "Reported as {{health}}",
+    "implementation": "Indexer type",
+    "implementations": {
+      "torznab": "Torznab",
+      "newznab": "Newznab"
+    },
+    "priority": "Priority",
+    "queries": "Searches",
+    "failures": "Failures",
+    "lastTested": "Last tested",
+    "never": "Never",
+    "lastErrorDetail": "The indexer last said: {{reason}}",
+    "searchCategories": "Search categories",
+    "allCategories": "All categories",
+    "test": "Test",
+    "testIndexer": "Test {{name}}",
+    "edit": "Edit",
+    "editIndexer": "Edit {{name}}",
+    "save": "Save changes",
+    "cancelEdit": "Discard changes",
+    "remove": "Remove",
+    "removeIndexer": "Remove {{name}}",
+    "confirmRemoval": "Remove {{name}}? Searches stop going to it, and every release Pornarr had cached from it is discarded along with the row.",
+    "confirmRemovalAction": "Remove indexer",
+    "cancelRemoval": "Keep indexer",
+    "addTitle": "Add an indexer",
+    "addHint": "Give the base URL of the indexer's API and the key it issued you. Test it afterwards to read back the categories it offers.",
+    "name": "Name",
+    "namePlaceholder": "Torznab",
+    "baseUrl": "Base URL",
+    "baseUrlPlaceholder": "https://indexer.example/api",
+    "apiKey": "API key",
+    "apiKeyHint": "The key is stored encrypted and never shown again.",
+    "apiKeyKeepHint": "Leave the key blank to keep the one already stored. Typing a new one replaces it.",
+    "searchCategoriesPlaceholder": "6000, 6010",
+    "searchCategoriesHint": "The category ids this indexer is asked for, separated by commas. Leave it empty to ask for everything.",
+    "enable": "Search this indexer",
+    "add": "Add indexer"
   },
   "rootFolders": {
     "title": "Root folders",
@@ -762,6 +845,46 @@
     "INTERNAL_ERROR": "The server ran into a problem. Check the server log.",
     "SERVICE_UNAVAILABLE": "The server is not ready yet. Try again shortly.",
     "NETWORK_UNREACHABLE": "The server could not be reached. Check that it is running.",
+    "SETUP_PASSWORD_TOO_WEAK": "That administrator password is shorter than 12 characters, or uses only one kind of character.",
+    "ROOT_FOLDER_DISABLED": "That root folder is disabled, so nothing can be written to it.",
+    "OIDC_AUTHENTICATION_FAILED": "The identity provider did not confirm this sign-in.",
+    "OIDC_STATE_INVALID": "This sign-in took too long, or was started in another browser.",
+    "OIDC_IDENTITY_NOT_ALLOWED": "The identity provider's policy does not allow this identity to sign in here.",
+    "OIDC_IDENTITY_ALREADY_LINKED": "That identity provider account is already linked to a different Pornarr account.",
+    "OIDC_USERNAME_CONFLICT": "The username from the identity provider already belongs to a local account.",
+    "OIDC_UNLINK_WOULD_LOCK_ACCOUNT": "Unlinking this provider would leave the account with no way to sign in.",
+    "USER_CANNOT_DEACTIVATE_SELF": "An administrator cannot deactivate their own account.",
+    "INDEXER_CONNECTION_FAILED": "The indexer did not answer, or answered with something unusable.",
+    "DOWNLOAD_CLIENT_CONNECTION_FAILED": "The download client did not answer, or refused these credentials.",
+    "DOWNLOAD_CLIENT_UNAVAILABLE": "No healthy download client is configured for this release's protocol.",
+    "TORZNAB_RESPONSE_INVALID": "The Torznab indexer answered with something this version cannot read.",
+    "STASHDB_RESPONSE_INVALID": "StashDB answered with something this version cannot read.",
+    "TPDB_RESPONSE_INVALID": "ThePornDB answered with something this version cannot read.",
+    "PEER_UNAVAILABLE": "The peer library did not answer, or answered with something unusable.",
+    "REQUEST_QUOTA_EXCEEDED": "You already have as many active requests as your quota allows.",
+    "REQUEST_ACTION_INVALID": "This request has no download left to act on.",
+    "REQUEST_NOT_GRABBABLE": "This request cannot accept a release while it is in this state.",
+    "REQUEST_CANCELLATION_FAILED": "The download client did not cancel this request.",
+    "REQUEST_CONTROL_FAILED": "The download client did not carry out that action.",
+    "REQUEST_PRIORITY_UPDATE_FAILED": "The download client did not change this request's priority.",
+    "RELEASE_NOT_FOUND": "That release is no longer in the search cache.",
+    "RELEASE_EXPIRED": "That release has expired from the search cache.",
+    "RELEASE_BLOCKED": "That release is on the blocklist after an earlier failure.",
+    "RELEASE_IN_LIBRARY": "That title is already in the library.",
+    "RELEASE_FILTERED": "A content filter rejects that release.",
+    "RELEASE_PROTOCOL_UNSUPPORTED": "No configured download client handles that release's protocol.",
+    "GRAB_SUBMISSION_FAILED": "The download client was reachable but refused to take the release.",
+    "MONITOR_QUALITY_PROFILE_REQUIRED": "A monitor needs a quality profile, and none is selected.",
+    "MONITOR_ALREADY_EXISTS": "A monitor for that search already exists.",
+    "QUARANTINE_REVIEW_INVALID": "This quarantine review cannot be applied as it stands.",
+    "COLLECTION_ALREADY_EXISTS": "You already have a collection with that name.",
+    "SEND_ALREADY_EXISTS": "You have already sent that title to this person.",
+    "SEND_TO_SELF": "A title cannot be sent to yourself.",
+    "SHORT_ALREADY_EXISTS": "A short already starts at that point in this title.",
+    "SHORTS_NO_MARKERS": "This title has no scene markers to cut a short from.",
+    "TRANSCODE_LIMIT_REACHED": "This server is already running as many transcodes as it allows.",
+    "RANGE_NOT_SATISFIABLE": "The player asked for a part of this file that is not there.",
+    "FILTER_CONFIGURATION_INVALID": "This content filter rule is not valid as it stands.",
     "unknown": "Something went wrong ({{code}}).",
     "generic": "Something went wrong. Try again.",
     "brokenTitle": "This screen could not be displayed.",
@@ -796,6 +919,46 @@
     "INTERNAL_ERROR": "Try again. If it keeps happening, check the server log.",
     "SERVICE_UNAVAILABLE": "Wait for the server to finish starting, then try again.",
     "NETWORK_UNREACHABLE": "Check that the server is running and reachable, then try again.",
+    "SETUP_PASSWORD_TOO_WEAK": "Use at least 12 characters from two kinds: lower case, upper case, digits, symbols.",
+    "ROOT_FOLDER_DISABLED": "Enable that root folder in the administration area, or choose another one.",
+    "OIDC_AUTHENTICATION_FAILED": "Start the sign-in again, or sign in with a username and password instead.",
+    "OIDC_STATE_INVALID": "Go back to the sign-in screen and start the sign-in again in this browser.",
+    "OIDC_IDENTITY_NOT_ALLOWED": "Ask an administrator to allow this identity, or sign in with another account.",
+    "OIDC_IDENTITY_ALREADY_LINKED": "Sign in as that account and unlink it first, or link a different provider account.",
+    "OIDC_USERNAME_CONFLICT": "Sign in to the local account and link the provider from there, or ask an administrator to rename one of them.",
+    "OIDC_UNLINK_WOULD_LOCK_ACCOUNT": "Set a password or link another provider first, then unlink this one.",
+    "USER_CANNOT_DEACTIVATE_SELF": "Ask another administrator to deactivate it, so somebody keeps access to this instance.",
+    "INDEXER_CONNECTION_FAILED": "Check the base URL and API key, and that the indexer is running, then test it again.",
+    "DOWNLOAD_CLIENT_CONNECTION_FAILED": "Check the host, port and credentials, and that the client is running, then test it again.",
+    "DOWNLOAD_CLIENT_UNAVAILABLE": "Add or repair a download client for that protocol, then try again.",
+    "TORZNAB_RESPONSE_INVALID": "Check the indexer's base URL and API key, then test the connection again.",
+    "STASHDB_RESPONSE_INVALID": "Check the StashDB key and endpoint in the administration area, then try again.",
+    "TPDB_RESPONSE_INVALID": "Check the ThePornDB key and endpoint in the administration area, then try again.",
+    "PEER_UNAVAILABLE": "Check that the peer is online and still trusts this instance, then try again.",
+    "REQUEST_QUOTA_EXCEEDED": "Wait for a request to finish, or cancel one, before requesting another.",
+    "REQUEST_ACTION_INVALID": "Reload the request and choose an action its current state allows.",
+    "REQUEST_NOT_GRABBABLE": "Reload the request; if it is already downloading, cancel it before grabbing another release.",
+    "REQUEST_CANCELLATION_FAILED": "Try again. If it keeps failing, cancel the download in the client itself.",
+    "REQUEST_CONTROL_FAILED": "Try again. If it keeps failing, check the download client's own log.",
+    "REQUEST_PRIORITY_UPDATE_FAILED": "Try again. If it keeps failing, change the priority in the download client itself.",
+    "RELEASE_NOT_FOUND": "Search again, then grab the release from the fresh results.",
+    "RELEASE_EXPIRED": "Search again, then grab the release from the fresh results.",
+    "RELEASE_BLOCKED": "Choose another release, or clear the blocklist entry before grabbing this one again.",
+    "RELEASE_IN_LIBRARY": "Open the title in the library instead of downloading it again.",
+    "RELEASE_FILTERED": "Choose another release, or change the filter rule that rejects it.",
+    "RELEASE_PROTOCOL_UNSUPPORTED": "Add a download client for that protocol, then grab the release again.",
+    "GRAB_SUBMISSION_FAILED": "Try again. If it keeps failing, check the download client's own log.",
+    "MONITOR_QUALITY_PROFILE_REQUIRED": "Create or select a quality profile, then save the monitor again.",
+    "MONITOR_ALREADY_EXISTS": "Open the monitor that already exists instead of creating a second one.",
+    "QUARANTINE_REVIEW_INVALID": "Preview the bulk action first, and list every item once under the selected reason.",
+    "COLLECTION_ALREADY_EXISTS": "Choose a different name, or open the collection that already exists.",
+    "SEND_ALREADY_EXISTS": "Open the send you already made instead of sending the title twice.",
+    "SEND_TO_SELF": "Choose a different recipient.",
+    "SHORT_ALREADY_EXISTS": "Choose a different start point, or edit the short that is already there.",
+    "SHORTS_NO_MARKERS": "Add scene markers to the title first, then generate shorts from them.",
+    "TRANSCODE_LIMIT_REACHED": "Wait for a transcode to finish, then start playback again.",
+    "RANGE_NOT_SATISFIABLE": "Reload the page, then start playback again.",
+    "FILTER_CONFIGURATION_INVALID": "Give a text rule something to match on, leave a file-property rule's pattern empty, and set a minimum confidence between 0 and 1.",
     "unknown": "Try again, and quote this code if it keeps happening.",
     "generic": "Try again. If it keeps happening, reload the page."
   },
@@ -907,7 +1070,8 @@
   "continueWatching": {
     "title": "Continue watching",
     "loading": "Loading",
-    "empty": "Nothing in progress."
+    "empty": "Nothing in progress.",
+    "resumeLink": "Continue watching {{title}}"
   },
   "collections": {
     "title": "Collections",
@@ -1011,7 +1175,14 @@
     "openQueue": "Queue →",
     "storageNone": "No library folder yet",
     "recentlyAdded": "Recently added",
-    "openLibrary": "Open library →"
+    "openLibrary": "Open library →",
+    "transcoding": "Transcoding",
+    "transcodingEmpty": "Nothing detected yet.",
+    "transcodingSoftwareOnly": "No hardware acceleration is available; every stream is transcoded on the CPU.",
+    "transcodingAvailable": "{{acceleration}} — {{codecs}}",
+    "transcodingRejected": "{{acceleration}} unavailable — {{reason}}",
+    "transcodingRejectedGeneral": "Not available — {{reason}}",
+    "transcodingSlots": "{{hardwareInUse}} of {{hardwareLimit}} hardware slots in use · {{softwareInUse}} of {{softwareLimit}} software slots in use"
   },
   "moderation": {
     "title": "Ratings & comments",
@@ -1133,5 +1304,55 @@
     "expired": "expired",
     "usedBy": "used by {{name}}",
     "revoke": "Withdraw"
+  },
+  "oidcProviders": {
+    "title": "Single sign-on",
+    "intro": "A provider lets people sign in with an account they already have — a company identity system, or another service that speaks OIDC — instead of a Pornarr password. ADR 0016 ships this alongside local accounts.",
+    "loading": "Loading providers…",
+    "configured": "Configured providers",
+    "none": "No provider is configured yet, so nobody can sign in this way.",
+    "status": "Status",
+    "enabled": "In use",
+    "disabled": "Not in use",
+    "issuer": "Issuer",
+    "issuerPlaceholder": "https://issuer.example.com",
+    "lastTested": "Last tested",
+    "never": "Never",
+    "test": "Test",
+    "testProvider": "Test the connection to {{name}}",
+    "remove": "Remove",
+    "removeProvider": "Remove {{name}}",
+    "confirmRemoval": "Remove {{name}}? Nobody will be able to sign in with it anymore, and anyone still linked to it needs another way in.",
+    "confirmRemovalAction": "Remove provider",
+    "cancelRemoval": "Keep provider",
+    "addTitle": "Add a provider",
+    "addHint": "The issuer, client ID and client secret come from the provider itself — most call this an OIDC or OAuth application.",
+    "name": "Name",
+    "namePlaceholder": "e.g. Company sign-in",
+    "clientId": "Client ID",
+    "clientSecret": "Client secret",
+    "clientSecretHint": "Stored here and never shown again.",
+    "enable": "Offer this provider on the sign-in screen",
+    "add": "Add provider"
+  },
+  "apiKeys": {
+    "title": "API keys",
+    "intro": "A key lets a script or another Pornarr act as you without your password. It is the credential federation.md asks a user to hand over.",
+    "loading": "Loading API keys…",
+    "addTitle": "Create a key",
+    "name": "Name",
+    "namePlaceholder": "e.g. Backup script",
+    "create": "Create key",
+    "freshTitle": "The key",
+    "freshHint": "Shown once. Copy it now — the server keeps only a hash and cannot show it again.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "configured": "Your keys",
+    "none": "No keys yet.",
+    "created": "Created {{when}}",
+    "lastUsed": "Last used {{when}}",
+    "neverUsed": "Never used",
+    "revoke": "Revoke",
+    "revokeKey": "Revoke {{name}}"
   }
 }

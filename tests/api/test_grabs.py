@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
@@ -157,6 +158,38 @@ async def test_grab_submits_once_and_reuses_the_same_job_for_a_double_click(app,
     assert job is not None
     assert job.release_guid == release.guid
     assert job.client_job_id == release.info_hash
+
+
+async def test_creating_and_grabbing_a_request_publishes_the_documented_events(app, client) -> None:
+    """`docs/api-contract.md` L46-47 names `request.created`, `download.queued`
+    and `download.started`; nothing published any of them before this.
+    """
+    user = await create_user(app)
+    adapter = RecordingTorrentAdapter()
+    app.state.download_client_adapters = {"qbittorrent": adapter}
+    async with AsyncSession(app.state.engine, expire_on_commit=False) as session:
+        release = await _release(session)
+        await _torrent_client(session)
+        await session.commit()
+    await login(client, user.username, "correct horse battery staple")
+
+    request_id = await _request(client)
+
+    assert app.state.redis.events[-1]["type"] == "request.created"
+    assert app.state.redis.events[-1]["user_id"] == str(user.id)
+    assert json.loads(app.state.redis.events[-1]["data"]) == {"request_id": request_id}
+
+    grabbed = await client.post(
+        f"/api/requests/{request_id}/grab",
+        json={"release_id": str(release.id)},
+        headers=csrf_headers(client),
+    )
+
+    assert grabbed.status_code == 201
+    job_id = grabbed.json()["download_job_id"]
+    published = [(event["type"], json.loads(event["data"])) for event in app.state.redis.events]
+    assert ("download.queued", {"job_id": job_id}) in published
+    assert ("download.started", {"job_id": job_id}) in published
 
 
 async def test_expired_release_is_refused_before_client_routing(app, client) -> None:

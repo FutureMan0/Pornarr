@@ -18,6 +18,7 @@
       ".codegraph",
       "docs/design/mockups",
       "docs/design/pornarr-ui",
+      ".gauntlet",
       ".claude"
     ]
   },

@@ -59,6 +59,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "generate_artwork_job",
         "regenerate_library_artwork_job",
         "generate_perceptual_hash_job",
+        "probe_media_file_job",
     ]
     assert [job.name for job in settings.IndexerWorkerSettings.functions] == [
         "search_indexers",

@@ -42,9 +42,20 @@ migrate:
 backup:
 	bash infrastructure/scripts/backup.sh
 
+# `--no-sync` on every `uv run` below, and it is not a speed tweak.
+#
+# `uv run` re-syncs the project's virtualenv before it runs anything, which
+# rewrites files under `/app/.venv`. The development API is started with
+# `--reload` and the workers with `--watch /app`, and both watch the whole tree
+# — so a `make test` or a `make typecheck` restarted the running API and every
+# worker underneath whatever was in flight. Requests answered 2xx and their
+# transactions were rolled back with the process. The image already carries a
+# synced environment, so there is nothing for these to sync; a dependency change
+# is picked up by `make rebuild`.
+#
 ## revision: create a migration from model changes (m="message")
 revision:
-	docker compose exec api uv run alembic revision --autogenerate -m "$(m)"
+	docker compose exec api uv run --no-sync alembic revision --autogenerate -m "$(m)"
 
 ## shell: open a shell in the api container
 shell:
@@ -56,30 +67,30 @@ psql:
 
 ## lint: run all linters and formatters in check mode
 lint:
-	docker compose exec api uv run ruff check .
-	docker compose exec api uv run ruff format --check .
+	docker compose exec api uv run --no-sync ruff check .
+	docker compose exec api uv run --no-sync ruff format --check .
 	docker compose exec web pnpm run lint
 
 ## format: apply formatting
 format:
-	docker compose exec api uv run ruff check --fix .
-	docker compose exec api uv run ruff format .
+	docker compose exec api uv run --no-sync ruff check --fix .
+	docker compose exec api uv run --no-sync ruff format .
 	docker compose exec web pnpm run format
 
 ## typecheck: run type checkers
 typecheck:
-	docker compose exec api uv run ty check
+	docker compose exec api uv run --no-sync ty check
 	docker compose exec web pnpm run typecheck
 
 ## test: unit tests only
 test:
-	docker compose exec api uv run pytest -m "not integration"
+	docker compose exec api uv run --no-sync pytest -m "not integration"
 	docker compose exec web pnpm run test
 
 ## test-integration: integration tests against real clients
 test-integration:
 	docker compose -f infrastructure/docker/compose.test.yml up -d --wait
-	docker compose exec api uv run pytest -m integration
+	docker compose exec api uv run --no-sync pytest -m integration
 	docker compose -f infrastructure/docker/compose.test.yml down
 
 ## test-e2e: Playwright suite against the running stack
@@ -88,12 +99,12 @@ test-e2e:
 
 ## openapi: regenerate the committed API contract
 openapi:
-	docker compose exec api uv run python -m pornarr_api.scripts.export_openapi > openapi.json
+	docker compose exec api uv run --no-sync python -m pornarr_api.scripts.export_openapi > openapi.json
 	pnpm --filter @pornarr/api-client run generate
 
 ## check: everything CI blocks on, locally
 check: lint typecheck test
-	docker compose exec api uv run alembic check
+	docker compose exec api uv run --no-sync alembic check
 
 .PHONY: help setup up down logs rebuild scan-image migrate backup revision shell psql \
         lint format typecheck test test-integration test-e2e openapi check

@@ -93,3 +93,54 @@ def test_running_job_without_a_client_or_moving_average_is_unknown() -> None:
     assert running_estimate(
         client_seconds=None, remaining_bytes=8_000, average_bytes_per_second=0
     ).is_unknown
+
+
+@pytest.mark.parametrize(
+    ("seeders", "low_seconds", "high_seconds"),
+    [
+        # ADR 0002: the seeder factor is the whole of the difference. Ten seeders
+        # or more and a torrent is estimated exactly as usenet is; below that it
+        # is scaled down in proportion, and at zero there is no estimate at all.
+        (1, 640, 960),
+        (2, 320, 480),
+        (5, 128, 192),
+        (9, 71, 106),
+        (10, 64, 96),
+        (100, 64, 96),
+    ],
+)
+def test_the_seeder_factor_is_what_makes_a_torrent_estimate_differ_from_usenet(
+    seeders: int, low_seconds: int, high_seconds: int
+) -> None:
+    usenet = search_estimate(Protocol.USENET, 8_000, 100, seeders=None)
+    torrent = search_estimate(Protocol.TORRENT, 8_000, 100, seeders=seeders)
+
+    assert (usenet.low_seconds, usenet.high_seconds) == (64, 96)
+    assert (torrent.low_seconds, torrent.high_seconds) == (low_seconds, high_seconds)
+    assert torrent.confidence is usenet.confidence is Confidence.LOW
+
+
+def test_a_usenet_release_with_no_seeders_is_still_estimated() -> None:
+    """The negative space of the seeder rule: it must not fire on usenet.
+
+    A usenet release has no seeders by definition, so treating "no seeders" as
+    "no estimate" for both protocols would silently remove every usenet
+    estimate there is.
+    """
+    assert not search_estimate(Protocol.USENET, 8_000, 100, seeders=None).is_unknown
+    assert not search_estimate(Protocol.USENET, 8_000, 100, seeders=0).is_unknown
+    assert search_estimate(Protocol.TORRENT, 8_000, 100, seeders=0).is_unknown
+
+
+def test_queue_position_is_the_one_thing_that_does_not_differ_by_protocol() -> None:
+    """ADR 0002 says queue semantics differ between the protocols. They do not.
+
+    `queued_estimate` takes a priority and a list of waiting jobs and nothing
+    else - there is no protocol argument and no per-protocol lane, so a usenet
+    job and a torrent job of the same priority wait behind each other exactly
+    as they would behind their own kind. Recorded here rather than asserted as
+    correct: see .gauntlet/pieces/04-acquisition/HOLES.md 04.6.
+    """
+    mixed = [Job(priority=80, remaining_seconds=100), Job(priority=80, remaining_seconds=200)]
+
+    assert queued_estimate(priority=80, waiting=mixed).low_seconds == 240

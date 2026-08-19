@@ -272,6 +272,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/filters/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Filter Profile */
+        get: operations["admin_read_filter_profile"];
+        /** Update Filter Profile */
+        put: operations["admin_update_filter_profile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/indexers": {
         parameters: {
             query?: never;
@@ -298,7 +316,16 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        /**
+         * Update Indexer
+         * @description Change a configured indexer in place.
+         *
+         *     ADR 0002 L9: indexers are managed through the administration UI. Without this
+         *     route the only edit was delete-and-recreate, which discards the indexer's
+         *     health, its statistics and — through `ON DELETE CASCADE` on
+         *     `release_cache.indexer_id` — every release cached from it.
+         */
+        put: operations["admin_update_indexer"];
         post?: never;
         /** Delete Indexer */
         delete: operations["admin_delete_indexer"];
@@ -1052,6 +1079,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Users */
+        get: operations["admin_list_users"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set User State
+         * @description Deactivate or restore an account, ending its sessions when it is shut out.
+         */
+        patch: operations["admin_set_user_state"];
+        trace?: never;
+    };
     "/api/auth/login": {
         parameters: {
             query?: never;
@@ -1129,6 +1193,28 @@ export interface paths {
         };
         /** Oidc Callback */
         get: operations["auth_oidc_callback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/oidc/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Enabled Providers
+         * @description The buttons `/login` gets to draw. Reachable without an account, by
+         *     design: that screen is where this is needed and nobody there has a
+         *     session yet.
+         */
+        get: operations["auth_list_enabled_providers"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3178,6 +3264,67 @@ export interface components {
             total: number;
         };
         /**
+         * FilterAction
+         * @enum {string}
+         */
+        FilterAction: "allow" | "quarantine" | "reject";
+        /** FilterProfileResponse */
+        FilterProfileResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Rules */
+            rules: components["schemas"]["FilterRuleResponse"][];
+            scope: components["schemas"]["FilterProfileScope"];
+        };
+        /**
+         * FilterProfileScope
+         * @enum {string}
+         */
+        FilterProfileScope: "global" | "user";
+        /** FilterProfileWrite */
+        FilterProfileWrite: {
+            /** Rules */
+            rules: components["schemas"]["FilterRuleWrite"][];
+        };
+        /**
+         * FilterRuleKind
+         * @enum {string}
+         */
+        FilterRuleKind: "term" | "tag" | "performer" | "minimum_confidence" | "unknown_performer_age" | "unknown_file_type";
+        /** FilterRuleResponse */
+        FilterRuleResponse: {
+            action: components["schemas"]["FilterAction"];
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["FilterRuleKind"];
+            /** Pattern */
+            pattern: string;
+        };
+        /** FilterRuleWrite */
+        FilterRuleWrite: {
+            /** @default reject */
+            action: components["schemas"]["FilterAction"];
+            /**
+             * Enabled
+             * @default false
+             */
+            enabled: boolean;
+            kind: components["schemas"]["FilterRuleKind"];
+            /**
+             * Pattern
+             * @default
+             */
+            pattern: string;
+        };
+        /**
          * GenerateShortsWrite
          * @description How many clips to cut, and how long each should be.
          */
@@ -3337,6 +3484,31 @@ export interface components {
             grabs: number;
             /** Queries */
             queries: number;
+        };
+        /** IndexerUpdate */
+        IndexerUpdate: {
+            /** Api Key */
+            api_key?: string | null;
+            /** Base Url */
+            base_url: string;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Implementation */
+            implementation: string;
+            /** Name */
+            name: string;
+            /**
+             * Priority
+             * @default 0
+             */
+            priority: number;
+            /** Protocol */
+            protocol: string;
+            /** Search Categories */
+            search_categories?: string[] | null;
         };
         /** IndexerWrite */
         IndexerWrite: {
@@ -3841,6 +4013,23 @@ export interface components {
             provider_id: string;
             /** Provider Name */
             provider_name: string;
+        };
+        /**
+         * OidcProviderSummary
+         * @description What the sign-in screen may know before anybody has a session.
+         *
+         *     An id and a name, and nothing that belongs to `/api/admin/oidc`: not the
+         *     issuer, not the client id, and not a disabled provider, which this instance
+         *     has chosen not to offer and should not have to explain to a stranger.
+         */
+        OidcProviderSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** OverviewResponse */
         OverviewResponse: {
@@ -5081,11 +5270,31 @@ export interface components {
             /** Value */
             value?: number | null;
         };
+        /** UserResponse */
+        UserResponse: {
+            /** Display Name */
+            display_name: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Active */
+            is_active: boolean;
+            role: components["schemas"]["UserRole"];
+            /** Username */
+            username: string;
+        };
         /**
          * UserRole
          * @enum {string}
          */
         UserRole: "admin" | "user";
+        /** UserStateUpdate */
+        UserStateUpdate: {
+            /** Is Active */
+            is_active: boolean;
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -5717,6 +5926,59 @@ export interface operations {
             };
         };
     };
+    admin_read_filter_profile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilterProfileResponse"];
+                };
+            };
+        };
+    };
+    admin_update_filter_profile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FilterProfileWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilterProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     admin_list_indexers: {
         parameters: {
             query?: never;
@@ -5752,6 +6014,41 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndexerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_update_indexer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                indexer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IndexerUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7334,6 +7631,61 @@ export interface operations {
             };
         };
     };
+    admin_list_users: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"][];
+                };
+            };
+        };
+    };
+    admin_set_user_state: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserStateUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     auth_login: {
         parameters: {
             query?: never;
@@ -7559,6 +7911,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_list_enabled_providers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OidcProviderSummary"][];
                 };
             };
         };

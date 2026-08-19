@@ -89,7 +89,11 @@
     "subtitle": "Melde dich an, um fortzufahren.",
     "username": "Benutzername",
     "password": "Passwort",
-    "submit": "Anmelden"
+    "submit": "Anmelden",
+    "oidc": {
+      "heading": "Oder anmelden mit",
+      "signIn": "Mit {{name}} anmelden"
+    }
   },
   "setup": {
     "checking": "Einrichtung wird geprüft",
@@ -131,33 +135,45 @@
     },
     "filters": {
       "title": "Inhaltsfilter prüfen",
-      "body": "Alle Filter beginnen ausgeschaltet. Du kannst Regeln nach der Einrichtung konfigurieren, ohne bereits importierte Medien zu ändern.",
-      "listLabel": "Inhaltsfilter, die ausgeschaltet beginnen",
-      "off": "Aus",
+      "body": "Alle Filter beginnen ausgeschaltet. Schalte die ein, die diese Instanz anwenden soll; sie gelten ab jetzt für Suche, Übernahme und Import und nie für bereits vorhandene Medien.",
+      "listLabel": "Inhaltsfilter",
+      "action": "Bei einem Treffer",
+      "actions": {
+        "reject": "Ablehnen",
+        "quarantine": "Zur Prüfung zurückhalten",
+        "allow": "Zulassen"
+      },
+      "patternRequired": "Gib an, worauf diese Regel zutreffen soll.",
+      "confidenceInvalid": "Gib eine Zahl zwischen 0 und 1 ein.",
+      "applyFailed": "Die Instanz wurde erstellt, aber die Inhaltsfilter konnten nicht gespeichert werden. Melde dich an und setze sie erneut.",
       "rules": {
         "term": {
           "title": "Wörter und Phrasen",
-          "body": "Hält Medien zurück, deren Titel oder Beschreibung einer später hinzugefügten Regel entspricht."
+          "body": "Gilt für Medien, deren Titel oder Beschreibung diesen Text enthält.",
+          "pattern": "Wort oder Phrase"
         },
         "tag": {
           "title": "Tags",
-          "body": "Hält Medien mit einem später ausgewählten Tag zurück."
+          "body": "Gilt für Medien mit diesem Tag.",
+          "pattern": "Tag"
         },
         "performer": {
           "title": "Darstellende Personen",
-          "body": "Hält Medien mit einer später ausgewählten Person zurück."
+          "body": "Gilt für Medien mit dieser Person.",
+          "pattern": "Person"
         },
         "minimumConfidence": {
           "title": "Sicherheit der Metadaten",
-          "body": "Hält Medien zurück, deren Metadaten-Treffer unter einen später gewählten Grenzwert fallen."
+          "body": "Gilt für Medien, deren Metadaten-Treffer unter diesem Grenzwert liegt.",
+          "pattern": "Grenzwert zwischen 0 und 1"
         },
         "unknownPerformerAge": {
           "title": "Unbekanntes Alter von Personen",
-          "body": "Hält Medien zurück, wenn das Alter einer zugeordneten Person nicht bekannt ist."
+          "body": "Gilt für Medien, wenn das Alter einer zugeordneten Person nicht bekannt ist."
         },
         "unknownFileType": {
           "title": "Unbekannter Dateityp",
-          "body": "Hält Medien zurück, wenn der importierte Dateityp nicht erkannt wird."
+          "body": "Gilt für Medien, wenn der importierte Dateityp nicht erkannt wird."
         }
       }
     },
@@ -324,7 +340,8 @@
       "title": "Von Indexern",
       "notSearched": "Indexer-Ergebnisse erscheinen nach einer Suche.",
       "empty": "Noch kein Indexer hat einen passenden Release geliefert.",
-      "indexerStatus": "Indexer-Suchstatus"
+      "indexerStatus": "Indexer-Suchstatus",
+      "scrollRegion": "Indexer-Ergebnisse"
     },
     "status": {
       "pending": "Wartet",
@@ -333,7 +350,11 @@
       "failed": "Fehlgeschlagen",
       "timedOut": "Zeitüberschreitung",
       "unhealthy": "Nicht verfügbar",
-      "cancelled": "Abgebrochen"
+      "cancelled": "Abgebrochen",
+      "malformedResponse": "Fehlerhafte Antwort",
+      "authenticationFailed": "Authentifizierung fehlgeschlagen",
+      "unavailable": "Nicht unterstützter Indexer-Typ",
+      "unknown": "Unbekannter Zustand"
     },
     "match": {
       "present": "In Bibliothek",
@@ -373,7 +394,13 @@
     "filtersTitle": "Filter",
     "openFilters": "Filter",
     "clearFilters": "Alles zurücksetzen",
-    "applyFilters": "Ergebnisse zeigen"
+    "applyFilters": "Ergebnisse zeigen",
+    "confidence": {
+      "high": "Hoch",
+      "medium": "Mittel",
+      "low": "Niedrig",
+      "unknown": "Unbekannt"
+    }
   },
   "account": {
     "menu": "Konto",
@@ -480,10 +507,13 @@
     "sections": {
       "label": "Einstellungsbereiche",
       "general": "Allgemein",
+      "apiKeys": "API-Schlüssel",
       "rootFolders": "Stammordner",
       "quality": "Qualitätsprofile",
+      "indexers": "Indexer",
       "metadata": "Metadaten",
-      "peers": "Geteilte Bibliotheken"
+      "peers": "Geteilte Bibliotheken",
+      "oidc": "Single Sign-on"
     },
     "title": "Einstellungen",
     "loading": "Einstellungen werden gelesen…",
@@ -548,6 +578,59 @@
     "eventDays": "Sehereignisse behalten",
     "eventDaysHint": "Tage an Verlauf, den die Empfehlung nutzen darf",
     "jumpTo": "Einstellungsabschnitte"
+  },
+  "indexers": {
+    "title": "Indexer",
+    "intro": "Die Indexer, die dieser Server nach Releases fragt. Eine Suche geht an alle gleichzeitig; wer zuerst antwortet, füllt die Ergebnisse zuerst.",
+    "loading": "Indexer werden geladen",
+    "configured": "Eingerichtete Indexer",
+    "none": "Es ist noch kein Indexer eingerichtet, also findet eine Suche nur, was schon in der Bibliothek liegt. Unten einen hinzufügen.",
+    "status": "Status",
+    "enabled": "Aktiv",
+    "disabled": "Inaktiv",
+    "health": "Zustand",
+    "healthUnknown": "Noch nicht getestet",
+    "healthHealthy": "Antwortet",
+    "healthUnhealthy": "Antwortet nicht",
+    "healthHalfOpen": "Wird erneut versucht",
+    "healthOther": "Gemeldet als {{health}}",
+    "implementation": "Indexer-Typ",
+    "implementations": {
+      "torznab": "Torznab",
+      "newznab": "Newznab"
+    },
+    "priority": "Priorität",
+    "queries": "Suchen",
+    "failures": "Fehlschläge",
+    "lastTested": "Zuletzt getestet",
+    "never": "Nie",
+    "lastErrorDetail": "Der Indexer sagte zuletzt: {{reason}}",
+    "searchCategories": "Suchkategorien",
+    "allCategories": "Alle Kategorien",
+    "test": "Testen",
+    "testIndexer": "{{name}} testen",
+    "edit": "Bearbeiten",
+    "editIndexer": "{{name}} bearbeiten",
+    "save": "Änderungen speichern",
+    "cancelEdit": "Änderungen verwerfen",
+    "remove": "Entfernen",
+    "removeIndexer": "{{name}} entfernen",
+    "confirmRemoval": "{{name}} entfernen? Es gehen keine Suchen mehr dorthin, und jedes von dort zwischengespeicherte Release wird mit der Zeile verworfen.",
+    "confirmRemovalAction": "Indexer entfernen",
+    "cancelRemoval": "Indexer behalten",
+    "addTitle": "Indexer hinzufügen",
+    "addHint": "Die Basis-URL der Indexer-API und den ausgestellten Schlüssel angeben. Danach testen, um die angebotenen Kategorien zurückzulesen.",
+    "name": "Name",
+    "namePlaceholder": "Torznab",
+    "baseUrl": "Basis-URL",
+    "baseUrlPlaceholder": "https://indexer.example/api",
+    "apiKey": "API-Schlüssel",
+    "apiKeyHint": "Der Schlüssel wird verschlüsselt gespeichert und nie wieder angezeigt.",
+    "apiKeyKeepHint": "Das Feld leer lassen, um den gespeicherten Schlüssel zu behalten. Ein neuer ersetzt ihn.",
+    "searchCategoriesPlaceholder": "6000, 6010",
+    "searchCategoriesHint": "Die Kategorie-IDs, nach denen dieser Indexer gefragt wird, durch Kommas getrennt. Leer lassen, um nach allem zu fragen.",
+    "enable": "Diesen Indexer durchsuchen",
+    "add": "Indexer hinzufügen"
   },
   "rootFolders": {
     "title": "Stammordner",
@@ -762,6 +845,46 @@
     "INTERNAL_ERROR": "Auf dem Server ist ein Problem aufgetreten. Sieh im Server-Log nach.",
     "SERVICE_UNAVAILABLE": "Der Server ist noch nicht bereit. Versuche es gleich noch einmal.",
     "NETWORK_UNREACHABLE": "Der Server war nicht erreichbar. Prüfe, ob er läuft.",
+    "SETUP_PASSWORD_TOO_WEAK": "Dieses Administrationspasswort ist kürzer als 12 Zeichen oder besteht nur aus einer Zeichenart.",
+    "ROOT_FOLDER_DISABLED": "Dieser Stammordner ist deaktiviert, es kann nichts hineingeschrieben werden.",
+    "OIDC_AUTHENTICATION_FAILED": "Der Identitätsanbieter hat diese Anmeldung nicht bestätigt.",
+    "OIDC_STATE_INVALID": "Diese Anmeldung hat zu lange gedauert oder wurde in einem anderen Browser begonnen.",
+    "OIDC_IDENTITY_NOT_ALLOWED": "Die Richtlinie des Identitätsanbieters lässt diese Identität hier nicht zu.",
+    "OIDC_IDENTITY_ALREADY_LINKED": "Dieses Konto des Identitätsanbieters ist bereits mit einem anderen Pornarr-Konto verknüpft.",
+    "OIDC_USERNAME_CONFLICT": "Der Benutzername des Identitätsanbieters gehört bereits zu einem lokalen Konto.",
+    "OIDC_UNLINK_WOULD_LOCK_ACCOUNT": "Ein Trennen würde dieses Konto ohne Anmeldemöglichkeit zurücklassen.",
+    "USER_CANNOT_DEACTIVATE_SELF": "Ein Administratorkonto kann sich nicht selbst deaktivieren.",
+    "INDEXER_CONNECTION_FAILED": "Der Indexer hat nicht geantwortet oder etwas Unbrauchbares geantwortet.",
+    "DOWNLOAD_CLIENT_CONNECTION_FAILED": "Der Download-Client hat nicht geantwortet oder diese Zugangsdaten abgelehnt.",
+    "DOWNLOAD_CLIENT_UNAVAILABLE": "Für das Protokoll dieses Releases ist kein funktionierender Download-Client eingerichtet.",
+    "TORZNAB_RESPONSE_INVALID": "Der Torznab-Indexer hat etwas geantwortet, das diese Version nicht lesen kann.",
+    "STASHDB_RESPONSE_INVALID": "StashDB hat etwas geantwortet, das diese Version nicht lesen kann.",
+    "TPDB_RESPONSE_INVALID": "ThePornDB hat etwas geantwortet, das diese Version nicht lesen kann.",
+    "PEER_UNAVAILABLE": "Die Peer-Bibliothek hat nicht geantwortet oder etwas Unbrauchbares geantwortet.",
+    "REQUEST_QUOTA_EXCEEDED": "Du hast bereits so viele aktive Anfragen, wie dein Kontingent erlaubt.",
+    "REQUEST_ACTION_INVALID": "Zu dieser Anfrage gibt es keinen Download mehr, auf den sich das anwenden ließe.",
+    "REQUEST_NOT_GRABBABLE": "Diese Anfrage kann in ihrem aktuellen Zustand kein Release annehmen.",
+    "REQUEST_CANCELLATION_FAILED": "Der Download-Client hat diese Anfrage nicht abgebrochen.",
+    "REQUEST_CONTROL_FAILED": "Der Download-Client hat diese Aktion nicht ausgeführt.",
+    "REQUEST_PRIORITY_UPDATE_FAILED": "Der Download-Client hat die Priorität dieser Anfrage nicht geändert.",
+    "RELEASE_NOT_FOUND": "Dieses Release ist nicht mehr im Suchcache.",
+    "RELEASE_EXPIRED": "Dieses Release ist aus dem Suchcache abgelaufen.",
+    "RELEASE_BLOCKED": "Dieses Release steht nach einem früheren Fehlschlag auf der Sperrliste.",
+    "RELEASE_IN_LIBRARY": "Dieser Titel ist bereits in der Bibliothek.",
+    "RELEASE_FILTERED": "Ein Inhaltsfilter lehnt dieses Release ab.",
+    "RELEASE_PROTOCOL_UNSUPPORTED": "Kein eingerichteter Download-Client beherrscht das Protokoll dieses Releases.",
+    "GRAB_SUBMISSION_FAILED": "Der Download-Client war erreichbar, hat das Release aber nicht angenommen.",
+    "MONITOR_QUALITY_PROFILE_REQUIRED": "Ein Monitor braucht ein Qualitätsprofil, und es ist keines ausgewählt.",
+    "MONITOR_ALREADY_EXISTS": "Für diese Suche existiert bereits ein Monitor.",
+    "QUARANTINE_REVIEW_INVALID": "Diese Quarantäne-Prüfung lässt sich so nicht anwenden.",
+    "COLLECTION_ALREADY_EXISTS": "Du hast bereits eine Sammlung mit diesem Namen.",
+    "SEND_ALREADY_EXISTS": "Du hast dieser Person diesen Titel bereits geschickt.",
+    "SEND_TO_SELF": "Ein Titel kann nicht an dich selbst geschickt werden.",
+    "SHORT_ALREADY_EXISTS": "An dieser Stelle des Titels beginnt bereits ein Short.",
+    "SHORTS_NO_MARKERS": "Dieser Titel hat keine Szenenmarker, aus denen ein Short geschnitten werden könnte.",
+    "TRANSCODE_LIMIT_REACHED": "Dieser Server führt bereits so viele Transkodierungen aus, wie er zulässt.",
+    "RANGE_NOT_SATISFIABLE": "Der Player hat einen Teil dieser Datei angefordert, den es nicht gibt.",
+    "FILTER_CONFIGURATION_INVALID": "Diese Inhaltsfilterregel ist so nicht gültig.",
     "unknown": "Etwas ist schiefgelaufen ({{code}}).",
     "generic": "Etwas ist schiefgelaufen. Versuche es erneut.",
     "brokenTitle": "Diese Seite konnte nicht dargestellt werden.",
@@ -796,6 +919,46 @@
     "INTERNAL_ERROR": "Versuche es erneut. Wenn es weiter passiert, sieh im Server-Log nach.",
     "SERVICE_UNAVAILABLE": "Warte, bis der Server hochgefahren ist, und versuche es erneut.",
     "NETWORK_UNREACHABLE": "Prüfe, ob der Server läuft und erreichbar ist, und versuche es erneut.",
+    "SETUP_PASSWORD_TOO_WEAK": "Verwende mindestens 12 Zeichen aus zwei Arten: Kleinbuchstaben, Großbuchstaben, Ziffern, Sonderzeichen.",
+    "ROOT_FOLDER_DISABLED": "Aktiviere diesen Stammordner in der Administration oder wähle einen anderen.",
+    "OIDC_AUTHENTICATION_FAILED": "Beginne die Anmeldung erneut oder melde dich mit Benutzername und Passwort an.",
+    "OIDC_STATE_INVALID": "Gehe zurück zur Anmeldung und beginne sie in diesem Browser erneut.",
+    "OIDC_IDENTITY_NOT_ALLOWED": "Bitte die Administration, diese Identität zuzulassen, oder melde dich mit einem anderen Konto an.",
+    "OIDC_IDENTITY_ALREADY_LINKED": "Melde dich mit jenem Konto an und hebe die Verknüpfung dort auf, oder verknüpfe ein anderes Anbieterkonto.",
+    "OIDC_USERNAME_CONFLICT": "Melde dich am lokalen Konto an und verknüpfe den Anbieter von dort, oder bitte die Administration, eines von beiden umzubenennen.",
+    "OIDC_UNLINK_WOULD_LOCK_ACCOUNT": "Setze zuerst ein Passwort oder verknüpfe einen weiteren Anbieter, dann trenne diesen.",
+    "USER_CANNOT_DEACTIVATE_SELF": "Bitte eine andere Person mit Administratorrechten darum, damit der Zugang zu dieser Instanz erhalten bleibt.",
+    "INDEXER_CONNECTION_FAILED": "Prüfe Basis-URL und API-Schlüssel und ob der Indexer läuft, und teste ihn erneut.",
+    "DOWNLOAD_CLIENT_CONNECTION_FAILED": "Prüfe Host, Port und Zugangsdaten und ob der Client läuft, und teste ihn erneut.",
+    "DOWNLOAD_CLIENT_UNAVAILABLE": "Richte einen Download-Client für dieses Protokoll ein oder repariere ihn, und versuche es erneut.",
+    "TORZNAB_RESPONSE_INVALID": "Prüfe Basis-URL und API-Schlüssel des Indexers und teste die Verbindung erneut.",
+    "STASHDB_RESPONSE_INVALID": "Prüfe StashDB-Schlüssel und -Adresse in der Administration und versuche es erneut.",
+    "TPDB_RESPONSE_INVALID": "Prüfe ThePornDB-Schlüssel und -Adresse in der Administration und versuche es erneut.",
+    "PEER_UNAVAILABLE": "Prüfe, ob der Peer online ist und dieser Instanz noch vertraut, und versuche es erneut.",
+    "REQUEST_QUOTA_EXCEEDED": "Warte, bis eine Anfrage fertig ist, oder brich eine ab, bevor du eine weitere stellst.",
+    "REQUEST_ACTION_INVALID": "Lade die Anfrage neu und wähle eine Aktion, die ihr aktueller Zustand zulässt.",
+    "REQUEST_NOT_GRABBABLE": "Lade die Anfrage neu; wenn sie bereits lädt, brich sie ab, bevor du ein anderes Release wählst.",
+    "REQUEST_CANCELLATION_FAILED": "Versuche es erneut. Wenn es weiter fehlschlägt, brich den Download im Client selbst ab.",
+    "REQUEST_CONTROL_FAILED": "Versuche es erneut. Wenn es weiter fehlschlägt, sieh im Log des Download-Clients nach.",
+    "REQUEST_PRIORITY_UPDATE_FAILED": "Versuche es erneut. Wenn es weiter fehlschlägt, ändere die Priorität im Download-Client selbst.",
+    "RELEASE_NOT_FOUND": "Suche erneut und wähle das Release aus den frischen Ergebnissen.",
+    "RELEASE_EXPIRED": "Suche erneut und wähle das Release aus den frischen Ergebnissen.",
+    "RELEASE_BLOCKED": "Wähle ein anderes Release oder entferne den Sperrlisteneintrag, bevor du dieses erneut lädst.",
+    "RELEASE_IN_LIBRARY": "Öffne den Titel in der Bibliothek, statt ihn erneut zu laden.",
+    "RELEASE_FILTERED": "Wähle ein anderes Release oder ändere die Filterregel, die es ablehnt.",
+    "RELEASE_PROTOCOL_UNSUPPORTED": "Richte einen Download-Client für dieses Protokoll ein und wähle das Release erneut.",
+    "GRAB_SUBMISSION_FAILED": "Versuche es erneut. Wenn es weiter fehlschlägt, sieh im Log des Download-Clients nach.",
+    "MONITOR_QUALITY_PROFILE_REQUIRED": "Lege ein Qualitätsprofil an oder wähle eines aus, und speichere den Monitor erneut.",
+    "MONITOR_ALREADY_EXISTS": "Öffne den bereits vorhandenen Monitor, statt einen zweiten anzulegen.",
+    "QUARANTINE_REVIEW_INVALID": "Sieh die Sammelaktion zuerst in der Vorschau an und führe jeden Eintrag genau einmal unter dem gewählten Grund auf.",
+    "COLLECTION_ALREADY_EXISTS": "Wähle einen anderen Namen oder öffne die bereits vorhandene Sammlung.",
+    "SEND_ALREADY_EXISTS": "Öffne die bereits gemachte Sendung, statt den Titel zweimal zu schicken.",
+    "SEND_TO_SELF": "Wähle eine andere Empfängerin oder einen anderen Empfänger.",
+    "SHORT_ALREADY_EXISTS": "Wähle einen anderen Startpunkt oder bearbeite den bereits vorhandenen Short.",
+    "SHORTS_NO_MARKERS": "Setze zuerst Szenenmarker im Titel, dann erzeuge daraus Shorts.",
+    "TRANSCODE_LIMIT_REACHED": "Warte, bis eine Transkodierung fertig ist, und starte die Wiedergabe erneut.",
+    "RANGE_NOT_SATISFIABLE": "Lade die Seite neu und starte die Wiedergabe erneut.",
+    "FILTER_CONFIGURATION_INVALID": "Gib einer Textregel etwas zum Abgleichen, lass das Muster einer Dateieigenschaftsregel leer und setze eine Mindestkonfidenz zwischen 0 und 1.",
     "unknown": "Versuche es erneut und nenne diesen Code, wenn es weiter passiert.",
     "generic": "Versuche es erneut. Wenn es weiter passiert, lade die Seite neu."
   },
@@ -907,7 +1070,8 @@
   "continueWatching": {
     "title": "Weiterschauen",
     "loading": "Wird geladen",
-    "empty": "Nichts angefangen."
+    "empty": "Nichts angefangen.",
+    "resumeLink": "Weiterschauen: {{title}}"
   },
   "collections": {
     "title": "Sammlungen",
@@ -1011,7 +1175,14 @@
     "openQueue": "Warteschlange →",
     "storageNone": "Noch kein Bibliotheksordner",
     "recentlyAdded": "Zuletzt hinzugefügt",
-    "openLibrary": "Bibliothek öffnen →"
+    "openLibrary": "Bibliothek öffnen →",
+    "transcoding": "Transkodierung",
+    "transcodingEmpty": "Noch nichts erkannt.",
+    "transcodingSoftwareOnly": "Keine Hardwarebeschleunigung verfügbar; jeder Stream wird per CPU transkodiert.",
+    "transcodingAvailable": "{{acceleration}} — {{codecs}}",
+    "transcodingRejected": "{{acceleration}} nicht verfügbar — {{reason}}",
+    "transcodingRejectedGeneral": "Nicht verfügbar — {{reason}}",
+    "transcodingSlots": "{{hardwareInUse}} von {{hardwareLimit}} Hardware-Slots belegt · {{softwareInUse}} von {{softwareLimit}} Software-Slots belegt"
   },
   "moderation": {
     "title": "Bewertungen & Kommentare",
@@ -1133,5 +1304,55 @@
     "expired": "abgelaufen",
     "usedBy": "benutzt von {{name}}",
     "revoke": "Zurückziehen"
+  },
+  "oidcProviders": {
+    "title": "Single Sign-on",
+    "intro": "Ein Anbieter lässt Personen sich mit einem Konto anmelden, das sie bereits haben – ein Identitätssystem des Unternehmens oder ein anderer Dienst, der OIDC spricht – statt mit einem Pornarr-Passwort. ADR 0016 liefert dies zusammen mit lokalen Konten aus.",
+    "loading": "Anbieter werden geladen…",
+    "configured": "Eingerichtete Anbieter",
+    "none": "Noch kein Anbieter eingerichtet, also kann sich so niemand anmelden.",
+    "status": "Status",
+    "enabled": "In Benutzung",
+    "disabled": "Nicht in Benutzung",
+    "issuer": "Aussteller",
+    "issuerPlaceholder": "https://issuer.example.com",
+    "lastTested": "Zuletzt getestet",
+    "never": "Nie",
+    "test": "Testen",
+    "testProvider": "Verbindung zu {{name}} testen",
+    "remove": "Entfernen",
+    "removeProvider": "{{name}} entfernen",
+    "confirmRemoval": "{{name}} entfernen? Niemand kann sich damit mehr anmelden, und wer noch damit verknüpft ist, braucht einen anderen Weg hinein.",
+    "confirmRemovalAction": "Anbieter entfernen",
+    "cancelRemoval": "Anbieter behalten",
+    "addTitle": "Anbieter hinzufügen",
+    "addHint": "Aussteller, Client-ID und Client-Secret kommen vom Anbieter selbst – die meisten nennen das eine OIDC- oder OAuth-Anwendung.",
+    "name": "Name",
+    "namePlaceholder": "z. B. Firmenanmeldung",
+    "clientId": "Client-ID",
+    "clientSecret": "Client-Secret",
+    "clientSecretHint": "Wird hier gespeichert und nie wieder angezeigt.",
+    "enable": "Diesen Anbieter auf dem Anmeldebildschirm anbieten",
+    "add": "Anbieter hinzufügen"
+  },
+  "apiKeys": {
+    "title": "API-Schlüssel",
+    "intro": "Ein Schlüssel lässt ein Skript oder ein anderes Pornarr an deiner Stelle handeln, ohne dein Passwort. Das ist der Schlüssel, von dem federation.md spricht.",
+    "loading": "API-Schlüssel werden geladen…",
+    "addTitle": "Schlüssel erstellen",
+    "name": "Name",
+    "namePlaceholder": "z. B. Backup-Skript",
+    "create": "Schlüssel erstellen",
+    "freshTitle": "Der Schlüssel",
+    "freshHint": "Wird einmal gezeigt. Jetzt kopieren — der Server speichert nur einen Hash und kann ihn nicht erneut zeigen.",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "configured": "Deine Schlüssel",
+    "none": "Noch keine Schlüssel.",
+    "created": "Erstellt {{when}}",
+    "lastUsed": "Zuletzt benutzt {{when}}",
+    "neverUsed": "Noch nie benutzt",
+    "revoke": "Widerrufen",
+    "revokeKey": "{{name}} widerrufen"
   }
 }

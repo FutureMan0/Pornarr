@@ -18,7 +18,13 @@ test.describe("recommendations", () => {
     // Scoped to the screen's own region: the shell renders the primary
     // navigation as a list, so an unscoped listitem is the sidebar.
     const feed = page.getByRole("region", { name: "Recommendations" });
-    await expect(feed.getByRole("heading", { name: "Recommendations", level: 1 })).toBeVisible();
+    // The screen's h1 is the top bar's, not the region's: the design puts the
+    // screen name in the bar and `usePageTitle` moves the heading with it, so a
+    // screen that rendered its own would announce the name twice. See
+    // `apps/web/src/shell/page-title.tsx`.
+    await expect(
+      page.getByRole("banner").getByRole("heading", { name: "Recommendations", level: 1 }),
+    ).toBeVisible();
     await expect(
       feed
         .getByRole("listitem")

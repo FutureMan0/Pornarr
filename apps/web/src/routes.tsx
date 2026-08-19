@@ -34,7 +34,10 @@ import { QueueRoute } from "./routes/queue/queue-route";
 import { RecommendationsRoute } from "./routes/recommendations/recommendations-route";
 import { RequestsRoute } from "./routes/requests/requests-route";
 import { SearchRoute } from "./routes/search/search-route";
+import { ApiKeysRoute } from "./routes/settings/api-keys/api-keys-route";
+import { IndexersRoute } from "./routes/settings/indexers/indexers-route";
 import { MetadataProvidersRoute } from "./routes/settings/metadata/metadata-providers-route";
+import { OidcProvidersRoute } from "./routes/settings/oidc/oidc-providers-route";
 import { PeersRoute } from "./routes/settings/peers/peers-route";
 import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles-route";
 import { RootFoldersRoute } from "./routes/settings/root-folders/root-folders-route";
@@ -85,10 +88,13 @@ export const appRoutes: RouteObject[] = [
                 element: <SettingsLayout />,
                 children: [
                   { index: true, element: <SettingsRoute /> },
+                  { path: "api-keys", element: <ApiKeysRoute /> },
                   { path: "root-folders", element: <RootFoldersRoute /> },
                   { path: "quality", element: <QualityProfilesRoute /> },
+                  { path: "indexers", element: <IndexersRoute /> },
                   { path: "metadata", element: <MetadataProvidersRoute /> },
                   { path: "peers", element: <PeersRoute /> },
+                  { path: "oidc", element: <OidcProvidersRoute /> },
                 ],
               },
               { path: "search", element: <SearchRoute /> },

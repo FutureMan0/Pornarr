@@ -18,6 +18,8 @@ from pornarr_api.auth import ForbiddenError, database_session, get_current_user,
 from pornarr_api.errors import ErrorResponse
 from pornarr_db.models.media import Media, MediaFile
 from pornarr_db.models.user import User, UserRole
+from pornarr_db.root_folders import file_within, library_roots
+from pornarr_db.settings import get_runtime_settings
 from pornarr_media.capabilities import HardwareCapabilities
 from pornarr_media.sessions import (
     TranscodeFailure,
@@ -249,11 +251,9 @@ async def start_session(
     )
     if media_file is None:
         raise HTTPException(status_code=404)
-    source = Path(media_file.path).resolve()
-    if (
-        not source.is_relative_to(request.app.state.settings.library_path.resolve())
-        or not source.is_file()
-    ):
+    roots = await library_roots(session, request.app.state.settings.library_path)
+    source = file_within(media_file.path, roots)
+    if source is None:
         raise HTTPException(status_code=404)
 
     registry = get_registry(request)
@@ -270,17 +270,20 @@ async def start_session(
             raise HTTPException(status_code=503, detail="The stream could not be started.")
         return _start_response(pending.id)
     try:
-        return _start_response(await _start_transcode(request, user, media_id, source))
+        return _start_response(await _start_transcode(request, user, media_id, source, session))
     finally:
         await registry.finish_start(user.id, media_id)
 
 
-async def _start_transcode(request: Request, user: User, media_id: UUID, source: Path) -> UUID:
+async def _start_transcode(
+    request: Request, user: User, media_id: UUID, source: Path, session: AsyncSession
+) -> UUID:
     registry = get_registry(request)
     capabilities = getattr(
         request.app.state, "hardware_capabilities", HardwareCapabilities((), (), ())
     )
-    limits = TranscodeLimits.from_settings(request.app.state.settings, capabilities)
+    runtime_settings = await get_runtime_settings(session, request.app.state.settings)
+    limits = TranscodeLimits.from_settings(runtime_settings, capabilities)
     mode = await registry.select_mode(user.id, limits)
     capability = (
         capabilities.methods[0] if mode.value == "hardware" and capabilities.methods else None
@@ -330,23 +333,24 @@ async def list_sessions(
 
 
 @admin_router.get("/limits", response_model=TranscodeLimitResponse)
-async def limit_state(request: Request, _: Admin) -> TranscodeLimitResponse:
+async def limit_state(request: Request, _: Admin, session: Session) -> TranscodeLimitResponse:
     sessions = await get_registry(request).active_sessions()
     capabilities = getattr(
         request.app.state,
         "hardware_capabilities",
         HardwareCapabilities(methods=(), rejections=(), nvidia_gpus=()),
     )
-    limits = TranscodeLimits.from_settings(request.app.state.settings, capabilities)
+    runtime_settings = await get_runtime_settings(session, request.app.state.settings)
+    limits = TranscodeLimits.from_settings(runtime_settings, capabilities)
     return TranscodeLimitResponse(
         hardware=limits.hardware,
         software=limits.software,
         per_user=limits.per_user,
         hardware_in_use=sum(session.hardware for session in sessions),
         software_in_use=sum(not session.hardware for session in sessions),
-        configured_hardware=request.app.state.settings.transcode_max_hw_sessions,
-        configured_software=request.app.state.settings.transcode_max_sw_sessions,
-        configured_per_user=request.app.state.settings.transcode_max_per_user,
+        configured_hardware=runtime_settings.transcode_max_hw_sessions,
+        configured_software=runtime_settings.transcode_max_sw_sessions,
+        configured_per_user=runtime_settings.transcode_max_per_user,
         effective_hardware=limits.hardware,
         effective_software=limits.software,
         effective_per_user=limits.per_user,

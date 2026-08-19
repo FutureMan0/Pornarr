@@ -9,8 +9,10 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pornarr_db.models.download import DownloadHistory, DownloadJob
+from pornarr_db.models.download import DownloadHistory, DownloadJob, ImportTrigger
 from pornarr_db.models.download_client import DownloadClient
+from pornarr_db.models.request import RequestStatus
+from pornarr_db.requests import advance_requests_for_download
 from pornarr_db.session import session_scope
 from pornarr_integrations.downloaders import DownloadClientJob, DownloadClientPollingAdapter
 from pornarr_integrations.qbittorrent import QbittorrentAdapter
@@ -32,6 +34,17 @@ TERMINAL_STATUSES = frozenset({"completed", "failed", "removed"})
 # seeding and importing can happen at the same time.
 IMPORTABLE_STATUSES = frozenset({"completed", "seeding"})
 NON_POLLABLE_STATUSES = frozenset({"failed", "removed"})
+# DESIGN.md L225-227 gives the request its own, coarser vocabulary than the
+# client's - every one of the client's finer-grained in-progress states
+# (checking, metadata, stalled, seeding, completed...) is "downloading" to a
+# request. Only "queued" (nothing has happened yet) and the two statuses that
+# never legitimately started are excluded.
+NOT_YET_DOWNLOADING_STATUSES = frozenset({"queued", "failed", "removed"})
+# The literal `import_media.py` commits `ImportTrigger.status` to once the
+# library record exists. Not imported from there: that module pulls in the
+# whole import pipeline, and nothing publishes an event this job could listen
+# for instead - the trigger row is the only durable record of it.
+IMPORT_TRIGGER_IMPORTED_STATUS = "imported"
 EventPublisher = Callable[[str, dict[str, Any]], Awaitable[None]]
 ImportEnqueuer = Callable[[DownloadJob, str | None], Awaitable[None]]
 FailureHandler = Callable[[DownloadJob], Awaitable[None]]
@@ -181,6 +194,24 @@ async def _apply_poll(
                 "estimated_seconds": job_row.estimated_seconds,
             },
         )
+    if job_row.status in IMPORTABLE_STATUSES:
+        await _advance_available_requests(session, job_row)
+
+
+async def _advance_available_requests(session: AsyncSession, job_row: DownloadJob) -> None:
+    """Move a request on to `available` once this job's import has landed.
+
+    Checked every poll rather than only once: `import_media` runs on its own
+    queue, asynchronously, so the trigger it commits to may still be `ready`
+    on several polls after the download itself finished. Re-checking an
+    already-advanced request is a wasted query, not a wasted transition -
+    `advance_requests_for_download` is the guard against that.
+    """
+    trigger_status = await session.scalar(
+        select(ImportTrigger.status).where(ImportTrigger.download_job_id == job_row.id)
+    )
+    if trigger_status == IMPORT_TRIGGER_IMPORTED_STATUS:
+        await advance_requests_for_download(session, job_row.id, RequestStatus.AVAILABLE)
 
 
 async def _transition(
@@ -197,6 +228,13 @@ async def _transition(
     changed = job_row.status != status
     job_row.status = status
     job_row.error = error
+    if status not in NOT_YET_DOWNLOADING_STATUSES:
+        # Ahead of `enqueue_import` below on purpose: a job that reaches
+        # `completed` or `seeding` on its very first poll never has an
+        # observable moment of being anything else, and its request still has
+        # to pass through `downloading` before `stage_completed_download` can
+        # move it on to `processing`.
+        await advance_requests_for_download(session, job_row.id, RequestStatus.DOWNLOADING)
     if status in TERMINAL_STATUSES:
         await _record_history(session, job_row)
     if status in IMPORTABLE_STATUSES:

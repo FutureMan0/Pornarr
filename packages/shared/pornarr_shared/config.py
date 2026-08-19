@@ -9,15 +9,20 @@ and docs/adr/0003-download-clients.md for why.
 from __future__ import annotations
 
 from functools import lru_cache
+from ipaddress import IPv4Network, IPv6Network, ip_network
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr, ValidationError, field_validator
+from pydantic import Field, SecretStr, ValidationError, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from pornarr_shared.errors import ConfigurationError
 
 MINIMUM_SECRET_LENGTH = 32
+
+
+def _split_addresses(value: str) -> tuple[str, ...]:
+    return tuple(entry.strip() for entry in value.split(",") if entry.strip())
 
 
 class Settings(BaseSettings):
@@ -36,6 +41,26 @@ class Settings(BaseSettings):
     )
 
     app_env: Literal["development", "test", "production"] = "development"
+
+    # Authentication cookies carry `Secure` unless a deployment says otherwise.
+    #
+    # The documented deployment terminates TLS in a reverse proxy, so the
+    # default has to be the TLS one: a session cookie without `Secure` is sent
+    # in the clear the first time anything reaches the instance over http://,
+    # and that is one request from a full account takeover. The opt-out is for
+    # local development over plain HTTP, where a browser will not store a
+    # `Secure` cookie at all; it has to be written into the environment by hand,
+    # and `_secure_cookies_are_mandatory_in_production` refuses it outright when
+    # APP_ENV=production, so the opt-out cannot be reached by accident.
+    session_cookie_secure: bool = True
+
+    # Addresses whose `X-Forwarded-For` this instance may believe, as a
+    # comma-separated list of addresses or CIDR blocks. Empty means believe
+    # nobody, which is the only safe default: any caller can write that header,
+    # so an instance that trusts it unconditionally lets an attacker put every
+    # login attempt in a different rate-limit bucket. Set it to the address the
+    # reverse proxy reaches the API from -- see docs/operations/deployment.md.
+    trusted_proxies: str = ""
 
     app_secret: SecretStr = Field(
         description="Derives the encryption key for every stored credential. "
@@ -116,6 +141,33 @@ class Settings(BaseSettings):
             raise ValueError(message)
         return value
 
+    @field_validator("session_cookie_secure")
+    @classmethod
+    def _secure_cookies_are_mandatory_in_production(cls, value: bool, info: ValidationInfo) -> bool:
+        if not value and info.data.get("app_env") == "production":
+            message = (
+                "SESSION_COOKIE_SECURE=false is refused when APP_ENV=production. "
+                "It exists for local development over plain HTTP; a production "
+                "deployment terminates TLS in a reverse proxy and must mark the "
+                "session cookie Secure."
+            )
+            raise ValueError(message)
+        return value
+
+    @field_validator("trusted_proxies")
+    @classmethod
+    def _trusted_proxies_are_addresses(cls, value: str) -> str:
+        for entry in _split_addresses(value):
+            try:
+                ip_network(entry, strict=False)
+            except ValueError as exc:
+                message = (
+                    f"TRUSTED_PROXIES entry {entry!r} is not an address or CIDR block. "
+                    "Write a comma-separated list, e.g. 172.18.0.0/16,10.0.0.5"
+                )
+                raise ValueError(message) from exc
+        return value
+
     @field_validator("base_path")
     @classmethod
     def _normalise_base_path(cls, value: str) -> str:
@@ -133,6 +185,13 @@ class Settings(BaseSettings):
         if 60 % value:
             raise ValueError("RSS_SYNC_INTERVAL_MINUTES must divide 60")
         return value
+
+    @property
+    def trusted_proxy_networks(self) -> tuple[IPv4Network | IPv6Network, ...]:
+        """`trusted_proxies`, parsed. A bare address becomes a single-host block."""
+        return tuple(
+            ip_network(entry, strict=False) for entry in _split_addresses(self.trusted_proxies)
+        )
 
     # Derived paths. Downloads and library must share one filesystem or
     # hardlinking fails; see docs/operations/deployment.md.

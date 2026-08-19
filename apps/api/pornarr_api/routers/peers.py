@@ -35,7 +35,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.background import BackgroundTask
 
-from pornarr_api.auth import database_session, get_current_user, require_role
+from pornarr_api.auth import (
+    database_session,
+    get_current_user,
+    get_streaming_user,
+    require_role,
+    streaming_session,
+)
 from pornarr_db.audit import write_audit
 from pornarr_db.models.peer import Peer
 from pornarr_db.models.user import User, UserRole
@@ -45,6 +51,7 @@ router = APIRouter(prefix="/admin/peers", tags=["peers"])
 proxy_router = APIRouter(prefix="/peers", tags=["peers"])
 Admin = Annotated[User, Depends(require_role(UserRole.ADMIN))]
 CurrentUser = Annotated[User, Depends(get_current_user)]
+StreamingUser = Annotated[User, Depends(get_streaming_user)]
 Session = Annotated[AsyncSession, Depends(database_session)]
 
 # A peer is somebody's home server on the other end of a tunnel, so it is slow
@@ -371,17 +378,21 @@ async def _relay(request: Request, peer: Peer, path: str) -> StreamingResponse:
     )
 
 
-async def _proxy(
-    peer_id: UUID, path: str, request: Request, session: AsyncSession
-) -> StreamingResponse:
+async def _proxy(peer_id: UUID, path: str, request: Request) -> StreamingResponse:
     """Fetch one thing from a peer on the reader's behalf.
 
     A 404 for a path outside the allowlist, and for a peer that is disabled: a
     reader learns that this instance will not fetch it, not what the peer would
     have said.
+
+    The session is closed before the relay starts: the response body outlives
+    the request, and a held connection would outlive it too. See
+    `streaming_session`.
     """
-    peer = await peer_or_404(session, peer_id)
-    if not peer.enabled or not allowed(request.method, path):
+    async with streaming_session(request) as session:
+        peer = await peer_or_404(session, peer_id)
+        enabled = peer.enabled
+    if not enabled or not allowed(request.method, path):
         raise HTTPException(status_code=404)
     return await _relay(request, peer, path)
 
@@ -391,20 +402,20 @@ async def _proxy(
 # that can only do whichever the generator saw last.
 @proxy_router.get("/{peer_id}/proxy/{path:path}")
 async def proxy_get(
-    peer_id: UUID, path: str, request: Request, _: CurrentUser, session: Session
+    peer_id: UUID, path: str, request: Request, _: StreamingUser
 ) -> StreamingResponse:
-    return await _proxy(peer_id, path, request, session)
+    return await _proxy(peer_id, path, request)
 
 
 @proxy_router.post("/{peer_id}/proxy/{path:path}")
 async def proxy_post(
-    peer_id: UUID, path: str, request: Request, _: CurrentUser, session: Session
+    peer_id: UUID, path: str, request: Request, _: StreamingUser
 ) -> StreamingResponse:
-    return await _proxy(peer_id, path, request, session)
+    return await _proxy(peer_id, path, request)
 
 
 @proxy_router.delete("/{peer_id}/proxy/{path:path}")
 async def proxy_delete(
-    peer_id: UUID, path: str, request: Request, _: CurrentUser, session: Session
+    peer_id: UUID, path: str, request: Request, _: StreamingUser
 ) -> StreamingResponse:
-    return await _proxy(peer_id, path, request, session)
+    return await _proxy(peer_id, path, request)

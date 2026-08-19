@@ -10,7 +10,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 
-from pornarr_api.auth import get_current_user
+from pornarr_api.auth import get_streaming_user
 from pornarr_db.models.user import User
 from pornarr_shared.events import EVENT_STREAM, GLOBAL_CHANNEL, user_channel
 
@@ -109,7 +109,7 @@ async def _stream(request: Request, user_id: str, last_event_id: str | None) -> 
 @router.get("/events", response_class=StreamingResponse)
 async def events(
     request: Request,
-    user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[User, Depends(get_streaming_user)],
 ) -> StreamingResponse:
     return StreamingResponse(
         _stream(request, str(user.id), request.headers.get("Last-Event-ID")),

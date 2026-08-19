@@ -35,21 +35,25 @@ def _cipher() -> Iterator[None]:
 
 
 async def _provider(app, **settings: object) -> OidcProvider:
+    # A dict merge rather than a second set of keyword arguments, so a caller
+    # distinguishing two providers -- this file's own anonymous-listing tests
+    # need a visible one and a disabled one -- can override `name` or `issuer`
+    # without colliding with the defaults below.
+    defaults: dict[str, object] = {
+        "name": "example",
+        "issuer": "https://issuer.example",
+        "client_id": "client-id",
+        "client_secret": "client-secret",
+        "scopes": ["openid", "profile"],
+        "discovery_document": {
+            "issuer": "https://issuer.example",
+            "authorization_endpoint": "https://issuer.example/authorize",
+            "token_endpoint": "https://issuer.example/token",
+            "jwks_uri": "https://issuer.example/jwks",
+        },
+    }
     async with AsyncSession(app.state.engine, expire_on_commit=False) as session:
-        provider = OidcProvider(
-            name="example",
-            issuer="https://issuer.example",
-            client_id="client-id",
-            client_secret="client-secret",
-            scopes=["openid", "profile"],
-            discovery_document={
-                "issuer": "https://issuer.example",
-                "authorization_endpoint": "https://issuer.example/authorize",
-                "token_endpoint": "https://issuer.example/token",
-                "jwks_uri": "https://issuer.example/jwks",
-            },
-            **settings,
-        )
+        provider = OidcProvider(**{**defaults, **settings})
         session.add(provider)
         await session.commit()
     return provider
@@ -73,6 +77,42 @@ async def test_oidc_login_redirects_with_pkce_state_and_nonce(app, client) -> No
     expected_challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest())
     assert query["code_challenge"] == [expected_challenge.rstrip(b"=").decode()]
     assert state_record["nonce"] == query["nonce"][0]
+
+
+async def test_anonymous_login_screen_can_list_enabled_providers(app, client) -> None:
+    """`/login` has to offer a button before anybody has a session, so the
+    list has to be reachable by somebody who is not signed in.
+    """
+    # An account has to exist for `SetupMiddleware` to serve anything at all --
+    # a fact about a fresh install, not about this endpoint -- and the request
+    # below carries no session, which is the property under test.
+    await create_user(app)
+    visible = await _provider(app, name="Visible provider")
+    await _provider(
+        app,
+        name="Hidden provider",
+        issuer="https://issuer.example/other",
+        enabled=False,
+    )
+
+    response = await client.get("/api/auth/oidc/providers")
+
+    assert response.status_code == 200
+    assert response.json() == [{"id": str(visible.id), "name": "Visible provider"}]
+
+
+async def test_provider_list_discloses_nothing_but_id_and_name(app, client) -> None:
+    await create_user(app)
+    await _provider(app, name="Visible provider")
+
+    response = await client.get("/api/auth/oidc/providers")
+
+    assert set(response.json()[0].keys()) == {"id", "name"}
+    # Nothing from `ProviderResponse` -- issuer, client id or discovery state --
+    # leaks into a document a stranger without an account can read.
+    assert "issuer.example" not in response.text
+    assert "client-id" not in response.text
+    assert "client-secret" not in response.text
 
 
 async def test_oidc_callback_creates_the_normal_session_and_consumes_state(

@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import database_session, require_role
+from pornarr_db.audit import write_audit
 from pornarr_db.models.indexer import Indexer, IndexerStats
 from pornarr_db.models.user import User, UserRole
 from pornarr_integrations.health import CircuitBreaker, failure_for
@@ -38,6 +39,13 @@ class IndexerWrite(BaseModel):
     enabled: bool = True
     # None means "use the model's default" rather than "clear the selection".
     search_categories: list[str] | None = None
+
+
+class IndexerUpdate(IndexerWrite):
+    # The key is write-only: it is never returned, so an edit screen has nothing
+    # to send back for it. None therefore means "keep the stored key" rather
+    # than "clear it", and an indexer can never end up with an empty one.
+    api_key: SecretStr | None = None
 
 
 class IndexerSearchCategoriesWrite(BaseModel):
@@ -152,6 +160,34 @@ async def create_indexer(payload: IndexerWrite, _: Admin, session: Session) -> I
     session.add(stats)
     await session.flush()
     return indexer_response(indexer, stats)
+
+
+@router.put("/{indexer_id}", response_model=IndexerResponse)
+async def update_indexer(
+    indexer_id: UUID, payload: IndexerUpdate, user: Admin, session: Session
+) -> IndexerResponse:
+    """Change a configured indexer in place.
+
+    ADR 0002 L9: indexers are managed through the administration UI. Without this
+    route the only edit was delete-and-recreate, which discards the indexer's
+    health, its statistics and — through `ON DELETE CASCADE` on
+    `release_cache.indexer_id` — every release cached from it.
+    """
+
+    indexer = await indexer_or_404(session, indexer_id)
+    indexer.name = payload.name
+    indexer.protocol = payload.protocol
+    indexer.implementation = payload.implementation
+    indexer.base_url = payload.base_url.rstrip("/")
+    indexer.priority = payload.priority
+    indexer.enabled = payload.enabled
+    if payload.api_key is not None:
+        indexer.api_key = payload.api_key.get_secret_value()
+    if payload.search_categories is not None:
+        indexer.search_categories = payload.search_categories
+    await session.flush()
+    write_audit(session, actor_id=user.id, action="indexer.updated", target=str(indexer.id))
+    return indexer_response(indexer, await stats_for(session, indexer.id))
 
 
 @router.post("/{indexer_id}/test", response_model=IndexerResponse)
