@@ -156,6 +156,22 @@ class SchedulerSettings:
     retry_jobs: ClassVar = True
     job_completion_wait: ClassVar = JOB_COMPLETION_WAIT_SECONDS
     health_check_interval: ClassVar = 30
+    # The scheduler schedules; it does not also work.
+    #
+    # ARQ publishes a cron job by enqueueing it onto its own `queue_name`, so
+    # the scheduler has to share the default queue with the worker that runs
+    # the results. Sharing it as a second *consumer* is what broke: two ARQ
+    # workers reading one queue lose jobs between them, and a lost
+    # `dispatch_rss_sync` or `download_poll` is silent - no error anywhere,
+    # the cycle simply does not happen. Measured on this stack: 38 of 40
+    # jobs enqueued onto `pornarr:default` never ran with both attached, 0 of
+    # 15 with only the worker.
+    #
+    # `max_jobs = 0` is how ARQ is told to publish but not consume:
+    # `_poll_iteration` guards its read with `job_counter < max_jobs`, while
+    # `heart_beat` - which is what runs the cron table - is outside that
+    # guard. The queue keeps exactly one reader.
+    max_jobs: ClassVar = 0
     cron_jobs: ClassVar = [
         cron(
             HEARTBEAT_JOB.coroutine,
