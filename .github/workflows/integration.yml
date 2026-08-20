@@ -85,3 +85,9 @@ jobs:
 
       - if: always() && steps.fixtures.outputs.needed == 'true'
         run: docker compose -f infrastructure/docker/compose.test.yml logs --tail=50
+
+      # Same reason as in e2e.yml: on a self-hosted runner the fixtures outlive
+      # the job unless the job removes them.
+      - name: Tear down the fixtures
+        if: always() && steps.fixtures.outputs.needed == 'true'
+        run: docker compose -f infrastructure/docker/compose.test.yml down --volumes --remove-orphans

@@ -67,3 +67,10 @@ jobs:
           retention-days: 7
       - if: always()
         run: docker compose logs --tail=100
+      # A hosted runner is discarded after the job, so nothing here ever needed
+      # cleaning up. A self-hosted runner keeps everything: without this the
+      # stack, its network and its volumes survive the run, and the next run
+      # inherits a database that a previous one already migrated and seeded.
+      - name: Tear down the stack
+        if: always()
+        run: docker compose down --volumes --remove-orphans
