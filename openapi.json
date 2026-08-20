@@ -1044,10 +1044,17 @@
             "title": "Category"
           },
           "credentials": {
-            "format": "password",
-            "title": "Credentials",
-            "type": "string",
-            "writeOnly": true
+            "anyOf": [
+              {
+                "format": "password",
+                "type": "string",
+                "writeOnly": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credentials"
           },
           "enabled": {
             "default": true,
@@ -1105,8 +1112,7 @@
           "protocol",
           "implementation",
           "host",
-          "port",
-          "credentials"
+          "port"
         ],
         "title": "DownloadClientUpdate",
         "type": "object"

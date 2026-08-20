@@ -233,3 +233,64 @@ async def test_two_instances_of_one_protocol_coexist_and_are_both_addressable(ap
     assert {row["name"] for row in torrent_rows} >= {"seedbox", "desktop"}
     async with AsyncSession(app.state.engine) as session:
         assert (await route_download_client(session, "torrent")).name == "seedbox"
+
+
+async def test_editing_a_client_without_resending_its_secret_keeps_the_stored_one(
+    app, client
+) -> None:
+    """The convention the indexers route already follows.
+
+    A client's credential is write-only: the response carries everything about
+    it except its secret, so a screen editing a client has nothing to put back
+    in the box. `IndexerUpdate.api_key` is `None`-able for exactly that reason
+    and means "keep the stored key". `DownloadClientUpdate` required the
+    credential, so an edit form that left the box empty wrote an empty string -
+    and the client stopped answering. Re-pointing a client to a new port meant
+    re-typing its password from memory.
+    """
+
+    admin = await create_user(app, username="admin", role=UserRole.ADMIN)
+    await login(client, admin.username, "correct horse battery staple")
+    payload = {
+        "name": "torrent",
+        "protocol": "torrent",
+        "implementation": "qbittorrent",
+        "host": "client.example",
+        "port": 8080,
+        "url_base": "",
+        "credentials": "the stored one",
+        "category": None,
+        "priority": 0,
+        "remove_completed": False,
+    }
+    created = await client.post(
+        "/api/admin/download-clients", json=payload, headers=csrf_headers(client)
+    )
+    assert created.status_code == 201
+    client_id = UUID(created.json()["id"])
+
+    moved = await client.put(
+        f"/api/admin/download-clients/{client_id}",
+        json={**payload, "port": 9090, "credentials": None},
+        headers=csrf_headers(client),
+    )
+
+    assert moved.status_code == 200
+    assert moved.json()["port"] == 9090
+    async with AsyncSession(app.state.engine) as session:
+        stored = await session.get(DownloadClient, client_id)
+        assert stored is not None
+        assert stored.credentials == "the stored one"
+
+    # And a credential that *is* sent replaces the stored one.
+    replaced = await client.put(
+        f"/api/admin/download-clients/{client_id}",
+        json={**payload, "credentials": "a new one"},
+        headers=csrf_headers(client),
+    )
+
+    assert replaced.status_code == 200
+    async with AsyncSession(app.state.engine) as session:
+        stored = await session.get(DownloadClient, client_id)
+        assert stored is not None
+        assert stored.credentials == "a new one"

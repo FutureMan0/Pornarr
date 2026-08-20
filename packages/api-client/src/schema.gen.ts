@@ -3084,11 +3084,8 @@ export interface components {
         DownloadClientUpdate: {
             /** Category */
             category?: string | null;
-            /**
-             * Credentials
-             * Format: password
-             */
-            credentials: string;
+            /** Credentials */
+            credentials?: string | null;
             /**
              * Enabled
              * @default true
