@@ -7,7 +7,7 @@ on:
 jobs:
   source-branch:
     name: Only develop may merge to main
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Require develop as the source branch
         env:

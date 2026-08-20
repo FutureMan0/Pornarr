@@ -31,7 +31,7 @@ concurrency:
 jobs:
   guard:
     name: Workspace present
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     outputs:
       web: ${{ steps.check.outputs.web }}
     steps:
@@ -43,7 +43,7 @@ jobs:
     name: Playwright
     needs: guard
     if: needs.guard.outputs.web == 'true'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
       # Version comes from the `packageManager` field in package.json.
