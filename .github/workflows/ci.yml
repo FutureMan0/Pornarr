@@ -51,6 +51,15 @@ jobs:
     needs: guard
     if: needs.guard.outputs.python == 'true'
     runs-on: self-hosted
+    # `get_settings()` builds `Settings` from the environment, and a developer
+    # machine always has the `.env` that `make setup` wrote. A runner has none,
+    # so the tests that reach that accessor failed here and nowhere else. Same
+    # throwaway values as the `contract` job below, and for the same reason:
+    # nothing reads them, so a repository secret would only imply they matter.
+    env:
+      APP_SECRET: 0123456789abcdef0123456789abcdef
+      DATABASE_URL: postgresql+psycopg://pornarr:pornarr@localhost:5432/pornarr
+      REDIS_URL: redis://localhost:6379/0
     steps:
       # Full history: diff-cover needs a merge base with the target branch, and
       # a shallow clone has none.
