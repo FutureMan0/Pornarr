@@ -53,8 +53,9 @@ def test_a_name_that_is_only_tokens_still_gets_called_something() -> None:
 #
 # "Release group, resolution tokens, codec names, separators and date variants
 # are stripped to a canonical title." Three tables: what must be stripped, what
-# must survive untouched, and - kept rather than deleted - the inputs where the
-# current implementation strips too much.
+# must survive untouched, and - kept rather than deleted, because it is the
+# table that caught the over-stripping - the inputs where a token sits next to
+# a real word.
 
 
 @pytest.mark.parametrize(
@@ -152,25 +153,15 @@ def test_normalisation_declines_to_fire_on_titles_that_only_look_like_releases(
     assert normalize_title(title) == title.casefold()
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "`packages/core/pornarr_core/naming.py:16` strips a trailing "
-        "`[-_.][A-Z0-9]{2,}` as a release group before the token pass, so the `DL` of "
-        "`WEB-DL` and the `264` of `H.264` go first and the head survives as a word; "
-        "and `TOKEN_PATTERNS` at `:11` matches a codec or source name wherever it "
-        "appears, so a title containing one loses a real word. Both corrupt the "
-        "canonical title docs/pipelines/import.md:23-24 asks for, which is what "
-        "matching and the library path are built from."
-    ),
-)
 @pytest.mark.parametrize(
     ("release", "wanted"),
     [
-        # Today: "alice example web" / "alice example h".
+        # Was "alice example web" / "alice example h": the group strip ran before
+        # the token pass and took the `DL` and the `264` for a release group.
         ("Alice Example WEB-DL", "alice example"),
         ("Alice Example H.264", "alice example"),
-        # Today: "club" / "country" / "blues" / "the diaries" / "alice street".
+        # Was "club" / "country" / "blues" / "the diaries" / "alice street": a
+        # token pattern substituted across the whole string removed a real word.
         ("AV1 Club", "av1 club"),
         ("DTS Country", "dts country"),
         ("AAC Blues", "aac blues"),
@@ -178,14 +169,14 @@ def test_normalisation_declines_to_fire_on_titles_that_only_look_like_releases(
         ("Alice 480p Street", "alice 480p street"),
     ],
 )
-def test_normalisation_strips_more_than_the_document_asks_for(release: str, wanted: str) -> None:
-    """An executing expected failure, not a characterisation of the defect.
+def test_normalisation_strips_no_more_than_the_document_asks_for(release: str, wanted: str) -> None:
+    """Step 6 of `docs/pipelines/import.md`, read as a positional rule.
 
-    Asserting what the normaliser does today would turn the suite red the day
-    somebody fixed it, which is the wrong way round. This asserts what step 6 of
-    `docs/pipelines/import.md` asks for, fails, and is recorded as an expected
-    failure; the day `naming.py` stops over-stripping, the strict marker turns
-    the run red and somebody deletes it.
+    Release tokens and the release group are removed where a release actually
+    puts them - at the end, behind the title - and nowhere else. Both halves of
+    the over-stripping this records were load bearing: the canonical title is
+    what matching compares and what the library path is built from, so a title
+    that lost a word to a codec name was misfiled and never matched again.
     """
     assert normalize_title(release) == wanted
 
