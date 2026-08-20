@@ -92,6 +92,29 @@ const CONFIDENCES = new Set(["high", "medium", "low"]);
 /** `_search` in apps/worker/pornarr_worker/search.py answers with one of these. */
 const SEARCHED = new Set(["completed", "cached"]);
 
+/**
+ * A client the server will answer about, not just one it said it created.
+ *
+ * Asserted rather than waited for. A request's transaction commits before its
+ * answer reaches the caller - `database_session` in
+ * `apps/api/pornarr_api/auth.py` - so a client that was created is in the very
+ * next list. This used to be a race and every case below tripped over it; a
+ * wait here would hide the day it comes back.
+ */
+async function visibleClient(
+  page: Page,
+  body: Record<string, unknown>,
+): Promise<DownloadClientRecord> {
+  const created = await apiPost<DownloadClientRecord>(page, "/api/admin/download-clients", body);
+  expect(
+    (await apiGet<DownloadClientRecord[]>(page, "/api/admin/download-clients")).some(
+      (client) => client.id === created.id,
+    ),
+    "A download client the server answered 201 for is not in the list it answers next.",
+  ).toBe(true);
+  return created;
+}
+
 async function requestById(page: Page, id: string): Promise<RequestRecord> {
   const found = (await apiGet<RequestRecord[]>(page, "/api/requests")).find(
     (item) => item.id === id,
@@ -129,23 +152,18 @@ async function unmatchableRequest(page: Page, label: string): Promise<RequestRec
 /** Create a request and confirm the server really has it before using its id. */
 async function createRequest(page: Page, query: string): Promise<RequestRecord> {
   const created = await apiPost<RequestRecord>(page, "/api/requests", { query });
-  // Read it back before using it. Once, on 2026-08-19 07:34:11, a grab issued
-  // 14ms after a 201 was answered 404 NOT_FOUND for a row the database shows
-  // was created at that moment - see BUILD.md, "Observed once". This is the
-  // rule the brief asks for anyway: never trust the mutation's own response.
-  await expect
-    .poll(
-      async () =>
-        (await apiGet<RequestRecord[]>(page, "/api/requests")).some(
-          (item) => item.id === created.id,
-        ),
-      {
-        timeout: 10_000,
-        intervals: [100],
-        message: `The request ${created.id} that POST /api/requests reported as created is not in the list.`,
-      },
-    )
-    .toBe(true);
+  // Read back, and read back *once*. On 2026-08-19 07:34:11 a grab issued 14ms
+  // after a 201 was answered 404 NOT_FOUND for a row the database shows was
+  // created at that moment; this helper waited for that row for months. The
+  // cause was `database_session` unwinding after the response rather than
+  // before it, and it is fixed in `apps/api/pornarr_api/auth.py`. The read-back
+  // stays, because never trusting a mutation's own response is the rule the
+  // brief asks for anyway - but it no longer waits, so the race cannot come
+  // back unnoticed.
+  expect(
+    (await apiGet<RequestRecord[]>(page, "/api/requests")).some((item) => item.id === created.id),
+    `The request ${created.id} that POST /api/requests reported as created is not in the list.`,
+  ).toBe(true);
   return created;
 }
 
@@ -696,7 +714,7 @@ test.describe("acquisition", () => {
     // SABnzbd is the other adapter ADR 0003 says shipped, and there is no
     // SABnzbd on this stack: the point of the row is that the attempt fails as
     // a connection rather than as an unhandled httpx exception.
-    const unreachable = await apiPost<DownloadClientRecord>(page, "/api/admin/download-clients", {
+    const unreachable = await visibleClient(page, {
       name: `E2E unreachable SABnzbd ${Date.now()}`,
       protocol: "usenet",
       implementation: "sabnzbd",
@@ -705,7 +723,7 @@ test.describe("acquisition", () => {
       credentials: "e2e-secret-api-key",
       enabled: false,
     });
-    const absent = await apiPost<DownloadClientRecord>(page, "/api/admin/download-clients", {
+    const absent = await visibleClient(page, {
       name: `E2E unimplemented NZBGet ${Date.now()}`,
       protocol: "usenet",
       implementation: "nzbget",
@@ -746,7 +764,7 @@ test.describe("acquisition", () => {
   // read "unknown". The diagnosis is committed before the refusal is raised now,
   // which is what `test_indexer` had always done.
   test("a failed connection test is remembered on the client row", async ({ page }) => {
-    const client = await apiPost<DownloadClientRecord>(page, "/api/admin/download-clients", {
+    const client = await visibleClient(page, {
       name: `E2E unreachable health ${Date.now()}`,
       protocol: "usenet",
       implementation: "sabnzbd",
@@ -876,7 +894,7 @@ test.describe("acquisition", () => {
       remove_completed: false,
       enabled: true,
     };
-    const preferred = await apiPost<DownloadClientRecord>(page, "/api/admin/download-clients", {
+    const preferred = await visibleClient(page, {
       ...definition,
       name: preferredName,
     });
@@ -1120,6 +1138,35 @@ test.describe("acquisition", () => {
     // ADR 0031: "Queue time sums the remaining time of equal or higher priority
     // jobs". Recomputed here from the queue's own rows and compared with what
     // the endpoint returned, which executes the formula rather than trusting it.
+    //
+    // A waiting job is put there rather than hoped for. The shared queue empties
+    // itself - the compose client finishes its fixture in seconds and a live
+    // SABnzbd finishes a real download faster still - so a run that happened to
+    // arrive late found only terminal rows and proved nothing. The control
+    // indexer's release is a torrent with no peers: it is accepted, it waits,
+    // and it never completes, which is exactly the state this formula is about.
+    if (!(await wholeQueue(page)).some((job) => WAITING_STATUSES.has(job.status))) {
+      const client = await testingDownloadClient(page);
+      const control = await controlIndexer(page);
+      test.skip(
+        client === null || control === null,
+        "The queue holds nothing waiting and docker-compose.testing.yml is not running, so " +
+          "no job can be put in it.",
+      );
+      controlIndexerId = (control as { id: string }).id;
+      const term = `estimate-${Date.now()}`;
+      const release = releaseFrom(await indexerSearch(page, term), controlIndexerId);
+      const request = await unmatchableRequest(page, term);
+      const grabbed = await grab(page, request.id, release.id);
+      expect([200, 201], await grabbed.text()).toContain(grabbed.status());
+      await expect
+        .poll(
+          async () => (await wholeQueue(page)).some((job) => WAITING_STATUSES.has(job.status)),
+          { timeout: 30_000, intervals: [1_000] },
+        )
+        .toBe(true);
+    }
+
     let rows = await wholeQueue(page);
     const agrees = (queue: QueueJob[]) =>
       queue.every((job) => !WAITING_STATUSES.has(job.status) || matchesSum(job, queue));
@@ -1298,7 +1345,7 @@ test.describe("acquisition", () => {
     const documented = (contract.match(/`(DOWNLOAD_CLIENT_[A-Z_]+)`/) ?? [])[1];
     expect(documented, "api-contract.md names no download-client error code at all.").toBeDefined();
 
-    const unreachable = await apiPost<DownloadClientRecord>(page, "/api/admin/download-clients", {
+    const unreachable = await visibleClient(page, {
       name: `E2E contract code ${Date.now()}`,
       protocol: "usenet",
       implementation: "sabnzbd",

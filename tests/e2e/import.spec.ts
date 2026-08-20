@@ -49,6 +49,7 @@ import {
   downloadsRoot,
   enabledRootFolder,
   enqueueStackJob,
+  hostDataRoot,
   hostPathFor,
   importTriggerRow,
   loginAsAdmin,
@@ -99,6 +100,21 @@ const RUN = `g${Date.now().toString(36)}`;
  */
 function staging(): string {
   return join(downloadsRoot(), "gauntlet-import", RUN);
+}
+
+/**
+ * Somewhere the download watcher does not look.
+ *
+ * A replacement staged inside `staging()` is a completed download like any
+ * other: the watcher stages it, the pipeline imports it, and
+ * `_fuzzy_duplicate` correctly recognises it as an upgrade of the title it
+ * matches - so the automatic upgrade runs beside the one this test asks for
+ * and `media_file_history` gains two rows for one replacement. The automatic
+ * path is the product working as intended and has its own case; a claim about
+ * one explicit upgrade has to be about one upgrade.
+ */
+function unwatched(): string {
+  return join(hostDataRoot(), "gauntlet-upgrades", RUN);
 }
 
 function usenetStaging(): string {
@@ -271,6 +287,7 @@ test.describe("import pipeline", () => {
   test.beforeAll(() => {
     rmSync(join(downloadsRoot(), "gauntlet-import"), { recursive: true, force: true });
     rmSync(join(usenetRoot(), "gauntlet-import"), { recursive: true, force: true });
+    rmSync(join(hostDataRoot(), "gauntlet-upgrades"), { recursive: true, force: true });
     purgeOwnState();
     mkdirSync(staging(), { recursive: true });
   });
@@ -278,6 +295,7 @@ test.describe("import pipeline", () => {
   test.afterAll(() => {
     rmSync(join(downloadsRoot(), "gauntlet-import"), { recursive: true, force: true });
     rmSync(join(usenetRoot(), "gauntlet-import"), { recursive: true, force: true });
+    rmSync(join(hostDataRoot(), "gauntlet-upgrades"), { recursive: true, force: true });
     // Everything this run put in the library goes too. The stack is shared:
     // rows left behind are the next spec's flake, and the scanner adopting this
     // spec's own downloads a second time doubles the footprint of every run.
@@ -647,11 +665,18 @@ test.describe("import pipeline", () => {
     test.skip(!canPlaceCompletedDownloads(), NO_DOWNLOAD_VOLUME);
     test.setTimeout(IMPORT_TIMEOUT + 240_000);
 
+    // Three different scenes, not three spellings of one. A month apart each:
+    // same studio, same duration and a title that differs by a single word put
+    // all three inside `detect_duplicate`'s thresholds, so the second and third
+    // were correctly folded into the first as upgrades and never appeared under
+    // their own names. What this case is about is three unrelated downloads
+    // landing at once.
+    const dates = ["2026-03-04", "2026-04-08", "2026-05-12"];
     const titles = ["Parallel One", "Parallel Two", "Parallel Three"].map(
       (name) => `${name} ${RUN}`,
     );
     for (const [index, title] of titles.entries()) {
-      writeCompletedDownload(staging(), `${STUDIO} - ${title} (2026-03-04) 1080p`, {
+      writeCompletedDownload(staging(), `${STUDIO} - ${title} (${dates[index]}) 1080p`, {
         seconds: 14,
         seed: index + 1,
       });
@@ -773,7 +798,7 @@ test.describe("import pipeline", () => {
 
     const folder = await enabledRootFolder(page);
     const replacement = writeCompletedDownload(
-      join(staging(), "upgrade"),
+      unwatched(),
       `${STUDIO} - ${title} (2026-03-04) 2160p`,
       { seconds: 14, seed: 4, qp: 1 },
     );
@@ -820,23 +845,43 @@ test.describe("import pipeline", () => {
     ).toBe("1");
   });
 
-  test("a scanned file is adopted without the import pipeline running on it", async ({ page }) => {
+  test("a scanned file is probed, and is not put through the import pipeline", async ({ page }) => {
     test.skip(!canReadStackDatabase(), NO_DATABASE);
     // docs/pipelines/import.md line 3 says the pipeline is triggered "by the
-    // library scanner for files that are already on disk". It is not:
-    // `scan_root_folder` writes a Media and a MediaFile carrying nothing but
-    // path, size and mtime. These assertions are what the scanner actually
-    // produces, so the divergence is executed rather than assumed. Claim 05.2.
-    const scanned = await seedLibraryMedia(page);
+    // library scanner for files that are already on disk". Half of that is now
+    // true and the half that is not is deliberate: `scan_root_folder` enqueues
+    // `probe_media_file_job` for every file that has none, so a scanned title
+    // carries the technical facts `decide_direct_play` needs - and nothing
+    // else. No metadata cascade, so no studio and no confidence; no
+    // fingerprint, so `detect_duplicate` cannot see it; no placement, so the
+    // title is the file stem, tokens and all.
+    //
+    // This spec's own title, not the shared fixture: the claim is about what
+    // the scanner leaves behind, and a fixture every other spec also uses gets
+    // enriched the moment one of them asks it for something.
+    const scanned = await seedLibraryMedia(page, `Gauntlet Studio - Scanned ${RUN}`);
     test.skip(scanned === null, NO_DOWNLOAD_VOLUME);
     if (scanned === null) return;
 
+    // Probed, but by a job on the transcode queue rather than inline, so the
+    // scan does not block behind ffmpeg on every file in a large library.
+    await expect
+      .poll(async () => (await apiGet<MediaDetail>(page, `/api/media/${scanned.id}`)).resolution, {
+        timeout: 60_000,
+        intervals: [2_000],
+        message:
+          "A scanned file was never probed. See `probe_media_file_job` in " +
+          "apps/worker/pornarr_worker/jobs/scan.py.",
+      })
+      .not.toBeNull();
+
     const media = await apiGet<MediaDetail>(page, `/api/media/${scanned.id}`);
-    expect(media.resolution).toBeNull();
-    expect(media.duration_seconds).toBeNull();
-    expect(media.bitrate).toBeNull();
+    expect(media.duration_seconds).not.toBeNull();
+    expect(media.bitrate).not.toBeNull();
+
+    // And nothing the pipeline would have added.
     expect(media.confidence).toBeNull();
-    // Not normalised either: the title is the file stem, tokens and all.
+    expect(media.studio).toBeNull();
     expect(media.title).toBe(scanned.title);
     expect(
       await databaseScalar(
@@ -923,17 +968,25 @@ test.describe("import pipeline", () => {
     // implements every threshold the document states; the import used to check
     // the exact oshash and nothing else, so two near-identical releases of one
     // scene became two unrelated library items.
+    // One after the other, not both at once. `_fuzzy_duplicate` compares the
+    // arriving release against what is already in the library, so the first
+    // has to be in it before the second is staged. Written together, the two
+    // imports run concurrently on the import worker and each finds a library
+    // the other is not in yet - two items, correctly, for a question neither
+    // was asked. An upgrade arriving after the release it upgrades is also
+    // the only order this ever happens in outside a test.
     const near = `Fuzzy Twin ${RUN}`;
     writeCompletedDownload(staging(), `${STUDIO} - ${near} (2026-03-04) 1080p`, {
       seconds: 14,
       seed: 6,
     });
+    const first = await importedMedia(page, near);
+
     writeCompletedDownload(staging(), `${STUDIO} - ${near}s (2026-03-05) 2160p`, {
       seconds: 14,
       seed: 6,
       qp: 1,
     });
-    const first = await importedMedia(page, near);
     const second = await importedMedia(page, `${near}s`);
     expect(second.id).toBe(first.id);
   });
@@ -976,6 +1029,14 @@ test.describe("import pipeline", () => {
       (rule) => rule.kind === "term",
     )?.id;
     expect(ruleId, "The term rule is not in the profile that was just written.").toBeDefined();
+    // The rule keeps its id when its pattern is rewritten, so records this rule
+    // left on an earlier run carry the same target. Counted from here, or a
+    // stale row would answer for one this run never produced.
+    const beforeForRule = Number(
+      (await databaseScalar(
+        `select count(*) from audit_log where action = 'filter.matched' and target = '${quote(ruleId as string)}'`,
+      )) ?? "0",
+    );
 
     try {
       writeCompletedDownload(staging(), `${STUDIO} - ${term} (2026-05-05) 1080p`);
@@ -984,7 +1045,7 @@ test.describe("import pipeline", () => {
           async () =>
             Number(
               (await databaseScalar(
-                `select count(*) from audit_log where action = 'filter.matched' and target = ${quote(ruleId as string)}`,
+                `select count(*) from audit_log where action = 'filter.matched' and target = '${quote(ruleId as string)}'`,
               )) ?? "0",
             ),
           {
@@ -995,13 +1056,13 @@ test.describe("import pipeline", () => {
               "See docs/pipelines/import.md step 8.",
           },
         )
-        .toBeGreaterThan(0);
+        .toBeGreaterThan(beforeForRule);
 
       // And it is the pipeline's own record, not a second copy of the
       // configuration change: no actor, and the automation source.
       expect(
         await databaseScalar(
-          `select count(*) from audit_log where action = 'filter.matched' and target = ${quote(ruleId as string)} and actor_id is null and source = 'automation'`,
+          `select count(*) from audit_log where action = 'filter.matched' and target = '${quote(ruleId as string)}' and actor_id is null and source = 'automation'`,
         ),
       ).not.toBe("0");
       expect(

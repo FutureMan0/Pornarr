@@ -113,6 +113,59 @@ async function openScreen(page: Page, path: string, heading: string): Promise<vo
   });
 }
 
+/**
+ * A queue with at least one job in it, whoever put it there.
+ *
+ * Three cases in this file read a live queue row. They used to skip when the
+ * queue was empty, which on a run in alphabetical order it always is: this file
+ * comes before `queue.spec.ts`, so nothing has grabbed anything yet. A skip is
+ * not a proof, so the queue is filled here instead - by the product's own path,
+ * a search against the compose fixture indexer followed by a grab.
+ *
+ * Returns `null` only when `docker-compose.testing.yml` is not running, which
+ * is a capability the environment genuinely lacks.
+ */
+async function queueWithAJob(page: Page): Promise<QueueRow[] | null> {
+  const existing = await apiGet<{ items: QueueRow[] }>(page, "/api/queue?limit=20");
+  if (existing.items.length > 0) return existing.items;
+
+  const indexer = await testingIndexer(page);
+  const client = await testingDownloadClient(page);
+  if (indexer === null || client === null) return null;
+
+  const search = await indexerSearch(page, TESTING_RELEASE_TITLE);
+  const release = search.items.find((item) => item.indexer_id === indexer.id);
+  expect(release, "The fixture indexer answered the fan-out with nothing.").toBeDefined();
+  const request = await seedRequest(page, TESTING_RELEASE_TITLE);
+  // 201 the first time the client is handed this release, 200 when it already
+  // holds it: the compose fixture is shared and grabbed once.
+  const grabbed = await apiPostRaw(page, `/api/requests/${request.id}/grab`, {
+    release_id: (release as { id: string }).id,
+  });
+  expect([200, 201], await grabbed.text()).toContain(grabbed.status());
+  await expect
+    .poll(
+      async () => (await apiGet<{ items: QueueRow[] }>(page, "/api/queue?limit=20")).items.length,
+      {
+        timeout: 20_000,
+        intervals: [500],
+      },
+    )
+    .toBeGreaterThan(0);
+  return (await apiGet<{ items: QueueRow[] }>(page, "/api/queue?limit=20")).items;
+}
+
+/** Only the fields the three queue cases in this file read. */
+type QueueRow = {
+  readonly id: string;
+  readonly status: string;
+  readonly title: string | null;
+  readonly release_guid: string;
+};
+
+const NO_TESTING_STACK =
+  "docker-compose.testing.yml is not running, so nothing can be put in the queue to read.";
+
 test.describe("every function is reachable by keyboard", () => {
   // The first case walks all twenty-three screens in one test, which is more
   // navigation than the default per-test budget covers on a shared stack.
@@ -366,21 +419,32 @@ test.describe("meaning never rides on colour alone", () => {
    * nothing else passes an axe run and fails this.
    */
   test("a queue row says its state in words, not only in colour", async ({ page }) => {
-    const queue = await apiGet<{ items: { id: string; status: string; title: string | null }[] }>(
-      page,
-      "/api/queue?limit=20",
-    );
+    const items = await queueWithAJob(page);
+    test.skip(items === null, NO_TESTING_STACK);
+    if (items === null) return;
+
+    // A job the screen is actually showing. The "active" tab is everything
+    // still in flight, so it drops `completed` and `removed` rows
+    // (`queue-route.tsx:45`), and a shared queue accumulates plenty of both -
+    // asking for the first job the API lists was asking for a row that is not
+    // on the page.
+    const done = new Set(["completed", "removed"]);
+    const inFlight = items.find((item) => !done.has(item.status));
+    const job = (inFlight ?? items.find((item) => item.status === "completed")) as
+      | QueueRow
+      | undefined;
     test.skip(
-      queue.items.length === 0,
-      "The shared queue is empty, so there is no live status badge to read.",
+      job === undefined,
+      "Every job in the shared queue was removed, and no tab shows a removed job.",
     );
+    if (job === undefined) return;
 
     await openScreen(page, "/downloads", "Downloads");
-    const job = queue.items[0] as { id: string; status: string; title: string | null };
+    if (inFlight === undefined) await page.getByRole("tab", { name: "Completed" }).click();
     const row = page
       .locator("main")
       .getByRole("row")
-      .filter({ hasText: job.title ?? "" })
+      .filter({ hasText: job.title ?? job.release_guid })
       .first();
     await expect(row).toBeVisible();
 
@@ -948,8 +1012,10 @@ test.describe("an estimate is never a bare number", () => {
         readonly confidence: "high" | "medium" | "low" | "unknown";
       };
     };
+    const seeded = await queueWithAJob(page);
+    test.skip(seeded === null, NO_TESTING_STACK);
     const queue = await apiGet<{ items: Job[] }>(page, "/api/queue?limit=20");
-    test.skip(queue.items.length === 0, "The shared queue is empty, so no estimate is on screen.");
+    expect(queue.items.length, "The queue was seeded and is still empty.").toBeGreaterThan(0);
 
     await openScreen(page, "/downloads", "Downloads");
 
@@ -1083,16 +1149,54 @@ test.describe("an estimate is never a bare number", () => {
    * be in the markup.
    */
   test("the queue's figures are tabular so the columns compare", async ({ page }) => {
-    const queue = await apiGet<{ items: { title: string | null; release_guid: string }[] }>(
-      page,
-      "/api/queue?limit=5",
-    );
-    test.skip(
-      queue.items.length === 0,
-      "The shared queue is empty, so there is no row to measure.",
-    );
+    const seeded = await queueWithAJob(page);
+    test.skip(seeded === null, NO_TESTING_STACK);
+    if (seeded === null) return;
+    const queue = { items: seeded };
+
+    // A row that is really loading, put there by intercepting the list the way
+    // the estimate case above does.
+    //
+    // The progress column is measured only when there is a figure in it. A job
+    // whose client reports no size renders `queue.progressUnknown` - a word,
+    // deliberately, because DESIGN.md L221 refuses a "0 %" that measures
+    // nothing, and `nonfunctional.spec.ts:368` asserts that same row says its
+    // state in words. Asking a wordy cell for tabular figures asks it to break
+    // the other claim, so the row is given a size and a remainder first.
+    const isQueueList = (url: URL): boolean => url.pathname === "/api/queue";
+    let intercepted = 0;
+    await page.route(isQueueList, async (route) => {
+      const response = await route.fetch();
+      const body = (await response.json()) as {
+        items: {
+          status: string;
+          size_bytes: number | null;
+          remaining_bytes: number | null;
+          download_speed_bytes: number | null;
+          queue_estimate: {
+            low_seconds: number | null;
+            high_seconds: number | null;
+            confidence: string;
+          };
+        }[];
+      };
+      for (const job of body.items) {
+        job.status = "downloading";
+        job.size_bytes = 4_000_000_000;
+        job.remaining_bytes = 1_000_000_000;
+        job.download_speed_bytes = 12_500_000;
+        job.queue_estimate = { low_seconds: 240, high_seconds: 360, confidence: "medium" };
+      }
+      intercepted += 1;
+      await route.fulfill({
+        status: response.status(),
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    });
 
     await openScreen(page, "/downloads", "Downloads");
+    await expect.poll(() => intercepted, { timeout: 15_000 }).toBeGreaterThan(0);
     const first = queue.items[0] as { title: string | null; release_guid: string };
     const row = page
       .locator("main")
@@ -1121,6 +1225,7 @@ test.describe("an estimate is never a bare number", () => {
         `Nothing in queue column ${index} is set in tabular figures (DESIGN.md L109-111).`,
       ).toContain("tabular-nums");
     }
+    await page.unroute(isQueueList);
   });
 });
 

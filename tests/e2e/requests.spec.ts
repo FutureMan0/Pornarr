@@ -37,6 +37,10 @@ type RequestRecord = {
 type ErrorBody = { readonly code: string; readonly status: number };
 
 async function requestById(page: Page, id: string): Promise<RequestRecord> {
+  // Read once. A request's transaction commits before its answer reaches the
+  // caller, so a row created by the call before this one is in this list -
+  // see `database_session` in `apps/api/pornarr_api/auth.py`, which is where
+  // that stopped being a race. Waiting here would hide its return.
   const found = (await apiGet<RequestRecord[]>(page, "/api/requests")).find(
     (item) => item.id === id,
   );

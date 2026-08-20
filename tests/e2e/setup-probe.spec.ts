@@ -247,6 +247,16 @@ function startProbe(options: {
   return probe;
 }
 
+/** One reading of a probe's setup status, or `null` when it is not listening. */
+async function probeStatus(probe: Probe): Promise<{ status: number; json: unknown } | null> {
+  try {
+    const response = await fetch(`${probe.url}/api/setup/status`);
+    return { status: response.status, json: await response.json() };
+  } catch {
+    return null;
+  }
+}
+
 async function waitForProbe(probe: Probe): Promise<void> {
   await expect
     .poll(
@@ -828,7 +838,16 @@ test.describe
       expect(completed.status).toBe(201);
       expect(completed.json).toMatchObject({ username: "operator" });
 
-      const login = await signIn(probe, "operator", ADMIN_PASSWORD);
+      // Polled past a 503. A sign-in writes a session, so it needs the probe's
+      // Redis as well as its database, and a container that has only just
+      // answered `/api/setup/status` may still be reaching for one of them -
+      // "not ready" is what 503 means and what a poll is for. Any other status
+      // is reported as itself.
+      let login = await signIn(probe, "operator", ADMIN_PASSWORD);
+      for (let attempt = 0; attempt < 20 && login.status === 503; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        login = await signIn(probe, "operator", ADMIN_PASSWORD);
+      }
       expect(login.status).toBe(200);
       expect(login.json).toMatchObject({ username: "operator", role: "admin" });
     });
@@ -926,9 +945,18 @@ test.describe
 
       // And the original secret still runs against the same database, so what
       // refused was the secret rather than the state the database is in.
-      const again = await fetch(`${probe.url}/api/setup/status`);
-      expect(again.status).toBe(200);
-      expect(await again.json()).toEqual({ configured: true });
+      // Retried while the container comes back. It was just restarted with the
+      // original secret, and a socket that is not listening yet answers by
+      // closing - "not ready", which is what `waitForProbe` above polls for at
+      // every other start.
+      let again = await probeStatus(probe);
+      for (let attempt = 0; attempt < 40 && again === null; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        again = await probeStatus(probe);
+      }
+      expect(again, `${probe.name} never came back after the secret was restored.`).not.toBeNull();
+      expect((again as { status: number }).status).toBe(200);
+      expect((again as { json: unknown }).json).toEqual({ configured: true });
     });
   });
 

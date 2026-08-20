@@ -1036,8 +1036,21 @@ test.describe("search", () => {
         expect(reset.health).toBe("unknown");
         expect(reset.health_reason).toBeNull();
         expect(reset.last_error).toBeNull();
+        // Re-read, because a reset that only shaped a response would leave the
+        // row exactly as it was. Tolerant of one thing, and only one: the
+        // product asking again by itself. `dispatch_backlog_searches` runs
+        // every minute against every enabled indexer, so between the reset and
+        // this line the broken one may already have failed a second time -
+        // which is the scheduler working, not the reset failing to persist.
+        // What is refused is a row still carrying the failure that was cleared
+        // with nothing having asked since.
         const rereadAfterReset = await indexerById(page, broken.id);
-        expect(rereadAfterReset.health).toBe("unknown");
+        if (rereadAfterReset.health !== "unknown") {
+          expect(
+            rereadAfterReset.stats.queries,
+            "The reset did not persist: the indexer is unhealthy again and nothing asked it.",
+          ).toBeGreaterThan(opened.stats.queries);
+        }
 
         // Reset means asked again, not merely relabelled.
         const revived = await drainIndexerSearch(page, uncachedQuery());
@@ -1045,7 +1058,7 @@ test.describe("search", () => {
         expect(
           (await indexerById(page, broken.id)).stats.queries,
           "After a reset the indexer was still being skipped rather than queried.",
-        ).toBe(opened.stats.queries + 1);
+        ).toBeGreaterThan(opened.stats.queries);
       },
     );
   });

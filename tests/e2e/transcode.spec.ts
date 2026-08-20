@@ -43,6 +43,7 @@ import {
   hostDataRoot,
   libraryItemByTitle,
   loginAsAdmin,
+  playbackInfo,
   releaseTranscodeSessions,
   stackRedis,
   transcodeCommandLine,
@@ -128,6 +129,20 @@ const BROKEN_TITLE = "Pornarr Piece08 Undecodable";
  */
 const PLAYABLE_SECONDS = 1200;
 const SECOND_SECONDS = 20;
+/**
+ * A title no browser can direct-play, for the two claims that are about the
+ * player deciding to transcode.
+ *
+ * Encoded as High 4:4:4 Predictive with 4:4:4 chroma. `_profile_family` in
+ * `pornarr_core/playback.py` deliberately refuses to fold that onto "high" -
+ * it carries a chroma subsampling no browser decodes - so `playback-info`
+ * answers `direct_play: false` and the player has to ask for a transcode.
+ * Every other fixture here is Constrained Baseline, which direct-plays.
+ */
+const TRANSCODE_ONLY_TITLE = "Pornarr Piece08 Transcode Only";
+/** A second of the same, for the two claims that need one session refused. */
+const TRANSCODE_ONLY_SECOND_TITLE = "Pornarr Piece08 Transcode Only Second";
+const TRANSCODE_ONLY_SECONDS = 1200;
 const SEED_TIMEOUT_MILLISECONDS = 180_000;
 const SCAN_RETRY_MILLISECONDS = 20_000;
 
@@ -185,7 +200,19 @@ function streamableRoot(): string | null {
   }
 }
 
-function writeFixture(target: string, seconds: number, size: string): void {
+/** `undecodable` asks for a stream the product must refuse to direct-play. */
+type FixtureProfile = "playable" | "undecodable";
+
+function writeFixture(
+  target: string,
+  seconds: number,
+  size: string,
+  profile: FixtureProfile = "playable",
+): void {
+  const encoding =
+    profile === "playable"
+      ? ["-pix_fmt", "yuv420p"]
+      : ["-profile:v", "high444", "-pix_fmt", "yuv444p"];
   execFileSync(
     "ffmpeg",
     [
@@ -207,8 +234,7 @@ function writeFixture(target: string, seconds: number, size: string): void {
       "ultrafast",
       "-crf",
       "34",
-      "-pix_fmt",
-      "yuv420p",
+      ...encoding,
       "-c:a",
       "aac",
       "-shortest",
@@ -231,6 +257,7 @@ async function seedStreamable(
   title: string,
   seconds: number,
   size = "640x360",
+  profile: FixtureProfile = "playable",
 ): Promise<MediaDetail | null> {
   const root = streamableRoot();
   const folder = await enabledRootFolder(page);
@@ -240,7 +267,7 @@ async function seedStreamable(
   const existing = await libraryItemByTitle(page, title);
   if (existing === null || !existsSync(target)) {
     test.setTimeout(Math.max(test.info().timeout, SEED_TIMEOUT_MILLISECONDS + 120_000));
-    if (!existsSync(target)) writeFixture(target, seconds, size);
+    if (!existsSync(target)) writeFixture(target, seconds, size, profile);
     await scanUntilAdopted(page, folder.id, folder.path, title, target);
   }
   const item = await libraryItemByTitle(page, title);
@@ -283,6 +310,56 @@ async function scanUntilAdopted(
 
 async function errorBody(response: APIResponse): Promise<ErrorBody> {
   return (await response.json()) as ErrorBody;
+}
+
+/**
+ * Hold the transcode caps at one slot for the duration of one case.
+ *
+ * Two claims are about what a saturated stack does, and saturation cannot be
+ * waited for: this host's software cap is cores/2, so filling it from one
+ * account would first hit the per-user cap and prove a different refusal. The
+ * caps are the operator's own setting - `PATCH /api/admin/settings` is how
+ * `troubleshooting.md` tells them to change it - so the case sets what it
+ * needs and puts back exactly what it found.
+ */
+async function withOneSlot(page: Page, body: () => Promise<void>): Promise<void> {
+  // The hardware cap is left where it is: it must be at least one, and it is
+  // effective only where a hardware method was detected. On a host with none
+  // the effective figure is zero however the setting reads, which is what
+  // makes one software slot the whole of the capacity.
+  //
+  // Restored from the *effective* figures rather than from the overrides.
+  // `transcode_max_sw_sessions` is null while the machine's own detection is
+  // in charge and can be set back to null, but `transcode_max_per_user`
+  // refuses null by design - `value_cannot_be_null` in
+  // `pornarr_db/settings.py` - so writing the override back as it was found
+  // fails with a 422, the whole restore fails with it, and the next case reads
+  // a stack this one pinned. Putting the effective number back leaves the
+  // server behaving exactly as it did.
+  const before = await limits(page);
+  // The per-user cap is deliberately loosened rather than tightened. Both
+  // cases drive one account, and a per-user cap of one would be the cap that
+  // binds - the server would name `per_user`, which is a different refusal
+  // from the one about a stack with nothing left.
+  await apiPatch(page, "/api/admin/settings", {
+    transcode_max_sw_sessions: 1,
+    transcode_max_per_user: 2,
+  });
+  try {
+    const pinned = await limits(page);
+    test.skip(
+      pinned.effective_hardware + pinned.effective_software !== 1,
+      `This host detected ${pinned.effective_hardware} hardware slots, so one software slot does not make one slot in total. Saturating a machine with working hardware acceleration needs more fixtures and more accounts than this case has.`,
+    );
+    await body();
+  } finally {
+    await apiPatch(page, "/api/admin/settings", {
+      // Null where the machine's own detection was in charge, which this key
+      // accepts and which is how it was found.
+      transcode_max_sw_sessions: before.configured_software,
+      transcode_max_per_user: before.effective_per_user,
+    });
+  }
 }
 
 async function limits(page: Page): Promise<Limits> {
@@ -386,6 +463,15 @@ test.describe("playback and transcoding", () => {
         maximum_video_level: String(codecs.video.level),
       });
 
+      // The H.264 family this file is not. `_profile_family` folds
+      // "Constrained Baseline" onto "baseline" and "Progressive High" onto
+      // "high"; anything else is compared as itself.
+      const family = codecs.video.profile
+        .toLowerCase()
+        .replace("constrained ", "")
+        .replace("progressive ", "");
+      const foreignProfile = family === "high" ? "baseline" : "high";
+
       // (what the player declares, what it must be told) - every row differs
       // from the matching player in exactly one field, so the reason names the
       // field that was withheld and nothing else.
@@ -399,8 +485,13 @@ test.describe("playback and transcoding", () => {
         ["a player without the video codec", { video_codecs: "vp9" }, ["video_codec_unsupported"]],
         ["a player without the audio codec", { audio_codecs: "opus" }, ["audio_codec_unsupported"]],
         [
+          // Derived, not written down: this suite's fixtures are Constrained
+          // Baseline, which `_profile_family` maps onto the baseline family a
+          // player declares - correctly, because Constrained Baseline is a
+          // strict subset of it. A row that hard-coded "baseline" would
+          // withhold nothing, so it names whichever family the file is not.
           "a player without the video profile",
-          { video_profiles: "baseline" },
+          { video_profiles: foreignProfile },
           ["video_profile_unsupported"],
         ],
         [
@@ -429,7 +520,7 @@ test.describe("playback and transcoding", () => {
             containers: "webm",
             video_codecs: "av1",
             audio_codecs: "flac",
-            video_profiles: "baseline",
+            video_profiles: foreignProfile,
             maximum_video_level: "1",
           },
           [
@@ -1122,9 +1213,22 @@ test.describe("playback and transcoding", () => {
    */
   test.describe("the player", () => {
     test("asks what the file needs before it asks for a transcode", async ({ page }) => {
-      const media = await seedStreamable(page, PLAYABLE_TITLE, PLAYABLE_SECONDS);
+      // A file the browser cannot open. Direct play now succeeds for every
+      // Constrained Baseline fixture in this file, so the ordering claim can
+      // only be read off a title that really does need a transcode.
+      const media = await seedStreamable(
+        page,
+        TRANSCODE_ONLY_TITLE,
+        TRANSCODE_ONLY_SECONDS,
+        "640x360",
+        "undecodable",
+      );
       test.skip(media === null, NO_FIXTURE);
       if (media === null) return;
+      expect(
+        (await playbackInfo(page, media.id)).direct_play,
+        "The fixture direct-plays, so no transcode would be asked for and the claim is unreadable.",
+      ).toBe(false);
 
       const calls: string[] = [];
       page.on("request", (request) => {
@@ -1174,14 +1278,26 @@ test.describe("playback and transcoding", () => {
       // kill is in fact one and a half, so a viewer whose tab is throttled or
       // whose network stalls for thirty seconds loses the stream the document
       // says they would keep.
-      const media = await seedStreamable(page, PLAYABLE_TITLE, PLAYABLE_SECONDS);
+      const media = await seedStreamable(
+        page,
+        TRANSCODE_ONLY_TITLE,
+        TRANSCODE_ONLY_SECONDS,
+        "640x360",
+        "undecodable",
+      );
       test.skip(media === null, NO_FIXTURE);
       if (media === null) return;
       test.setTimeout(Math.max(test.info().timeout, HEARTBEAT_OBSERVATION_MILLISECONDS + 120_000));
 
       let sessionStarted = 0;
       const heartbeats: number[] = [];
-      page.on("requestfinished", (request) => {
+      // `request`, not `requestfinished`: the claim is about what the player
+      // sends and how often. The heartbeat's own 204 is never read - the player
+      // fires it with `void fetch(...)` and discards the response - so Chromium
+      // reports the unread stream as `net::ERR_ABORTED` and only
+      // `requestfailed` would ever fire. The server records the beat and
+      // refreshes the TTL either way; watching the send is what this measures.
+      page.on("request", (request) => {
         const path = new URL(request.url()).pathname;
         if (path === `/api/transcode/media/${media.id}/sessions` && sessionStarted === 0) {
           sessionStarted = Date.now();
@@ -1229,41 +1345,54 @@ test.describe("playback and transcoding", () => {
       // troubleshooting.md L16-21 expects the reader to decide between raising
       // the software limit and lowering the per-user one. Neither is possible
       // from what is on screen.
-      const media = await seedStreamable(page, PLAYABLE_TITLE, PLAYABLE_SECONDS);
-      const other = await seedStreamable(page, SECOND_TITLE, SECOND_SECONDS);
+      // Both titles have to need a transcode: a Constrained Baseline fixture
+      // direct-plays, opens no session, and is never refused.
+      const media = await seedStreamable(
+        page,
+        TRANSCODE_ONLY_TITLE,
+        TRANSCODE_ONLY_SECONDS,
+        "640x360",
+        "undecodable",
+      );
+      const other = await seedStreamable(
+        page,
+        TRANSCODE_ONLY_SECOND_TITLE,
+        SECOND_SECONDS,
+        "640x360",
+        "undecodable",
+      );
       test.skip(media === null || other === null, NO_FIXTURE);
       if (media === null || other === null) return;
+      test.setTimeout(Math.max(test.info().timeout, SEED_TIMEOUT_MILLISECONDS + 180_000));
 
-      const state = await limits(page);
-      test.skip(
-        state.effective_hardware + state.effective_software > 1,
-        `This host reports ${state.effective_hardware + state.effective_software} transcode slots, so one held session does not saturate it.`,
-      );
+      await withOneSlot(page, async () => {
+        const held = await startSession(page, media.id);
+        try {
+          await page.goto(`/library/${other.id}`);
 
-      const held = await startSession(page, media.id);
-      try {
-        await page.goto(`/library/${other.id}`);
+          // The player failed rather than played: no labelled player region, an
+          // alert in its place.
+          const alert = page.getByRole("alert").first();
+          await expect(alert, "The refused player rendered no alert at all.").toBeVisible({
+            timeout: 30_000,
+          });
+          await expect(page.getByRole("region", { name: `Player for ${other.title}` })).toHaveCount(
+            0,
+          );
+          // The session the refusal was about is still the one that is running.
+          expect((await adminSessions(page)).map((session) => session.id)).toEqual([
+            held.session_id,
+          ]);
 
-        // The player failed rather than played: no labelled player region, an
-        // alert in its place.
-        const alert = page.getByRole("alert").first();
-        await expect(alert, "The refused player rendered no alert at all.").toBeVisible({
-          timeout: 30_000,
-        });
-        await expect(page.getByRole("region", { name: `Player for ${other.title}` })).toHaveCount(
-          0,
-        );
-        // The session the refusal was about is still the one that is running.
-        expect((await adminSessions(page)).map((session) => session.id)).toEqual([held.session_id]);
-
-        expect(
-          (await alert.innerText()).toLowerCase(),
-          "The viewer is told nothing about why the stream was refused or what to do about it.",
-        ).toMatch(/transcode|limit|slot|in use|later/);
-      } finally {
-        await page.goto("/library");
-        await releaseTranscodeSessions(page);
-      }
+          expect(
+            (await alert.innerText()).toLowerCase(),
+            "The viewer is told nothing about why the stream was refused or what to do about it.",
+          ).toMatch(/transcode|limit|slot|in use|later/);
+        } finally {
+          await page.goto("/library");
+          await releaseTranscodeSessions(page);
+        }
+      });
     });
 
     test("the event stream tells a reverse proxy not to buffer it", async ({ page }) => {
@@ -1465,8 +1594,28 @@ test.describe("playback and transcoding", () => {
         visited.push(destination);
         // The whole screen, not just `main`: a capability panel could live in a
         // header, a drawer or a status strip and still count as shown.
-        const text = (await page.locator("body").innerText()).toLowerCase();
-        if (named.some((method) => text.includes(method))) seen.push(destination);
+        //
+        // Read over a short window rather than once. A panel fed by a query
+        // renders nothing until the query answers, and sampling the document
+        // the instant `main` appears asks a screen what it says before it has
+        // said it. The window closes as soon as something is found, and the
+        // walk stops sampling once one screen has answered - one is what the
+        // claim needs.
+        if (seen.length === 0) {
+          const found = await page.locator("body").evaluate(
+            async (body, methods: string[]) => {
+              const deadline = Date.now() + 3_000;
+              while (Date.now() < deadline) {
+                const text = (body.innerText ?? "").toLowerCase();
+                if (methods.some((method) => text.includes(method))) return true;
+                await new Promise((resolve) => setTimeout(resolve, 200));
+              }
+              return false;
+            },
+            named.map((method) => method.toLowerCase()),
+          );
+          if (found) seen.push(destination);
+        }
       }
       expect(visited.length, "No administration screen was visited at all.").toBeGreaterThan(3);
 
@@ -1498,49 +1647,65 @@ test.describe("playback and transcoding", () => {
     test("a saturated stack refuses with a code and a named limit, never an FFmpeg error", async ({
       page,
     }) => {
-      const media = await seedStreamable(page, PLAYABLE_TITLE, PLAYABLE_SECONDS);
-      const other = await seedStreamable(page, SECOND_TITLE, SECOND_SECONDS);
+      const media = await seedStreamable(
+        page,
+        TRANSCODE_ONLY_TITLE,
+        TRANSCODE_ONLY_SECONDS,
+        "640x360",
+        "undecodable",
+      );
+      const other = await seedStreamable(
+        page,
+        TRANSCODE_ONLY_SECOND_TITLE,
+        SECOND_SECONDS,
+        "640x360",
+        "undecodable",
+      );
       test.skip(media === null || other === null, NO_FIXTURE);
       if (media === null || other === null) return;
+      test.setTimeout(Math.max(test.info().timeout, SEED_TIMEOUT_MILLISECONDS + 180_000));
 
-      const state = await limits(page);
-      // Read, never written: the point of this test is what the product
-      // detected, and a cap the test set itself would prove only that the
-      // setting round-trips.
-      const capacity = state.effective_hardware + state.effective_software;
-      expect(capacity, "The stack reports no transcode capacity at all.").toBeGreaterThan(0);
-      test.skip(
-        capacity > 1,
-        `This host reports ${capacity} concurrent transcode slots, and saturating them from one account would first hit the per-user cap of ${state.effective_per_user}. Seed more fixtures and more accounts before removing this skip.`,
-      );
+      // The capacity this machine detected is the subject of the two cases
+      // above; what this one is about is the shape of the refusal when there
+      // is no slot left, and a host with cores/2 software slots never runs out
+      // of them from one account before it hits the per-user cap. So the cap
+      // is the operator's own setting, set to one for the length of this case
+      // and put back afterwards.
+      const detected = await limits(page);
+      expect(
+        detected.effective_hardware + detected.effective_software,
+        "The stack reports no transcode capacity at all.",
+      ).toBeGreaterThan(0);
 
-      const first = await startSession(page, media.id);
-      try {
-        const refused = await apiPostRaw(page, `/api/transcode/media/${other.id}/sessions`);
-        expect(refused.status()).toBe(429);
+      await withOneSlot(page, async () => {
+        const first = await startSession(page, media.id);
+        try {
+          const refused = await apiPostRaw(page, `/api/transcode/media/${other.id}/sessions`);
+          expect(refused.status()).toBe(429);
 
-        const body = await errorBody(refused);
-        expect(body.code).toBe("TRANSCODE_LIMIT_REACHED");
-        expect(body.status).toBe(429);
-        // The cause: which of the three caps was hit. Without it the operator
-        // cannot tell "raise the software limit" from "lower the per-user one",
-        // which is exactly what the troubleshooting entry asks them to decide.
-        expect(body.context).toEqual({ limit: "software" });
+          const body = await errorBody(refused);
+          expect(body.code).toBe("TRANSCODE_LIMIT_REACHED");
+          expect(body.status).toBe(429);
+          // The cause: which of the three caps was hit. Without it the operator
+          // cannot tell "raise the software limit" from "lower the per-user one",
+          // which is exactly what the troubleshooting entry asks them to decide.
+          expect(body.context).toEqual({ limit: "software" });
 
-        // And never a raw FFmpeg failure: no command line, no log, no exit code.
-        const text = await refused.text();
-        expect(text.toLowerCase()).not.toContain("ffmpeg");
-        expect(text).not.toContain("libx264");
-        expect(text).not.toContain("/data/");
+          // And never a raw FFmpeg failure: no command line, no log, no exit code.
+          const text = await refused.text();
+          expect(text.toLowerCase()).not.toContain("ffmpeg");
+          expect(text).not.toContain("libx264");
+          expect(text).not.toContain("/data/");
 
-        // The refusal did not disturb the session that was already running.
-        expect((await adminSessions(page)).map((session) => session.id)).toEqual([
-          first.session_id,
-        ]);
-        expect((await limits(page)).software_in_use).toBe(1);
-      } finally {
-        await releaseTranscodeSessions(page);
-      }
+          // The refusal did not disturb the session that was already running.
+          expect((await adminSessions(page)).map((session) => session.id)).toEqual([
+            first.session_id,
+          ]);
+          expect((await limits(page)).software_in_use).toBe(1);
+        } finally {
+          await releaseTranscodeSessions(page);
+        }
+      });
     });
 
     test("a failed transcode is listed with a reason and no FFmpeg output", async ({ page }) => {
@@ -1842,6 +2007,10 @@ async function seedUndecodable(page: Page): Promise<MediaDetail | null> {
   const target = join(root, `${BROKEN_TITLE}.mp4`);
   const existing = await libraryItemByTitle(page, BROKEN_TITLE);
   if (existing === null || !existsSync(target)) {
+    // A scan asked for twice in one wall-clock minute is collapsed, so
+    // adopting a file the stack has never seen takes longer than a default
+    // case is given - the same allowance the other seeders in this file make.
+    test.setTimeout(Math.max(test.info().timeout, SEED_TIMEOUT_MILLISECONDS + 120_000));
     writeFileSync(target, "This is not a video file. FFmpeg has to say so rather than crash.\n");
     await scanUntilAdopted(page, folder.id, folder.path, BROKEN_TITLE, target);
   }

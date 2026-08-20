@@ -50,6 +50,17 @@ const FIXTURE_TITLE = "Pornarr Playback Fixture";
 // Deliberately not a variation on the main fixture's name: other specs
 // match that one by pattern and a near-namesake makes them ambiguous.
 const SECOND_FIXTURE_TITLE = "Pornarr Playback Cap Clip";
+/**
+ * A title no browser can direct-play, for the one claim that is about the
+ * session a transcode opens.
+ *
+ * High 4:4:4 Predictive with 4:4:4 chroma: `_profile_family` in
+ * `pornarr_core/playback.py` refuses to fold that onto "high" because it
+ * carries a chroma subsampling no browser decodes, so `playback-info` answers
+ * `direct_play: false`. Every other fixture here is Constrained Baseline,
+ * which direct-plays and opens no session at all.
+ */
+const TRANSCODED_FIXTURE_TITLE = "Pornarr Playback Transcoded";
 /** Long enough that the player can be seeked past the progress threshold. */
 const FIXTURE_SECONDS = 30;
 const SEED_TIMEOUT_MILLISECONDS = 180_000;
@@ -64,7 +75,11 @@ const NO_FIXTURE =
  * holds something the application itself decided to hold; written under
  * `<data>/library` for the reason at the top of this file.
  */
-async function seedPlayable(page: Page, title: string): Promise<MediaDetail | null> {
+async function seedPlayable(
+  page: Page,
+  title: string,
+  undecodable = false,
+): Promise<MediaDetail | null> {
   const folder = await enabledRootFolder(page);
   if (folder === null || !hasFfmpeg()) return null;
   const root = join(hostDataRoot(), "library");
@@ -78,7 +93,7 @@ async function seedPlayable(page: Page, title: string): Promise<MediaDetail | nu
   const existing = await libraryItemByTitle(page, title);
   if (existing === null || !existsSync(target)) {
     test.setTimeout(Math.max(test.info().timeout, SEED_TIMEOUT_MILLISECONDS + 120_000));
-    if (!existsSync(target)) writeFixture(target);
+    if (!existsSync(target)) writeFixture(target, undecodable);
     // A scan asked for in the same wall-clock minute as the last one is
     // collapsed and answered without doing anything, so asking again on a
     // slower cadence is what gets the new file seen.
@@ -114,7 +129,10 @@ async function seedPlayable(page: Page, title: string): Promise<MediaDetail | nu
   return detail;
 }
 
-function writeFixture(target: string): void {
+function writeFixture(target: string, undecodable = false): void {
+  const encoding = undecodable
+    ? ["-profile:v", "high444", "-pix_fmt", "yuv444p"]
+    : ["-pix_fmt", "yuv420p"];
   execFileSync(
     "ffmpeg",
     [
@@ -136,8 +154,7 @@ function writeFixture(target: string): void {
       "ultrafast",
       "-crf",
       "34",
-      "-pix_fmt",
-      "yuv420p",
+      ...encoding,
       "-c:a",
       "aac",
       "-shortest",
@@ -216,15 +233,19 @@ test.describe("playback", () => {
   });
 
   test("leaving the player releases the transcode session it opened", async ({ page }) => {
-    const media = await playableMedia(page);
+    // A file the browser cannot open. Direct play now succeeds for every
+    // Constrained Baseline fixture in this file, and a title that direct-plays
+    // opens no session to release - so the claim can only be read off one that
+    // really does need a transcode.
+    const media = await seedPlayable(page, TRANSCODED_FIXTURE_TITLE, true);
     test.skip(media === null, NO_FIXTURE);
     if (media === null) return;
 
     const info = await playbackInfo(page, media.id);
-    test.skip(
+    expect(
       info.direct_play,
-      "The file plays directly, so no transcode session is opened to clean up.",
-    );
+      "The fixture direct-plays, so no session is opened and the claim is unreadable.",
+    ).toBe(false);
 
     await page.goto(`/library/${media.id}`);
     await expect
