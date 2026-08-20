@@ -16,8 +16,8 @@
  * accountable for.
  */
 import type { paths } from "@pornarr/api-client";
-import { MediaTile } from "@pornarr/ui";
-import { useQuery } from "@tanstack/react-query";
+import { Button, MediaTile } from "@pornarr/ui";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -83,12 +83,68 @@ export function DashboardRoute(): JSX.Element {
     },
   });
 
+  const cache = useQueryClient();
+
   const transcodeLimits = useQuery({
     queryKey: ["admin", "transcode", "limits"],
     queryFn: async () => {
       const { data, error, response } = await getApiClient().GET("/api/admin/transcode/limits");
       if (!data || error) throw apiFailure(error, response);
       return data;
+    },
+  });
+
+  /**
+   * Who is transcoding right now, what failed recently, and how fast this
+   * machine actually is.
+   *
+   * Four routes with no reader at all. "Why is it transcoding on CPU" is
+   * answered by the panel above; "who is holding the slots", "why did that
+   * stream stop" and "is this machine keeping up" were not answerable from
+   * anywhere - an operator had to read the worker's log.
+   *
+   * Sessions refetch on a cadence because they are live; failures and
+   * performance are history and are read once per visit.
+   */
+  const sessions = useQuery({
+    queryKey: ["admin", "transcode", "sessions"],
+    refetchInterval: 10_000,
+    queryFn: async () => {
+      const { data, error, response } = await getApiClient().GET("/api/admin/transcode/sessions");
+      if (!data || error) throw apiFailure(error, response);
+      return data;
+    },
+  });
+
+  const failures = useQuery({
+    queryKey: ["admin", "transcode", "failures"],
+    queryFn: async () => {
+      const { data, error, response } = await getApiClient().GET("/api/admin/transcode/failures");
+      if (!data || error) throw apiFailure(error, response);
+      return data;
+    },
+  });
+
+  const performance = useQuery({
+    queryKey: ["admin", "performance"],
+    queryFn: async () => {
+      const { data, error, response } = await getApiClient().GET("/api/admin/performance");
+      if (!data || error) throw apiFailure(error, response);
+      return data;
+    },
+  });
+
+  const endSession = useMutation({
+    mutationFn: async (sessionId: string) => {
+      const { error, response } = await getApiClient().DELETE(
+        "/api/admin/transcode/sessions/{session_id}",
+        { params: { path: { session_id: sessionId } } },
+      );
+      if (error) throw apiFailure(error, response);
+    },
+    onSuccess: () => {
+      void cache.invalidateQueries({ queryKey: ["admin", "transcode", "sessions"] });
+      void cache.invalidateQueries({ queryKey: ["admin", "transcode", "limits"] });
     },
   });
 
@@ -288,6 +344,93 @@ export function DashboardRoute(): JSX.Element {
               })}
             </p>
           )}
+        </section>
+      )}
+
+      {/* Absent rather than empty, like the panel above: an operator reading a
+          quiet instance should see a quiet page, not three headings over
+          nothing. */}
+      {(sessions.data ?? []).length === 0 ? null : (
+        <section aria-labelledby="sessions-heading" className="flex flex-col gap-3">
+          <h2 id="sessions-heading" className="text-sm text-ink">
+            {t("dashboard.sessions")}
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {(sessions.data ?? []).map((session) => (
+              <li
+                key={session.id}
+                className="flex flex-wrap items-center justify-between gap-3 border border-border bg-surface p-3"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-ink">{session.media_title}</p>
+                  <p className="text-2xs text-ink-faint">
+                    {t("dashboard.sessionDetail", {
+                      username: session.username,
+                      mode: session.mode,
+                      seconds: Math.round(session.elapsed_seconds),
+                    })}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  loading={endSession.isPending && endSession.variables === session.id}
+                  aria-label={t("dashboard.endSessionOf", { title: session.media_title })}
+                  onClick={() => endSession.mutate(session.id)}
+                >
+                  {t("dashboard.endSession")}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {(failures.data ?? []).length === 0 ? null : (
+        <section aria-labelledby="failures-heading" className="flex flex-col gap-3">
+          <h2 id="failures-heading" className="text-sm text-ink">
+            {t("dashboard.transcodeFailures")}
+          </h2>
+          <ul className="flex flex-col gap-1.5 text-sm">
+            {(failures.data ?? []).slice(0, 10).map((failure) => (
+              <li key={failure.session_id} className="text-ink-muted">
+                {/* The reason as the server gave it. FFmpeg's own output never
+                    reaches here - `transcode.md` is explicit that a viewer and
+                    an operator get a reason, not a command line. */}
+                {t("dashboard.transcodeFailure", {
+                  reason: failure.reason,
+                  code: failure.exit_code ?? "—",
+                })}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {(performance.data ?? []).length === 0 ? null : (
+        <section aria-labelledby="performance-heading" className="flex flex-col gap-3">
+          <h2 id="performance-heading" className="text-sm text-ink">
+            {t("dashboard.performance")}
+          </h2>
+          <dl className="flex flex-col gap-1 text-sm">
+            {(performance.data ?? []).map((input) => (
+              <div key={`${input.scope}-${input.metric}`} className="flex flex-wrap gap-2">
+                <dt className="text-ink-muted">
+                  {t(`dashboard.metrics.${input.metric}` as "dashboard.metrics.download_speed", {
+                    defaultValue: input.metric,
+                  })}
+                  {input.scope === "" ? "" : ` (${input.scope})`}
+                </dt>
+                <dd className="tabular-nums text-ink">
+                  {/* Null is what a metric with no measurement yet answers,
+                      and an em dash says that rather than "0.0", which would
+                      read as a machine that measured zero. */}
+                  {input.value === null ? "—" : input.value.toFixed(1)}
+                  {" · "}
+                  {t("dashboard.samples", { count: input.sample_count })}
+                </dd>
+              </div>
+            ))}
+          </dl>
         </section>
       )}
     </div>

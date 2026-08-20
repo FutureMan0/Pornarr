@@ -11,7 +11,19 @@
     "disabled": "Deaktiviert",
     "enable": "Aktivieren",
     "disable": "Deaktivieren",
-    "search": "Jetzt suchen"
+    "search": "Jetzt suchen",
+    "add": "Monitor anlegen",
+    "addTitle": "Auf einen Titel warten",
+    "query": "Suchbegriff",
+    "queryHint": "Der Monitor sucht damit bei jedem Feed-Durchlauf jeden Indexer ab.",
+    "profile": "Qualitätsprofil",
+    "profileAny": "Beliebig",
+    "minimumScore": "Mindestpunktzahl",
+    "save": "Monitor anlegen",
+    "cancel": "Abbrechen",
+    "remove": "Entfernen",
+    "removeMonitor": "Monitor für {{name}} entfernen",
+    "duplicate": "Dafür läuft bereits ein Monitor."
   },
   "recommendations": {
     "title": "Empfehlungen",
@@ -405,7 +417,30 @@
   "account": {
     "menu": "Konto",
     "signOut": "Abmelden",
-    "signOutEverywhere": "Überall abmelden"
+    "signOutEverywhere": "Überall abmelden",
+    "title": "Konto",
+    "intro": "Der Name, den andere sehen, was die heutigen Downloads verbraucht haben, und die verknüpften Identitäten.",
+    "loading": "Konto wird geladen",
+    "profile": "Profil",
+    "username": "Benutzername",
+    "role": "Rolle",
+    "displayName": "Anzeigename",
+    "displayNameHint": "Leer lassen, um unter dem Benutzernamen zu erscheinen.",
+    "save": "Speichern",
+    "saved": "Gespeichert.",
+    "storage": "Heute",
+    "downloadedToday": "Heruntergeladen",
+    "reserved": "Reserviert",
+    "downloads_one": "{{count}} Download",
+    "downloads_other": "{{count}} Downloads",
+    "identities": "Verknüpfte Identitäten",
+    "noIdentities": "Keine Identität verknüpft. Eine Anmeldung über einen Anbieter verknüpft eine.",
+    "unlink": "Trennen",
+    "unlinkIdentity": "{{name}} trennen",
+    "interest": "Was diese Instanz gelernt hat",
+    "interestHint": "Empfehlungen entstehen aus dem, was dieses Konto gesehen, bewertet und gespeichert hat. Vergessen löscht das und fängt neu an.",
+    "forget": "Vergiss, was du über mich weißt",
+    "interestForgotten": "Vergessen."
   },
   "activity": {
     "title": "Aktivität",
@@ -513,7 +548,9 @@
       "indexers": "Indexer",
       "metadata": "Metadaten",
       "peers": "Geteilte Bibliotheken",
-      "oidc": "Single Sign-on"
+      "oidc": "Single Sign-on",
+      "downloadClients": "Download-Clients",
+      "account": "Konto"
     },
     "title": "Einstellungen",
     "loading": "Einstellungen werden gelesen…",
@@ -525,7 +562,8 @@
       "housekeeping": "Aufräumen",
       "quality": "Qualitätsprofile",
       "paths": "Bibliothekspfade",
-      "invites": "Einladungen"
+      "invites": "Einladungen",
+      "members": "Mitglieder"
     },
     "unlimited": "leer bedeutet ohne Grenze",
     "weightsNote": "Die Gewichte hinter dem Feed sind hier noch nicht änderbar; sie kommen aus der Serverkonfiguration.",
@@ -815,7 +853,9 @@
     "resume": "Fortsetzen bei {{time}}",
     "seeAll": "Alle ansehen →",
     "relatedFrom": "nach Tags, Studio und Mitwirkenden",
-    "sceneLabel": "Szene {{index}}"
+    "sceneLabel": "Szene {{index}}",
+    "makeClips": "Clips schneiden",
+    "clipsMade": "Clips geschnitten. Sie liegen auf dem Shorts-Screen."
   },
   "errors": {
     "INVALID_CREDENTIALS": "Benutzername und Passwort passen nicht zusammen.",
@@ -1088,7 +1128,10 @@
     "visibility": {
       "private": "Privat",
       "shared": "Geteilt"
-    }
+    },
+    "addToCollection": "Zu Sammlung hinzufügen",
+    "noneOfYourOwn": "Du hast noch keine Sammlung. Leg auf dem Sammlungen-Screen eine an.",
+    "removeFromShelf": "{{title}} von diesem Regal nehmen"
   },
   "feed": {
     "loading": "Feed wird geladen",
@@ -1104,6 +1147,12 @@
     "forYou": {
       "title": "Für dich",
       "empty": "Noch nichts — der Feed lernt aus dem, was geschaut wird."
+    },
+    "outbox": {
+      "title": "Von dir verschickt",
+      "to": "an {{name}}",
+      "seen": "Gesehen",
+      "unseen": "Noch nicht gesehen"
     }
   },
   "rating": {
@@ -1182,7 +1231,22 @@
     "transcodingAvailable": "{{acceleration}} — {{codecs}}",
     "transcodingRejected": "{{acceleration}} nicht verfügbar — {{reason}}",
     "transcodingRejectedGeneral": "Nicht verfügbar — {{reason}}",
-    "transcodingSlots": "{{hardwareInUse}} von {{hardwareLimit}} Hardware-Slots belegt · {{softwareInUse}} von {{softwareLimit}} Software-Slots belegt"
+    "transcodingSlots": "{{hardwareInUse}} von {{hardwareLimit}} Hardware-Slots belegt · {{softwareInUse}} von {{softwareLimit}} Software-Slots belegt",
+    "sessions": "Läuft gerade",
+    "sessionDetail": "{{username}} · {{mode}} · {{seconds}}s",
+    "endSession": "Beenden",
+    "endSessionOf": "Transcode von {{title}} beenden",
+    "transcodeFailures": "Letzte Transcode-Fehler",
+    "transcodeFailure": "{{reason}} (Exit {{code}})",
+    "performance": "Was diese Maschine misst",
+    "samples_one": "{{count}} Messung",
+    "samples_other": "{{count}} Messungen",
+    "metrics": {
+      "download_speed": "Downloadgeschwindigkeit",
+      "post_processing_seconds_per_gib": "Nachbearbeitung, Sekunden pro GiB",
+      "import_seconds_per_gib": "Import, Sekunden pro GiB",
+      "disk_write_speed": "Schreibgeschwindigkeit"
+    }
   },
   "moderation": {
     "title": "Bewertungen & Kommentare",
@@ -1354,5 +1418,90 @@
     "neverUsed": "Noch nie benutzt",
     "revoke": "Widerrufen",
     "revokeKey": "{{name}} widerrufen"
+  },
+  "downloadClients": {
+    "title": "Download-Clients",
+    "intro": "Wohin ein gegriffenes Release geht. Ein Torrent geht an den Client, der Torrent spricht, ein NZB an den für Usenet; ohne Client für ein Protokoll lässt sich darüber nichts holen.",
+    "loading": "Download-Clients werden geladen",
+    "configured": "Eingerichtete Clients",
+    "none": "Es ist kein Download-Client eingerichtet, also lässt sich nichts holen. Unten einen anlegen.",
+    "add": "Client hinzufügen",
+    "implementation": "Client-Typ",
+    "implementations": {
+      "qbittorrent": "qBittorrent",
+      "sabnzbd": "SABnzbd"
+    },
+    "name": "Name",
+    "host": "Host",
+    "port": "Port",
+    "username": "Benutzername",
+    "password": "Passwort",
+    "apiKey": "API-Schlüssel",
+    "category": "Kategorie",
+    "categoryPlaceholder": "pornarr",
+    "removeCompleted": "Download nach dem Import aus dem Client entfernen",
+    "secretKept": "Passwort oder Schlüssel leer lassen, um den gespeicherten zu behalten.",
+    "test": "Testen",
+    "testClient": "{{name}} testen",
+    "edit": "Bearbeiten",
+    "editClient": "{{name}} bearbeiten",
+    "remove": "Entfernen",
+    "removeClient": "{{name}} entfernen",
+    "confirmRemove": "Ein entfernter Client lässt liegen, was er gerade hält.",
+    "confirmRemoveAction": "Client entfernen",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "never": "Nie getestet",
+    "healthUnknown": "Noch nicht getestet",
+    "healthHealthy": "Antwortet",
+    "healthUnhealthy": "Antwortet nicht",
+    "healthOther": "Gemeldet als {{health}}",
+    "lastErrorDetail": "Der Client meldete zuletzt: {{reason}}"
+  },
+  "members": {
+    "title": "Mitglieder",
+    "intro": "Alle mit einem Konto auf dieser Instanz. Sperren schließt die Tür, ohne anzurühren, was jemand bewertet, gesehen oder geschrieben hat.",
+    "loading": "Mitglieder werden geladen",
+    "active": "Aktiv",
+    "suspended": "Gesperrt",
+    "suspend": "Sperren",
+    "restore": "Entsperren",
+    "suspendMember": "{{name}} sperren",
+    "restoreMember": "{{name}} entsperren",
+    "thatIsYou": "Das bist du.",
+    "roles": {
+      "admin": "Administrator",
+      "member": "Mitglied",
+      "viewer": "Zuschauer",
+      "guest": "Gast"
+    }
+  },
+  "sends": {
+    "send": "Jemandem schicken",
+    "recipient": "An wen",
+    "choose": "Jemanden wählen",
+    "note": "Notiz",
+    "notePlaceholder": "Optional",
+    "confirm": "Schicken",
+    "cancel": "Abbrechen",
+    "loadingMembers": "Mitglieder werden geladen",
+    "nobodyElse": "Sonst hat hier noch niemand ein Konto.",
+    "sentConfirmation": "Geschickt."
+  },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "loading": "Benachrichtigungen werden geladen",
+    "empty": "Es ist nichts passiert, was du nicht mitbekommen hast.",
+    "readAll": "Alle als gelesen markieren",
+    "markRead": "Als gelesen markieren",
+    "preferences": "Worüber du informiert wirst",
+    "preferencesHint": "Eine abgeschaltete Art wird für dich nicht mehr aufgezeichnet. Die Sache selbst passiert weiter.",
+    "kinds": {
+      "request_available": "Eine deiner Anfragen ist fertig.",
+      "request_failed": "Eine deiner Anfragen konnte nicht geholt werden.",
+      "quarantine_review": "Etwas wartet auf Prüfung.",
+      "automation_action": "Eine automatische Regel hat für dich gehandelt.",
+      "instance_notice": "Ein Hinweis dieser Instanz."
+    }
   }
 }

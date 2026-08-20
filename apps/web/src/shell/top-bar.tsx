@@ -28,6 +28,7 @@ import { messageForError } from "../lib/api-error";
 import { setArtVisible, useArtVisible } from "../lib/art-visibility";
 import { ConnectionPip } from "./connection-pip";
 import { GlobalSearch } from "./global-search";
+import { Notifications } from "./notifications";
 import { usePublishedTitle } from "./page-title";
 import type { SidebarLayout } from "./sidebar";
 import { StatusCluster } from "./status-cluster";
@@ -127,6 +128,8 @@ export function TopBar({ layout, connection }: TopBarProps): JSX.Element {
           </button>
 
           {phone ? null : <StatusCluster />}
+
+          <Notifications />
 
           <ConnectionPip state={connection} />
 

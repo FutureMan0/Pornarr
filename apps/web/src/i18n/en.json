@@ -11,7 +11,19 @@
     "disabled": "Disabled",
     "enable": "Enable",
     "disable": "Disable",
-    "search": "Search now"
+    "search": "Search now",
+    "add": "Add monitor",
+    "addTitle": "Watch for a title",
+    "query": "Search term",
+    "queryHint": "The monitor searches every indexer for this on each feed cycle.",
+    "profile": "Quality profile",
+    "profileAny": "Any",
+    "minimumScore": "Minimum score",
+    "save": "Create monitor",
+    "cancel": "Cancel",
+    "remove": "Remove",
+    "removeMonitor": "Remove the monitor for {{name}}",
+    "duplicate": "A monitor is already watching for that."
   },
   "recommendations": {
     "title": "Recommendations",
@@ -405,7 +417,30 @@
   "account": {
     "menu": "Account",
     "signOut": "Sign out",
-    "signOutEverywhere": "Sign out everywhere"
+    "signOutEverywhere": "Sign out everywhere",
+    "title": "Account",
+    "intro": "The name other members see, what today's downloads have used, and the identities you have linked.",
+    "loading": "Loading your account",
+    "profile": "Profile",
+    "username": "Username",
+    "role": "Role",
+    "displayName": "Display name",
+    "displayNameHint": "Leave it empty to be shown by your username.",
+    "save": "Save",
+    "saved": "Saved.",
+    "storage": "Today",
+    "downloadedToday": "Downloaded",
+    "reserved": "Reserved",
+    "downloads_one": "{{count}} download",
+    "downloads_other": "{{count}} downloads",
+    "identities": "Linked identities",
+    "noIdentities": "No identity is linked. Signing in through a provider links one.",
+    "unlink": "Unlink",
+    "unlinkIdentity": "Unlink {{name}}",
+    "interest": "What this instance has learned",
+    "interestHint": "Recommendations are built from what this account has watched, rated and saved. Forgetting it clears that and starts again.",
+    "forget": "Forget what you know about me",
+    "interestForgotten": "Forgotten."
   },
   "activity": {
     "title": "Activity",
@@ -513,7 +548,9 @@
       "indexers": "Indexers",
       "metadata": "Metadata",
       "peers": "Shared libraries",
-      "oidc": "Single sign-on"
+      "oidc": "Single sign-on",
+      "downloadClients": "Download clients",
+      "account": "Account"
     },
     "title": "Settings",
     "loading": "Reading the settings…",
@@ -525,7 +562,8 @@
       "housekeeping": "Housekeeping",
       "quality": "Quality profiles",
       "paths": "Library paths",
-      "invites": "Invitations"
+      "invites": "Invitations",
+      "members": "Members"
     },
     "unlimited": "empty means no limit",
     "weightsNote": "The signal weights behind the feed are not editable here yet; they are read from the server's configuration.",
@@ -815,7 +853,9 @@
     "resume": "Resume {{time}}",
     "seeAll": "See all →",
     "relatedFrom": "from tags, studio and performers",
-    "sceneLabel": "Scene {{index}}"
+    "sceneLabel": "Scene {{index}}",
+    "makeClips": "Make clips",
+    "clipsMade": "Clips made. They are on the shorts screen."
   },
   "errors": {
     "INVALID_CREDENTIALS": "That username and password do not match.",
@@ -1088,7 +1128,10 @@
     "visibility": {
       "private": "Private",
       "shared": "Shared"
-    }
+    },
+    "addToCollection": "Add to collection",
+    "noneOfYourOwn": "You have no collections yet. Make one on the collections screen.",
+    "removeFromShelf": "Take {{title}} off this shelf"
   },
   "feed": {
     "loading": "Loading feed",
@@ -1104,6 +1147,12 @@
     "forYou": {
       "title": "For you",
       "empty": "Nothing yet — the feed learns from what gets watched."
+    },
+    "outbox": {
+      "title": "Sent by you",
+      "to": "to {{name}}",
+      "seen": "Seen",
+      "unseen": "Not seen yet"
     }
   },
   "rating": {
@@ -1182,7 +1231,22 @@
     "transcodingAvailable": "{{acceleration}} — {{codecs}}",
     "transcodingRejected": "{{acceleration}} unavailable — {{reason}}",
     "transcodingRejectedGeneral": "Not available — {{reason}}",
-    "transcodingSlots": "{{hardwareInUse}} of {{hardwareLimit}} hardware slots in use · {{softwareInUse}} of {{softwareLimit}} software slots in use"
+    "transcodingSlots": "{{hardwareInUse}} of {{hardwareLimit}} hardware slots in use · {{softwareInUse}} of {{softwareLimit}} software slots in use",
+    "sessions": "Transcoding now",
+    "sessionDetail": "{{username}} · {{mode}} · {{seconds}}s",
+    "endSession": "End",
+    "endSessionOf": "End the transcode of {{title}}",
+    "transcodeFailures": "Recent transcode failures",
+    "transcodeFailure": "{{reason}} (exit {{code}})",
+    "performance": "What this machine measures",
+    "samples_one": "{{count}} sample",
+    "samples_other": "{{count}} samples",
+    "metrics": {
+      "download_speed": "Download speed",
+      "post_processing_seconds_per_gib": "Post-processing, seconds per GiB",
+      "import_seconds_per_gib": "Import, seconds per GiB",
+      "disk_write_speed": "Disk write speed"
+    }
   },
   "moderation": {
     "title": "Ratings & comments",
@@ -1354,5 +1418,90 @@
     "neverUsed": "Never used",
     "revoke": "Revoke",
     "revokeKey": "Revoke {{name}}"
+  },
+  "downloadClients": {
+    "title": "Download clients",
+    "intro": "Where a grabbed release is sent. A torrent goes to the client that speaks torrent and an NZB to the one that speaks usenet; without a client for a protocol, nothing on that protocol can be fetched.",
+    "loading": "Loading download clients",
+    "configured": "Configured clients",
+    "none": "No download client is configured, so nothing can be fetched. Add one below.",
+    "add": "Add a client",
+    "implementation": "Client type",
+    "implementations": {
+      "qbittorrent": "qBittorrent",
+      "sabnzbd": "SABnzbd"
+    },
+    "name": "Name",
+    "host": "Host",
+    "port": "Port",
+    "username": "Username",
+    "password": "Password",
+    "apiKey": "API key",
+    "category": "Category",
+    "categoryPlaceholder": "pornarr",
+    "removeCompleted": "Remove the download from the client once it has been imported",
+    "secretKept": "Leave the password or key empty to keep the one already stored.",
+    "test": "Test",
+    "testClient": "Test {{name}}",
+    "edit": "Edit",
+    "editClient": "Edit {{name}}",
+    "remove": "Remove",
+    "removeClient": "Remove {{name}}",
+    "confirmRemove": "Removing a client leaves whatever it is holding where it is.",
+    "confirmRemoveAction": "Remove the client",
+    "cancel": "Cancel",
+    "save": "Save",
+    "never": "Never tested",
+    "healthUnknown": "Not tested yet",
+    "healthHealthy": "Answering",
+    "healthUnhealthy": "Not answering",
+    "healthOther": "Reported as {{health}}",
+    "lastErrorDetail": "The client last said: {{reason}}"
+  },
+  "members": {
+    "title": "Members",
+    "intro": "Everybody with an account on this instance. Suspending closes the door without touching what somebody rated, watched or wrote.",
+    "loading": "Loading members",
+    "active": "Active",
+    "suspended": "Suspended",
+    "suspend": "Suspend",
+    "restore": "Restore",
+    "suspendMember": "Suspend {{name}}",
+    "restoreMember": "Restore {{name}}",
+    "thatIsYou": "This is you.",
+    "roles": {
+      "admin": "Administrator",
+      "member": "Member",
+      "viewer": "Viewer",
+      "guest": "Guest"
+    }
+  },
+  "sends": {
+    "send": "Send to someone",
+    "recipient": "Who",
+    "choose": "Choose somebody",
+    "note": "Note",
+    "notePlaceholder": "Optional",
+    "confirm": "Send",
+    "cancel": "Cancel",
+    "loadingMembers": "Loading members",
+    "nobodyElse": "Nobody else has an account here yet.",
+    "sentConfirmation": "Sent."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "loading": "Loading notifications",
+    "empty": "Nothing has happened that you were not watching.",
+    "readAll": "Mark all read",
+    "markRead": "Mark read",
+    "preferences": "What you are told about",
+    "preferencesHint": "Turning a kind off stops it being recorded for you. It does not stop the thing itself.",
+    "kinds": {
+      "request_available": "A request you made is ready to watch.",
+      "request_failed": "A request you made could not be fetched.",
+      "quarantine_review": "Something is waiting to be reviewed.",
+      "automation_action": "An automatic rule acted on your behalf.",
+      "instance_notice": "A notice from this instance."
+    }
   }
 }

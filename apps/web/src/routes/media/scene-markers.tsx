@@ -19,7 +19,8 @@
  * over nothing tells a reader the feature is broken rather than that the work
  * has not run.
  */
-import { useQuery } from "@tanstack/react-query";
+import { Button } from "@pornarr/ui";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -35,6 +36,7 @@ export interface SceneMarkersProps {
 
 export function SceneMarkers({ mediaId, onSeek }: SceneMarkersProps): JSX.Element | null {
   const { t } = useTranslation();
+  const cache = useQueryClient();
 
   const scenes = useQuery({
     queryKey: ["scenes", mediaId],
@@ -49,14 +51,46 @@ export function SceneMarkers({ mediaId, onSeek }: SceneMarkersProps): JSX.Elemen
     },
   });
 
+  /**
+   * Cut clips from these scenes now, rather than waiting for the nightly job.
+   *
+   * `POST /api/shorts/media/{media_id}/generate` had no caller: a short could
+   * only ever appear by itself, overnight, from whatever happened to be
+   * watched. The marks are already on screen and each one is exactly what a
+   * clip is cut from, so this is where asking for one belongs.
+   */
+  const generate = useMutation({
+    mutationFn: async () => {
+      const { error, response } = await getApiClient().POST(
+        "/api/shorts/media/{media_id}/generate",
+        { params: { path: { media_id: mediaId } }, body: { seconds: 15, maximum: 3 } },
+      );
+      if (error) throw apiFailure(error, response);
+    },
+    onSuccess: () => void cache.invalidateQueries({ queryKey: ["shorts"] }),
+  });
+
   const markers = scenes.data?.scenes ?? [];
   if (markers.length === 0) return null;
 
   return (
     <section aria-labelledby="scenes-heading" className="flex flex-col gap-2">
-      <h2 id="scenes-heading" className="text-2xs uppercase tracking-[0.08em] text-ink-muted">
-        {t("media.scenes")}
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id="scenes-heading" className="text-2xs uppercase tracking-[0.08em] text-ink-muted">
+          {t("media.scenes")}
+        </h2>
+        <Button variant="ghost" loading={generate.isPending} onClick={() => generate.mutate()}>
+          {t("media.makeClips")}
+        </Button>
+      </div>
+      {generate.isSuccess ? (
+        <output className="block text-2xs text-ink-faint">{t("media.clipsMade")}</output>
+      ) : null}
+      {generate.isError ? (
+        <p role="alert" className="text-2xs text-ink">
+          {t("errors.generic")}
+        </p>
+      ) : null}
       <ul className="flex flex-wrap gap-2">
         {markers.map((scene) => (
           <li key={scene.id}>

@@ -206,8 +206,9 @@ describe("keyboard reach", () => {
     // Derived from the nav table rather than a fixed number: every destination
     // added to the sidebar sits between the top of the page and this trigger,
     // so a literal here goes stale the next time the navigation grows. The
-    // slack covers the skip link, the search field and the status cluster.
-    const budget = NAV_ITEMS.length + 6;
+    // slack covers the skip link, the search field, the artwork toggle, the
+    // status cluster, the notifications button and the locale menu.
+    const budget = NAV_ITEMS.length + 8;
 
     let reached = false;
     for (let step = 0; step < budget && !reached; step += 1) {

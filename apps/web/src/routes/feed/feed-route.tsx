@@ -20,6 +20,7 @@ import { tileBlur, useArtVisible } from "../../lib/art-visibility";
 import { seedFrom } from "../../lib/format";
 
 const SENT_KEY = ["recommendations", "sent-to-me"] as const;
+const OUTBOX_KEY = ["sends", "sent"] as const;
 
 export function FeedRoute(): JSX.Element {
   const { t } = useTranslation();
@@ -31,6 +32,15 @@ export function FeedRoute(): JSX.Element {
     queryKey: ["recommendations"],
     queryFn: async () => {
       const { data, error, response } = await getApiClient().GET("/api/recommendations");
+      if (!data || error) throw apiFailure(error, response);
+      return data;
+    },
+  });
+
+  const outbox = useQuery({
+    queryKey: OUTBOX_KEY,
+    queryFn: async () => {
+      const { data, error, response } = await getApiClient().GET("/api/sends/sent");
       if (!data || error) throw apiFailure(error, response);
       return data;
     },
@@ -102,6 +112,36 @@ export function FeedRoute(): JSX.Element {
           </ul>
         )}
       </section>
+
+      {/* What you handed to somebody else, and whether they have looked at it.
+          `GET /api/sends/sent` had no reader: a send disappeared the moment it
+          was made, so there was no way to tell a title you had passed on from
+          one you meant to. Absent rather than empty - a shelf headed "Sent by
+          you" over nothing tells a reader the feature is broken. */}
+      {outbox.data === undefined || outbox.data.length === 0 ? null : (
+        <section aria-labelledby="outbox-heading" className="flex flex-col gap-4">
+          <h2 id="outbox-heading" className="text-lg text-ink">
+            {t("feed.outbox.title")}
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {outbox.data.map((item) => (
+              <li
+                key={item.id}
+                className="flex flex-wrap items-baseline justify-between gap-2 border border-border bg-surface p-3"
+              >
+                <Link to={`/library/${item.media_id}`} className="text-sm text-ink underline">
+                  {item.media_title}
+                </Link>
+                <span className="text-2xs text-ink-faint">
+                  {t("feed.outbox.to", { name: item.recipient ?? "" })}
+                  {" · "}
+                  {item.seen_at === null ? t("feed.outbox.unseen") : t("feed.outbox.seen")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section aria-labelledby="for-you-heading" className="flex flex-col gap-4">
         <h2 id="for-you-heading" className="text-lg text-ink">
