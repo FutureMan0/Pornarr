@@ -56,18 +56,26 @@ async def validate_import_file(
         return IntakeResult(IntakeDecision.RETRY, IntakeReason.WRITING)
     if suffix not in VIDEO_EXTENSIONS:
         return IntakeResult(IntakeDecision.REJECT, IntakeReason.UNSUPPORTED_EXTENSION)
+    # Stability before size, and every size question asked of the stable read.
+    # A download client moving a finished file into the completed directory is
+    # briefly a real video file of the wrong size, and judging that first
+    # rejected it as `too_small` - which is terminal, and the trigger is keyed
+    # by source path, so the download was lost for good rather than retried on
+    # the next pass. `writing` is the decision this module already has for
+    # exactly that file; the only reason it never reached it was the order.
     before = path.stat().st_size
-    if before == 0:
+    await asyncio.sleep(stability_seconds)
+    size = path.stat().st_size
+    if size != before:
+        return IntakeResult(IntakeDecision.RETRY, IntakeReason.WRITING)
+    if size == 0:
         return IntakeResult(IntakeDecision.REJECT, IntakeReason.EMPTY)
-    if before < MINIMUM_SIZE_BYTES:
+    if size < MINIMUM_SIZE_BYTES:
         return IntakeResult(IntakeDecision.REJECT, IntakeReason.TOO_SMALL)
     if "sample" in _tokens(path.stem):
         return IntakeResult(IntakeDecision.REJECT, IntakeReason.SAMPLE)
     if _tokens(path.stem) & EXTRA_TOKENS:
         return IntakeResult(IntakeDecision.REJECT, IntakeReason.EXTRA)
-    await asyncio.sleep(stability_seconds)
-    if path.stat().st_size != before:
-        return IntakeResult(IntakeDecision.RETRY, IntakeReason.WRITING)
     if malware_scanner is not None and not await malware_scanner(path):
         return IntakeResult(IntakeDecision.REJECT, IntakeReason.MALWARE)
     return IntakeResult(IntakeDecision.ACCEPT)

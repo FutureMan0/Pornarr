@@ -227,17 +227,6 @@ async def test_intake_classifies_every_documented_case_with_its_reason(
     assert (result.decision, result.reason) == (decision, reason), what
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "DEFECT. `validate_import_file` reads the size and rejects at "
-        "import_intake.py:59-63, before the stability wait at :68. A download the "
-        "client is still moving into the completed directory is therefore rejected "
-        "as `too_small` - permanently, because `rejected` is terminal and the "
-        "trigger is keyed by source path - instead of being retried as `writing`, "
-        "which is the decision the module already has for exactly this case."
-    ),
-)
 async def test_a_file_still_growing_is_retried_rather_than_called_too_small(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
