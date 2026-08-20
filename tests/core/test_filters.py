@@ -136,3 +136,49 @@ def test_term_rules_match_the_description_case_insensitively() -> None:
     decision = evaluate_filters(ContentCandidate(title="Title", description="an example"), [rule])
 
     assert decision.rule is rule
+
+
+@pytest.mark.parametrize(
+    ("pattern", "title"),
+    [
+        # The operator writes the release's own spelling; the pipeline compares
+        # against a title `split_release_name` has already normalised, where
+        # dots, underscores and hyphens have all become spaces. Compared
+        # literally, a term with any separator in it never matched anything -
+        # and a filter that silently never fires is worse than no filter.
+        ("gauntlet-hold", ContentCandidate(title="gauntlet hold 2026")),
+        ("desi.bang", ContentCandidate(title="Desi Bang Amateur")),
+        ("true_amateurs", ContentCandidate(title="True Amateurs Solos 7")),
+        # And the other direction, for a description the scraper left as it was.
+        ("big tits", ContentCandidate(title="x", description="BIG-TITS compilation")),
+    ],
+)
+def test_a_term_matches_however_its_separators_are_written(
+    pattern: str, title: ContentCandidate
+) -> None:
+    decision = evaluate_filters(
+        title,
+        [FilterRule(id="r", kind=FilterRuleKind.TERM, pattern=pattern, action=FilterAction.REJECT)],
+    )
+
+    assert decision.action is FilterAction.REJECT
+
+
+@pytest.mark.parametrize(
+    ("pattern", "candidate"),
+    [
+        # Separators are folded, letters are not: two different words stay two
+        # different words.
+        ("gauntlet-held", ContentCandidate(title="gauntlet hold 2026")),
+        ("amateurs", ContentCandidate(title="Amateur Solo")),
+    ],
+)
+def test_folding_separators_does_not_make_different_words_match(
+    pattern: str, candidate: ContentCandidate
+) -> None:
+    decision = evaluate_filters(
+        candidate,
+        [FilterRule(id="r", kind=FilterRuleKind.TERM, pattern=pattern, action=FilterAction.REJECT)],
+    )
+
+    assert decision.action is FilterAction.ALLOW

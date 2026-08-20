@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
+
+_SEPARATORS = re.compile(r"[^0-9a-z]+")
 
 
 class FilterRuleKind(StrEnum):
@@ -84,14 +87,29 @@ def evaluate_filters(candidate: ContentCandidate, rules: Iterable[FilterRule]) -
     return FilterDecision(action=rule.action, rule=rule, matched=matching_rules)
 
 
+def _folded(value: str) -> str:
+    """Case and separators reduced to one spelling, and nothing else."""
+
+    return _SEPARATORS.sub(" ", value.casefold()).strip()
+
+
 def _matches(rule: FilterRule, candidate: ContentCandidate) -> bool:
     if not rule.enabled:
         return False
 
     pattern = rule.pattern.casefold()
     if rule.kind is FilterRuleKind.TERM:
-        return bool(pattern) and (
-            pattern in candidate.title.casefold() or pattern in candidate.description.casefold()
+        # Separators folded on both sides. An operator writes the release's own
+        # spelling - `desi.bang`, `true_amateurs`, `gauntlet-hold` - while the
+        # title this is compared against has already been through
+        # `split_release_name`, which turns every separator into a space.
+        # Compared literally, a term carrying any separator matched nothing at
+        # all, and a filter that silently never fires is worse than no filter.
+        # Only separators are folded: two different words stay two different
+        # words.
+        term = _folded(pattern)
+        return bool(term) and (
+            term in _folded(candidate.title) or term in _folded(candidate.description)
         )
     if rule.kind is FilterRuleKind.TAG:
         return bool(pattern) and any(pattern == tag.casefold() for tag in candidate.tags)
