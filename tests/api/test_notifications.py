@@ -84,3 +84,31 @@ async def test_preferences_gate_live_notification_delivery(app, client) -> None:
     assert delivered is not None
     assert redis.events[0][0] == "notification"
     assert redis.channels == [f"pornarr:events:user:{user.id}"]
+
+
+async def test_the_preference_list_answers_every_kind_with_what_it_is_set_to(app, client) -> None:
+    """`GET /api/notifications/preferences` answered 500 for every caller.
+
+    `dict(result.tuples())` reads as "the rows as a mapping" and is not: a
+    `Result` carries `keys()`, so `dict` takes it for a mapping and indexes it,
+    and `Result.__getitem__` does not exist. Nothing in the application had
+    ever called the route, so the interpreter never reached the line.
+    """
+
+    user = await create_user(app)
+    await login(client, user.username, "correct horse battery staple")
+
+    default = await client.get("/api/notifications/preferences")
+    assert default.status_code == 200
+    assert {entry["kind"] for entry in default.json()} == {kind.value for kind in NotificationKind}
+    assert all(entry["enabled"] for entry in default.json())
+
+    await client.put(
+        "/api/notifications/preferences/request_failed",
+        json={"enabled": False},
+        headers=csrf_headers(client),
+    )
+
+    after = await client.get("/api/notifications/preferences")
+    assert after.status_code == 200
+    assert {entry["kind"]: entry["enabled"] for entry in after.json()}["request_failed"] is False
