@@ -147,7 +147,7 @@ def _rate_limit_keys(request: Request, username: str) -> tuple[str, str]:
     )
 
 
-async def database_session(request: Request) -> AsyncIterator[AsyncSession]:
+async def _request_transaction(request: Request) -> AsyncIterator[AsyncSession]:
     """One transaction per request, using the API process' one engine."""
     async with AsyncSession(request.app.state.engine, expire_on_commit=False) as session:
         try:
@@ -156,6 +156,33 @@ async def database_session(request: Request) -> AsyncIterator[AsyncSession]:
         except Exception:
             await session.rollback()
             raise
+
+
+async def database_session(
+    session: Annotated[AsyncSession, Depends(_request_transaction, scope="function")],
+) -> AsyncSession:
+    """The request's session, committed before the answer reaches the caller.
+
+    The transaction above used to be this dependency, and a dependency with
+    `yield` unwinds at the end of the *request* by default -- after the response
+    has been sent. Every write therefore answered the caller before it committed,
+    and the caller's own refetch, which is what every screen in this product does
+    after a mutation, raced a transaction that had not landed: a download client
+    created with 201 answered 404 to the connection test issued fourteen
+    milliseconds later, a created request was missing from the list read straight
+    afterwards, and a grab reported success while the row still had no selected
+    release.
+
+    `scope="function"` is FastAPI's own answer to that -- the generator ends when
+    the path operation returns, before anything is written to the client -- and it
+    is declared here, once, rather than at each of the forty places that ask for a
+    session. Written at the call sites it would be a rule every future router had
+    to remember; the wrapper makes it a property of the dependency instead, so
+    `Depends(database_session)` cannot be spelled in a way that brings the defect
+    back. It also cannot serve a streaming route by accident: the transaction is
+    gone before the body starts, which is what `streaming_session` below is for.
+    """
+    return session
 
 
 @asynccontextmanager

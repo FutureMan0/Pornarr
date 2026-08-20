@@ -520,7 +520,7 @@ dependencies = [
 requires-dist = [
     { name = "argon2-cffi", specifier = ">=23.1" },
     { name = "arq", specifier = ">=0.28,<0.29" },
-    { name = "fastapi", specifier = ">=0.115" },
+    { name = "fastapi", specifier = ">=0.141" },
     { name = "httpcore", specifier = ">=1.0" },
     { name = "httpx", specifier = ">=0.28" },
     { name = "pornarr-core", editable = "packages/core" },
