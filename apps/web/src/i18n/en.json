@@ -318,13 +318,15 @@
       "loading": "Loading local results",
       "empty": "No matching library items. Indexer results may still find a release.",
       "count": "{{matched}} of {{total}}",
-      "countCapped": "{{matched}} of more than {{total}}"
+      "countCapped": "{{matched}} of more than {{total}}",
+      "scrollRegion": "Library results"
     },
     "external": {
       "title": "From indexers",
       "notSearched": "Indexer results will appear after you search.",
       "empty": "No indexer has returned a matching release yet.",
-      "indexerStatus": "Indexer search status"
+      "indexerStatus": "Indexer search status",
+      "scrollRegion": "Indexer results"
     },
     "status": {
       "pending": "Waiting",
