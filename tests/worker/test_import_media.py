@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager
+from datetime import date
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -12,9 +13,11 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from pornarr_core.naming import normalize_title, split_release_name
 from pornarr_db.base import Base
 from pornarr_db.models.audit import AuditLog
-from pornarr_db.models.download import ImportTrigger
+from pornarr_db.models.download import DownloadJob, ImportTrigger
+from pornarr_db.models.entities import MediaPerformer, MediaTag, Performer, Tag
 from pornarr_db.models.filters import (
     ContentFilterProfile,
     ContentFilterRule,
@@ -25,9 +28,11 @@ from pornarr_db.models.filters import (
 from pornarr_db.models.media import Media, MediaFile
 from pornarr_db.models.quality import QualityDefinition, QualityProfile, QualityProfileItem
 from pornarr_db.models.quarantine import QuarantineItem
+from pornarr_db.models.request import Request, RequestStatus
 from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.models.user import User
 from pornarr_db.types import set_cipher
+from pornarr_integrations.metadata import MetadataCandidate
 from pornarr_media.probe import MediaProbeError, ProbeResult
 from pornarr_shared.config import Settings
 from pornarr_shared.crypto import CredentialCipher
@@ -346,25 +351,34 @@ async def test_the_recorded_reason_codes_are_not_the_ones_the_api_contract_names
     assert QuarantineReasonCode.LOW_CONFIDENCE.value != "METADATA_CONFIDENCE_LOW"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "docs/pipelines/import.md step 7 says the quality verdict ends the import with a "
-        "reason. `import_ready_trigger` never calls `decide_quality`: no quality profile is "
-        "read anywhere in the import path, so a release outside every profile is imported."
-    ),
-)
 @pytest.mark.parametrize(
     ("verdict", "allowed", "cutoff", "existing_quality", "release"),
     [
         # "Not in the profile": the profile allows 480p and the release is 1080p.
         ("not in the profile", "480p", "480p", None, "Out Of Profile 1080p"),
         # "Not an upgrade": the same media already holds a file of the same
-        # quality, so the new one is worth nothing more than what is there.
-        ("not an upgrade", "1080p", "2160p", "1080p", "Same Again 1080p"),
-        # "Already past cutoff": what is on disk already reaches the cutoff, so
-        # even a better release must not be taken.
-        ("already past cutoff", "1080p", "1080p", "1080p", "Past Cutoff 1080p"),
+        # quality, so the new one is worth nothing more than what is there. The
+        # release states a studio and a date because that is what makes it the
+        # same media: step 3's fuzzy half is what tells step 7 which file this
+        # release would replace.
+        (
+            "not an upgrade",
+            "1080p",
+            "2160p",
+            "1080p",
+            "Held Studio - Same Again (2026-01-01) 1080p",
+        ),
+        # "Already past cutoff": the release is genuinely better than the held
+        # file, and is still refused because the held file already reaches the
+        # cutoff. It has to be better, or `decide_quality` answers "not an
+        # upgrade" first and this row would prove nothing the one above does not.
+        (
+            "already past cutoff",
+            "2160p",
+            "1080p",
+            "1080p",
+            "Held Studio - Past Cutoff (2026-01-01) 2160p",
+        ),
     ],
 )
 async def test_the_quality_verdict_ends_the_import_with_a_reason(
@@ -376,11 +390,7 @@ async def test_the_quality_verdict_ends_the_import_with_a_reason(
     existing_quality: str | None,
     release: str,
 ) -> None:
-    """All three verdicts `docs/pipelines/import.md:26-27` names, not just the first.
-
-    Each row is a separate strict expected failure, so implementing one verdict
-    turns exactly that row red and leaves the other two recorded as absent.
-    """
+    """All three verdicts `docs/pipelines/import.md:26-27` names, not just the first."""
     definitions = {
         name: QualityDefinition(
             name=name,
@@ -400,13 +410,25 @@ async def test_the_quality_verdict_ends_the_import_with_a_reason(
     profile.items = [QualityProfileItem(quality_definition_id=definitions[allowed].id, position=0)]
     session.add(profile)
     if existing_quality is not None:
-        media = Media(title="Held", normalized_title="held")
+        # The held file has to be the file this release would replace, or "not
+        # an upgrade" and "past cutoff" have nothing to be about. Step 3 calls a
+        # release an upgrade candidate only when the studio, the title, the
+        # release date and the duration all agree, so the held media is built
+        # from the release's own name and the probe's own duration.
+        held = split_release_name(release)
+        media = Media(
+            title=held.title,
+            normalized_title=normalize_title(held.title),
+            studio=held.studio,
+            release_date=date(2026, 1, 1),
+        )
         session.add(
             MediaFile(
                 media=media,
                 path=str(tmp_path / "library" / "held.mp4"),
                 size=1,
                 quality=existing_quality,
+                duration_seconds=PROBED.duration,
             )
         )
     trigger_id = await ready_trigger(session, tmp_path, release)
@@ -426,20 +448,16 @@ async def test_the_quality_verdict_ends_the_import_with_a_reason(
     assert "quality" in trigger.error_code.casefold()
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "docs/pipelines/import.md:29-30 says step 8 resolves 'global and user filter "
-        "rules, with the user profile only ever tightening the global one'. "
-        "`_global_filter_rules` (import_media.py:225-234) loads only "
-        "`FilterProfileScope.GLOBAL` profiles and passes `()` for the user rules, so a "
-        "user rule that tightens the global outcome is never consulted at import time."
-    ),
-)
 async def test_a_user_rule_tightens_the_global_outcome_at_import_time(
     session: AsyncSession, tmp_path: Path
 ) -> None:
-    """The user profile tightens: global allows, the user quarantines, quarantine wins."""
+    """The user profile tightens: global allows, the user quarantines, quarantine wins.
+
+    Whose profile that is, is the whole question. The download is here because
+    this reader requested it, and the trigger reaches back to them through the
+    download job their `Request` was attached to - which is the only link an
+    import has to a person, and the reason no other account's rules are read.
+    """
     owner = User(username="viewer", password_hash="x")
     session.add(owner)
     await session.flush()
@@ -465,6 +483,7 @@ async def test_a_user_rule_tightens_the_global_outcome_at_import_time(
         ]
     )
     trigger_id = await ready_trigger(session, tmp_path, "Marked Scene 1080p")
+    await _requested_by(session, trigger_id, owner)
 
     outcome = await import_ready_trigger(
         session,
@@ -476,6 +495,63 @@ async def test_a_user_rule_tightens_the_global_outcome_at_import_time(
 
     assert outcome.status == "quarantined"
     assert await session.scalar(select(MediaFile)) is None
+
+
+async def test_another_readers_rule_does_not_tighten_an_import_they_did_not_ask_for(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    """The other side of the same rule, which is what keeps it from being a bug.
+
+    A user profile tightens the import its owner asked for. Reading every user
+    profile instead would let one reader's rule about their own view decide what
+    the instance keeps on disk for everybody, which is not what "the user
+    profile only ever tightening the global one" grants.
+    """
+    stranger = User(username="stranger", password_hash="x")
+    session.add(stranger)
+    await session.flush()
+    user_profile = ContentFilterProfile(scope=FilterProfileScope.USER, user_id=stranger.id)
+    session.add(user_profile)
+    session.add(
+        ContentFilterRule(
+            profile=user_profile,
+            kind=FilterRuleKind.TERM,
+            pattern="marked",
+            action=FilterAction.QUARANTINE,
+            enabled=True,
+        )
+    )
+    trigger_id = await ready_trigger(session, tmp_path, "Marked Scene 1080p")
+
+    outcome = await import_ready_trigger(
+        session,
+        trigger_id,
+        settings(tmp_path),
+        probe_file=lambda _: PROBED,
+        fingerprint=lambda _: None,
+    )
+
+    assert outcome.status == "imported"
+
+
+async def _requested_by(session: AsyncSession, trigger_id: UUID, user: User) -> None:
+    """Attach the trigger to a download job this user's request produced."""
+
+    job = DownloadJob(client_name="qbittorrent", protocol="torrent", release_guid="guid")
+    session.add(job)
+    await session.flush()
+    session.add(
+        Request(
+            user_id=user.id,
+            query="marked",
+            status=RequestStatus.DOWNLOADING,
+            download_job_id=job.id,
+        )
+    )
+    trigger = await session.get(ImportTrigger, trigger_id)
+    assert trigger is not None
+    trigger.download_job_id = job.id
+    await session.flush()
 
 
 async def test_every_firing_filter_rule_is_written_to_the_audit_log(
@@ -654,3 +730,110 @@ async def test_a_release_date_outside_the_window_is_not_a_fuzzy_match(
 
     assert second.status == "imported"
     assert second.media_id != first.media_id
+
+
+class TaggingProvider:
+    """A provider that knows the scene, the way a live one does."""
+
+    name = "tpdb"
+    precedence = 1
+
+    async def find_by_fingerprint(
+        self, *, oshash: str | None, perceptual_hash: str | None
+    ) -> MetadataCandidate | None:
+        del oshash, perceptual_hash
+        return None
+
+    async def find_by_site_date_title(
+        self, *, site: str, release_date: object, title: str
+    ) -> MetadataCandidate | None:
+        del site, release_date
+        return MetadataCandidate(
+            title=title,
+            studio="Desi Bang",
+            site="Desi Bang",
+            release_date=date(2026, 8, 10),
+            tags=("Amateur", "BBW", "amateur"),
+            performers=("Ada Example", "Bo Sample"),
+        )
+
+    async def search(self, *, title: str, performers: tuple[str, ...]) -> list[MetadataCandidate]:
+        del title, performers
+        return []
+
+
+async def test_the_scene_metadata_a_provider_returned_is_written_to_the_library(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    """ADR 0005 L9 tier two, all the way onto the record.
+
+    The cascade's tags and performers only ever reached `evaluate_filters`.
+    Nothing wrote them, so `/api/media/{id}` answered with empty lists however
+    much a provider knew, tag filtering matched nothing, and the interest
+    profile that recommendations are built from had no signal to read.
+    """
+
+    trigger_id = await ready_trigger(
+        session, tmp_path, "DesiBang.26.08.10.Amateur.Chubby.Woman.Gets.Nailed.XXX.1080p"
+    )
+
+    outcome = await import_ready_trigger(
+        session,
+        trigger_id,
+        settings(tmp_path),
+        adapters=[TaggingProvider()],
+        probe_file=lambda _: PROBED,
+        fingerprint=lambda _: "sitedatetitle",
+    )
+
+    assert outcome.status == "imported"
+    media = await session.get(Media, outcome.media_id)
+    assert media is not None
+    assert (media.studio, media.confidence) == ("Desi Bang", 0.80)
+
+    tags = (
+        await session.execute(
+            select(Tag.name, MediaTag.confidence, MediaTag.source)
+            .join(MediaTag, MediaTag.tag_id == Tag.id)
+            .where(MediaTag.media_id == media.id)
+        )
+    ).all()
+    # "Amateur" and "amateur" are one tag, and the provider that supplied them
+    # is the source, so a correction can be told apart from a scrape.
+    assert sorted(name for name, _, _ in tags) == ["Amateur", "BBW"]
+    assert {source for _, _, source in tags} == {"tpdb"}
+    assert {confidence for _, confidence, _ in tags} == {0.80}
+
+    performers = (
+        await session.execute(
+            select(Performer.name)
+            .join(MediaPerformer, MediaPerformer.performer_id == Performer.id)
+            .where(MediaPerformer.media_id == media.id)
+        )
+    ).scalars()
+    assert sorted(performers) == ["Ada Example", "Bo Sample"]
+
+
+async def test_a_second_import_reuses_the_tag_and_performer_rows(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    """One vocabulary, however many titles use it."""
+
+    names = ("DesiBang.26.08.10.One.Scene.XXX.1080p", "DesiBang.26.08.10.Two.Scene.XXX.1080p")
+    for index, name in enumerate(names):
+        trigger_id = await (
+            ready_trigger(session, tmp_path, name)
+            if index == 0
+            else second_ready_trigger(session, tmp_path, name)
+        )
+        await import_ready_trigger(
+            session,
+            trigger_id,
+            settings(tmp_path),
+            adapters=[TaggingProvider()],
+            probe_file=lambda _: PROBED,
+            fingerprint=lambda _, name=name: name,
+        )
+
+    assert len((await session.execute(select(Tag))).scalars().all()) == 2
+    assert len((await session.execute(select(Performer))).scalars().all()) == 2

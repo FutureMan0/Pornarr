@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -33,10 +33,21 @@ from pornarr_core.filters import FilterRuleKind as CoreFilterRuleKind
 from pornarr_core.library_placement import Placement, place_file
 from pornarr_core.matching import ParsedRelease, parse_release
 from pornarr_core.naming import normalize_title
+from pornarr_core.quality import (
+    ExistingFile,
+    QualityDecision,
+    QualityVerdict,
+    ReleaseCandidate,
+    decide_quality,
+)
+from pornarr_core.quality import QualityProfile as CoreQualityProfile
 from pornarr_db.audit import write_audit
 from pornarr_db.models.download import ImportTrigger
+from pornarr_db.models.entities import MediaPerformer, MediaTag, Performer, Tag
 from pornarr_db.models.filters import ContentFilterProfile, ContentFilterRule, FilterProfileScope
 from pornarr_db.models.media import Media, MediaFile
+from pornarr_db.models.quality import QualityDefinition, QualityProfile, QualityProfileItem
+from pornarr_db.models.request import Request
 from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.session import session_scope
 from pornarr_integrations.metadata import MetadataCandidate, MetadataProviderAdapter
@@ -132,7 +143,7 @@ async def import_ready_trigger(
             # what the unknown-file-type rule exists to catch.
             file_type=None if technical is None else technical.container,
         ),
-        await _global_filter_rules(session),
+        await _filter_rules(session, trigger),
     )
     # Written before the branch, so the record exists whichever way the decision
     # goes and a rule that only ever quarantines is not invisible next to one
@@ -175,6 +186,18 @@ async def import_ready_trigger(
     parsed = parse_release(source.stem)
 
     duplicate = await _fuzzy_duplicate(session, candidate, technical)
+    # Step 7, and it reads the duplicate check's answer because two of the three
+    # verdicts docs/pipelines/import.md:26-27 names - not an upgrade, and a held
+    # file already past the cutoff - are about the file this import would
+    # replace, which is exactly what step 3's fuzzy half identifies.
+    rejection = await _quality_rejection(session, parsed, duplicate)
+    if rejection is not None:
+        _fail(
+            trigger,
+            f"quality_{rejection.reason.value}",
+            f"The quality profile refused this release: {rejection.reason.value}.",
+        )
+        return ImportOutcome(trigger.status)
     if duplicate is not None:
         # Step 3's fuzzy half: title, studio, date and duration all cleared the
         # threshold, so this is a better file for a title already in the
@@ -211,6 +234,9 @@ async def import_ready_trigger(
         session, placement, candidate, resolution.confidence, technical, parsed, file_hash
     )
     await session.flush()
+    await _record_scene_vocabulary(
+        session, media, candidate, resolution.confidence, resolution.provider
+    )
     trigger.status = IMPORTED
     trigger.error_code = None
     trigger.error_detail = None
@@ -281,16 +307,141 @@ async def _library_root(session: AsyncSession, settings: Settings) -> Path:
     return settings.library_path if folder is None else Path(folder.path)
 
 
-async def _global_filter_rules(session: AsyncSession) -> tuple[CoreFilterRule, ...]:
-    """An import belongs to the instance, so only the global profile applies."""
+async def _filter_rules(
+    session: AsyncSession, trigger: ImportTrigger
+) -> tuple[CoreFilterRule, ...]:
+    """The global profile, tightened by the profile of whoever asked for the file.
 
+    docs/pipelines/import.md:29-30 asks step 8 for "global and user filter rules,
+    resolved with the user profile only ever tightening the global one", and
+    `resolve_rules` already keeps global precedence on a tie. The open question
+    was whose user profile that is. An import belongs to the instance, so the
+    global profile always applies; the user half is the account whose request
+    produced the download, which the trigger reaches through the download job a
+    `Request` was attached to. Only that account's, and only when there is one:
+    a file nobody requested - a library scan, an operator dropping a release
+    into the completed directory - is tightened by nothing, because a rule one
+    reader wrote about their own view must never decide what the instance keeps
+    on disk for everybody else.
+    """
+
+    requester = await _requesting_user(session, trigger)
+    owned_by_requester = ContentFilterProfile.scope == FilterProfileScope.GLOBAL
+    if requester is not None:
+        owned_by_requester = or_(owned_by_requester, ContentFilterProfile.user_id == requester)
     profiles = await session.scalars(
         select(ContentFilterProfile)
         .options(selectinload(ContentFilterProfile.rules))
-        .where(ContentFilterProfile.scope == FilterProfileScope.GLOBAL)
+        .where(owned_by_requester)
     )
-    rules = [_core_rule(rule) for profile in profiles for rule in profile.rules]
-    return resolve_rules(rules, ())
+    global_rules: list[CoreFilterRule] = []
+    user_rules: list[CoreFilterRule] = []
+    for profile in profiles:
+        target = global_rules if profile.scope is FilterProfileScope.GLOBAL else user_rules
+        target.extend(_core_rule(rule) for rule in profile.rules)
+    return resolve_rules(global_rules, user_rules)
+
+
+async def _requesting_user(session: AsyncSession, trigger: ImportTrigger) -> UUID | None:
+    """The account whose request this download fulfils, if it fulfils one.
+
+    `Request.target_owner_id` names whose library the result lands in, which is
+    a placement question; the filter profile that may tighten this import is the
+    one belonging to the reader who asked, and that is `Request.user_id`.
+    """
+
+    if trigger.download_job_id is None:
+        return None
+    return await session.scalar(
+        select(Request.user_id)
+        .where(Request.download_job_id == trigger.download_job_id)
+        .order_by(Request.created_at, Request.id)
+        .limit(1)
+    )
+
+
+async def _quality_rejection(
+    session: AsyncSession, parsed: ParsedRelease, upgrade_of: Media | None
+) -> QualityDecision | None:
+    """Step 7: the quality verdict, or nothing if there is no verdict to give.
+
+    docs/pipelines/import.md:26-27 ends the import here when the release is not
+    in the profile, is not an upgrade on what is held, or would improve on a
+    file that already reaches the cutoff - the half of ADR 0029 that was never
+    wired into the import path, so a release outside every profile was imported
+    anyway. Two situations produce no verdict rather than a rejection: an
+    instance with no default profile has not expressed an opinion yet, and a
+    release whose resolution matches no ranked definition cannot be scored at
+    all. The file is already on disk in both cases, and refusing what nobody
+    ranked would throw away a download for the absence of configuration.
+    """
+
+    profile = await session.scalar(
+        select(QualityProfile)
+        .options(
+            selectinload(QualityProfile.cutoff_quality),
+            selectinload(QualityProfile.items).selectinload(QualityProfileItem.quality_definition),
+        )
+        .where(QualityProfile.is_default.is_(True))
+    )
+    if profile is None:
+        return None
+    quality = await _quality_definition(session, parsed.resolution)
+    if quality is None:
+        return None
+    decision = decide_quality(
+        ReleaseCandidate(quality=quality.name, quality_rank=quality.weight),
+        CoreQualityProfile(
+            allowed_qualities=frozenset(item.quality_definition.name for item in profile.items),
+            cutoff_quality_rank=profile.cutoff_quality.weight,
+            minimum_custom_format_score=profile.minimum_custom_format_score,
+        ),
+        existing=await _existing_file(session, upgrade_of),
+    )
+    return decision if decision.verdict is QualityVerdict.REJECT else None
+
+
+async def _quality_definition(
+    session: AsyncSession, resolution: str | None
+) -> QualityDefinition | None:
+    """The ranked definition a resolution names, lowest rank where several share it.
+
+    An import reads its quality out of the file name, which states a resolution
+    far more reliably than it states a source. Where two definitions rank the
+    same resolution the lower one is taken: a release that does not say where it
+    came from must not be credited with the better-ranked variant, because that
+    rank is what decides whether it counts as an upgrade on the held file.
+    """
+
+    if resolution is None:
+        return None
+    return await session.scalar(
+        select(QualityDefinition)
+        .where(func.lower(QualityDefinition.resolution) == resolution.casefold())
+        .order_by(QualityDefinition.weight, QualityDefinition.name)
+        .limit(1)
+    )
+
+
+async def _existing_file(session: AsyncSession, media: Media | None) -> ExistingFile | None:
+    """The rank of the active file this import would replace, if there is one.
+
+    `decide_quality`'s "not an upgrade" and "cutoff met" verdicts are both about
+    a file already on disk, and the only one this release can be measured
+    against is the active file of the media step 3 named as its upgrade
+    candidate. A title the library does not hold has nothing to improve on, and
+    neither has one whose held file records a quality no definition ranks.
+    """
+
+    if media is None:
+        return None
+    quality = await session.scalar(
+        select(MediaFile.quality).where(
+            MediaFile.media_id == media.id, MediaFile.is_active.is_(True)
+        )
+    )
+    definition = await _quality_definition(session, quality)
+    return None if definition is None else ExistingFile(quality_rank=definition.weight)
 
 
 def _core_rule(rule: ContentFilterRule) -> CoreFilterRule:
@@ -348,6 +499,64 @@ def _adopt_candidate(media: Media, candidate: MetadataCandidate, confidence: flo
     media.studio = candidate.studio
     media.release_date = candidate.release_date
     media.confidence = confidence
+
+
+def _by_normalized_name(names: Sequence[str]) -> dict[str, str]:
+    """One entry per name the vocabulary actually holds, first spelling wins.
+
+    A provider answers with "Amateur" and "amateur" in the same list, and both
+    resolve to one `Tag` row - inserting each would break the assignment's own
+    uniqueness on (media, tag, source).
+    """
+
+    unique: dict[str, str] = {}
+    for name in (candidate.strip() for candidate in names):
+        if name:
+            unique.setdefault(name.casefold(), name)
+    return unique
+
+
+async def _record_scene_vocabulary(
+    session: AsyncSession,
+    media: Media,
+    candidate: MetadataCandidate,
+    confidence: float,
+    provider: str,
+) -> None:
+    """Write the tags and performers the provider knew onto the record.
+
+    Until this existed the cascade's answer reached `evaluate_filters` and
+    stopped there: `/api/media/{id}` answered with empty lists however much a
+    provider knew, tag filtering had nothing to match, and the interest
+    profile recommendations are built from had no signal at all.
+
+    The source is the provider's own name, so a scrape and an operator's
+    correction stay distinguishable - `uq_media_tags_source` keys on it.
+    """
+
+    for normalized, name in _by_normalized_name(candidate.tags).items():
+        tag = await session.scalar(select(Tag).where(Tag.normalized_name == normalized))
+        if tag is None:
+            tag = Tag(name=name, normalized_name=normalized)
+            session.add(tag)
+            await session.flush()
+        session.add(
+            MediaTag(
+                media_id=media.id,
+                tag_id=tag.id,
+                confidence=confidence,
+                source=provider,
+            )
+        )
+    for normalized, name in _by_normalized_name(candidate.performers).items():
+        performer = await session.scalar(
+            select(Performer).where(Performer.normalized_name == normalized)
+        )
+        if performer is None:
+            performer = Performer(name=name, normalized_name=normalized)
+            session.add(performer)
+            await session.flush()
+        session.add(MediaPerformer(media_id=media.id, performer_id=performer.id))
 
 
 def _record_media(
