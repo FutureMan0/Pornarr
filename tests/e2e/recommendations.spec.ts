@@ -18,7 +18,9 @@ test.describe("recommendations", () => {
     // Scoped to the screen's own region: the shell renders the primary
     // navigation as a list, so an unscoped listitem is the sidebar.
     const feed = page.getByRole("region", { name: "Recommendations" });
-    await expect(feed.getByRole("heading", { name: "Recommendations", level: 1 })).toBeVisible();
+    // The shell's banner owns the screen title, not the region below it, so the
+    // heading is asserted on the page and only the list is scoped.
+    await expect(page.getByRole("heading", { name: "Recommendations", level: 1 })).toBeVisible();
     await expect(
       feed
         .getByRole("listitem")
