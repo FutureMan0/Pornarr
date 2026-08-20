@@ -58,6 +58,16 @@ export async function setUpAdministrator(page: Page): Promise<void> {
   await page.getByRole("textbox", { name: "Library path" }).fill("/data");
   await page.getByRole("button", { name: "Continue" }).click();
 
+  // Steps 3 and 4. Both are optional by design -- the wizard says an indexer and
+  // a client can be added later under Settings -- and a helper whose job is
+  // "get me a signed-in administrator" takes that offer. A spec that wants
+  // either one configured drives the step itself.
+  await expect(page.getByRole("heading", { name: "Add a search indexer" })).toBeVisible();
+  await page.getByRole("button", { name: "Skip for now" }).click();
+
+  await expect(page.getByRole("heading", { name: "Add a download client" })).toBeVisible();
+  await page.getByRole("button", { name: "Skip for now" }).click();
+
   const filtersHeading = page.getByRole("heading", { name: "Review content filters" });
   const copyImports = page.getByRole("button", { name: "Continue with copy imports" });
   await expect(filtersHeading.or(copyImports)).toBeVisible();
