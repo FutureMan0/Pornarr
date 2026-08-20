@@ -152,28 +152,23 @@ describe("the codes the backend can actually emit", () => {
   });
 
   /**
-   * The scan runs one way only, and that is the hole in it.
+   * The scan run the other way, which is where the hole was.
    *
    * Everything above starts from the Python and asks whether the frontend has a
-   * sentence. Nothing starts from `docs/api-contract.md` and asks whether the
-   * code it names exists — and ADR 0009 makes the contract the boundary, so a
-   * code written down there is a promise a client may be generated against.
+   * sentence. This starts from `docs/api-contract.md` and asks whether the code
+   * it names exists — and ADR 0009 makes the contract the boundary, so a code
+   * written down there is a promise a client may be generated against.
    *
-   * Four of the nine codes the contract offers as its representative vocabulary
-   * are in no source file anywhere, `HARDLINK_CROSS_DEVICE` among them — which
-   * is the code in the document's own worked example of what an error looks
-   * like. Three more were already recorded by earlier pieces:
-   * `DUPLICATE_IN_LIBRARY` and `METADATA_CONFIDENCE_LOW` by piece 05 (the
-   * product spells them `duplicate` and `low_confidence`, as import-trigger and
-   * quarantine reasons rather than HTTP codes), and `DOWNLOAD_CLIENT_UNREACHABLE`
-   * by piece 04 (the product raises `DOWNLOAD_CLIENT_CONNECTION_FAILED`).
-   *
-   * Executed as an expected failure rather than skipped, so the list is real and
-   * the day somebody closes the gap this file turns red and says so. Fixing it
-   * means either implementing four codes or editing the contract, and which one
-   * is a product decision this test is not entitled to make.
+   * Six of the nine codes the contract used to offer as its representative
+   * vocabulary were in no source file anywhere: `HARDLINK_CROSS_DEVICE` — the
+   * code in the document's own worked example of what an error looks like —
+   * `QUALITY_NOT_IN_PROFILE`, `QUALITY_CUTOFF_MET` and `FILTER_REJECTED`, plus
+   * `DUPLICATE_IN_LIBRARY` and `METADATA_CONFIDENCE_LOW`, which the product
+   * spells `duplicate` and `low_confidence` as import-trigger and quarantine
+   * reasons rather than HTTP codes. The contract names nine real ones now, and
+   * this is what holds it to that.
    */
-  test.fails("every code the contract names as representative exists", () => {
+  test("every code the contract names as representative exists", () => {
     const contract = readFileSync(join(REPOSITORY_ROOT, "docs", "api-contract.md"), "utf8");
     const section = contract.slice(contract.indexOf("Representative codes"));
     const named = [...new Set(matches(section, /`([A-Z][A-Z0-9_]{4,})`/g))].sort();

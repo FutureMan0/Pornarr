@@ -19,9 +19,9 @@ Errors are objects, not strings:
 
 ```json
 {
-  "code": "HARDLINK_CROSS_DEVICE",
-  "status": 422,
-  "context": { "source": "/data/torrents/x", "target": "/data/library/y" }
+  "code": "TRANSCODE_LIMIT_REACHED",
+  "status": 429,
+  "context": { "limit": "per_user" }
 }
 ```
 
@@ -29,10 +29,14 @@ The code is stable and machine-readable. The frontend maps codes to translated
 messages; it never renders a server-supplied English string. Adding a code is a
 contract change and shows up in the OpenAPI diff.
 
-Representative codes: `RELEASE_EXPIRED`, `DUPLICATE_IN_LIBRARY`,
-`QUALITY_NOT_IN_PROFILE`, `QUALITY_CUTOFF_MET`, `HARDLINK_CROSS_DEVICE`,
-`METADATA_CONFIDENCE_LOW`, `FILTER_REJECTED`, `TRANSCODE_LIMIT_REACHED`,
-`DOWNLOAD_CLIENT_CONNECTION_FAILED`.
+Representative codes: `RELEASE_EXPIRED`, `RELEASE_FILTERED`, `RELEASE_IN_LIBRARY`,
+`TRANSCODE_LIMIT_REACHED`, `DOWNLOAD_CLIENT_CONNECTION_FAILED`,
+`INDEXER_CONNECTION_FAILED`, `REQUEST_QUOTA_EXCEEDED`, `ROOT_FOLDER_INVALID`,
+`SETUP_REQUIRED`. Every one of them is a code some route raises; a code named here
+that nothing raises is worse than a shorter list, because a client may be generated
+against it. Not every reason the product records is an HTTP error code: an import
+trigger's `duplicate` or `quality_not_in_profile`, and a quarantine item's
+`low_confidence`, are fields on those records and never appear in a response body.
 
 ### One indexer failing is not the request failing
 
@@ -54,10 +58,23 @@ instances all deliver. Event identifiers are Redis stream identifiers, which mak
 
 ```
 search.started      search.result_added   search.completed
-request.created     download.queued       download.started
-download.progress   download.completed    download.failed
-import.started      import.completed      media.available
+request.created     request.not_found     download.queued
+download.started    download.progress     download.status
+download.completed  download.failed       import.started
+import.completed    media.available       scan.progress
+scan.completed      storage.low_space     settings.changed
+notification
 ```
+
+Every frame the server can publish is named above, because a client is generated from
+this document and cannot know about one that is not. `download.status` reports each
+change of a job's state while it runs, where `download.completed` and
+`download.failed` are published once at its terminal outcome. `request.not_found` ends
+a request whose search window expired. `scan.progress` and `scan.completed` report a
+library scan. `settings.changed` names the keys an administrator changed, and
+`storage.low_space` goes to administrators alone. `notification` is the one frame with
+no dotted name: it is a delivered user notification rather than a step in the life of
+anything, and like `storage.low_space` it is addressed to a single reader.
 
 Reverse proxies must not buffer this endpoint. The API sets `X-Accel-Buffering: no`
 and the deployment documentation states the nginx and Caddy equivalents.

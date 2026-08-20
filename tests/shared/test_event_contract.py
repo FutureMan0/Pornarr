@@ -1,10 +1,16 @@
 """The event vocabulary the server publishes, against the one the contract names.
 
-ADR 0020 L6 says "all twelve live events", and `docs/api-contract.md` L45-48
-prints the twelve names in a block. Claim 13.20 of the gauntlet is that those
-twelve are the event types, which is a claim about the whole product rather than
+ADR 0020 L6 says "all nineteen live events", and `docs/api-contract.md` prints the
+nineteen names in a block under `## Events`. Claim 13.20 of the gauntlet is that
+those are the event types, which is a claim about the whole product rather than
 about one route, so it is asserted here by reading the publications out of the
 source rather than by watching a stream long enough to see all of them.
+
+It said twelve on both counts until the seven frames the server published without
+documenting them - `download.status`, `request.not_found`, `scan.progress`,
+`scan.completed`, `storage.low_space`, `settings.changed` and `notification` -
+were written down. A client is generated from the contract and could not know
+they existed.
 
 `tests/e2e/admin-system.spec.ts` proves the transport - that a frame published in
 the worker arrives on a stream opened against the API, with a Redis stream id
@@ -16,8 +22,6 @@ from __future__ import annotations
 import ast
 import re
 from pathlib import Path
-
-import pytest
 
 ROOT = Path(__file__).parents[2]
 CONTRACT = ROOT / "docs/api-contract.md"
@@ -60,17 +64,23 @@ def published_event_types() -> set[str]:
 
 
 def contract_event_types() -> list[str]:
-    """The names printed in the fenced block under `## Events`."""
+    """The names printed in the fenced block under `## Events`.
+
+    The dotted half is optional because one frame has no dot in it:
+    `notification` is a delivered notification rather than a step in the life of
+    a search, a download or an import, and a reader that only matched `x.y`
+    would have called the contract wrong for naming it.
+    """
 
     events = CONTRACT.read_text().split("## Events", 1)[1].split("```")[1]
-    return re.findall(r"[a-z_]+\.[a-z_]+", events)
+    return re.findall(r"[a-z_]+(?:\.[a-z_]+)?", events)
 
 
-def test_the_contract_prints_exactly_twelve_names() -> None:
-    """ADR 0020 L6: "all twelve live events"."""
+def test_the_contract_prints_exactly_nineteen_names() -> None:
+    """ADR 0020 L6: "all nineteen live events"."""
     names = contract_event_types()
-    assert len(names) == 12, names
-    assert len(set(names)) == 12, names
+    assert len(names) == 19, names
+    assert len(set(names)) == 19, names
 
 
 def test_every_publication_site_is_found_by_the_reader_above() -> None:
@@ -85,46 +95,30 @@ def test_every_publication_site_is_found_by_the_reader_above() -> None:
     assert len(published) >= 12, published
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "The product publishes fourteen event types and only nine of them are in the "
-        "contract's twelve. `download.completed` and `download.failed` are published by "
-        "nothing, while `download.status`, `request.not_found`, `scan.progress`, "
-        "`scan.completed`, `storage.low_space`, `settings.changed` and `notification` are "
-        "published and undocumented. See .gauntlet/pieces/13-admin-system/HOLES.md, claim "
-        "13.20, and .gauntlet/pieces/04-acquisition/BUILD.md defect 7 for the three of the "
-        "five that acquisition closed: `request.created`, `download.queued` and "
-        "`download.started`."
-    ),
-)
-def test_the_published_event_types_are_the_twelve_the_contract_names() -> None:
+def test_the_published_event_types_are_the_ones_the_contract_names() -> None:
     assert published_event_types() == set(contract_event_types())
 
 
-def test_the_contract_names_five_frames_nothing_publishes() -> None:
-    """The remaining half of the divergence that costs a reader a live update.
+def test_every_frame_the_contract_names_is_published() -> None:
+    """The half of the divergence that cost a reader a live update, closed.
 
-    `request.created`, `download.queued` and `download.started` are published
-    now (`apps/api/pornarr_api/routers/requests.py`, at request creation and at
-    grab). `download.completed` and `download.failed` are not: nothing marks a
-    download job's own terminal outcome with a dedicated frame, only the
-    generic `download.status`.
+    `request.created`, `download.queued` and `download.started` were closed by
+    acquisition. `download.completed` and `download.failed` were the last two:
+    nothing marked a download job's terminal outcome with the frame the
+    contract names, only the generic `download.status`, so a client written
+    against the contract watched for a download to end and was never told.
+    `apps/worker/pornarr_worker/jobs/download_poll.py` publishes both now.
     """
-    assert set(contract_event_types()) - published_event_types() == {
-        "download.completed",
-        "download.failed",
-    }
+    assert set(contract_event_types()) - published_event_types() == set()
 
 
-def test_the_server_publishes_seven_frames_the_contract_does_not_name() -> None:
-    """The other half: a client generated from the contract cannot know these exist."""
-    assert published_event_types() - set(contract_event_types()) == {
-        "download.status",
-        "request.not_found",
-        "scan.progress",
-        "scan.completed",
-        "storage.low_space",
-        "settings.changed",
-        "notification",
-    }
+def test_the_server_publishes_no_frame_the_contract_does_not_name() -> None:
+    """The other half, closed by writing the seven undocumented frames down.
+
+    A client is generated from the contract, so a frame the server publishes and
+    the document does not name is one the client silently drops. Kept as its own
+    assertion rather than folded into the equality above, because this is the
+    direction that regresses: adding a `publish_event` call is a one-line change
+    and editing `docs/api-contract.md` is a separate act of remembering.
+    """
+    assert published_event_types() - set(contract_event_types()) == set()
