@@ -47,3 +47,16 @@ class MetadataProviderAdapter(Protocol):
     async def search(
         self, *, title: str, performers: tuple[str, ...]
     ) -> list[MetadataCandidate]: ...
+
+
+def site_key(site: str) -> str:
+    """A site name as both sides of a match write it.
+
+    A scene release concatenates it - an indexer answers `DesiBang` - while a
+    provider spells it out, `Desi Bang`. Compared literally the exact tier
+    never matched a real download and every one of them fell to the filename
+    tier. Only separators are dropped, so two sites that differ by a letter
+    still differ.
+    """
+
+    return "".join(character for character in site.casefold() if character.isalnum())

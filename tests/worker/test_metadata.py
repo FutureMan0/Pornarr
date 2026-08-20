@@ -141,6 +141,61 @@ async def test_exact_site_date_title_precedes_fuzzy_matching(session: AsyncSessi
     )
 
 
+async def test_a_site_written_without_its_space_is_the_same_site(session: AsyncSession) -> None:
+    """A scene release concatenates what the provider writes with a space.
+
+    `DesiBang.26.08.10.…` is what the indexer answers with; ThePornDB calls the
+    same site `Desi Bang`. Compared literally the exact tier never matched a
+    real download, and every one of them fell to the filename tier.
+    """
+
+    provider = Provider(
+        exact=MetadataCandidate(
+            title="Amateur Chubby Woman Gets Nailed",
+            site="Desi Bang",
+            release_date=date(2026, 8, 10),
+            provider_id="exact",
+        )
+    )
+
+    resolution = await resolve_metadata_cascade(
+        session,
+        MetadataSubject(
+            source_path="/data/usenet/completed/scene.mp4",
+            title="Amateur Chubby Woman Gets Nailed",
+            site="DesiBang",
+            release_date=date(2026, 8, 10),
+        ),
+        [provider],
+    )
+
+    assert (resolution.confidence, resolution.tier) == (0.80, MetadataTier.SITE_DATE_TITLE)
+
+
+async def test_a_different_site_on_the_same_date_is_not_a_match(session: AsyncSession) -> None:
+    provider = Provider(
+        exact=MetadataCandidate(
+            title="Amateur Chubby Woman Gets Nailed",
+            site="Some Other Studio",
+            release_date=date(2026, 8, 10),
+            provider_id="exact",
+        )
+    )
+
+    resolution = await resolve_metadata_cascade(
+        session,
+        MetadataSubject(
+            source_path="/data/usenet/completed/scene.mp4",
+            title="Amateur Chubby Woman Gets Nailed",
+            site="DesiBang",
+            release_date=date(2026, 8, 10),
+        ),
+        [provider],
+    )
+
+    assert resolution.tier == MetadataTier.FILENAME
+
+
 async def test_stashdb_wins_same_tier_conflicts_before_tpdb(session: AsyncSession) -> None:
     stashdb = Provider(
         exact=MetadataCandidate(

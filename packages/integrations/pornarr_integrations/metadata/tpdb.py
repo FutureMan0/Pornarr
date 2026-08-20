@@ -7,7 +7,11 @@ from datetime import date
 
 import httpx
 
-from pornarr_integrations.metadata import MetadataCandidate, MetadataRateLimitError
+from pornarr_integrations.metadata import (
+    MetadataCandidate,
+    MetadataRateLimitError,
+    site_key,
+)
 from pornarr_shared.errors import PornarrError
 
 DEFAULT_ENDPOINT = "https://api.theporndb.net"
@@ -75,7 +79,7 @@ class TpdbAdapter:
             candidate
             for candidate in candidates
             if candidate.site is not None
-            and candidate.site.casefold() == site.casefold()
+            and site_key(candidate.site) == site_key(site)
             and candidate.release_date == release_date
             and candidate.title.casefold() == title.casefold()
         ]

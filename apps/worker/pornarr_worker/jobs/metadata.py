@@ -22,6 +22,7 @@ from pornarr_integrations.metadata import (
     MetadataCandidate,
     MetadataProviderAdapter,
     MetadataRateLimitError,
+    site_key,
 )
 from pornarr_shared.jobs import job
 from pornarr_worker.metadata_providers import configured_providers
@@ -69,6 +70,12 @@ class MetadataSubject:
         return cls(
             source_path=str(path),
             title=parsed.title,
+            # ADR 0005 L9's second tier is site plus date plus title. Nothing
+            # populated the site before, so that tier - and, for a release that
+            # names no performers, the fuzzy tier under it - could never run:
+            # every download a provider had not already hashed fell through to
+            # the filename tier at confidence 0.30.
+            site=parsed.site,
             release_date=parsed.date,
             performers=parsed.performers,
             oshash=oshash,
@@ -81,6 +88,9 @@ class MetadataResolution:
     candidate: MetadataCandidate
     confidence: float
     tier: MetadataTier
+    # Which provider answered, so what it said can be recorded as its own and
+    # told apart from an operator's correction later.
+    provider: str = "filename"
 
     def as_payload(self) -> dict[str, object]:
         return {
@@ -115,7 +125,10 @@ async def resolve_metadata_cascade(
             )
             if candidate is not None:
                 return MetadataResolution(
-                    candidate, CONFIDENCE[MetadataTier.FINGERPRINT], MetadataTier.FINGERPRINT
+                    candidate,
+                    CONFIDENCE[MetadataTier.FINGERPRINT],
+                    MetadataTier.FINGERPRINT,
+                    provider.name,
                 )
 
     if subject.site and subject.release_date and subject.title:
@@ -143,6 +156,7 @@ async def resolve_metadata_cascade(
                     candidate,
                     CONFIDENCE[MetadataTier.SITE_DATE_TITLE],
                     MetadataTier.SITE_DATE_TITLE,
+                    provider.name,
                 )
 
     if subject.title and subject.performers:
@@ -160,7 +174,9 @@ async def resolve_metadata_cascade(
             )
             match = _best_fuzzy_match(subject, candidates or [])
             if match is not None:
-                return MetadataResolution(match, CONFIDENCE[MetadataTier.FUZZY], MetadataTier.FUZZY)
+                return MetadataResolution(
+                    match, CONFIDENCE[MetadataTier.FUZZY], MetadataTier.FUZZY, provider.name
+                )
 
     fallback = _filename_candidate(subject)
     _record(
@@ -293,7 +309,7 @@ def _is_exact_site_date_title(subject: MetadataSubject, candidate: MetadataCandi
     return (
         candidate.site is not None
         and subject.site is not None
-        and candidate.site.casefold() == subject.site.casefold()
+        and site_key(candidate.site) == site_key(subject.site)
         and candidate.release_date == subject.release_date
         and _normalise(candidate.title) == _normalise(subject.title)
     )
