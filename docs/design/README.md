@@ -5,6 +5,7 @@ drawn with.
 
 | Path | What it is |
 |---|---|
+| [screenshots/](screenshots/) | The running application, captured from a live stack — what the product actually looks like, as opposed to what it was drawn as |
 | [previews/](previews/) | Full-frame renders, one PNG per screen — the fastest way to see the design without a checkout |
 | [mockups/](mockups/) | The interactive canvas, exported from the design tool |
 | [pornarr-ui/](pornarr-ui/) | The same design as working React components, with the rules it encodes written down |
