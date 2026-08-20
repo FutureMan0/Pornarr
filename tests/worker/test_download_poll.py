@@ -153,7 +153,12 @@ async def test_poll_batches_each_client_and_isolates_an_unreachable_client(
     assert unreachable.last_error == "client unavailable with [redacted]"
     assert still_running.status == "downloading"
     assert imports == [(str(completed.id), "/data/torrents/completed-release")]
-    assert events == [("download.status", {"job_id": str(completed.id), "status": "completed"})]
+    # Both frames: the generic one the queue screen follows, and the named one
+    # `docs/api-contract.md` promises a contract-following client.
+    assert events == [
+        ("download.status", {"job_id": str(completed.id), "status": "completed"}),
+        ("download.completed", {"job_id": str(completed.id), "status": "completed"}),
+    ]
     history = await session.scalar(
         select(DownloadHistory).where(DownloadHistory.download_job_id == completed.id)
     )
@@ -398,6 +403,7 @@ async def test_poll_records_failure_without_collapsing_a_stalled_job(session: As
     assert handled == [failed]
     assert events == [
         ("download.status", {"job_id": str(failed.id), "status": "failed"}),
+        ("download.failed", {"job_id": str(failed.id), "error": failed.error}),
         ("download.status", {"job_id": str(stalled.id), "status": "stalled"}),
     ]
     history = await session.scalar(

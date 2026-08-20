@@ -245,6 +245,19 @@ async def _transition(
     if not changed:
         return False
     await publish("download.status", {"job_id": str(job_row.id), "status": status})
+    # `download.completed` and `download.failed` are two of the frames
+    # `docs/api-contract.md` names, and nothing published either: a client
+    # written against the contract watched for a download to end and was never
+    # told. `download.status` carries the same fact in the shape the queue view
+    # reads, so both go out - the generic one for anything following the queue,
+    # the named one for anything watching a single download end.
+    # "seeding" is a finished download too: a torrent client told to keep
+    # seeding never reports "completed", which is why `IMPORTABLE_STATUSES`
+    # has both.
+    if status in IMPORTABLE_STATUSES:
+        await publish("download.completed", {"job_id": str(job_row.id), "status": status})
+    if status == "failed":
+        await publish("download.failed", {"job_id": str(job_row.id), "error": job_row.error})
     if status == "failed" and handle_failure is not None:
         await handle_failure(job_row)
     return True
