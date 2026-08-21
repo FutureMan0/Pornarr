@@ -44,6 +44,30 @@ jobs:
     needs: guard
     if: needs.guard.outputs.web == 'true'
     runs-on: self-hosted
+    # The suite does not only drive the browser. A claim the API does not
+    # expose -- what is in Redis, what row the database holds, what parameters
+    # really reached an indexer -- is read by shelling into the stack, and the
+    # specs address it by compose project name. Compose derives that name from
+    # the checkout directory unless told otherwise, so the stack came up as
+    # `pornarr` and every one of those reads went looking for a project that
+    # was not there. `composeExec` answers null on failure, by design, so the
+    # tests did not report a harness that could not reach the stack: they
+    # reported an empty Redis, no configured download client and an indexer
+    # fan-out that reached nobody, as if the product had lost them.
+    #
+    # Both halves are named here rather than one derived from the other,
+    # because they are read by different programs and only agreement matters.
+    # A name of this job's own, so a runner that also hosts a developer's stack
+    # can neither be read by these tests nor torn down by the step below.
+    #
+    # `docker-compose.testing.yml` carries the fixture indexer and the download
+    # client the acquisition chain is driven through; it is what the specs name
+    # when they say what is missing. An explicit file list disables the
+    # automatic pickup of the override, so all three are listed.
+    env:
+      COMPOSE_PROJECT_NAME: pornarr_e2e
+      E2E_COMPOSE_PROJECT: pornarr_e2e
+      COMPOSE_FILE: docker-compose.yml:docker-compose.override.yml:docker-compose.testing.yml
     steps:
       - uses: actions/checkout@v4
       # Version comes from the `packageManager` field in package.json.
