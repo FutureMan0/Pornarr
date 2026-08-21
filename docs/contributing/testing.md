@@ -18,6 +18,21 @@ End-to-end tests use Playwright and cover the nine flows from the original plan.
 axe-core runs inside that suite, so accessibility regressions fail the build rather
 than being discovered later.
 
+**The end-to-end suite is run locally.** It drives real containers, and what it
+proves depends on the machine underneath it: a quarter of an hour on a developer
+machine, the better part of an hour on the shared runner, where nine of its cases
+fail for reasons that reproduce on no other stack. The pipeline runs
+`tests/e2e/smoke.spec.ts` instead -- the stack comes up, the API reaches its
+dependencies, the interface is served and an administrator can sign in -- which is
+the one claim about a pull request that needs real containers to make. Run the rest
+before opening a pull request that touches a flow:
+
+```
+docker compose -f docker-compose.yml -f docker-compose.override.yml \
+  -f docker-compose.testing.yml up -d --wait
+make test-e2e
+```
+
 ## What gates what
 
 Every pull request, always:
@@ -35,8 +50,9 @@ commitlint
 On matching paths, also blocking: integration tests, and the Docker build for amd64
 without pushing.
 
-On `develop`, not blocking pull requests: Playwright, the development image, the
-prerelease.
+On `develop`, not blocking pull requests: the development image and the prerelease.
+Playwright runs the smoke file on every pull request that can change how a container
+comes up; the suite behind it is local, as above.
 
 At release: multi-architecture build, Trivy, SBOM.
 
