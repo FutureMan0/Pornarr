@@ -1099,7 +1099,12 @@
     "apiKey": "API-Schlüssel",
     "apiKeyHint": "Der Schlüssel, den dieser Server dir ausgestellt hat. Er wird hier gespeichert und nie wieder angezeigt – bewahr deine eigene Kopie auf.",
     "enable": "Diese Bibliothek verwenden",
-    "add": "Peer hinzufügen"
+    "add": "Peer hinzufügen",
+    "shareTitle": "Jemanden deine lesen lassen",
+    "shareHint": "Ein Server oben eingetragen heißt nur, dass dieses Pornarr dessen Bibliothek liest. Die Gegenrichtung richtet die andere Seite ein — dafür braucht sie zwei Dinge von dir.",
+    "shareStepKey": "Stelle einen Schlüssel aus. Er trägt die Sicht des Kontos, das ihn erzeugt hat: nimm pro Haushalt ein eigenes Konto und einen eigenen Schlüssel — nur so lässt sich einer davon abschalten, ohne die anderen zu treffen.",
+    "shareStepSend": "Schicke Schlüssel und die Adresse, unter der du diesen Server erreichst, über einen Ende-zu-Ende-verschlüsselten Weg. Der Schlüssel wird nur einmal angezeigt.",
+    "shareKeysLink": "Zu den API-Schlüsseln"
   },
   "watchlist": {
     "title": "Merkliste",

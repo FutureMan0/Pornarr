@@ -1099,7 +1099,12 @@
     "apiKey": "API key",
     "apiKeyHint": "The key that server issued you. It is stored here and never shown again, so keep your own copy.",
     "enable": "Use this library",
-    "add": "Add peer"
+    "add": "Add peer",
+    "shareTitle": "Let someone read yours",
+    "shareHint": "Adding a server above only lets this Pornarr read theirs. Sharing the other way is theirs to set up, and it needs two things from you.",
+    "shareStepKey": "Issue them a key. It carries the view of the account that made it, so use a separate account and a separate key per household — that is what lets you cut one off without touching the others.",
+    "shareStepSend": "Send them that key and the address you reach this server at, over something end-to-end encrypted. The key is shown once.",
+    "shareKeysLink": "Go to API keys"
   },
   "watchlist": {
     "title": "Watchlist",

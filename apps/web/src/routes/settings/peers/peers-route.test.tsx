@@ -37,6 +37,20 @@ test("settings offers the shared libraries section and explains what a peer is",
   expect(screen.getByText(/No shared library is connected yet/)).not.toBeNull();
 });
 
+test("says how to let somebody read this library, and links to where the key is made", async () => {
+  // Adding a peer reads theirs; it does not share yours. The key that does
+  // lives under Account, which is not this screen and not even this section,
+  // so the screen has to say so or the second half never gets set up.
+  signedIn();
+  server.use(http.get("/api/admin/peers", () => HttpResponse.json([])));
+
+  renderApp("/settings/peers");
+
+  await screen.findByRole("heading", { name: "Let someone read yours", level: 2 });
+  const link = screen.getByRole("link", { name: "Go to API keys" });
+  expect(link.getAttribute("href")).toBe("/settings/api-keys");
+});
+
 test("lists what the API reports about a peer and adds another", async () => {
   signedIn();
   const created = vi.fn();
