@@ -1095,7 +1095,7 @@
     "name": "Name",
     "namePlaceholder": "Annas Pornarr",
     "baseUrl": "Adresse",
-    "baseUrlPlaceholder": "https://pornarr.example.net",
+    "baseUrlPlaceholder": "https://pornarr.example.net/api",
     "apiKey": "API-Schlüssel",
     "apiKeyHint": "Der Schlüssel, den dieser Server dir ausgestellt hat. Er wird hier gespeichert und nie wieder angezeigt – bewahr deine eigene Kopie auf.",
     "enable": "Diese Bibliothek verwenden",

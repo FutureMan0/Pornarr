@@ -282,11 +282,32 @@ async def list_peers(_: Admin, session: Session) -> list[PeerResponse]:
     return [peer_response(peer) for peer in peers]
 
 
+def normalize_base_url(given: str) -> str:
+    """The API endpoint, from whatever an operator had in front of them.
+
+    Every peer call is `base_url` plus a path, so the stored value has to be
+    the endpoint and not the site root. What somebody has to hand is the
+    address in their browser, and pasting it registered a peer that was then
+    asked for `https://friend.example/library` -- the single-page application,
+    which answers 200 with HTML. The test said `invalid_response` and nothing
+    pointed at the address.
+
+    So the endpoint is completed here rather than demanded. Appending is safe
+    where guessing would not be: `/api` is where this application mounts its
+    API, under a base path as well, and it is this application on both ends of
+    a peer link. An address that already names the endpoint is left alone, so
+    nothing is appended twice.
+    """
+    base_url = given.rstrip("/")
+    return base_url if base_url.endswith("/api") else f"{base_url}/api"
+
+
 @router.post("", response_model=PeerResponse, status_code=201)
 async def create_peer(payload: PeerWrite, admin: Admin, session: Session) -> PeerResponse:
     base_url = payload.base_url.rstrip("/")
     if not base_url.startswith(("http://", "https://")):
         raise HTTPException(status_code=422)
+    base_url = normalize_base_url(base_url)
     peer = Peer(
         name=payload.name,
         base_url=base_url,

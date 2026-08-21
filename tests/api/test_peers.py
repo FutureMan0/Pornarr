@@ -107,6 +107,35 @@ async def test_a_peer_is_stored_encrypted_and_its_key_never_comes_back(
     assert (await client.get("/api/admin/peers")).json() == []
 
 
+async def test_the_address_of_an_instance_is_accepted_as_well_as_its_api_endpoint(
+    app: FastAPI, client: AsyncClient
+) -> None:
+    """What an operator has in front of them is the other instance's address.
+
+    Every path is built by appending to `base_url`, so a peer registered as
+    `https://friend.example` was asked for `https://friend.example/library` --
+    which is the single-page application, answering 200 with HTML. The page did
+    not parse, the peer tested `invalid_response`, and nothing said the address
+    was the thing to change. The address people have is the one in their
+    browser, and the placeholder beside the box showed exactly that form.
+    """
+    await admin_client(app, client)
+
+    cases = {
+        # The address out of somebody's browser, with and without the slash.
+        "https://friend.example": "https://friend.example/api",
+        "https://friend.example/": "https://friend.example/api",
+        # Already the endpoint. Appended once or not at all, never twice.
+        "https://friend.example/api": "https://friend.example/api",
+        "https://friend.example/api/": "https://friend.example/api",
+        # Served under a base path, where the endpoint is below it.
+        "https://friend.example/pornarr": "https://friend.example/pornarr/api",
+    }
+    for given, stored in cases.items():
+        created = await register(client, name=f"friend at {given}", base_url=given)
+        assert created["base_url"] == stored, given
+
+
 async def test_only_an_administrator_configures_peers(app: FastAPI, client: AsyncClient) -> None:
     user = await create_user(app)
     await login(client, user.username, "correct horse battery staple")
