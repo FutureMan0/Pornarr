@@ -15,12 +15,23 @@ SECRET = "0123456789abcdef0123456789abcdef"
 
 
 def build_settings(base_path: str = "") -> Settings:
+    """Settings for the HTTP suite.
+
+    `session_cookie_secure` is stated rather than left to its default because
+    the suite drives the app over `http://test`, and a cookie jar does not
+    return a `Secure` cookie to a plain-HTTP request. The default is `True`, so
+    every authenticated case here held only on a machine whose `.env` sets
+    `SESSION_COOKIE_SECURE=false` for local HTTP -- which a developer machine
+    has and a runner has not. Left to the host, 243 of them answered 401 or
+    CSRF_FAILED on CI and nowhere else.
+    """
     return Settings(
         app_secret=SecretStr(SECRET),
         database_url="postgresql+psycopg://pornarr:pornarr@localhost:5432/pornarr",
         redis_url="redis://localhost:6379/0",
         base_path=base_path,
         app_env="test",
+        session_cookie_secure=False,
     )
 
 

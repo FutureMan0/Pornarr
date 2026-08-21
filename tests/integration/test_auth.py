@@ -31,11 +31,17 @@ def settings() -> Settings:
     redis_url = os.environ.get("REDIS_URL")
     if not database_url or not redis_url:
         pytest.fail("DATABASE_URL and REDIS_URL must point at real services.")
+    # `session_cookie_secure` is stated for the reason
+    # `tests/api/test_app.build_settings` gives: this drives the app over
+    # `http://test`, a cookie jar does not return a `Secure` cookie to a
+    # plain-HTTP request, and left to its default the sign-in here held only on
+    # a machine whose `.env` sets `SESSION_COOKIE_SECURE=false`.
     return Settings(
         app_secret=SecretStr(SECRET),
         database_url=database_url,
         redis_url=redis_url,
         app_env="test",
+        session_cookie_secure=False,
     )
 
 
