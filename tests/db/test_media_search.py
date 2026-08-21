@@ -109,5 +109,7 @@ def test_search_filters_and_sorting_are_composed_in_one_statement() -> None:
     assert "quality" in rendered
     assert "duration_seconds" in rendered
     assert "performers.normalized_name %%" in rendered
-    assert "tags.normalized_name %%" in rendered
+    # Not `%%`: a tag is chosen from the facet list by its exact name, and the
+    # count beside it is a promise the rows have to keep. See `_media_has_tag`.
+    assert "tags.normalized_name = " in rendered
     assert "ORDER BY media_files.size DESC" in rendered

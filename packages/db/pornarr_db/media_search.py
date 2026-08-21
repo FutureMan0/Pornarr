@@ -234,13 +234,23 @@ def _media_has_performer(media_id: object, normalized_name: str):
 
 
 def _media_has_tag(media_id: object, normalized_name: str):
+    """Exactly this tag, unlike the performer above.
+
+    A tag is a facet dimension, and `pornarr_api.facets` opens by calling a
+    facet count a promise the list underneath it must never disagree with. It
+    counts a row for a tag when that exact name is on it. Matched here by
+    trigram similarity instead, the two sides could not agree the moment a
+    library held two tags that merely read alike: selecting one of them counted
+    one title and listed every title carrying either. A performer is typed, not
+    chosen from a list of exact values, and nothing promises a number for it.
+    """
     return (
         select(1)
         .select_from(MediaTag)
         .join(Tag, Tag.id == MediaTag.tag_id)
         .where(
             MediaTag.media_id == media_id,
-            Tag.normalized_name.op("%")(normalized_name),
+            Tag.normalized_name == normalized_name,
         )
         .exists()
     )
