@@ -74,3 +74,19 @@ jobs:
       - name: Tear down the stack
         if: always()
         run: docker compose down --volumes --remove-orphans
+
+      # Compose rebuilds seven images from a bind-mounted checkout, so every
+      # code change orphans the previous layers. Removing the stack does not
+      # touch them, and on a runner that is never discarded they accumulated
+      # until Docker's 20 GB store was full: the daemon could no longer write,
+      # the runner container died mid-build, and `docker builder prune` itself
+      # then failed for want of space.
+      #
+      # Untagged layers only, so nothing another container on this machine is
+      # actually using can be taken. The day of cache is what keeps a run that
+      # follows this one from rebuilding the world.
+      - name: Reclaim what the build orphaned
+        if: always()
+        run: |
+          docker image prune --force
+          docker builder prune --force --filter until=24h
