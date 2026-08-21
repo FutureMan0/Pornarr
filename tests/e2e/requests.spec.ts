@@ -225,4 +225,22 @@ test.describe("requests", () => {
     expect(history[history.length - 1]).toBe("cancelled");
     expect(history.length).toBeGreaterThanOrEqual(2);
   });
+
+  test("the downloads screen reports what the queue is doing", async ({ page }) => {
+    await page.goto("/downloads");
+    // Scoped to the screen's own region: the application shell renders the
+    // primary navigation as a list, so an unscoped listitem is the sidebar.
+    const downloads = page.getByRole("region", { name: "Downloads" });
+    // The shell's banner owns the screen title, not the region below it, so the
+    // heading is asserted on the page and only the list is scoped.
+    await expect(page.getByRole("heading", { name: "Downloads", level: 1 })).toBeVisible();
+    await expect(
+      downloads.getByRole("listitem").first().or(
+        // `queue.empty.active`: the screen reports an empty state per tab, and
+        // the Active tab is the one it opens on.
+        downloads.getByText("Nothing is downloading."),
+      ),
+    ).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+  });
 });

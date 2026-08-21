@@ -93,7 +93,10 @@ export function QueueRoute(): JSX.Element {
   const rows = (queue.data?.items ?? []).filter((job) => tab !== "active" || !DONE.has(job.status));
 
   return (
-    <div className="flex flex-col gap-6">
+    // The heading is the top bar's, declared with `usePageTitle` above. The
+    // named region is what scopes this screen's own lists apart from the
+    // shell's navigation, which is also a list.
+    <section aria-label={t("queue.title")} className="flex flex-col gap-6">
       <ul className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Stat label={t("queue.active")} value={summary.data?.active} />
         <Stat label={t("queue.queued")} value={summary.data?.queued} />
@@ -233,7 +236,7 @@ export function QueueRoute(): JSX.Element {
           </table>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 

@@ -346,7 +346,8 @@
       "loading": "Lokale Treffer werden geladen",
       "empty": "Keine passenden Bibliothekseinträge. Indexer könnten dennoch einen Release finden.",
       "count": "{{matched}} von {{total}}",
-      "countCapped": "{{matched}} von mehr als {{total}}"
+      "countCapped": "{{matched}} von mehr als {{total}}",
+      "scrollRegion": "Bibliotheks-Ergebnisse"
     },
     "external": {
       "title": "Von Indexern",

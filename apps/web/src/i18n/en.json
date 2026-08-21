@@ -346,7 +346,8 @@
       "loading": "Loading local results",
       "empty": "No matching library items. Indexer results may still find a release.",
       "count": "{{matched}} of {{total}}",
-      "countCapped": "{{matched}} of more than {{total}}"
+      "countCapped": "{{matched}} of more than {{total}}",
+      "scrollRegion": "Library results"
     },
     "external": {
       "title": "From indexers",
