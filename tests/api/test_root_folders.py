@@ -218,7 +218,9 @@ async def test_scanning_a_folder_enqueues_one_walk_however_often_it_is_asked(
     # The folder, plus the minute the click landed in: two clicks inside the
     # same minute key to one job, a scan asked for later does not.
     assert args[0] == folder_id
-    assert args[1].startswith("manual:")
+    minute_key = args[1]
+    assert isinstance(minute_key, str)
+    assert minute_key.startswith("manual:")
     # The import worker is the one that runs `scan`. On the default queue the
     # job would wait forever with nobody to notice.
     assert kwargs["_queue_name"] == "pornarr:import"

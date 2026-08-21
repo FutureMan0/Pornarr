@@ -33,7 +33,7 @@ jobs:
   # always reports true and costs a few seconds.
   guard:
     name: Workspace present
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     outputs:
       python: ${{ steps.check.outputs.python }}
       web: ${{ steps.check.outputs.web }}
@@ -50,7 +50,16 @@ jobs:
     name: Python
     needs: guard
     if: needs.guard.outputs.python == 'true'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    # `get_settings()` builds `Settings` from the environment, and a developer
+    # machine always has the `.env` that `make setup` wrote. A runner has none,
+    # so the tests that reach that accessor failed here and nowhere else. Same
+    # throwaway values as the `contract` job below, and for the same reason:
+    # nothing reads them, so a repository secret would only imply they matter.
+    env:
+      APP_SECRET: 0123456789abcdef0123456789abcdef
+      DATABASE_URL: postgresql+psycopg://pornarr:pornarr@localhost:5432/pornarr
+      REDIS_URL: redis://localhost:6379/0
     steps:
       # Full history: diff-cover needs a merge base with the target branch, and
       # a shallow clone has none.
@@ -89,7 +98,7 @@ jobs:
     name: Web
     needs: guard
     if: needs.guard.outputs.web == 'true'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
       # No version input on purpose: the version comes from the `packageManager`
@@ -115,7 +124,7 @@ jobs:
     name: Contract and migrations
     needs: guard
     if: needs.guard.outputs.alembic == 'true'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     services:
       postgres:
         image: postgres:17

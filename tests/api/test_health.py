@@ -44,6 +44,11 @@ async def test_health_is_local_but_dependency_health_is_structured(tmp_path: Pat
         database_url="postgresql+psycopg://example",
         redis_url="redis://example",
         data_path=tmp_path,
+        # The filesystem check measures the real disk behind `tmp_path`, so the
+        # default of 15 percent makes this assert the free space of whatever
+        # machine runs the suite. On a runner whose disk was fuller than that,
+        # the component came back `unhealthy` and the endpoint answered 503.
+        min_free_disk_percent=0,
     )
     app = create_app(settings)
     app.state.engine = Engine()
@@ -70,6 +75,11 @@ async def test_health_surfaces_a_configured_backup_age(tmp_path: Path) -> None:
         database_url="postgresql+psycopg://example",
         redis_url="redis://example",
         data_path=tmp_path,
+        # The filesystem check measures the real disk behind `tmp_path`, so the
+        # default of 15 percent makes this assert the free space of whatever
+        # machine runs the suite. On a runner whose disk was fuller than that,
+        # the component came back `unhealthy` and the endpoint answered 503.
+        min_free_disk_percent=0,
         backup_path=backup_path,
         backup_max_age_hours=1,
     )

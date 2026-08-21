@@ -52,16 +52,15 @@ test.describe("request status", () => {
     // Scoped to the screen's own region: the application shell renders the
     // primary navigation as a list, so an unscoped listitem is the sidebar.
     const downloads = page.getByRole("region", { name: "Downloads" });
-    await expect(downloads.getByRole("heading", { name: "Downloads", level: 1 })).toBeVisible();
+    // The shell's banner owns the screen title, not the region below it, so the
+    // heading is asserted on the page and only the list is scoped.
+    await expect(page.getByRole("heading", { name: "Downloads", level: 1 })).toBeVisible();
     await expect(
-      downloads
-        .getByRole("listitem")
-        .first()
-        .or(
-          downloads.getByText(
-            "Nothing is downloading. Grab a release from search and it appears here.",
-          ),
-        ),
+      downloads.getByRole("listitem").first().or(
+        // `queue.empty.active`: the screen reports an empty state per tab, and
+        // the Active tab is the one it opens on.
+        downloads.getByText("Nothing is downloading."),
+      ),
     ).toBeVisible();
     await expectNoAccessibilityViolations(page);
   });

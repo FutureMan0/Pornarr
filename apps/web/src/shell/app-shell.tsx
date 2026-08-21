@@ -71,6 +71,18 @@ export function AppShell(): JSX.Element {
               a phone. */}
           <main
             id="main"
+            // Focusable because it scrolls. A pointer can reach content below
+            // the fold by dragging; a keyboard can only reach it by focusing
+            // something inside, and a screen whose content is all text - the
+            // requests list is one - has nothing to focus. WCAG 2.1.1 and
+            // 2.1.3, which axe reports as `scrollable-region-focusable`, and
+            // technique SCR34 names a tab stop on the container as the remedy.
+            // It is also what the skip link already targets, so the stop lands
+            // somewhere the reader was going anyway. The lint rule below only
+            // knows that `main` is not interactive; axe is reading the standard.
+            //
+            // biome-ignore lint/a11y/noNoninteractiveTabindex: see above
+            tabIndex={0}
             className={cx(
               "mx-auto flex min-h-0 w-full max-w-[var(--layout-content-max-width)] flex-1 flex-col overflow-y-auto",
               phone ? "px-4 pt-4" : "p-6",

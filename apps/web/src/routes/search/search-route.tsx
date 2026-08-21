@@ -372,8 +372,14 @@ function LocalResults({
         </ul>
       ) : (
         // `tabIndex`: a region that scrolls has to be reachable by a keyboard,
-        // and a div with `overflow-x: auto` is not focusable on its own.
-        <div className="min-w-0 overflow-x-auto border border-border">
+        // and a div with `overflow-x: auto` is not focusable on its own. A named
+        // region rather than a bare tab stop, so the focus announces what it is.
+        <section
+          // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable box has to be a tab stop or it cannot be scrolled without a mouse
+          tabIndex={0}
+          aria-label={t("search.local.scrollRegion")}
+          className="min-w-0 overflow-x-auto border border-border"
+        >
           <table className="w-full min-w-[44rem] text-sm">
             <thead className="bg-surface-2 text-left text-xs text-ink-muted">
               <tr>
@@ -404,7 +410,7 @@ function LocalResults({
               ))}
             </tbody>
           </table>
-        </div>
+        </section>
       )}
     </section>
   );
@@ -497,7 +503,12 @@ function ExternalResults({
               own overflow never engages. `role="region"` with a name is what
               makes a scrolling box reachable by keyboard — a bare div with
               `tabIndex` is a focus stop with nothing to announce. */
-            <div className="min-w-0 overflow-x-auto border border-border">
+            <section
+              // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable box has to be a tab stop or it cannot be scrolled without a mouse
+              tabIndex={0}
+              aria-label={t("search.external.scrollRegion")}
+              className="min-w-0 overflow-x-auto border border-border"
+            >
               <table className="w-full min-w-[68rem] text-sm">
                 <thead className="bg-surface-2 text-left text-xs text-ink-muted">
                   <tr>
@@ -530,7 +541,7 @@ function ExternalResults({
                   ))}
                 </tbody>
               </table>
-            </div>
+            </section>
           )}
           {items.length === 0 && !search.isFetching ? (
             <p className="text-sm text-ink-muted">{t("search.external.empty")}</p>
