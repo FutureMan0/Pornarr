@@ -25,6 +25,7 @@ import {
   libraryItemByTitle,
   loginAsAdmin,
   seedLibraryMedia,
+  testingDownloadClient,
 } from "./helpers";
 
 const RUN = `f${Date.now().toString(36)}`;
@@ -461,6 +462,18 @@ test.describe("download clients", () => {
     // ever fetched - has none: `POST /api/admin/download-clients` is called
     // once by the setup wizard and then the four routes that manage it are
     // unreachable for the rest of the instance's life.
+    // The shared client, established here rather than assumed. `helpers`
+    // reuses one that already exists, so this is the same row every
+    // acquisition case grabs through -- but `queue.spec.ts` is the only other
+    // file that asks for it, and it sorts after this one. On an instance where
+    // it had not run yet there was no client at all: the wizard offers the
+    // step and `setUpAdministrator` takes its "Skip for now", so a fresh
+    // instance has none, and this case failed on the precondition rather than
+    // on anything it is about.
+    expect(
+      await testingDownloadClient(page),
+      "The testing qBittorrent could not be configured or did not answer.",
+    ).not.toBeNull();
     const clients = await apiGet<{ id: string; name: string }[]>(
       page,
       "/api/admin/download-clients",
