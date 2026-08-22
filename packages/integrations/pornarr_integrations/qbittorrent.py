@@ -12,11 +12,16 @@ import httpx
 
 from pornarr_integrations.downloaders import DownloadClientJob, DownloadState
 
+# qBittorrent 5 renamed "paused" to "stopped" and added a forced variant of the
+# metadata state. Both spellings are kept: the adapter has to work against a 4.x
+# client and a 5.x one, and an unmapped state is not a cosmetic problem - it
+# fails the whole batched poll, which takes every job on that client with it.
 QBITTORRENT_STATE_MAP: Final[dict[str, DownloadState]] = {
     "error": DownloadState.FAILED,
     "missingFiles": DownloadState.FAILED,
     "uploading": DownloadState.SEEDING,
     "pausedUP": DownloadState.PAUSED,
+    "stoppedUP": DownloadState.PAUSED,
     "queuedUP": DownloadState.COMPLETED,
     "stalledUP": DownloadState.SEEDING,
     "checkingUP": DownloadState.CHECKING,
@@ -24,7 +29,9 @@ QBITTORRENT_STATE_MAP: Final[dict[str, DownloadState]] = {
     "allocating": DownloadState.QUEUED,
     "downloading": DownloadState.DOWNLOADING,
     "metaDL": DownloadState.METADATA,
+    "forcedMetaDL": DownloadState.METADATA,
     "pausedDL": DownloadState.PAUSED,
+    "stoppedDL": DownloadState.PAUSED,
     "queuedDL": DownloadState.QUEUED,
     "stalledDL": DownloadState.STALLED,
     "checkingDL": DownloadState.CHECKING,

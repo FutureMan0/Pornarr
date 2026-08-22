@@ -59,6 +59,7 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
         "generate_artwork_job",
         "regenerate_library_artwork_job",
         "generate_perceptual_hash_job",
+        "probe_media_file_job",
     ]
     assert [job.name for job in settings.IndexerWorkerSettings.functions] == [
         "search_indexers",
@@ -127,3 +128,24 @@ def test_worker_settings_register_all_queues(monkeypatch) -> None:
     assert cron_jobs["watch_download_files"].second == {0, 30}
     assert cron_jobs["dispatch_rss_sync"].minute == {0, 15, 30, 45}
     assert cron_jobs["dispatch_backlog_searches"].minute == set(range(0, 60))
+
+
+def test_the_scheduler_publishes_cron_work_without_consuming_the_queue(monkeypatch) -> None:
+    """ADR 0021 L9: one built-in cron, and one reader for the queue it fills.
+
+    ARQ publishes a cron job by enqueueing it onto the scheduler's own
+    `queue_name`, so the scheduler and the default worker necessarily share
+    `pornarr:default`. Sharing it as a second consumer loses jobs between the
+    two readers, and a lost `dispatch_rss_sync` or `download_poll` is silent.
+    `max_jobs = 0` makes `_poll_iteration` skip its read - the guard is
+    `job_counter < max_jobs` - while `heart_beat`, which runs the cron table,
+    is outside that guard.
+    """
+
+    monkeypatch.setenv("APP_SECRET", "a" * 32)
+    settings = importlib.import_module("pornarr_worker.settings")
+
+    assert settings.SchedulerSettings.max_jobs == 0
+    assert settings.SchedulerSettings.queue_name == settings.WorkerSettings.queue_name
+    assert getattr(settings.WorkerSettings, "cron_jobs", None) is None
+    assert getattr(settings.WorkerSettings, "max_jobs", None) != 0

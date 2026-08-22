@@ -169,6 +169,42 @@ async def test_admin_can_see_current_transcode_limits(app, client) -> None:
     }
 
 
+async def test_a_configured_cap_outranks_the_environment_which_outranks_detection(
+    app, client, monkeypatch
+) -> None:
+    """PRODUCT DEFECT D4/D5: transcode.md L25 documents the software cap as
+    "overridable in configuration" over a detected default, and every
+    enforcement path has to agree on which of the three answers wins."""
+    monkeypatch.setattr("os.sched_getaffinity", lambda pid: set(range(16)))
+    admin = await create_user(app, username="admin", role=UserRole.ADMIN)
+    app.state.hardware_capabilities = HardwareCapabilities(
+        methods=(), rejections=(), nvidia_gpus=()
+    )
+    await login(client, admin.username, "correct horse battery staple")
+
+    # Nothing configured anywhere: sixteen mocked cores fall back to detection's
+    # own answer, cores divided by two.
+    detected = await client.get("/api/admin/transcode/limits")
+    assert detected.json()["configured_software"] is None
+    assert detected.json()["effective_software"] == 8
+
+    # An operator's environment (a deploy's env var) outranks detection.
+    app.state.settings = app.state.settings.model_copy(update={"transcode_max_sw_sessions": 5})
+    environment = await client.get("/api/admin/transcode/limits")
+    assert environment.json()["configured_software"] == 5
+    assert environment.json()["effective_software"] == 5
+
+    # A value stored through /api/admin/settings outranks the environment.
+    await client.patch(
+        "/api/admin/settings",
+        json={"transcode_max_sw_sessions": 3},
+        headers=csrf_headers(client),
+    )
+    configured = await client.get("/api/admin/transcode/limits")
+    assert configured.json()["configured_software"] == 3
+    assert configured.json()["effective_software"] == 3
+
+
 async def test_transcode_capabilities_are_visible_only_to_administrators(app, client) -> None:
     user = await create_user(app)
     admin = await create_user(app, username="admin", role=UserRole.ADMIN)
@@ -263,3 +299,80 @@ async def test_starting_a_session_twice_reuses_the_running_one(app, client, tmp_
     assert started.status_code == 201
     assert started.json()["session_id"] == str(session_id)
     assert len(await registry.active_sessions()) == 1
+
+
+async def test_starting_a_session_accepts_a_file_in_a_configured_root_folder(
+    app, client, tmp_path: Path
+) -> None:
+    """The library is where the operator put it, not `data_path / "library"`.
+
+    Setup writes whatever path the wizard was given as a root folder, and the
+    importer places into that folder rather than into `library_path`. Gating on
+    `library_path` alone answered 404 for every title such an instance holds.
+    """
+
+    from pornarr_db.models.media import MediaFile
+    from pornarr_db.models.root_folders import RootFolder
+    from pornarr_media.sessions import TranscodeSessionRegistry
+
+    app.state.settings = app.state.settings.model_copy(update={"data_path": tmp_path})
+    registry = TranscodeSessionRegistry(app.state.redis, app.state.settings.transcode_path)
+    app.state.transcode_sessions = registry
+    user = await create_user(app)
+    root = tmp_path / "elsewhere"
+    root.mkdir()
+    source = root / "Example.mp4"
+    source.write_bytes(b"not really a video")
+    async with AsyncSession(app.state.engine, expire_on_commit=False) as database_session:
+        media = Media(title="Example", normalized_title="example")
+        database_session.add(MediaFile(media=media, path=str(source), size=source.stat().st_size))
+        database_session.add(RootFolder(path=str(root), enabled=True, free_space_bytes=1))
+        await database_session.commit()
+        media_id = media.id
+    session_id = uuid4()
+    directory = app.state.settings.transcode_path / str(session_id)
+    directory.mkdir(parents=True)
+    await registry.register(
+        session_id, user.id, media_id, "hls", FakeTranscode(directory), hardware=False
+    )
+    await login(client, user.username, "correct horse battery staple")
+
+    started = await client.post(
+        f"/api/transcode/media/{media_id}/sessions", headers=csrf_headers(client)
+    )
+
+    assert started.status_code == 201, started.json()
+    assert started.json()["session_id"] == str(session_id)
+
+
+async def test_starting_a_session_still_refuses_a_file_no_root_folder_covers(
+    app, client, tmp_path: Path
+) -> None:
+    """Widening the roots must not turn the guard off."""
+
+    from pornarr_db.models.media import MediaFile
+    from pornarr_db.models.root_folders import RootFolder
+    from pornarr_media.sessions import TranscodeSessionRegistry
+
+    app.state.settings = app.state.settings.model_copy(update={"data_path": tmp_path})
+    app.state.transcode_sessions = TranscodeSessionRegistry(
+        app.state.redis, app.state.settings.transcode_path
+    )
+    user = await create_user(app)
+    root = tmp_path / "elsewhere"
+    root.mkdir()
+    stray = tmp_path / "stray.mp4"
+    stray.write_bytes(b"not really a video")
+    async with AsyncSession(app.state.engine, expire_on_commit=False) as database_session:
+        media = Media(title="Stray", normalized_title="stray")
+        database_session.add(MediaFile(media=media, path=str(stray), size=stray.stat().st_size))
+        database_session.add(RootFolder(path=str(root), enabled=True, free_space_bytes=1))
+        await database_session.commit()
+        media_id = media.id
+    await login(client, user.username, "correct horse battery staple")
+
+    started = await client.post(
+        f"/api/transcode/media/{media_id}/sessions", headers=csrf_headers(client)
+    )
+
+    assert started.status_code == 404

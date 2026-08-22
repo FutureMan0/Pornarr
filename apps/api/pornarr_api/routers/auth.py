@@ -50,7 +50,16 @@ def current_user_response(user: User) -> CurrentUserResponse:
 
 
 def _cookie_is_secure(request: Request) -> bool:
-    return request.app.state.settings.app_env == "production"
+    """`SESSION_COOKIE_SECURE`, which defaults to true.
+
+    It used to be `app_env == "production"`, and `.env.example` -- the file
+    `make setup` writes -- ships `APP_ENV=development`, so the documented
+    installation served its session cookie without `Secure` behind the TLS proxy
+    installation.md tells operators to put in front of it. The default is now the
+    safe one and the opt-out is the explicit local case; `Settings` refuses the
+    opt-out under `APP_ENV=production`.
+    """
+    return request.app.state.settings.session_cookie_secure
 
 
 def set_auth_cookies(response: Response, request: Request, session: str, csrf: str) -> None:

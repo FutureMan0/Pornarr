@@ -248,8 +248,11 @@ describe("first-run setup", () => {
 
     await reachFiltersStep(user);
 
-    expect(screen.getAllByText("Off")).toHaveLength(6);
-    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+    // Six rules, every one of them off, and every one of them a control the
+    // operator can reach. ADR 0017 leaves all filtering to this screen.
+    const rules = screen.getAllByRole("checkbox");
+    expect(rules).toHaveLength(6);
+    expect(rules.every((rule) => (rule as HTMLInputElement).checked)).toBe(false);
 
     await user.click(screen.getByRole("button", { name: "Continue" }));
     expect(await screen.findByRole("heading", { name: "Metadata providers" })).toBeTruthy();
@@ -302,5 +305,124 @@ describe("first-run setup", () => {
     expect(complete.mock.calls[0]?.[0]).toMatchObject({
       metadata_provider: { implementation: "stashdb", api_key: "metadata-key", endpoint: null },
     });
+  });
+
+  test("writes the rules the operator turned on onto the global filter profile", async () => {
+    unconfiguredInstance();
+    const applied = vi.fn();
+    const signedIn = vi.fn();
+    server.use(
+      http.post("/api/setup/validate-library-path", () =>
+        HttpResponse.json({ same_filesystem_as_downloads: true, warning: null }),
+      ),
+      http.post("/api/setup/complete", () =>
+        HttpResponse.json(
+          { username: "ada", same_filesystem_as_downloads: true, warning: null },
+          { status: 201 },
+        ),
+      ),
+      // The profile is administrator-owned, so the wizard signs in with the
+      // account it has just created before it can write to it.
+      http.post("/api/auth/login", async ({ request }) => {
+        signedIn(await request.json());
+        return HttpResponse.json({ id: "u-1", username: "ada", role: "admin" });
+      }),
+      http.put("/api/admin/filters/profile", async ({ request }) => {
+        applied(await request.json());
+        return HttpResponse.json({ id: "p-1", scope: "global", rules: [] });
+      }),
+    );
+    renderApp("/setup");
+    const user = userEvent.setup();
+
+    await reachFiltersStep(user);
+    await user.click(screen.getByRole("checkbox", { name: "Words and phrases" }));
+    await user.type(screen.getByLabelText("Word or phrase"), "  teen  ");
+    await user.selectOptions(
+      screen.getByLabelText("When it matches"),
+      screen.getByRole("option", { name: "Hold it for review" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(await screen.findByRole("heading", { name: "Metadata providers" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Skip for now" }));
+    expect(await screen.findByRole("heading", { name: "Review setup" })).toBeTruthy();
+    // The summary names what is on rather than repeating that nothing is.
+    expect(screen.getByText("Words and phrases")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Complete setup" }));
+
+    await waitFor(() => expect(applied).toHaveBeenCalledOnce());
+    expect(signedIn.mock.calls[0]?.[0]).toEqual({
+      username: "ada",
+      password: "Correct horse battery staple! 2026",
+    });
+    expect(applied.mock.calls[0]?.[0]).toEqual({
+      rules: [
+        { kind: "term", pattern: "teen", action: "quarantine", enabled: true },
+        { kind: "tag", pattern: "", action: "reject", enabled: false },
+        { kind: "performer", pattern: "", action: "reject", enabled: false },
+        { kind: "minimum_confidence", pattern: "", action: "reject", enabled: false },
+        { kind: "unknown_performer_age", pattern: "", action: "reject", enabled: false },
+        { kind: "unknown_file_type", pattern: "", action: "reject", enabled: false },
+      ],
+    });
+    expect(await screen.findByRole("heading", { name: "Setup complete" })).toBeTruthy();
+  });
+
+  test("refuses to leave the filter step with a rule that matches nothing", async () => {
+    unconfiguredInstance();
+    server.use(
+      http.post("/api/setup/validate-library-path", () =>
+        HttpResponse.json({ same_filesystem_as_downloads: true, warning: null }),
+      ),
+    );
+    renderApp("/setup");
+    const user = userEvent.setup();
+
+    await reachFiltersStep(user);
+    await user.click(screen.getByRole("checkbox", { name: "Tags" }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(await screen.findByText("Say what this rule should match.")).toBeTruthy();
+    // Still on the filter step: an enabled rule with nothing to match on would
+    // be stored and never fire.
+    expect(screen.getByRole("heading", { name: "Review content filters" })).toBeTruthy();
+  });
+
+  test("says so when the instance is created but the filters could not be saved", async () => {
+    unconfiguredInstance();
+    server.use(
+      http.post("/api/setup/validate-library-path", () =>
+        HttpResponse.json({ same_filesystem_as_downloads: true, warning: null }),
+      ),
+      http.post("/api/setup/complete", () =>
+        HttpResponse.json(
+          { username: "ada", same_filesystem_as_downloads: true, warning: null },
+          { status: 201 },
+        ),
+      ),
+      http.post("/api/auth/login", () =>
+        HttpResponse.json({ id: "u-1", username: "ada", role: "admin" }),
+      ),
+      http.put("/api/admin/filters/profile", () =>
+        HttpResponse.json(
+          { code: "FILTER_CONFIGURATION_INVALID", status: 422, context: {} },
+          { status: 422 },
+        ),
+      ),
+    );
+    renderApp("/setup");
+    const user = userEvent.setup();
+
+    await reachFiltersStep(user);
+    await user.click(screen.getByRole("checkbox", { name: "Unknown file type" }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("heading", { name: "Metadata providers" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Skip for now" }));
+    await user.click(await screen.findByRole("button", { name: "Complete setup" }));
+
+    expect(await screen.findByRole("heading", { name: "Setup complete" })).toBeTruthy();
+    expect(await screen.findByText(/the content filters could not be saved/i)).toBeTruthy();
   });
 });

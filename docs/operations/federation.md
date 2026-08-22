@@ -72,10 +72,12 @@ makes access revocable one household at a time.
 1. Sign in as the account whose view you want to share.
 2. Open **Account → API keys**, add a key labelled with the household it is for, and
    copy it. It is shown once.
-3. Send the key and your tunnel URL over something end-to-end encrypted. The URL to
-   send is the API root, including `/api`:
+3. Send the key and your tunnel URL over something end-to-end encrypted. Either the
+   address you reach the instance at or its API root will do — `/api` is appended
+   when it is missing, so both of these register the same peer:
 
    ```
+   https://pornarr.example.com
    https://pornarr.example.com/api
    ```
 

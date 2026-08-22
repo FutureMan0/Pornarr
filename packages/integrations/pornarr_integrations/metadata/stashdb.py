@@ -7,7 +7,11 @@ from datetime import date
 
 import httpx
 
-from pornarr_integrations.metadata import MetadataCandidate, MetadataRateLimitError
+from pornarr_integrations.metadata import (
+    MetadataCandidate,
+    MetadataRateLimitError,
+    site_key,
+)
 from pornarr_shared.errors import PornarrError
 
 REQUEST_TIMEOUT_SECONDS = 10
@@ -136,7 +140,7 @@ class StashdbAdapter:
             for candidate in _candidates(_scenes(scenes_payload))
             if candidate.release_date == release_date
             and candidate.studio is not None
-            and candidate.studio.casefold() == site.casefold()
+            and site_key(candidate.studio) == site_key(site)
             and candidate.title.casefold() == title.casefold()
         ]
         return candidates[0] if len(candidates) == 1 else None

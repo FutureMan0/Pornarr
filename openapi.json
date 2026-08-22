@@ -1044,10 +1044,17 @@
             "title": "Category"
           },
           "credentials": {
-            "format": "password",
-            "title": "Credentials",
-            "type": "string",
-            "writeOnly": true
+            "anyOf": [
+              {
+                "format": "password",
+                "type": "string",
+                "writeOnly": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credentials"
           },
           "enabled": {
             "default": true,
@@ -1105,8 +1112,7 @@
           "protocol",
           "implementation",
           "host",
-          "port",
-          "credentials"
+          "port"
         ],
         "title": "DownloadClientUpdate",
         "type": "object"
@@ -1456,6 +1462,138 @@
           "capped"
         ],
         "title": "FacetsResponse",
+        "type": "object"
+      },
+      "FilterAction": {
+        "enum": [
+          "allow",
+          "quarantine",
+          "reject"
+        ],
+        "title": "FilterAction",
+        "type": "string"
+      },
+      "FilterProfileResponse": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/FilterRuleResponse"
+            },
+            "title": "Rules",
+            "type": "array"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/FilterProfileScope"
+          }
+        },
+        "required": [
+          "id",
+          "scope",
+          "rules"
+        ],
+        "title": "FilterProfileResponse",
+        "type": "object"
+      },
+      "FilterProfileScope": {
+        "enum": [
+          "global",
+          "user"
+        ],
+        "title": "FilterProfileScope",
+        "type": "string"
+      },
+      "FilterProfileWrite": {
+        "properties": {
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/FilterRuleWrite"
+            },
+            "maxItems": 6,
+            "minItems": 1,
+            "title": "Rules",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rules"
+        ],
+        "title": "FilterProfileWrite",
+        "type": "object"
+      },
+      "FilterRuleKind": {
+        "enum": [
+          "term",
+          "tag",
+          "performer",
+          "minimum_confidence",
+          "unknown_performer_age",
+          "unknown_file_type"
+        ],
+        "title": "FilterRuleKind",
+        "type": "string"
+      },
+      "FilterRuleResponse": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/FilterAction"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FilterRuleKind"
+          },
+          "pattern": {
+            "title": "Pattern",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "pattern",
+          "action",
+          "enabled"
+        ],
+        "title": "FilterRuleResponse",
+        "type": "object"
+      },
+      "FilterRuleWrite": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/FilterAction",
+            "default": "reject"
+          },
+          "enabled": {
+            "default": false,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FilterRuleKind"
+          },
+          "pattern": {
+            "default": "",
+            "maxLength": 512,
+            "title": "Pattern",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "FilterRuleWrite",
         "type": "object"
       },
       "GenerateShortsWrite": {
@@ -1879,6 +2017,79 @@
           "grabs"
         ],
         "title": "IndexerStatsResponse",
+        "type": "object"
+      },
+      "IndexerUpdate": {
+        "properties": {
+          "api_key": {
+            "anyOf": [
+              {
+                "format": "password",
+                "type": "string",
+                "writeOnly": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key"
+          },
+          "base_url": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Base Url",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "implementation": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Implementation",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "priority": {
+            "default": 0,
+            "title": "Priority",
+            "type": "integer"
+          },
+          "protocol": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Protocol",
+            "type": "string"
+          },
+          "search_categories": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search Categories"
+          }
+        },
+        "required": [
+          "name",
+          "protocol",
+          "implementation",
+          "base_url"
+        ],
+        "title": "IndexerUpdate",
         "type": "object"
       },
       "IndexerWrite": {
@@ -3369,6 +3580,26 @@
           "provider_name"
         ],
         "title": "OidcIdentityResponse",
+        "type": "object"
+      },
+      "OidcProviderSummary": {
+        "description": "What the sign-in screen may know before anybody has a session.\n\nAn id and a name, and nothing that belongs to `/api/admin/oidc`: not the\nissuer, not the client id, and not a disabled provider, which this instance\nhas chosen not to offer and should not have to explain to a stranger.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "OidcProviderSummary",
         "type": "object"
       },
       "OverviewResponse": {
@@ -6979,6 +7210,46 @@
         "title": "UserEventWrite",
         "type": "object"
       },
+      "UserResponse": {
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "role",
+          "is_active"
+        ],
+        "title": "UserResponse",
+        "type": "object"
+      },
       "UserRole": {
         "enum": [
           "admin",
@@ -6986,6 +7257,19 @@
         ],
         "title": "UserRole",
         "type": "string"
+      },
+      "UserStateUpdate": {
+        "properties": {
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "is_active"
+        ],
+        "title": "UserStateUpdate",
+        "type": "object"
       },
       "ValidationError": {
         "properties": {
@@ -7066,6 +7350,20 @@
         "title": "WatchlistWrite",
         "type": "object"
       }
+    },
+    "securitySchemes": {
+      "ApiKey": {
+        "description": "Per-user key from POST /api/account/api-keys. Valid on /api/* except /api/auth/*, and needs no CSRF token.",
+        "in": "header",
+        "name": "X-Api-Key",
+        "type": "apiKey"
+      },
+      "SessionCookie": {
+        "description": "Opaque session established by POST /api/auth/login or by completing OIDC. Unsafe methods additionally require the X-CSRF-Token double-submit header.",
+        "in": "cookie",
+        "name": "pornarr_session",
+        "type": "apiKey"
+      }
     }
   },
   "info": {
@@ -7093,6 +7391,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Api Keys",
         "tags": [
           "account"
@@ -7132,6 +7438,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Create Api Key",
         "tags": [
           "account"
@@ -7168,6 +7482,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Revoke Api Key",
         "tags": [
           "account"
@@ -7209,6 +7531,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Record Account Event",
         "tags": [
           "account"
@@ -7234,6 +7564,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Oidc Identities",
         "tags": [
           "account"
@@ -7280,6 +7618,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Unlink Oidc Identity",
         "tags": [
           "account"
@@ -7301,6 +7647,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Read Profile",
         "tags": [
           "account"
@@ -7340,6 +7694,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Write Profile",
         "tags": [
           "account"
@@ -7361,6 +7723,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Read Daily Storage Usage",
         "tags": [
           "account"
@@ -7465,6 +7835,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Audit Log",
         "tags": [
           "admin"
@@ -7552,6 +7930,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Moderation Queue",
         "tags": [
           "admin"
@@ -7615,6 +8001,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Set Comment State",
         "tags": [
           "admin"
@@ -7669,6 +8063,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Hide Comment",
         "tags": [
           "admin"
@@ -7723,6 +8125,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Resolve Comment",
         "tags": [
           "admin"
@@ -7748,6 +8158,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Download Clients",
         "tags": [
           "admin"
@@ -7787,6 +8205,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Create Download Client",
         "tags": [
           "admin"
@@ -7823,6 +8249,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Delete Download Client",
         "tags": [
           "admin"
@@ -7874,6 +8308,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Update Download Client",
         "tags": [
           "admin"
@@ -7917,7 +8359,91 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Test Download Client",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/filters/profile": {
+      "get": {
+        "operationId": "admin_read_filter_profile",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilterProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
+        "summary": "Read Filter Profile",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "operationId": "admin_update_filter_profile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FilterProfileWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilterProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
+        "summary": "Update Filter Profile",
         "tags": [
           "admin"
         ]
@@ -7942,6 +8468,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Indexers",
         "tags": [
           "admin"
@@ -7981,6 +8515,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Create Indexer",
         "tags": [
           "admin"
@@ -8017,7 +8559,75 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Delete Indexer",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "description": "Change a configured indexer in place.\n\nADR 0002 L9: indexers are managed through the administration UI. Without this\nroute the only edit was delete-and-recreate, which discards the indexer's\nhealth, its statistics and — through `ON DELETE CASCADE` on\n`release_cache.indexer_id` — every release cached from it.",
+        "operationId": "admin_update_indexer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "indexer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Indexer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IndexerUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
+        "summary": "Update Indexer",
         "tags": [
           "admin"
         ]
@@ -8060,6 +8670,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Reset Indexer",
         "tags": [
           "admin"
@@ -8114,6 +8732,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Update Indexer Search Categories",
         "tags": [
           "admin"
@@ -8157,6 +8783,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Test Indexer",
         "tags": [
           "admin"
@@ -8182,6 +8816,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Invites",
         "tags": [
           "admin"
@@ -8221,6 +8863,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Create Invite",
         "tags": [
           "admin"
@@ -8258,6 +8908,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Revoke Invite",
         "tags": [
           "admin"
@@ -8283,6 +8941,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Root Folders",
         "tags": [
           "admin"
@@ -8322,6 +8988,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Create Root Folder",
         "tags": [
           "admin"
@@ -8358,6 +9032,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Delete Root Folder",
         "tags": [
           "admin"
@@ -8415,6 +9097,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Scan Root Folder",
         "tags": [
           "admin"
@@ -8440,6 +9130,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Metadata Providers",
         "tags": [
           "admin"
@@ -8479,6 +9177,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Configure Metadata Provider",
         "tags": [
           "admin"
@@ -8515,6 +9221,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Remove Metadata Provider",
         "tags": [
           "admin"
@@ -8540,6 +9254,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Providers",
         "tags": [
           "admin"
@@ -8579,6 +9301,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Create Provider",
         "tags": [
           "admin"
@@ -8615,6 +9345,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Delete Provider",
         "tags": [
           "admin"
@@ -8658,6 +9396,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Test Provider",
         "tags": [
           "admin"
@@ -8679,6 +9425,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Overview",
         "tags": [
           "admin"
@@ -8704,6 +9458,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Peers",
         "tags": [
           "peers"
@@ -8743,6 +9505,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Create Peer",
         "tags": [
           "peers"
@@ -8779,6 +9549,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Delete Peer",
         "tags": [
           "peers"
@@ -8822,6 +9600,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Test Peer",
         "tags": [
           "peers"
@@ -8848,6 +9634,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Performance Inputs",
         "tags": [
           "admin"
@@ -8873,6 +9667,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Custom Formats",
         "tags": [
           "admin"
@@ -8912,6 +9714,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Create Custom Format",
         "tags": [
           "admin"
@@ -8948,6 +9758,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Delete Custom Format",
         "tags": [
           "admin"
@@ -8999,6 +9817,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Update Custom Format",
         "tags": [
           "admin"
@@ -9024,6 +9850,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Quality Definitions",
         "tags": [
           "admin"
@@ -9065,6 +9899,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Preview Quality Decision",
         "tags": [
           "admin"
@@ -9090,6 +9932,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Quality Profiles",
         "tags": [
           "admin"
@@ -9129,6 +9979,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Create Quality Profile",
         "tags": [
           "admin"
@@ -9165,6 +10023,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Delete Quality Profile",
         "tags": [
           "admin"
@@ -9206,6 +10072,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Read Quality Profile",
         "tags": [
           "admin"
@@ -9257,6 +10131,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Update Quality Profile",
         "tags": [
           "admin"
@@ -9282,6 +10164,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Quarantine Items",
         "tags": [
           "admin"
@@ -9323,6 +10213,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Approve Bulk Quarantine Items",
         "tags": [
           "admin"
@@ -9364,6 +10262,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Preview Bulk Approval",
         "tags": [
           "admin"
@@ -9417,6 +10323,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Approve Quarantine Item",
         "tags": [
           "admin"
@@ -9453,6 +10367,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Reject Quarantine Item",
         "tags": [
           "admin"
@@ -9474,6 +10396,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Ratings Overview",
         "tags": [
           "admin"
@@ -9495,6 +10425,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Read Settings",
         "tags": [
           "admin"
@@ -9534,6 +10472,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Write Settings",
         "tags": [
           "admin"
@@ -9595,6 +10541,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Create Short",
         "tags": [
           "admin"
@@ -9641,6 +10595,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Delete Short",
         "tags": [
           "admin"
@@ -9707,6 +10669,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Tags",
         "tags": [
           "admin"
@@ -9744,6 +10714,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Delete Tag",
         "tags": [
           "admin"
@@ -9795,6 +10773,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Rename Tag",
         "tags": [
           "admin"
@@ -9849,6 +10835,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Merge Tags",
         "tags": [
           "admin"
@@ -9870,6 +10864,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Capabilities",
         "tags": [
           "admin"
@@ -9895,6 +10897,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Recent Failures",
         "tags": [
           "admin"
@@ -9916,6 +10926,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Limit State",
         "tags": [
           "admin"
@@ -9941,6 +10959,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Sessions",
         "tags": [
           "admin"
@@ -9987,7 +11013,110 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Terminate Session",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "operationId": "admin_list_users",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserResponse"
+                  },
+                  "title": "Response Admin List Users",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
+        "summary": "List Users",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/users/{user_id}": {
+      "patch": {
+        "description": "Deactivate or restore an account, ending its sessions when it is shut out.",
+        "operationId": "admin_set_user_state",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserStateUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
+        "summary": "Set User State",
         "tags": [
           "admin"
         ]
@@ -10092,6 +11221,11 @@
             "description": "Forbidden"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "summary": "Logout",
         "tags": [
           "auth"
@@ -10126,6 +11260,11 @@
             "description": "Forbidden"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "summary": "Logout Everywhere",
         "tags": [
           "auth"
@@ -10157,6 +11296,11 @@
             "description": "Unauthorized"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "summary": "Current User",
         "tags": [
           "auth"
@@ -10252,6 +11396,32 @@
         ]
       }
     },
+    "/api/auth/oidc/providers": {
+      "get": {
+        "description": "The buttons `/login` gets to draw. Reachable without an account, by\ndesign: that screen is where this is needed and nobody there has a\nsession yet.",
+        "operationId": "auth_list_enabled_providers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OidcProviderSummary"
+                  },
+                  "title": "Response Auth List Enabled Providers",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Enabled Providers",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/auth/oidc/{provider_id}/link": {
       "get": {
         "operationId": "auth_oidc_link",
@@ -10307,6 +11477,11 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "summary": "Oidc Link",
         "tags": [
           "auth"
@@ -10406,6 +11581,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Collections",
         "tags": [
           "collections"
@@ -10455,6 +11638,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Create Collection",
         "tags": [
           "collections"
@@ -10501,6 +11692,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Delete Collection",
         "tags": [
           "collections"
@@ -10575,6 +11774,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Read Collection",
         "tags": [
           "collections"
@@ -10646,6 +11853,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Update Collection",
         "tags": [
           "collections"
@@ -10702,6 +11917,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Remove Item",
         "tags": [
           "collections"
@@ -10757,6 +11980,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Add Item",
         "tags": [
           "collections"
@@ -10813,6 +12044,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Delete Comment",
         "tags": [
           "comments"
@@ -10885,6 +12124,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Edit Comment",
         "tags": [
           "comments"
@@ -10931,6 +12178,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Unlike Comment",
         "tags": [
           "comments"
@@ -10976,6 +12231,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Like Comment",
         "tags": [
           "comments"
@@ -11033,6 +12296,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Report Comment",
         "tags": [
           "comments"
@@ -11047,6 +12318,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Events",
         "tags": [
           "events"
@@ -11343,6 +12622,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Browse Library",
         "tags": [
           "library"
@@ -11365,6 +12652,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Library Filter Values",
         "tags": [
           "library"
@@ -11408,6 +12703,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Media Detail",
         "tags": [
           "library"
@@ -11489,6 +12792,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Comments",
         "tags": [
           "comments"
@@ -11550,6 +12861,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Create Comment",
         "tags": [
           "comments"
@@ -11614,6 +12933,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Create Marker",
         "tags": [
           "scenes"
@@ -11671,6 +12998,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Delete Marker",
         "tags": [
           "scenes"
@@ -11742,6 +13077,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Update Marker",
         "tags": [
           "scenes"
@@ -11898,6 +13241,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Playback Info",
         "tags": [
           "playback"
@@ -11934,6 +13285,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Poster",
         "tags": [
           "library"
@@ -11988,6 +13347,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Clear Rating",
         "tags": [
           "ratings"
@@ -12039,6 +13406,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Read Rating",
         "tags": [
           "ratings"
@@ -12101,6 +13476,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Set Rating",
         "tags": [
           "ratings"
@@ -12161,6 +13544,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Media Related",
         "tags": [
           "library"
@@ -12214,6 +13605,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Read Scenes",
         "tags": [
           "scenes"
@@ -12251,6 +13650,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Sprite",
         "tags": [
           "library"
@@ -12322,6 +13729,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Stream",
         "tags": [
           "playback"
@@ -12375,6 +13790,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Correct Tag",
         "tags": [
           "library"
@@ -12400,6 +13823,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Monitors",
         "tags": [
           "monitors"
@@ -12449,6 +13880,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Create Monitor",
         "tags": [
           "monitors"
@@ -12495,6 +13934,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Delete Monitor",
         "tags": [
           "monitors"
@@ -12566,6 +14013,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Update Monitor",
         "tags": [
           "monitors"
@@ -12613,6 +14068,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Trigger Backlog Search",
         "tags": [
           "monitors"
@@ -12670,6 +14133,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Notifications",
         "tags": [
           "notifications"
@@ -12705,6 +14176,14 @@
             "description": "Unauthorized"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Preferences",
         "tags": [
           "notifications"
@@ -12766,6 +14245,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Set Preference",
         "tags": [
           "notifications"
@@ -12790,6 +14277,14 @@
             "description": "Unauthorized"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Mark All Read",
         "tags": [
           "notifications"
@@ -12853,6 +14348,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Mark Read",
         "tags": [
           "notifications"
@@ -12903,6 +14406,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Proxy Delete",
         "tags": [
           "peers"
@@ -12951,6 +14462,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Proxy Get",
         "tags": [
           "peers"
@@ -12999,6 +14518,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Proxy Post",
         "tags": [
           "peers"
@@ -13024,6 +14551,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Continue Watching",
         "tags": [
           "playback"
@@ -13050,6 +14585,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "My Sessions",
         "tags": [
           "playback"
@@ -13093,6 +14636,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Playback Progress",
         "tags": [
           "playback"
@@ -13144,6 +14695,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Report Progress",
         "tags": [
           "playback"
@@ -13248,6 +14807,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Queue",
         "tags": [
           "queue"
@@ -13269,6 +14836,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Queue Summary",
         "tags": [
           "queue"
@@ -13294,6 +14869,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Recommendations",
         "tags": [
           "recommendations"
@@ -13309,6 +14892,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Reset Recommendation Profile",
         "tags": [
           "recommendations"
@@ -13371,6 +14962,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Send Recommendation",
         "tags": [
           "recommendations"
@@ -13442,6 +15041,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Sent To Me",
         "tags": [
           "recommendations"
@@ -13488,6 +15095,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Record Recommendation Feedback",
         "tags": [
           "recommendations"
@@ -13551,6 +15166,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Requests",
         "tags": [
           "requests"
@@ -13630,6 +15253,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Create Request",
         "tags": [
           "requests"
@@ -13713,6 +15344,14 @@
             "description": "Bad Gateway"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Cancel Request",
         "tags": [
           "requests"
@@ -13807,6 +15446,14 @@
             "description": "Bad Gateway"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Grab Release",
         "tags": [
           "requests"
@@ -13890,6 +15537,14 @@
             "description": "Bad Gateway"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Pause Request",
         "tags": [
           "requests"
@@ -13973,6 +15628,14 @@
             "description": "Bad Gateway"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Change Priority",
         "tags": [
           "requests"
@@ -14056,6 +15719,14 @@
             "description": "Bad Gateway"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Resume Request",
         "tags": [
           "requests"
@@ -14129,6 +15800,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Retry Request",
         "tags": [
           "requests"
@@ -14171,6 +15850,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Start Indexer Search",
         "tags": [
           "search"
@@ -14343,6 +16030,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Indexer Search Status",
         "tags": [
           "search"
@@ -14610,6 +16305,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Local Search",
         "tags": [
           "search"
@@ -14737,6 +16440,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Local Search Facets",
         "tags": [
           "search"
@@ -14798,6 +16509,14 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Send Media",
         "tags": [
           "sends"
@@ -14868,6 +16587,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Received",
         "tags": [
           "sends"
@@ -14929,6 +16656,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Sent",
         "tags": [
           "sends"
@@ -14976,6 +16711,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Delete Send",
         "tags": [
           "sends"
@@ -15029,6 +16772,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Mark Seen",
         "tags": [
           "sends"
@@ -15321,6 +17072,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Shorts",
         "tags": [
           "shorts"
@@ -15399,6 +17158,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Generate From Markers",
         "tags": [
           "shorts"
@@ -15452,6 +17219,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Read Short",
         "tags": [
           "shorts"
@@ -15495,6 +17270,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Start Session",
         "tags": [
           "transcode"
@@ -15531,6 +17314,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Stop Session",
         "tags": [
           "transcode"
@@ -15587,6 +17378,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Heartbeat",
         "tags": [
           "transcode"
@@ -15637,6 +17436,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Hls Asset",
         "tags": [
           "transcode"
@@ -15662,6 +17469,14 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "List Watchlist",
         "tags": [
           "watchlist"
@@ -15705,6 +17520,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Add To Watchlist",
         "tags": [
           "watchlist"
@@ -15751,6 +17574,14 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "ApiKey": []
+          }
+        ],
         "summary": "Remove From Watchlist",
         "tags": [
           "watchlist"

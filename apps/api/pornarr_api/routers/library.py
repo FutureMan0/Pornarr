@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import database_session, get_current_user
@@ -552,9 +553,20 @@ async def correct_tag(
     normalized = name.casefold()
     tag = await session.scalar(select(Tag).where(Tag.normalized_name == normalized))
     if tag is None:
-        tag = Tag(name=name, normalized_name=normalized)
-        session.add(tag)
-        await session.flush()
+        # Inside a savepoint, because `tags.normalized_name` is unique and two
+        # people can reach for the same word at the same moment. Losing that
+        # race is not an error - the tag the other one wrote is the tag this
+        # one wanted - but an `IntegrityError` poisons the surrounding
+        # transaction, so the attempt needs its own.
+        try:
+            async with session.begin_nested():
+                tag = Tag(name=name, normalized_name=normalized)
+                session.add(tag)
+                await session.flush()
+        except IntegrityError:
+            tag = await session.scalar(select(Tag).where(Tag.normalized_name == normalized))
+            if tag is None:
+                raise
     assignment = await session.scalar(
         select(MediaTag).where(
             MediaTag.media_id == media_id, MediaTag.tag_id == tag.id, MediaTag.source == "manual"

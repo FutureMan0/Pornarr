@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
+import { EstimateConfidence } from "../../components/estimate-confidence";
 import { Numeric, useFormat } from "../../i18n/format";
 import { messageForError } from "../../lib/api-error";
 import { usePageTitle } from "../../shell/page-title";
@@ -21,6 +22,11 @@ import {
 } from "./search";
 
 const DEBOUNCE_MILLISECONDS = 300;
+/**
+ * Every status `apps/worker/pornarr_worker/search.py` can report. A status
+ * missing from here used to fall back to "Waiting", which showed an indexer
+ * that had already failed as one still being waited for.
+ */
 const STATUS_KEYS = {
   pending: "search.status.pending",
   completed: "search.status.completed",
@@ -29,6 +35,9 @@ const STATUS_KEYS = {
   timed_out: "search.status.timedOut",
   unhealthy: "search.status.unhealthy",
   cancelled: "search.status.cancelled",
+  malformed_response: "search.status.malformedResponse",
+  authentication_failed: "search.status.authenticationFailed",
+  unavailable: "search.status.unavailable",
 } as const;
 
 export function SearchRoute() {
@@ -398,9 +407,11 @@ function LocalResults({
                   </td>
                   <td className="px-3 py-2 text-ink-muted">{item.studio ?? "—"}</td>
                   <td className="px-3 py-2 text-right text-ink-muted">
-                    {item.release_date === null
-                      ? "—"
-                      : format.relativeDate(new Date(item.release_date))}
+                    <Numeric>
+                      {item.release_date === null
+                        ? "—"
+                        : format.relativeDate(new Date(item.release_date))}
+                    </Numeric>
                   </td>
                   <td className="px-3 py-2">{item.quality ?? item.resolution ?? "—"}</td>
                   <td className="px-3 py-2 text-right">
@@ -475,17 +486,20 @@ function ExternalResults({
                       <Numeric>{item.size === null ? "—" : format.bytes(item.size)}</Numeric>
                     </Field>
                     <Field label={t("search.columns.seeders")}>
-                      <Numeric>{item.seeders ?? "—"}</Numeric>
+                      <Numeric>{seedersFor(item)}</Numeric>
                     </Field>
                     <Field label={t("search.columns.age")}>
-                      {item.published_at === null
-                        ? "—"
-                        : format.relativeDate(new Date(item.published_at))}
+                      <Numeric>
+                        {item.published_at === null
+                          ? "—"
+                          : format.relativeDate(new Date(item.published_at))}
+                      </Numeric>
                     </Field>
                     <Field label={t("search.columns.time")}>
                       <Numeric>
                         {format.estimate(item.estimate.low_seconds, item.estimate.high_seconds)}
                       </Numeric>
+                      <EstimateConfidence level={item.estimate.confidence} />
                     </Field>
                   </dl>
                   <Button
@@ -502,7 +516,9 @@ function ExternalResults({
             /* `min-w-0`: without it the wrapper stretches to the table and its
               own overflow never engages. `role="region"` with a name is what
               makes a scrolling box reachable by keyboard — a bare div with
-              `tabIndex` is a focus stop with nothing to announce. */
+              `tabIndex` is a focus stop with nothing to announce, and a named
+              region with no tab stop cannot be scrolled without a mouse at all,
+              which is what axe's `scrollable-region-focusable` reports. */
             <section
               // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable box has to be a tab stop or it cannot be scrolled without a mouse
               tabIndex={0}
@@ -585,7 +601,15 @@ function ExternalRow({
 }) {
   const { t } = useTranslation();
   return (
-    <tr className="bg-surface text-ink hover:bg-surface-2">
+    /* DESIGN.md L214-215: a release the library already holds is dimmed and
+       badged rather than hidden - knowing it is present is itself the answer. */
+    <tr
+      className={
+        item.match.kind === "new"
+          ? "bg-surface text-ink hover:bg-surface-2"
+          : "bg-surface text-ink-muted hover:bg-surface-2"
+      }
+    >
       <td className="max-w-[24rem] truncate px-3 py-2 font-mono text-xs" title={item.title}>
         {item.title}
         {(item.alternates?.length ?? 0) === 0 ? null : (
@@ -622,10 +646,12 @@ function ExternalRow({
           item.published_at === null ? undefined : format.dateTime(new Date(item.published_at))
         }
       >
-        {item.published_at === null ? "—" : format.relativeDate(new Date(item.published_at))}
+        <Numeric>
+          {item.published_at === null ? "—" : format.relativeDate(new Date(item.published_at))}
+        </Numeric>
       </td>
       <td className="px-3 py-2 text-right">
-        <Numeric>{item.seeders ?? "—"}</Numeric>
+        <Numeric>{seedersFor(item)}</Numeric>
       </td>
       <td
         className="px-3 py-2 text-right"
@@ -643,6 +669,7 @@ function ExternalRow({
       </td>
       <td className="px-3 py-2 text-right">
         <Numeric>{format.estimate(item.estimate.low_seconds, item.estimate.high_seconds)}</Numeric>
+        <EstimateConfidence level={item.estimate.confidence} />
       </td>
       <td className="px-3 py-2 text-right">
         <Button variant="secondary" loading={grabbing} onClick={() => onGrab()}>
@@ -651,6 +678,17 @@ function ExternalRow({
       </td>
     </tr>
   );
+}
+
+/**
+ * DESIGN.md L209 puts the seeder count on torrent rows only. Usenet has no
+ * swarm, and Pornarr's own estimate ignores seeders for it, so a number there
+ * would suggest a relationship that does not exist - whatever a feed chose to
+ * put in the attribute.
+ */
+function seedersFor(item: ExternalSearchItem): string {
+  if (item.protocol !== "torrent" || item.seeders === null) return "—";
+  return String(item.seeders);
 }
 
 function IndexerStatus({
@@ -669,7 +707,7 @@ function IndexerStatus({
         <li key={id} className="border border-border bg-surface-2 px-2 py-1">
           <span className="text-ink">{names.get(id) ?? id.slice(0, 8)}</span>
           {" · "}
-          {t(STATUS_KEYS[status as keyof typeof STATUS_KEYS] ?? "search.status.pending")}
+          {t(STATUS_KEYS[status as keyof typeof STATUS_KEYS] ?? "search.status.unknown")}
         </li>
       ))}
     </ul>

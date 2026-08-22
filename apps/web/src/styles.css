@@ -128,6 +128,31 @@
   box-shadow: var(--pa-shadow-sm);
 }
 
+/**
+ * The focus indicator, once, for everything.
+ *
+ * DESIGN.md L295-297: "Focus is visible on every interactive element: a 2px
+ * ring in --primary at 3:1 against its surroundings, never removed, never
+ * replaced by a colour change alone."
+ *
+ * Every component in packages/ui already draws it. Controls authored here did
+ * not: a sidebar link, the artwork toggle, the settings tabs and the switches
+ * fell through to the user agent's own ring, which in Chromium is a white and
+ * near-black two-tone outline. Visible, so axe passes it and so does WCAG — and
+ * a different indicator on half the product, which is the thing the design says
+ * in as many words it is not.
+ *
+ * One rule rather than a class on each control, because the ones that were
+ * missed were missed by being written without thinking about focus at all, and
+ * a class you have to remember is a class that gets forgotten again. The
+ * component modules set the identical value at higher specificity, so nothing
+ * they draw changes.
+ */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 html,
 body,
 #root {

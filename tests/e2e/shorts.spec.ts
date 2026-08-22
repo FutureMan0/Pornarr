@@ -81,6 +81,15 @@ test.describe("shorts", () => {
       .getByRole("link", { name: /Shorts/i })
       .click();
 
-    await expect(page).toHaveURL(/\/shorts$/);
+    await expect(
+      page.getByRole("banner").getByRole("heading", { name: "Shorts", level: 1 }),
+    ).toBeVisible();
+
+    // The feed replaces its own address with the clip on screen as soon as the
+    // first page arrives - `shorts-feed.tsx`, "THE ADDRESS FOLLOWS, IT DOES NOT
+    // ACCUMULATE" - so `/shorts` is what the link asks for and `/shorts/<id>`
+    // is what the feed leaves behind. Asserting the bare path raced that
+    // rewrite; anything outside this pair is the wrong screen.
+    await expect(page).toHaveURL(/\/shorts(?:\/[0-9a-f-]{36})?$/);
   });
 });

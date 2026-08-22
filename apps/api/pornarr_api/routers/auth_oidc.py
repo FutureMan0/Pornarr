@@ -13,6 +13,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pornarr_api.auth import SESSION_COOKIE, create_session, database_session, get_current_user
@@ -33,6 +35,30 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 class OidcStateInvalidError(PornarrError):
     code = "OIDC_STATE_INVALID"
     status = 400
+
+
+class OidcProviderSummary(BaseModel):
+    """What the sign-in screen may know before anybody has a session.
+
+    An id and a name, and nothing that belongs to `/api/admin/oidc`: not the
+    issuer, not the client id, and not a disabled provider, which this instance
+    has chosen not to offer and should not have to explain to a stranger.
+    """
+
+    id: UUID
+    name: str
+
+
+@router.get("/providers", response_model=list[OidcProviderSummary])
+async def list_enabled_providers(session: Session) -> list[OidcProviderSummary]:
+    """The buttons `/login` gets to draw. Reachable without an account, by
+    design: that screen is where this is needed and nobody there has a
+    session yet.
+    """
+    providers = await session.scalars(
+        select(OidcProvider).where(OidcProvider.enabled).order_by(OidcProvider.name)
+    )
+    return [OidcProviderSummary(id=provider.id, name=provider.name) for provider in providers]
 
 
 def _state_key(state: str) -> str:

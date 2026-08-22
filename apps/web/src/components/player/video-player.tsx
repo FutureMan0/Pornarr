@@ -3,6 +3,7 @@ import type { JSX, RefObject } from "react";
 import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CSRF_HEADER, readCsrfToken } from "../../lib/api";
+import { apiFailure, messageForError, nextStepForError } from "../../lib/api-error";
 
 type PlaybackInfo = { direct_play: boolean };
 type TranscodeSession = { session_id: string; playlist_url: string };
@@ -12,9 +13,19 @@ function csrfHeaders(): HeadersInit {
   return token === null ? {} : { [CSRF_HEADER]: token };
 }
 
+/**
+ * The body of a failed response is the `{code, status, context}` the API
+ * contract promises (docs/api-contract.md), so it is parsed here rather than
+ * discarded — `apiFailure` turns it into the same `ApiRequestError` every
+ * other surface throws, which is what lets the render below map a refusal to
+ * a real sentence instead of one string for every possible failure.
+ */
 async function responseJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { credentials: "same-origin", ...init });
-  if (!response.ok) throw new Error(`Playback request failed (${response.status})`);
+  if (!response.ok) {
+    const body: unknown = await response.json().catch(() => null);
+    throw apiFailure(body, response);
+  }
   return response.json() as Promise<T>;
 }
 
@@ -132,7 +143,11 @@ export function VideoPlayer({
   const starting = useRef<Promise<TranscodeSession> | null>(null);
   const mount = useRef(0);
   const lastProgress = useRef(0);
-  const [error, setError] = useState(false);
+  // The thrown value itself, not a boolean: rendering below maps it to a
+  // cause and a next step the way every other surface does, and a viewer
+  // refused a transcode slot needs to be told that, not just that something
+  // failed.
+  const [error, setError] = useState<unknown>(null);
   const minimal = chrome === "minimal";
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(!soundWanted);
@@ -169,17 +184,24 @@ export function VideoPlayer({
           return;
         }
         session.current = source.session_id;
-        if (video.current.canPlayType("application/vnd.apple.mpegurl")) {
-          video.current.src = playlistUrl(base, source.playlist_url);
-        } else if (Hls.isSupported()) {
+        // hls.js first, the element's own HLS support only after it.
+        // `canPlayType("application/vnd.apple.mpegurl")` answers "maybe" in
+        // Chromium, which has no HLS demuxer at all: handing the playlist
+        // straight to the element there ended every transcoded playback in
+        // DEMUXER_ERROR_COULD_NOT_PARSE. `Hls.isSupported()` is false exactly
+        // where Media Source Extensions are missing, which is where the native
+        // path is the real one (iOS Safari).
+        if (Hls.isSupported()) {
           hls.current = new Hls();
           hls.current.loadSource(playlistUrl(base, source.playlist_url));
           hls.current.attachMedia(video.current);
+        } else if (video.current.canPlayType("application/vnd.apple.mpegurl")) {
+          video.current.src = playlistUrl(base, source.playlist_url);
         } else {
-          setError(true);
+          setError(new Error("This browser supports neither hls.js nor native HLS playback."));
         }
-      } catch {
-        if (!cancelled) setError(true);
+      } catch (thrown) {
+        if (!cancelled) setError(thrown);
       }
     }
     void load();
@@ -233,7 +255,7 @@ export function VideoPlayer({
           credentials: "same-origin",
         });
       }
-    }, 25_000);
+    }, 15_000);
     return () => window.clearInterval(timer);
   }, [peerId]);
 
@@ -316,7 +338,14 @@ export function VideoPlayer({
   // the player to one line of text and pulled the whole screen up around it,
   // which reads as a page that was never meant to have a video on it rather
   // than as a video that did not load.
-  if (error)
+  //
+  // The code is mapped to a sentence here, the same way login-route.tsx maps
+  // one for a failed sign-in: never the server's own prose, and never one
+  // string for every possible failure. Two sentences, not one — a viewer
+  // refused a transcode slot needs to be told that they were refused, not
+  // just to be told that something failed, and the next step for every code
+  // is already written and translated.
+  if (error !== null)
     return (
       <div
         role="alert"
@@ -326,7 +355,10 @@ export function VideoPlayer({
             : "grid aspect-video w-full place-items-center rounded-lg bg-surface-2 p-4 text-center text-sm text-ink-muted"
         }
       >
-        {t("player.unavailable")}
+        <div>
+          <p>{messageForError(error)}</p>
+          <p className="text-xs">{nextStepForError(error)}</p>
+        </div>
       </div>
     );
 

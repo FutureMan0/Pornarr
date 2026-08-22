@@ -16,6 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from watchfiles import Change, awatch
 
 from pornarr_db.models.download import DownloadJob, ImportTrigger
+from pornarr_db.models.request import RequestStatus
+from pornarr_db.requests import advance_requests_for_download
 from pornarr_db.session import session_scope
 from pornarr_shared.config import Settings, get_settings
 from pornarr_shared.jobs import IMPORT_QUEUE, enqueue_once, job, retry_delay_seconds
@@ -68,6 +70,12 @@ async def stage_completed_download(
     settings: Settings,
 ) -> ImportTrigger:
     """Persist exactly one client-completion trigger before anything reaches Redis."""
+    # The request's own lifecycle calls this "the import beginning" whether it
+    # ends up staged, deduplicated onto an existing trigger, or immediately
+    # failed on a path the worker cannot see - an attempt was made either way,
+    # and `download_poll` guarantees the request already passed through
+    # `downloading` before this callback ever runs.
+    await advance_requests_for_download(session, download_job.id, RequestStatus.PROCESSING)
     existing = await session.scalar(
         select(ImportTrigger).where(ImportTrigger.download_job_id == download_job.id)
     )

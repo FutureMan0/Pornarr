@@ -191,6 +191,23 @@ async def configured_targets(redis: Any) -> list[SearchTarget]:
     return targets
 
 
+async def search_targets(redis: Any, query: str) -> list[SearchTarget]:
+    """Serve the cache where it can answer, and still search everything else.
+
+    README.md L12-13 is "one search across the local library and every configured
+    indexer", and ADR 0033 sanctions *serving* a release from the cache within its
+    TTL — not skipping the indexers that have nothing cached. Composing this as
+    `cached or configured` made it a replacement: one cached row from one indexer
+    removed every other configured indexer from the search for the whole 24-hour
+    TTL. It is a union, and the cached target wins for its own indexer so that a
+    cache hit still costs no request.
+    """
+    cached = await cached_targets(query)
+    answered = {target.id for target in cached}
+    live = [target for target in await configured_targets(redis) if target.id not in answered]
+    return cached + live
+
+
 async def search_indexers(
     context: dict[str, Any], search_id: str, user_id: str, query: str
 ) -> SearchState:
@@ -202,7 +219,7 @@ async def search_indexers(
             search_id=search_id,
             user_id=user_id,
             query=query,
-            targets=(await cached_targets(query)) or await configured_targets(redis),
+            targets=await search_targets(redis, query),
             on_result=lambda target_id, status, releases, error: record_search_outcome(
                 redis, target_id, status, releases, error
             ),

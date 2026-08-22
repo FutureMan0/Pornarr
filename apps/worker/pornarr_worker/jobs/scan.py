@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import stat
 from collections.abc import Awaitable, Callable, Iterator
@@ -16,11 +17,13 @@ from pornarr_db.base import utcnow
 from pornarr_db.models.media import Media, MediaFile
 from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.session import session_scope
+from pornarr_media.probe import MediaProbeError, codec_payload, probe
 from pornarr_shared.config import Settings, get_settings
 from pornarr_shared.events import publish_event
 from pornarr_shared.jobs import TRANSCODE_QUEUE, enqueue_once, job
 
 ARTWORK_JOB_NAME = "generate_artwork_job"
+PROBE_JOB_NAME = "probe_media_file_job"
 MEDIA_EXTENSIONS = frozenset({".avi", ".m4v", ".mkv", ".mov", ".mp4", ".webm", ".wmv"})
 MINIMUM_MEDIA_FILE_SIZE_BYTES = 1
 
@@ -146,6 +149,62 @@ async def queue_missing_artwork(
     return queued
 
 
+async def queue_missing_technical_metadata(
+    redis: Any, session: AsyncSession, folder: RootFolder
+) -> int:
+    """Ask for a probe for every file in this root that still has none.
+
+    A file adopted straight from disk gets a path, a size and an mtime and
+    nothing ffprobe would have told it, so `decide_direct_play` sees four
+    unknowns and can never offer direct play regardless of what the player
+    supports. Asking by absence rather than only for new files also repairs a
+    library scanned before this existed. Probing each file inline here would
+    block a scan of a large library behind however slow ffprobe is on every
+    one of them, so the work is queued the same way missing artwork is.
+    """
+
+    path_prefix = f"{Path(folder.path)}{os.sep}"
+    queued = 0
+    for media_file_id in await session.scalars(
+        select(MediaFile.id).where(
+            MediaFile.path.startswith(path_prefix),
+            MediaFile.is_active.is_(True),
+            MediaFile.is_missing.is_(False),
+            MediaFile.codecs.is_(None),
+        )
+    ):
+        await enqueue_once(redis, PROBE_JOB_NAME, str(media_file_id), queue=TRANSCODE_QUEUE)
+        queued += 1
+    return queued
+
+
+async def probe_media_file_job(context: dict[str, Any], media_file_id: str) -> bool:
+    """Fill in the technical metadata a scan itself never collects.
+
+    Reuses the same `probe()` and `codec_payload()` the import pipeline calls
+    so a scanned file and an imported file end up recorded in the same shape.
+    """
+
+    async with session_scope() as session:
+        media_file = await session.get(MediaFile, UUID(media_file_id))
+        if media_file is None or media_file.codecs is not None:
+            return False
+        try:
+            technical = await asyncio.to_thread(probe, Path(media_file.path))
+        except MediaProbeError:
+            return False
+        media_file.codecs = codec_payload(technical)
+        media_file.resolution = technical.resolution
+        media_file.duration_seconds = technical.duration
+        media_file.bitrate = technical.bitrate
+        media_file.streams = [dict(stream) for stream in technical.streams]
+        media_file.container = technical.container
+        return True
+
+
+PROBE_MEDIA_FILE_JOB = job(probe_media_file_job)
+
+
 async def scan(context: dict[str, Any], root_folder_id: str, run_id: str) -> dict[str, int]:
     """Run one transactional scan; ARQ retries cancellation or write races safely."""
 
@@ -161,6 +220,7 @@ async def scan(context: dict[str, Any], root_folder_id: str, run_id: str) -> dic
         result = await scan_root_folder(session, folder, progress)
         await session.flush()
         await queue_missing_artwork(context["redis"], session, folder, get_settings())
+        await queue_missing_technical_metadata(context["redis"], session, folder)
         # Without this the only way to know a scan ended is to notice the
         # progress events stopping, which is indistinguishable from a worker
         # that died mid-walk.

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import pytest
@@ -13,8 +14,15 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from pornarr_db.base import Base
 from pornarr_db.models.media import MediaFile
 from pornarr_db.models.root_folders import RootFolder
+from pornarr_media.probe import ProbeResult
 from pornarr_shared.config import Settings
-from pornarr_worker.jobs.scan import queue_missing_artwork, scan_root_folder
+from pornarr_worker.jobs import scan as scan_job
+from pornarr_worker.jobs.scan import (
+    probe_media_file_job,
+    queue_missing_artwork,
+    queue_missing_technical_metadata,
+    scan_root_folder,
+)
 
 ProgressPublisher = Callable[[str, dict[str, object]], Awaitable[None]]
 
@@ -246,3 +254,78 @@ async def test_a_scanned_file_without_a_poster_is_queued_for_artwork(
 
     assert queued == 1
     assert [args[0] for _, args in redis.jobs] == [str(library / "Without Poster.mp4")]
+
+
+async def test_a_scanned_file_without_technical_metadata_is_queued_for_a_probe(
+    session_factory, tmp_path: Path
+) -> None:
+    library = tmp_path / "library"
+    library.mkdir()
+    (library / "Scene.mp4").write_bytes(b"video")
+    redis = RecordingRedis()
+
+    async with session_factory() as session:
+        folder = RootFolder(path=str(library), free_space_bytes=0)
+        session.add(folder)
+        await session.flush()
+        await scan_root_folder(session, folder, _recorded_progress([]))
+        await session.flush()
+
+        media_file = await session.scalar(select(MediaFile))
+        assert media_file is not None
+
+        queued = await queue_missing_technical_metadata(redis, session, folder)
+
+    assert queued == 1
+    assert redis.jobs == [("probe_media_file_job", (str(media_file.id),))]
+
+
+async def test_a_scanned_files_probe_records_its_codecs(
+    session_factory, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The probe a scan queues writes the same shape the import pipeline does."""
+
+    library = tmp_path / "library"
+    library.mkdir()
+    (library / "Scene.mp4").write_bytes(b"video")
+    technical = ProbeResult(
+        resolution="1920x1080",
+        codecs=("h264", "aac"),
+        duration=20.0,
+        bitrate=4_000_000,
+        streams=(
+            {"codec_type": "video", "codec_name": "h264", "profile": "High", "level": 40},
+            {"codec_type": "audio", "codec_name": "aac"},
+        ),
+        container="mov,mp4,m4a",
+    )
+
+    async with session_factory() as session:
+        folder = RootFolder(path=str(library), free_space_bytes=0)
+        session.add(folder)
+        await session.flush()
+        await scan_root_folder(session, folder, _recorded_progress([]))
+        await session.commit()
+        media_file = await session.scalar(select(MediaFile))
+        assert media_file is not None
+        assert media_file.codecs is None
+
+        @asynccontextmanager
+        async def scope():
+            yield session
+
+        monkeypatch.setattr(scan_job, "session_scope", scope)
+        monkeypatch.setattr(scan_job, "probe", lambda _path: technical)
+
+        probed = await probe_media_file_job({}, str(media_file.id))
+
+    assert probed is True
+    assert media_file.codecs == {
+        "container": "mov,mp4,m4a",
+        "video": {"codec": "h264", "profile": "High", "level": 40},
+        "audio": {"codec": "aac"},
+    }
+    assert media_file.resolution == "1920x1080"
+    assert media_file.duration_seconds == 20.0
+    assert media_file.bitrate == 4_000_000
+    assert media_file.container == "mov,mp4,m4a"

@@ -12,6 +12,8 @@ from watchfiles import Change
 
 from pornarr_db.base import Base
 from pornarr_db.models.download import DownloadJob, ImportTrigger
+from pornarr_db.models.request import Request, RequestStatus
+from pornarr_db.models.user import User
 from pornarr_db.types import set_cipher
 from pornarr_shared.config import Settings
 from pornarr_shared.crypto import CredentialCipher
@@ -93,6 +95,38 @@ async def test_completion_path_is_durable_and_uses_one_deterministic_import_key(
         "import_download", str(second.id), queue=IMPORT_QUEUE
     )
     assert len(list(await session.scalars(select(ImportTrigger)))) == 1
+
+
+async def test_stage_completed_download_advances_its_requests_to_processing(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    """`packages/db/pornarr_db/requests.py:29-34` declares `processing` a legal
+    transition and nothing reached it before this handover did - "the import
+    when it begins" is exactly what this function is.
+    """
+    configured = settings(tmp_path / "data")
+    download_path = configured.torrents_path / "release"
+    download_path.mkdir(parents=True)
+    item = completed_download()
+    session.add(item)
+    await session.flush()
+    user = User(username="requester", password_hash="not-a-real-password")
+    session.add(user)
+    await session.flush()
+    request = Request(
+        user_id=user.id,
+        query="Example",
+        status=RequestStatus.DOWNLOADING,
+        priority=80,
+        download_job_id=item.id,
+    )
+    session.add(request)
+    await session.commit()
+
+    await stage_completed_download(session, item, str(download_path), configured)
+    await session.commit()
+
+    assert request.status is RequestStatus.PROCESSING
 
 
 async def test_unmapped_client_path_is_retained_with_an_actionable_error(
@@ -267,3 +301,75 @@ async def test_native_watcher_events_only_stage_visible_media_files(
     )
     trigger = await session.scalar(select(ImportTrigger))
     assert trigger is not None and trigger.source_path == str(manual.resolve())
+
+
+@pytest.mark.parametrize(
+    ("protocol", "reported_path"),
+    [
+        # The exact symptom docs/operations/troubleshooting.md L41-45 describes:
+        # a client running outside the container reporting a host path.
+        ("torrent", "/mnt/tank/media/downloads/complete/Release.mkv"),
+        ("torrent", "C:/Downloads/Release.mkv"),
+        ("usenet", "/home/operator/Downloads/Release.mkv"),
+        # Inside the data mount, but under the other protocol's tree.
+        ("torrent", "/data/usenet/complete/Release.mkv"),
+        ("usenet", "/data/torrents/completed/Release.mkv"),
+        # Inside the data mount but outside both download trees.
+        ("torrent", "/data/library/Studio/Release.mkv"),
+        # A traversal that resolves back out of the tree.
+        ("torrent", "/data/torrents/../../etc/Release.mkv"),
+        # Relative, which no absolute mount can make visible.
+        ("torrent", "downloads/Release.mkv"),
+    ],
+)
+async def test_a_path_the_worker_cannot_resolve_is_named_rather_than_imported(
+    session: AsyncSession, tmp_path: Path, protocol: str, reported_path: str
+) -> None:
+    """Downloads complete but nothing is imported, with the reason on the trigger."""
+    configured = settings(tmp_path / "data")
+    item = completed_download(protocol)
+    session.add(item)
+    await session.flush()
+
+    trigger = await stage_completed_download(session, item, reported_path, configured)
+
+    assert trigger.status == "failed"
+    assert trigger.error_code == "path_not_visible"
+    assert trigger.error_detail is not None
+    # Actionable means naming the path that was reported and the root it has to
+    # be mounted at - a bare "not visible" leaves the operator guessing.
+    assert reported_path in trigger.error_detail
+    if reported_path.startswith("/"):
+        expected_root = str(
+            (
+                configured.torrents_path if protocol == "torrent" else configured.usenet_path
+            ).resolve()
+        )
+        assert expected_root in trigger.error_detail
+    # Nothing was handed on: a failed trigger is not dispatchable work.
+    assert trigger.reported_path == reported_path
+
+
+@pytest.mark.parametrize(
+    ("protocol", "reported_path"),
+    [
+        ("torrent", "torrents/completed/Release.mkv"),
+        ("torrent", "torrents/completed/nested/dir/Release.mkv"),
+        ("usenet", "usenet/complete/Release.mkv"),
+    ],
+)
+async def test_a_path_below_the_shared_mount_is_translated_rather_than_refused(
+    session: AsyncSession, tmp_path: Path, protocol: str, reported_path: str
+) -> None:
+    """The negative space: the same check must not fire on a correct mount."""
+    configured = settings(tmp_path / "data")
+    absolute = configured.data_path / reported_path
+    item = completed_download(protocol)
+    session.add(item)
+    await session.flush()
+
+    trigger = await stage_completed_download(session, item, str(absolute), configured)
+
+    assert trigger.status == "pending"
+    assert trigger.error_code is None
+    assert trigger.source_path == str(absolute.resolve())

@@ -81,3 +81,27 @@ def _integer(value: object) -> int | None:
 
 def _string(value: object) -> str | None:
     return value if isinstance(value, str) else None
+
+
+def codec_payload(result: ProbeResult) -> dict[str, object]:
+    """The shape `/api/media/{id}/playback-info` reads to decide direct play.
+
+    Shared by the import pipeline and the library scan's probing job so a file
+    that arrives through either path ends up with the same recorded shape.
+    """
+
+    video = _stream(result, "video")
+    audio = _stream(result, "audio")
+    return {
+        "container": result.container,
+        "video": {
+            "codec": video.get("codec_name"),
+            "profile": video.get("profile"),
+            "level": video.get("level"),
+        },
+        "audio": {"codec": audio.get("codec_name")},
+    }
+
+
+def _stream(result: ProbeResult, codec_type: str) -> dict[str, object]:
+    return next((stream for stream in result.streams if stream.get("codec_type") == codec_type), {})

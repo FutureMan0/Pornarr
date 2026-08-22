@@ -581,11 +581,14 @@ function MediaCard({ item, showSource }: { readonly item: Item; readonly showSou
         )
       }
       action={(content) => (
+        // `article` does not contribute to an accessible name from content, so
+        // without this the link around every tile would announce as nameless.
         <Link
           to={address}
           className="block rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
           onPointerEnter={() => setPreview(true)}
           onPointerLeave={() => setPreview(false)}
+          aria-label={item.title}
         >
           {content}
         </Link>

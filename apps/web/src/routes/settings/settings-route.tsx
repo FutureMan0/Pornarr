@@ -300,9 +300,14 @@ export function SettingsRoute(): JSX.Element {
         >
           {t("settings.section.paths")}
         </Link>
-        {/* The design's "Users & access". There is still no user list — this
-            server has no user-management API — but inviting somebody is the
-            half of it that exists. */}
+        {/* The design's "Users & access", both halves: who is here, and how
+            somebody new gets in. */}
+        <Link
+          to="/admin/members"
+          className="rounded-md px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-3 hover:text-ink"
+        >
+          {t("settings.section.members")}
+        </Link>
         <Link
           to="/admin/invites"
           className="rounded-md px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-3 hover:text-ink"

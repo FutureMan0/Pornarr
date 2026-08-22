@@ -20,7 +20,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { FormEvent, JSX } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useSession } from "../../../auth/session";
 import { ErrorScreen } from "../../../errors/error-screen";
 import { useFormat } from "../../../i18n/format";
@@ -327,6 +327,30 @@ export function PeersRoute(): JSX.Element {
           </div>
         </div>
       </form>
+
+      {/*
+        The other half of the arrangement, which nothing else on this screen
+        mentions. Adding a peer is one direction only: it lets this instance
+        read theirs. For them to read yours, a key has to be issued here and
+        sent over -- on a different screen, under Account rather than
+        administration, because a key belongs to the account whose view it
+        shares. Somebody who has just added a peer and expects the sharing to
+        be mutual has no way to find that from here, so it says so and links.
+      */}
+      <div className="mt-10 border-line border-t pt-6">
+        <h2 className="text-lg text-ink">{t("peers.shareTitle")}</h2>
+        <p className="mt-1 max-w-[70ch] text-sm text-ink-muted">{t("peers.shareHint")}</p>
+        <ol className="mt-3 max-w-[70ch] list-decimal space-y-1 pl-5 text-sm text-ink-muted">
+          <li>{t("peers.shareStepKey")}</li>
+          <li>{t("peers.shareStepSend")}</li>
+        </ol>
+        <Link
+          className="mt-3 inline-block text-accent text-sm underline underline-offset-4"
+          to="/settings/api-keys"
+        >
+          {t("peers.shareKeysLink")}
+        </Link>
+      </div>
     </section>
   );
 }

@@ -157,6 +157,36 @@ For a sub-path deployment, set `BASE_PATH=/pornarr` in `.env` and configure the
 proxy to preserve that prefix. Prefer a dedicated hostname when possible; it is
 less error-prone.
 
+Then set `TRUSTED_PROXIES` in `.env` to the address the proxy reaches the API
+from, and restart the stack:
+
+```sh
+$EDITOR .env
+# TRUSTED_PROXIES=127.0.0.1
+docker compose up -d --wait
+```
+
+Without it every request looks to Pornarr as though it came from the proxy, so the
+login rate limit counts the whole instance in one bucket and six wrong guesses from
+one anonymous caller refuse every account's sign-in for fifteen minutes. Name only
+addresses you control: anyone can write `X-Forwarded-For`, so an instance that
+believes it from an arbitrary client has no login rate limit at all.
+
+Session cookies are marked `Secure` by default and are therefore not sent over
+plain HTTP — which is the point, and which is why the proxy above must terminate
+TLS. `SESSION_COOKIE_SECURE=false` exists only for local development over
+`http://localhost`, where a browser will not store a `Secure` cookie; the
+application refuses to start with it when `APP_ENV=production`.
+
+`docker-compose.override.yml` is the development override and Compose applies it
+automatically. It is the one place that sets `SESSION_COOKIE_SECURE=false`, along
+with `APP_ENV=development` and the development image. An instance reached through
+the proxy above must not run with it:
+
+```sh
+docker compose -f docker-compose.yml up -d --wait
+```
+
 ## Upgrade
 
 Read the release notes, create a backup, and pin the target image tag in `.env`:

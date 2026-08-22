@@ -12,6 +12,7 @@ from pornarr_api.main import create_app
 from pornarr_api.routers.stream import ByteRange, RangeNotSatisfiableError, parse_byte_ranges
 from pornarr_db.base import Base
 from pornarr_db.models.media import Media, MediaFile
+from pornarr_db.models.root_folders import RootFolder
 from pornarr_db.models.user import User
 from tests.api.test_app import build_settings
 from tests.api.test_auth import MemoryRedis, create_user, login
@@ -47,6 +48,15 @@ async def create_media_file(app: FastAPI, path: Path) -> MediaFile:
         session.add(media_file)
         await session.commit()
     return media_file
+
+
+async def add_root_folder(app: FastAPI, path: Path) -> None:
+    session_factory = async_sessionmaker(
+        app.state.engine, class_=AsyncSession, expire_on_commit=False
+    )
+    async with session_factory() as session:
+        session.add(RootFolder(path=str(path), enabled=True, free_space_bytes=1))
+        await session.commit()
 
 
 def test_parses_single_open_ended_suffix_and_multi_ranges() -> None:
@@ -120,3 +130,46 @@ async def test_stream_rejects_invalid_ranges_and_files_outside_the_library(
     assert invalid_range.status_code == 416
     assert invalid_range.headers["content-range"] == "bytes */6"
     assert invalid_range.json()["code"] == "RANGE_NOT_SATISFIABLE"
+
+
+async def test_stream_serves_a_file_inside_a_configured_root_folder(
+    app: FastAPI, client: AsyncClient, tmp_path: Path
+) -> None:
+    """A root folder is where the operator's video already lives.
+
+    The wizard stores the library path it was given as a root folder, and
+    `settings.library_path` stays at `data_path / "library"` whatever that path
+    was. Streaming only from `library_path` therefore answered 404 for every
+    title an instance actually holds.
+    """
+    root = tmp_path / "elsewhere"
+    root.mkdir()
+    path = root / "sample.mp4"
+    path.write_bytes(b"abcdefghijklmnopqrstuvwxyz")
+    user: User = await create_user(app)
+    media_file = await create_media_file(app, path)
+    await add_root_folder(app, root)
+    await login(client, user.username, "correct horse battery staple")
+
+    full = await client.get(f"/api/media/{media_file.media_id}/stream")
+
+    assert full.status_code == 200
+    assert full.content == b"abcdefghijklmnopqrstuvwxyz"
+
+
+async def test_stream_refuses_a_file_no_root_folder_covers(
+    app: FastAPI, client: AsyncClient, tmp_path: Path
+) -> None:
+    """Widening the roots must not turn the guard off."""
+    root = tmp_path / "elsewhere"
+    root.mkdir()
+    stray = tmp_path / "stray.mp4"
+    stray.write_bytes(b"outside every root")
+    user: User = await create_user(app)
+    media_file = await create_media_file(app, stray)
+    await add_root_folder(app, root)
+    await login(client, user.username, "correct horse battery staple")
+
+    response = await client.get(f"/api/media/{media_file.media_id}/stream")
+
+    assert response.status_code == 404

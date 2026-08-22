@@ -35,7 +35,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.background import BackgroundTask
 
-from pornarr_api.auth import database_session, get_current_user, require_role
+from pornarr_api.auth import (
+    database_session,
+    get_current_user,
+    get_streaming_user,
+    require_role,
+    streaming_session,
+)
 from pornarr_db.audit import write_audit
 from pornarr_db.models.peer import Peer
 from pornarr_db.models.user import User, UserRole
@@ -45,6 +51,7 @@ router = APIRouter(prefix="/admin/peers", tags=["peers"])
 proxy_router = APIRouter(prefix="/peers", tags=["peers"])
 Admin = Annotated[User, Depends(require_role(UserRole.ADMIN))]
 CurrentUser = Annotated[User, Depends(get_current_user)]
+StreamingUser = Annotated[User, Depends(get_streaming_user)]
 Session = Annotated[AsyncSession, Depends(database_session)]
 
 # A peer is somebody's home server on the other end of a tunnel, so it is slow
@@ -275,11 +282,32 @@ async def list_peers(_: Admin, session: Session) -> list[PeerResponse]:
     return [peer_response(peer) for peer in peers]
 
 
+def normalize_base_url(given: str) -> str:
+    """The API endpoint, from whatever an operator had in front of them.
+
+    Every peer call is `base_url` plus a path, so the stored value has to be
+    the endpoint and not the site root. What somebody has to hand is the
+    address in their browser, and pasting it registered a peer that was then
+    asked for `https://friend.example/library` -- the single-page application,
+    which answers 200 with HTML. The test said `invalid_response` and nothing
+    pointed at the address.
+
+    So the endpoint is completed here rather than demanded. Appending is safe
+    where guessing would not be: `/api` is where this application mounts its
+    API, under a base path as well, and it is this application on both ends of
+    a peer link. An address that already names the endpoint is left alone, so
+    nothing is appended twice.
+    """
+    base_url = given.rstrip("/")
+    return base_url if base_url.endswith("/api") else f"{base_url}/api"
+
+
 @router.post("", response_model=PeerResponse, status_code=201)
 async def create_peer(payload: PeerWrite, admin: Admin, session: Session) -> PeerResponse:
     base_url = payload.base_url.rstrip("/")
     if not base_url.startswith(("http://", "https://")):
         raise HTTPException(status_code=422)
+    base_url = normalize_base_url(base_url)
     peer = Peer(
         name=payload.name,
         base_url=base_url,
@@ -371,17 +399,21 @@ async def _relay(request: Request, peer: Peer, path: str) -> StreamingResponse:
     )
 
 
-async def _proxy(
-    peer_id: UUID, path: str, request: Request, session: AsyncSession
-) -> StreamingResponse:
+async def _proxy(peer_id: UUID, path: str, request: Request) -> StreamingResponse:
     """Fetch one thing from a peer on the reader's behalf.
 
     A 404 for a path outside the allowlist, and for a peer that is disabled: a
     reader learns that this instance will not fetch it, not what the peer would
     have said.
+
+    The session is closed before the relay starts: the response body outlives
+    the request, and a held connection would outlive it too. See
+    `streaming_session`.
     """
-    peer = await peer_or_404(session, peer_id)
-    if not peer.enabled or not allowed(request.method, path):
+    async with streaming_session(request) as session:
+        peer = await peer_or_404(session, peer_id)
+        enabled = peer.enabled
+    if not enabled or not allowed(request.method, path):
         raise HTTPException(status_code=404)
     return await _relay(request, peer, path)
 
@@ -391,20 +423,20 @@ async def _proxy(
 # that can only do whichever the generator saw last.
 @proxy_router.get("/{peer_id}/proxy/{path:path}")
 async def proxy_get(
-    peer_id: UUID, path: str, request: Request, _: CurrentUser, session: Session
+    peer_id: UUID, path: str, request: Request, _: StreamingUser
 ) -> StreamingResponse:
-    return await _proxy(peer_id, path, request, session)
+    return await _proxy(peer_id, path, request)
 
 
 @proxy_router.post("/{peer_id}/proxy/{path:path}")
 async def proxy_post(
-    peer_id: UUID, path: str, request: Request, _: CurrentUser, session: Session
+    peer_id: UUID, path: str, request: Request, _: StreamingUser
 ) -> StreamingResponse:
-    return await _proxy(peer_id, path, request, session)
+    return await _proxy(peer_id, path, request)
 
 
 @proxy_router.delete("/{peer_id}/proxy/{path:path}")
 async def proxy_delete(
-    peer_id: UUID, path: str, request: Request, _: CurrentUser, session: Session
+    peer_id: UUID, path: str, request: Request, _: StreamingUser
 ) -> StreamingResponse:
-    return await _proxy(peer_id, path, request, session)
+    return await _proxy(peer_id, path, request)

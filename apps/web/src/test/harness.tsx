@@ -45,6 +45,9 @@ export const defaultHandlers = [
   http.get("/api/queue", () => HttpResponse.json([])),
   http.get("/api/requests", () => HttpResponse.json([])),
   http.get("/api/auth/me", () => apiError("NOT_AUTHENTICATED", 401)),
+  // No provider configured by default: a test that cares about the OIDC
+  // buttons on `/login` overrides this itself.
+  http.get("/api/auth/oidc/providers", () => HttpResponse.json([])),
   http.post("/api/auth/login", async ({ request }) => {
     const body = (await request.json()) as { username?: string; password?: string };
     if (body.password !== VALID_PASSWORD) return apiError("INVALID_CREDENTIALS", 401);

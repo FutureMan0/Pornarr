@@ -45,6 +45,12 @@ export interface SetupIndexerTestResult {
   categories: { id: string; name: string }[];
 }
 
+export type FilterProfileWrite =
+  paths["/api/admin/filters/profile"]["put"]["requestBody"]["content"]["application/json"];
+export type FilterRuleWrite = FilterProfileWrite["rules"][number];
+export type FilterRuleKind = FilterRuleWrite["kind"];
+export type FilterAction = FilterRuleWrite["action"];
+
 export type SetupCompleteWrite = SetupWrite & {
   indexer?: SetupIndexerWrite;
   download_client?: SetupDownloadClientWrite;
@@ -145,6 +151,29 @@ export function useCompleteSetup(): UseMutationResult<
     },
     onSuccess: () => {
       queryClient.setQueryData<SetupStatus>(SETUP_STATUS_QUERY_KEY, { configured: true });
+    },
+  });
+}
+
+/**
+ * Write the operator's filter rules onto the global profile.
+ *
+ * Authenticated, because the profile is administrator-owned (ADR 0018) and the
+ * setup endpoints are the only unauthenticated ones there are. The wizard
+ * therefore signs in with the account it has just created before calling this
+ * — which is the same request the "Sign in" link on the next screen makes.
+ */
+export function useApplyFilterProfile(): UseMutationResult<
+  void,
+  ApiRequestError,
+  FilterRuleWrite[]
+> {
+  return useMutation<void, ApiRequestError, FilterRuleWrite[]>({
+    mutationFn: async (rules) => {
+      const { error, response } = await getApiClient().PUT("/api/admin/filters/profile", {
+        body: { rules },
+      });
+      if (error !== undefined) throw apiFailure(error, response);
     },
   });
 }

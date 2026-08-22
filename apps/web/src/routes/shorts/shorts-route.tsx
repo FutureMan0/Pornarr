@@ -119,7 +119,15 @@ export function ShortsRoute(): JSX.Element {
                     // Into the feed, anchored on this clip. The way back to the
                     // full title is there, where the timestamp has somewhere to
                     // land — a grid tile has no room to say "at 15:11".
-                    <Link to={`/shorts/${short.id}`} className="block rounded-lg">
+                    //
+                    // `article`, the tile's root, does not contribute to an
+                    // accessible name from content, so the link needs one of
+                    // its own or a screen reader hears nothing but "link".
+                    <Link
+                      to={`/shorts/${short.id}`}
+                      className="block rounded-lg"
+                      aria-label={short.title}
+                    >
                       {content}
                     </Link>
                   )}

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
+
+_SEPARATORS = re.compile(r"[^0-9a-z]+")
 
 
 class FilterRuleKind(StrEnum):
@@ -50,6 +53,12 @@ class FilterRule:
 class FilterDecision:
     action: FilterAction
     rule: FilterRule | None
+    # Every rule that matched, not only the one whose action won.
+    # docs/pipelines/import.md L31 asks for "every firing rule" in the audit log,
+    # and a decision that reported one of them could not answer that: two rules
+    # firing and one being written down is a record of the outcome, not of what
+    # the instance actually decided against.
+    matched: tuple[FilterRule, ...] = ()
 
 
 _ACTION_PRIORITY = {
@@ -75,7 +84,13 @@ def evaluate_filters(candidate: ContentCandidate, rules: Iterable[FilterRule]) -
     # `max` keeps the first item on an equal key, so the order resolved above
     # deterministically makes an equally strict global rule win over a user rule.
     rule = max(matching_rules, key=lambda candidate_rule: _ACTION_PRIORITY[candidate_rule.action])
-    return FilterDecision(action=rule.action, rule=rule)
+    return FilterDecision(action=rule.action, rule=rule, matched=matching_rules)
+
+
+def _folded(value: str) -> str:
+    """Case and separators reduced to one spelling, and nothing else."""
+
+    return _SEPARATORS.sub(" ", value.casefold()).strip()
 
 
 def _matches(rule: FilterRule, candidate: ContentCandidate) -> bool:
@@ -84,8 +99,17 @@ def _matches(rule: FilterRule, candidate: ContentCandidate) -> bool:
 
     pattern = rule.pattern.casefold()
     if rule.kind is FilterRuleKind.TERM:
-        return bool(pattern) and (
-            pattern in candidate.title.casefold() or pattern in candidate.description.casefold()
+        # Separators folded on both sides. An operator writes the release's own
+        # spelling - `desi.bang`, `true_amateurs`, `gauntlet-hold` - while the
+        # title this is compared against has already been through
+        # `split_release_name`, which turns every separator into a space.
+        # Compared literally, a term carrying any separator matched nothing at
+        # all, and a filter that silently never fires is worse than no filter.
+        # Only separators are folded: two different words stay two different
+        # words.
+        term = _folded(pattern)
+        return bool(term) and (
+            term in _folded(candidate.title) or term in _folded(candidate.description)
         )
     if rule.kind is FilterRuleKind.TAG:
         return bool(pattern) and any(pattern == tag.casefold() for tag in candidate.tags)

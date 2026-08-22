@@ -59,7 +59,13 @@ class DownloadClientResponse(BaseModel):
 
 
 class DownloadClientUpdate(DownloadClientWrite):
-    pass
+    # The credential is write-only: the response carries everything about a
+    # client except its secret, so a screen editing one has nothing to put back
+    # in the box. `None` therefore means "keep the stored credential" rather
+    # than "clear it" - the same contract `IndexerUpdate.api_key` states, and
+    # the reason an edit form can offer to change a client's host or port
+    # without asking an operator to re-type its password from memory.
+    credentials: SecretStr | None = None
 
 
 def response(client: DownloadClient) -> DownloadClientResponse:
@@ -124,6 +130,10 @@ async def test_download_client(
         client.health = "unhealthy"
         client.last_error = str(error).replace(client.credentials, "[redacted]")
         client.last_tested_at = datetime.now(UTC)
+        # `database_session` rolls back on any exception it sees, and this
+        # handler is about to raise one - so the diagnosis has to be committed
+        # here or the operator's failed test leaves no trace on the row.
+        await session.commit()
         raise DownloadClientConnectionError("The download client connection failed.") from error
     client.health = "healthy"
     client.last_error = None
@@ -138,7 +148,8 @@ async def update_download_client(
     client = await client_or_404(session, client_id)
     for field, value in payload.model_dump(exclude={"credentials"}).items():
         setattr(client, field, value)
-    client.credentials = payload.credentials.get_secret_value()
+    if payload.credentials is not None:
+        client.credentials = payload.credentials.get_secret_value()
     await session.flush()
     return response(client)
 

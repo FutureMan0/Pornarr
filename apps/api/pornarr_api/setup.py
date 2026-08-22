@@ -11,9 +11,15 @@ from starlette.types import ASGIApp
 
 from pornarr_db.models.user import User
 
+# `/api/health` is exempt on purpose. installation.md and backup.md tell an
+# operator to verify a deployment by reading a health report, and an unconfigured
+# instance is exactly when the mounts that report checks are most likely to be
+# wrong. It exposes nothing a configured instance keeps back either — the report
+# is unauthenticated there too — so exempting it widens no boundary.
 _ALLOWED = frozenset(
     {
         "/health",
+        "/api/health",
         "/api/setup/status",
         "/api/setup/validate-library-path",
         "/api/setup/test-indexer",

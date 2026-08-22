@@ -22,6 +22,7 @@ import type { JSX } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { EstimateConfidence } from "../../components/estimate-confidence";
 import { useFormat } from "../../i18n/format";
 import { getApiClient } from "../../lib/api";
 import { apiFailure } from "../../lib/api-error";
@@ -165,8 +166,11 @@ export function QueueRoute(): JSX.Element {
                 <span className="tabular-nums">
                   {job.download_speed_bytes === null ? "—" : format.speed(job.download_speed_bytes)}
                 </span>
+                {/* ADR 0031: never a bare range. The confidence rides with it,
+                    here as in the table and as in the search row. */}
                 <span className="tabular-nums">
                   {format.estimate(job.queue_estimate.low_seconds, job.queue_estimate.high_seconds)}
+                  <EstimateConfidence level={job.queue_estimate.confidence} />
                 </span>
               </div>
             </li>
@@ -224,6 +228,7 @@ export function QueueRoute(): JSX.Element {
                       job.queue_estimate.low_seconds,
                       job.queue_estimate.high_seconds,
                     )}
+                    <EstimateConfidence level={job.queue_estimate.confidence} />
                   </td>
                 </tr>
               ))}

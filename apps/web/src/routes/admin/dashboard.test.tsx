@@ -55,7 +55,37 @@ const RECENT = {
   comment_count: 12,
 };
 
-function stub(overview: object = OVERVIEW, recent: object[] = [RECENT]): URL[] {
+// A software-only baseline: no working method, one machine-level rejection.
+// Tests about the panel itself override this rather than the default, so
+// every other test on this screen sees a fixed, boring answer.
+const CAPABILITIES = {
+  methods: [],
+  rejections: [
+    { acceleration: null, reason: "hardware acceleration is disabled by configuration" },
+  ],
+  nvidia_gpus: [],
+};
+
+const LIMITS = {
+  hardware: 0,
+  software: 1,
+  per_user: 2,
+  hardware_in_use: 0,
+  software_in_use: 0,
+  configured_hardware: null,
+  configured_software: null,
+  configured_per_user: 2,
+  effective_hardware: 0,
+  effective_software: 1,
+  effective_per_user: 2,
+};
+
+function stub(
+  overview: object = OVERVIEW,
+  recent: object[] = [RECENT],
+  capabilities: object = CAPABILITIES,
+  limits: object = LIMITS,
+): URL[] {
   const libraryCalls: URL[] = [];
   server.use(
     http.get("/api/admin/overview", () => HttpResponse.json(overview)),
@@ -64,6 +94,8 @@ function stub(overview: object = OVERVIEW, recent: object[] = [RECENT]): URL[] {
       libraryCalls.push(new URL(request.url));
       return HttpResponse.json({ items: recent, next_offset: null });
     }),
+    http.get("/api/admin/transcode/capabilities", () => HttpResponse.json(capabilities)),
+    http.get("/api/admin/transcode/limits", () => HttpResponse.json(limits)),
   );
   return libraryCalls;
 }
@@ -167,6 +199,73 @@ describe("recently added", () => {
     await screen.findByText("Metadata matched");
 
     expect(screen.queryByText("Recently added")).toBeNull();
+  });
+});
+
+describe("the transcoding report", () => {
+  test("names each acceleration method that works", async () => {
+    stub(OVERVIEW, [RECENT], {
+      methods: [
+        {
+          acceleration: "nvenc",
+          codecs: [
+            { codec: "h264", maximum_tested_resolution: "3840x2160" },
+            { codec: "hevc", maximum_tested_resolution: "1920x1080" },
+          ],
+        },
+      ],
+      rejections: [],
+      nvidia_gpus: ["NVIDIA GeForce RTX 3060"],
+    });
+    renderApp("/admin");
+
+    expect(await screen.findByText("NVENC — H264, HEVC")).toBeTruthy();
+  });
+
+  test("gives a rejection's reason exactly as the endpoint sent it, not reworded", async () => {
+    stub(OVERVIEW, [RECENT], {
+      methods: [],
+      rejections: [{ acceleration: "vaapi", reason: "no supported encoder is listed by ffmpeg" }],
+      nvidia_gpus: [],
+    });
+    renderApp("/admin");
+
+    // The exact sentence `detect_hardware_capabilities` produces
+    // (packages/media/pornarr_media/capabilities.py) - a client-side rewrite
+    // would be a second place that sentence could drift from what FFmpeg said.
+    expect(
+      await screen.findByText("VAAPI unavailable — no supported encoder is listed by ffmpeg"),
+    ).toBeTruthy();
+  });
+
+  test("names the machine-level reason when no method was even attempted", async () => {
+    stub(OVERVIEW, [RECENT], {
+      methods: [],
+      rejections: [
+        { acceleration: null, reason: "hardware acceleration is disabled by configuration" },
+      ],
+      nvidia_gpus: [],
+    });
+    renderApp("/admin");
+
+    expect(
+      await screen.findByText("Not available — hardware acceleration is disabled by configuration"),
+    ).toBeTruthy();
+  });
+
+  test("shows the current session counts beside the report", async () => {
+    stub(OVERVIEW, [RECENT], CAPABILITIES, {
+      ...LIMITS,
+      hardware_in_use: 1,
+      effective_hardware: 2,
+      software_in_use: 3,
+      effective_software: 8,
+    });
+    renderApp("/admin");
+
+    const slots = await screen.findByText(/hardware slots in use/);
+    expect(slots.textContent).toContain("1 of 2 hardware slots in use");
+    expect(slots.textContent).toContain("3 of 8 software slots in use");
   });
 });
 

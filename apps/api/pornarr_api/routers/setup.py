@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 from datetime import UTC, datetime
 from pathlib import Path
@@ -67,6 +68,25 @@ class SetupPathInvalidError(PornarrError):
     status = 422
 
 
+class SetupPasswordTooWeakError(PornarrError):
+    """The first administrator's password does not meet the rule the wizard states.
+
+    The rule was enforced only by `passwordStrength` in the browser, so anything
+    that skipped the wizard — curl, a script, a second tab posting the form —
+    could create an administrator with a one-character password and sign in with
+    it. `/setup/complete` is exempt from CSRF, because nobody holds a session
+    during a first run, so this endpoint is reachable by anything that can see
+    the port.
+
+    Its own code rather than a bare 422: the frontend turns a code into a cause
+    and a next step, and "the password is too short" is not something a generic
+    validation failure can say.
+    """
+
+    code = "SETUP_PASSWORD_TOO_WEAK"
+    status = 422
+
+
 class SetupIndexerWrite(BaseModel):
     implementation: IndexerImplementation
     base_url: Annotated[str, Field(min_length=1, max_length=512)]
@@ -89,6 +109,38 @@ class SetupMetadataProviderWrite(BaseModel):
 
 class SetupIndexerTestResponse(BaseModel):
     categories: list[dict[str, str]]
+
+
+# The rule the account step states, and the one `passwordStrength` in
+# `apps/web/src/routes/setup/setup-route.tsx` enforces: twelve characters from at
+# least two of lower case, upper case, digits and symbols. Enforced here so that
+# the server and the browser cannot disagree about what the product promised.
+PASSWORD_MINIMUM_LENGTH = 12
+PASSWORD_MINIMUM_CHARACTER_CLASSES = 2
+_PASSWORD_CHARACTER_CLASSES = (
+    re.compile(r"[a-z]"),
+    re.compile(r"[A-Z]"),
+    re.compile(r"\d"),
+    re.compile(r"[^\w\s]"),
+)
+
+
+def _password_character_classes(password: str) -> int:
+    return sum(1 for pattern in _PASSWORD_CHARACTER_CLASSES if pattern.search(password))
+
+
+def _validate_password(password: str) -> None:
+    classes = _password_character_classes(password)
+    if len(password) >= PASSWORD_MINIMUM_LENGTH and classes >= PASSWORD_MINIMUM_CHARACTER_CLASSES:
+        return
+    # The length that was sent is not context — it is a fact about the password
+    # and belongs nowhere near a log. What goes back is the rule, so a client
+    # that is not the wizard can state it too.
+    raise SetupPasswordTooWeakError(
+        "The administrator password does not meet the minimum rule.",
+        minimum_length=PASSWORD_MINIMUM_LENGTH,
+        minimum_character_classes=PASSWORD_MINIMUM_CHARACTER_CLASSES,
+    )
 
 
 class SetupWrite(BaseModel):
@@ -180,6 +232,9 @@ async def complete_setup(
     )
     if await session.scalar(select(User.id).limit(1)) is not None:
         raise SetupAlreadyCompletedError("The instance has already been configured.")
+    # Before anything is tested or touched: a refusal here creates nothing and
+    # tells an unauthenticated caller nothing about the server's filesystem.
+    _validate_password(payload.password.get_secret_value())
     path, free_space_bytes, same_filesystem = _validate_library_path(
         payload.library_path, request.app.state.settings.data_path
     )

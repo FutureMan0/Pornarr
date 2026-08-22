@@ -31,6 +31,7 @@ test-results/
 .codegraph/
 graphify-out/
 .impeccable/
+.gauntlet/
 
 # Editors
 .idea/
@@ -41,3 +42,6 @@ graphify-out/
 # Per-developer Claude Code settings. The shared ones belong in
 # .claude/settings.json; this file is the local override and is never shared.
 .claude/settings.local.json
+
+# Live third-party accounts for the acquisition campaign.
+.env.live

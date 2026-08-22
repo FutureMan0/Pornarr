@@ -40,7 +40,11 @@ test.describe("library", () => {
 
     await page.goto("/library");
     await expect(page.getByRole("heading", { name: "Library", level: 1 })).toBeVisible();
-    await expect(page.getByRole("link", { name: new RegExp(media.title) })).toBeVisible();
+    // The grid's own link, named after the title exactly. A title that has been
+    // played is also on the continue-watching rail above the grid, whose link
+    // is named "Continue watching {title}" - two matches for a substring, and
+    // the one this case is about is the one in the grid.
+    await expect(page.getByRole("link", { name: media.title, exact: true })).toBeVisible();
     await expectNoAccessibilityViolations(page);
   });
 
@@ -50,11 +54,17 @@ test.describe("library", () => {
     if (media === null) return;
 
     await page.goto("/library");
-    await page.getByRole("link", { name: new RegExp(media.title) }).click();
+    // The grid's link, exactly. A title that has been played is also on the
+    // continue-watching rail, whose link is named "Continue watching {title}".
+    await page.getByRole("link", { name: media.title, exact: true }).click();
 
     await expect(page).toHaveURL(new RegExp(`/library/${media.id}$`));
     await expect(page.getByRole("heading", { name: media.title, level: 1 })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "File", level: 2 })).toBeVisible();
+    // "About", not "File": the redesign folded the file's facts and its path
+    // into one panel beside the player (`routes/media/detail-rail.tsx`). The
+    // claim is unchanged - the screen still says where the file is - so this
+    // follows the heading rather than asking for one that no longer exists.
+    await expect(page.getByRole("heading", { name: "About", level: 2 })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Tags", level: 2 })).toBeVisible();
     await expect(page.getByText(`${media.title}.mp4`)).toBeVisible();
     await expectNoAccessibilityViolations(page);

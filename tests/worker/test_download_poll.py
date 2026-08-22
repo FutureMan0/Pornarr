@@ -10,8 +10,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from pornarr_db.base import Base
-from pornarr_db.models.download import DownloadHistory, DownloadJob
+from pornarr_db.models.download import DownloadHistory, DownloadJob, ImportTrigger
 from pornarr_db.models.download_client import DownloadClient
+from pornarr_db.models.request import Request, RequestStatus
+from pornarr_db.models.user import User
 from pornarr_db.types import set_cipher
 from pornarr_integrations.downloaders import DownloadClientJob, DownloadState
 from pornarr_shared.crypto import CredentialCipher
@@ -151,7 +153,12 @@ async def test_poll_batches_each_client_and_isolates_an_unreachable_client(
     assert unreachable.last_error == "client unavailable with [redacted]"
     assert still_running.status == "downloading"
     assert imports == [(str(completed.id), "/data/torrents/completed-release")]
-    assert events == [("download.status", {"job_id": str(completed.id), "status": "completed"})]
+    # Both frames: the generic one the queue screen follows, and the named one
+    # `docs/api-contract.md` promises a contract-following client.
+    assert events == [
+        ("download.status", {"job_id": str(completed.id), "status": "completed"}),
+        ("download.completed", {"job_id": str(completed.id), "status": "completed"}),
+    ]
     history = await session.scalar(
         select(DownloadHistory).where(DownloadHistory.download_job_id == completed.id)
     )
@@ -396,6 +403,7 @@ async def test_poll_records_failure_without_collapsing_a_stalled_job(session: As
     assert handled == [failed]
     assert events == [
         ("download.status", {"job_id": str(failed.id), "status": "failed"}),
+        ("download.failed", {"job_id": str(failed.id), "error": failed.error}),
         ("download.status", {"job_id": str(stalled.id), "status": "stalled"}),
     ]
     history = await session.scalar(
@@ -460,3 +468,150 @@ async def test_a_finished_torrent_that_keeps_seeding_is_still_imported(
 
     assert job.status == "seeding"
     assert imports == [(str(job.id), "/data/torrents/completed/seeding-release.mp4")]
+
+
+async def test_poll_advances_a_queued_request_to_downloading_and_skips_a_cancelled_sibling(
+    session: AsyncSession,
+) -> None:
+    """`packages/db/pornarr_db/requests.py:29-34` declares `downloading` a legal
+    transition and nothing reached it before this poll did. Grabbing something
+    the client already has is the same job (defect 10), so a second request can
+    point at the same download job while sitting anywhere in its own lifecycle
+    - a cancelled one must stay cancelled rather than being resurrected.
+    """
+    client = DownloadClient(
+        name="client",
+        protocol="torrent",
+        implementation="adapter",
+        host="client.example",
+        port=8080,
+        credentials="secret",
+    )
+    session.add(client)
+    await session.flush()
+    job = DownloadJob(
+        download_client_id=client.id,
+        client_name=client.name,
+        protocol=client.protocol,
+        release_guid="release",
+        client_job_id="client-job",
+        status="queued",
+    )
+    session.add(job)
+    await session.flush()
+    user = User(username="requester", password_hash="not-a-real-password")
+    session.add(user)
+    await session.flush()
+    queued = Request(
+        user_id=user.id,
+        query="Example",
+        status=RequestStatus.QUEUED,
+        priority=80,
+        download_job_id=job.id,
+    )
+    cancelled = Request(
+        user_id=user.id,
+        query="Example",
+        status=RequestStatus.CANCELLED,
+        priority=80,
+        download_job_id=job.id,
+    )
+    session.add_all([queued, cancelled])
+    await session.commit()
+    adapter = PollingAdapter(
+        [
+            DownloadClientJob(
+                client_job_id="client-job",
+                state=DownloadState.DOWNLOADING,
+                size_bytes=100,
+                remaining_bytes=50,
+                download_speed_bytes=10,
+                estimated_seconds=5,
+            )
+        ]
+    )
+
+    async def publish(event_type: str, data: dict[str, Any]) -> None:
+        del event_type, data
+
+    async def enqueue_import(_: DownloadJob, __: str | None) -> None:
+        pytest.fail("a still-downloading job must not be imported")
+
+    await poll_downloads(
+        session, adapters={"adapter": adapter}, publish=publish, enqueue_import=enqueue_import
+    )
+    await session.commit()
+
+    assert queued.status is RequestStatus.DOWNLOADING
+    assert cancelled.status is RequestStatus.CANCELLED
+
+
+async def test_poll_advances_a_processing_request_to_available_once_its_trigger_is_imported(
+    session: AsyncSession,
+) -> None:
+    """`import_media` commits `ImportTrigger.status = "imported"` on its own
+    queue and publishes no event for it, so the poll is the only thing that
+    ever reads that row back to finish the request's own lifecycle.
+    """
+    client = DownloadClient(
+        name="client",
+        protocol="torrent",
+        implementation="adapter",
+        host="client.example",
+        port=8080,
+        credentials="secret",
+    )
+    session.add(client)
+    await session.flush()
+    job = DownloadJob(
+        download_client_id=client.id,
+        client_name=client.name,
+        protocol=client.protocol,
+        release_guid="release",
+        client_job_id="client-job",
+        status="seeding",
+    )
+    session.add(job)
+    await session.flush()
+    session.add(
+        ImportTrigger(
+            download_job_id=job.id, source_path="/data/torrents/release", status="imported"
+        )
+    )
+    user = User(username="requester", password_hash="not-a-real-password")
+    session.add(user)
+    await session.flush()
+    request = Request(
+        user_id=user.id,
+        query="Example",
+        status=RequestStatus.PROCESSING,
+        priority=80,
+        download_job_id=job.id,
+    )
+    session.add(request)
+    await session.commit()
+    adapter = PollingAdapter(
+        [
+            DownloadClientJob(
+                client_job_id="client-job",
+                state=DownloadState.SEEDING,
+                size_bytes=100,
+                remaining_bytes=0,
+                download_speed_bytes=0,
+                estimated_seconds=0,
+            )
+        ]
+    )
+
+    async def publish(event_type: str, data: dict[str, Any]) -> None:
+        del event_type, data
+
+    async def enqueue_import(_: DownloadJob, __: str | None) -> None:
+        return None
+
+    await poll_downloads(
+        session, adapters={"adapter": adapter}, publish=publish, enqueue_import=enqueue_import
+    )
+    await session.commit()
+
+    assert request.status is RequestStatus.AVAILABLE

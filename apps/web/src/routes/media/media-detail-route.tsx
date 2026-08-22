@@ -40,11 +40,13 @@ import {
   nextStepForError,
 } from "../../lib/api-error";
 import { usePageTitle } from "../../shell/page-title";
+import { CollectionPicker } from "./collection-picker";
 import { CommentsPanel } from "./comments-panel";
 import { DetailRail } from "./detail-rail";
 import { RatingPanel } from "./rating-panel";
 import { RelatedPanel } from "./related-panel";
 import { SceneMarkers } from "./scene-markers";
+import { SendToMember } from "./send-to-member";
 import { WatchlistToggle } from "./watchlist-toggle";
 
 /** What the detail endpoint answers, whichever instance answers it. */
@@ -159,7 +161,13 @@ export function MediaDetailRoute(): JSX.Element {
                 something here. A title borrowed from a peer has none of them,
                 and asking under a foreign id would answer about whatever
                 happens to share the number. */}
-            {peerId === undefined ? <WatchlistToggle mediaId={media.id} /> : null}
+            {peerId === undefined ? (
+              <div className="flex flex-wrap items-start gap-2">
+                <WatchlistToggle mediaId={media.id} />
+                <CollectionPicker mediaId={media.id} />
+                <SendToMember mediaId={media.id} />
+              </div>
+            ) : null}
             <p className="text-2xs text-ink-faint">
               {t("media.confidence", {
                 value:

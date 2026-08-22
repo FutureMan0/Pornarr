@@ -98,7 +98,11 @@ async def list_preferences(
             NotificationPreference.user_id == user.id
         )
     )
-    enabled_by_kind = dict(cast(Iterable[tuple[NotificationKind, bool]], preferences.tuples()))
+    # `.all()`, not `.tuples()`. A `Result` carries `keys()`, so `dict` takes
+    # it for a mapping and indexes it - which a `Result` does not support - and
+    # every call to this route answered 500. `.all()` is the list of rows, and
+    # a row of two columns is the pair `dict` wants.
+    enabled_by_kind = dict(cast(Iterable[tuple[NotificationKind, bool]], preferences.all()))
     return [
         NotificationPreferenceResponse(kind=kind, enabled=enabled_by_kind.get(kind, True))
         for kind in NotificationKind

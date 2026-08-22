@@ -79,6 +79,29 @@ if (!i18n.isInitialized) {
     });
 }
 
+/**
+ * Tell the document which language it is in.
+ *
+ * WCAG 2.2 SC 3.1.1 (Language of Page), which PRODUCT.md L96 signs the product
+ * up to in full: `index.html` ships `lang="en"` and nothing moved it, so a
+ * reader who switched to German got a German page announced to their screen
+ * reader as English — every word run through English pronunciation rules. axe
+ * cannot see this: `html-has-lang` and `valid-lang` check that the attribute is
+ * present and well formed, not that it agrees with the words on the screen.
+ *
+ * Written on `languageChanged` rather than from a component, because the
+ * attribute belongs to the document and no screen owns it. `resolvedLanguage`
+ * rather than the raw event value, so `de-AT` lands as `de` — the same
+ * normalisation `load: "languageOnly"` above applies to the resources.
+ */
+function declareDocumentLanguage(): void {
+  if (typeof document === "undefined") return;
+  document.documentElement.lang = currentLocale();
+}
+
+i18n.on("languageChanged", declareDocumentLanguage);
+declareDocumentLanguage();
+
 /** The locale currently rendering, always one of `LOCALES`. */
 export function currentLocale(): Locale {
   const resolved = i18n.resolvedLanguage ?? i18n.language;

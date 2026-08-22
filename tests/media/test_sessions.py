@@ -23,7 +23,7 @@ class RecordingRedis:
         self.members: dict[str, set[str]] = {}
         self.expirations: list[tuple[str, int]] = []
 
-    async def get(self, key: str) -> str | None:
+    async def get(self, key: str) -> str | bytes | None:
         return self.values.get(key)
 
     async def set(self, key: str, value: str, *, ex: int) -> bool:
@@ -54,7 +54,7 @@ class RecordingRedis:
         members.difference_update(values)
         return before - len(members)
 
-    async def sscan_iter(self, key: str) -> AsyncIterator[str]:
+    async def sscan_iter(self, key: str) -> AsyncIterator[str | bytes]:
         for value in tuple(self.members.get(key, set())):
             yield value
 
@@ -240,9 +240,14 @@ def test_hardware_saturation_falls_back_to_software_and_then_names_the_limit() -
     assert error.value.as_dict()["context"] == {"limit": "software"}
 
 
-def test_detection_and_settings_produce_conservative_session_limits() -> None:
+def test_detection_and_settings_produce_conservative_session_limits(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from pornarr_media.sessions import TranscodeLimits
 
+    # Four cores, mocked, so this assertion does not depend on the host it
+    # happens to run on.
+    monkeypatch.setattr("os.sched_getaffinity", lambda pid: set(range(4)))
     settings = Settings(
         app_secret=SecretStr("a" * 32),
         database_url="postgresql+psycopg://example",
@@ -250,4 +255,61 @@ def test_detection_and_settings_produce_conservative_session_limits() -> None:
     )
     capabilities = HardwareCapabilities(methods=(), rejections=(), nvidia_gpus=())
 
-    assert TranscodeLimits.from_settings(settings, capabilities) == TranscodeLimits(0, 1, 2)
+    assert TranscodeLimits.from_settings(settings, capabilities) == TranscodeLimits(0, 2, 2)
+
+
+def test_software_session_default_is_the_cpu_allowance_divided_by_two(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """PRODUCT DEFECT D4. transcode.md L30 documents the software cap as CPU
+    cores divided by two, floored at one so a single-core host still gets a
+    stream instead of a session cap nothing can ever pass."""
+    from pornarr_media.sessions import detected_software_session_default
+
+    monkeypatch.setattr("os.sched_getaffinity", lambda pid: set(range(16)))
+    assert detected_software_session_default() == 8
+
+    monkeypatch.setattr("os.sched_getaffinity", lambda pid: {0})
+    assert detected_software_session_default() == 1
+
+
+class UndecodedRedis(RecordingRedis):
+    """Redis as arq hands it over: raw bytes, because arq stores packed jobs.
+
+    The API creates its own client with `decode_responses=True`; the worker
+    reaches Redis through the arq pool, which does not decode. Both build the
+    same registry, so the registry has to accept either.
+    """
+
+    async def get(self, key: str) -> str | bytes | None:
+        value = self.values.get(key)
+        return None if value is None else value.encode()
+
+    async def sscan_iter(self, key: str) -> AsyncIterator[str | bytes]:
+        for value in tuple(self.members.get(key, set())):
+            yield value.encode()
+
+
+async def test_a_worker_side_registry_does_not_empty_the_session_index(tmp_path: Path) -> None:
+    """One nightly cleanup run must not lose every session that is playing.
+
+    `_session_ids` removes anything it cannot read as a session id. Read
+    through a client that does not decode, every id was unreadable, so the
+    first pass through `live_sessions` deleted the entire index: the
+    administration area went empty, "Playing on" went empty, and the FFmpeg
+    processes those records pointed at were left with nobody holding them.
+    """
+
+    from pornarr_media.sessions import SESSION_INDEX_KEY, TranscodeSessionRegistry
+
+    redis = UndecodedRedis()
+    session_id = uuid4()
+    registry = TranscodeSessionRegistry(redis, tmp_path)
+    await registry.register(
+        session_id, uuid4(), uuid4(), "hls", FakeTranscode(tmp_path / str(session_id))
+    )
+
+    live = await registry.live_sessions()
+
+    assert [session.id for session in live] == [session_id]
+    assert redis.members[SESSION_INDEX_KEY] == {str(session_id)}

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import text
@@ -208,3 +208,112 @@ async def test_regular_users_cannot_manage_indexers(app, client) -> None:
     response = await client.get("/api/admin/indexers")
 
     assert response.status_code == 403
+    updated = await client.put(
+        f"/api/admin/indexers/{uuid4()}",
+        json={
+            "name": "example",
+            "protocol": "torznab",
+            "implementation": "torznab",
+            "base_url": "https://indexer.example",
+        },
+        headers=csrf_headers(client),
+    )
+    assert updated.status_code == 403
+
+
+async def test_admin_can_update_an_indexer_in_place(app, client) -> None:
+    """ADR 0002 L9: an indexer is managed after creation, not delete-and-recreated."""
+    admin = await create_user(app, username="admin", role=UserRole.ADMIN)
+    app.state.indexer_adapters = {"torznab": WorkingAdapter()}
+    await login(client, admin.username, "correct horse battery staple")
+    created = await client.post(
+        "/api/admin/indexers",
+        json={
+            "name": "example",
+            "protocol": "torznab",
+            "implementation": "torznab",
+            "base_url": "https://indexer.example",
+            "api_key": "secret-value",
+            "priority": 4,
+        },
+        headers=csrf_headers(client),
+    )
+    indexer_id = created.json()["id"]
+    await client.post(f"/api/admin/indexers/{indexer_id}/test", headers=csrf_headers(client))
+
+    updated = await client.put(
+        f"/api/admin/indexers/{indexer_id}",
+        json={
+            "name": "renamed",
+            "protocol": "torznab",
+            "implementation": "torznab",
+            "base_url": "https://moved.example/",
+            "priority": 9,
+            "enabled": False,
+            "search_categories": ["6000", "6010"],
+        },
+        headers=csrf_headers(client),
+    )
+
+    assert updated.status_code == 200
+    assert updated.json()["id"] == indexer_id
+    assert updated.json()["name"] == "renamed"
+    assert updated.json()["base_url"] == "https://moved.example"
+    assert updated.json()["priority"] == 9
+    assert updated.json()["enabled"] is False
+    assert updated.json()["search_categories"] == ["6000", "6010"]
+    # The row is edited, not replaced: what the test found stays found.
+    assert updated.json()["health"] == "healthy"
+    assert updated.json()["categories"] == [{"id": "5000", "name": "TV"}]
+    assert "api_key" not in updated.text
+    assert "secret-value" not in updated.text
+    # An omitted key keeps the stored one rather than clearing it: the key is
+    # write-only, so an edit screen has nothing to send back for it.
+    async with AsyncSession(app.state.engine) as session:
+        indexer = await session.get(Indexer, UUID(indexer_id))
+        assert indexer is not None and indexer.api_key == "secret-value"
+
+    audit = await client.get("/api/admin/audit", params={"action": "indexer.updated"})
+
+    assert audit.json()[0]["actor_id"] == str(admin.id)
+    assert audit.json()[0]["target"] == indexer_id
+
+    rekeyed = await client.put(
+        f"/api/admin/indexers/{indexer_id}",
+        json={
+            "name": "renamed",
+            "protocol": "torznab",
+            "implementation": "torznab",
+            "base_url": "https://moved.example",
+            "api_key": "rotated-value",
+            "priority": 9,
+            "enabled": True,
+        },
+        headers=csrf_headers(client),
+    )
+
+    assert rekeyed.status_code == 200
+    assert rekeyed.json()["enabled"] is True
+    # Categories are absent from this payload, so the selection is left alone.
+    assert rekeyed.json()["search_categories"] == ["6000", "6010"]
+    async with AsyncSession(app.state.engine) as session:
+        indexer = await session.get(Indexer, UUID(indexer_id))
+        assert indexer is not None and indexer.api_key == "rotated-value"
+
+
+async def test_updating_an_indexer_that_does_not_exist_is_a_404(app, client) -> None:
+    admin = await create_user(app, username="admin", role=UserRole.ADMIN)
+    await login(client, admin.username, "correct horse battery staple")
+
+    response = await client.put(
+        f"/api/admin/indexers/{uuid4()}",
+        json={
+            "name": "example",
+            "protocol": "torznab",
+            "implementation": "torznab",
+            "base_url": "https://indexer.example",
+        },
+        headers=csrf_headers(client),
+    )
+
+    assert response.status_code == 404

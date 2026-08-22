@@ -21,7 +21,6 @@ from typing import Any, Protocol
 from uuid import UUID
 
 from pornarr_media.capabilities import HardwareCapabilities
-from pornarr_shared.config import Settings
 from pornarr_shared.errors import PornarrError
 
 SESSION_TTL_SECONDS = 60
@@ -98,6 +97,31 @@ class TranscodeLimitReachedError(PornarrError):
     status = 429
 
 
+class SessionLimitSettings(Protocol):
+    """The three caps, however a caller resolved them.
+
+    Both `pornarr_shared.config.Settings` (the process environment) and
+    `pornarr_db.settings.RuntimeSettings` (environment overridden by an
+    administrator's stored settings) satisfy this structurally, so this
+    package never has to depend on the database layer just to read a cap.
+    """
+
+    transcode_max_hw_sessions: int | None
+    transcode_max_sw_sessions: int | None
+    transcode_max_per_user: int
+
+
+def detected_software_session_default() -> int:
+    """CPU cores divided by two, per transcode.md's documented default.
+
+    `os.sched_getaffinity(0)` is the container's own view of its CPU
+    allowance rather than the host's full core count, so it honors a cpuset
+    the way `os.cpu_count()` would not. Floored at one so a single-core host
+    still gets a stream instead of a zero session cap.
+    """
+    return max(1, len(os.sched_getaffinity(0)) // 2)
+
+
 @dataclass(frozen=True, slots=True)
 class TranscodeLimits:
     hardware: int
@@ -106,7 +130,7 @@ class TranscodeLimits:
 
     @classmethod
     def from_settings(
-        cls, settings: Settings, capabilities: HardwareCapabilities
+        cls, settings: SessionLimitSettings, capabilities: HardwareCapabilities
     ) -> TranscodeLimits:
         detected_hardware = len(capabilities.nvidia_gpus) or int(bool(capabilities.methods))
         return cls(
@@ -115,7 +139,7 @@ class TranscodeLimits:
             else detected_hardware,
             software=settings.transcode_max_sw_sessions
             if settings.transcode_max_sw_sessions is not None
-            else 1,
+            else detected_software_session_default(),
             per_user=settings.transcode_max_per_user,
         )
 
@@ -292,6 +316,15 @@ class TranscodeSessionRegistry:
 
     async def _session_ids(self) -> AsyncIterator[UUID]:
         async for raw_session_id in self._redis.sscan_iter(SESSION_INDEX_KEY):
+            # The API's client is created with decode_responses, arq's pool is
+            # not, and the nightly cleanup builds a registry on arq's. Without
+            # this, every member came back as bytes, UUID() raised TypeError and
+            # the branch below removed it: one cleanup run emptied the whole
+            # active-session index, so live sessions vanished from the
+            # administration area and their FFmpeg processes were left with
+            # nobody holding them.
+            if isinstance(raw_session_id, bytes | bytearray):
+                raw_session_id = raw_session_id.decode(errors="replace")
             try:
                 yield UUID(raw_session_id)
             except (TypeError, ValueError):

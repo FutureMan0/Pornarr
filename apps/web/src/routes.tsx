@@ -18,6 +18,7 @@ import { RequireAuth } from "./auth/require-auth";
 import { ForbiddenRoute, NotFoundRoute } from "./errors/route-errors";
 import { DashboardRoute } from "./routes/admin/dashboard-route";
 import { InvitesRoute } from "./routes/admin/invites-route";
+import { MembersRoute } from "./routes/admin/members-route";
 import { ModerationRoute } from "./routes/admin/moderation-route";
 import { QuarantineReviewRoute } from "./routes/admin/quarantine/quarantine-review-route";
 import { ScanRoute } from "./routes/admin/scan-route";
@@ -34,7 +35,12 @@ import { QueueRoute } from "./routes/queue/queue-route";
 import { RecommendationsRoute } from "./routes/recommendations/recommendations-route";
 import { RequestsRoute } from "./routes/requests/requests-route";
 import { SearchRoute } from "./routes/search/search-route";
+import { AccountRoute } from "./routes/settings/account/account-route";
+import { ApiKeysRoute } from "./routes/settings/api-keys/api-keys-route";
+import { DownloadClientsRoute } from "./routes/settings/download-clients/download-clients-route";
+import { IndexersRoute } from "./routes/settings/indexers/indexers-route";
 import { MetadataProvidersRoute } from "./routes/settings/metadata/metadata-providers-route";
+import { OidcProvidersRoute } from "./routes/settings/oidc/oidc-providers-route";
 import { PeersRoute } from "./routes/settings/peers/peers-route";
 import { QualityProfilesRoute } from "./routes/settings/quality/quality-profiles-route";
 import { RootFoldersRoute } from "./routes/settings/root-folders/root-folders-route";
@@ -76,6 +82,7 @@ export const appRoutes: RouteObject[] = [
               { path: "admin/scan", element: <ScanRoute /> },
               { path: "admin/tags", element: <TagsRoute /> },
               { path: "admin/invites", element: <InvitesRoute /> },
+              { path: "admin/members", element: <MembersRoute /> },
               // The server's own settings are the index of the section, not a
               // sibling of it: `/settings` has to answer with something, and
               // bouncing it to root folders is what made every other section
@@ -85,10 +92,15 @@ export const appRoutes: RouteObject[] = [
                 element: <SettingsLayout />,
                 children: [
                   { index: true, element: <SettingsRoute /> },
+                  { path: "account", element: <AccountRoute /> },
+                  { path: "api-keys", element: <ApiKeysRoute /> },
                   { path: "root-folders", element: <RootFoldersRoute /> },
                   { path: "quality", element: <QualityProfilesRoute /> },
+                  { path: "indexers", element: <IndexersRoute /> },
+                  { path: "download-clients", element: <DownloadClientsRoute /> },
                   { path: "metadata", element: <MetadataProvidersRoute /> },
                   { path: "peers", element: <PeersRoute /> },
+                  { path: "oidc", element: <OidcProvidersRoute /> },
                 ],
               },
               { path: "search", element: <SearchRoute /> },

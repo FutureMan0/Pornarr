@@ -12,6 +12,25 @@ ATTRIBUTE_WEIGHT = 0.3
 RELIABILITY_WEIGHT = 0.1
 
 _DATE = re.compile(r"\b(20\d{2})[.\-_ ](\d{2})[.\-_ ](\d{2})\b")
+# The convention a Usenet indexer actually answers with: the site, a date whose
+# year is written with two digits, then the scene and its quality tokens.
+# `Site.YY.MM.DD.Some.Scene.XXX.1080p.MP4-GROUP`.
+#
+# Deliberately dotted-only: a prefix containing " - " is the other convention
+# this module already reads, where the segment before the date names performers
+# rather than a site, and reading it as a site would file every scene under a
+# studio called after its cast.
+_SCENE = re.compile(
+    r"^(?P<site>(?!.* - )[^.]+(?:[._][^.\d][^.]*)*)"
+    r"[._ ](?P<year>\d{2}|20\d{2})[._-](?P<month>\d{2})[._-](?P<day>\d{2})"
+    r"[._ ](?P<rest>.+)$"
+)
+# Where a scene title stops and its release tokens begin.
+_RELEASE_TOKEN = re.compile(
+    r"^(?:xxx|\d{3,4}p|mp4|mkv|avi|wmv|ts|web[-_]?dl|webrip|bluray|bdrip|dvdrip|hdtv|cam"
+    r"|hevc|x26[45]|h ?26[45]|av1|xvid)$",
+    re.IGNORECASE,
+)
 _RESOLUTION = re.compile(r"\b(2160|1080|720|480)p\b", re.IGNORECASE)
 _SOURCE = re.compile(r"\b(web[ ._-]?dl|webrip|bluray|bdrip|hdtv|cam)\b", re.IGNORECASE)
 _CODEC = re.compile(r"\b(hevc|x265|h[ ._-]?265|av1|x264|h[ ._-]?264|xvid)\b", re.IGNORECASE)
@@ -21,6 +40,7 @@ _GROUP = re.compile(r"(?:-|\[)([A-Za-z0-9]+)\]?$")
 @dataclass(frozen=True, slots=True)
 class ParsedRelease:
     title: str
+    site: str | None
     resolution: str | None
     source: str | None
     codec: str | None
@@ -37,16 +57,49 @@ class MatchScore:
 
 def parse_release(title: str) -> ParsedRelease:
     """Extract the stable scene tokens needed by matching and quality decisions."""
+    scene = _scene(title)
     date_match = _DATE.search(title)
-    release_date = _date(date_match)
+    release_date = scene[1] if scene is not None else _date(date_match)
     return ParsedRelease(
-        title=title,
+        # Only a title the scene pattern recognised is rewritten. The other
+        # convention's title carries its studio in front, which the filename
+        # metadata tier reads back out of it.
+        title=title if scene is None else scene[2],
+        site=None if scene is None else scene[0],
         resolution=_resolution(title),
         source=_source(title),
         codec=_codec(title),
         group=_match(_GROUP, title),
         date=release_date,
         performers=_performers(title, date_match.start() if date_match is not None else None),
+    )
+
+
+def _scene(title: str) -> tuple[str, date, str] | None:
+    """Site, date and scene title, for a release named the way scene releases are."""
+
+    matched = _SCENE.match(title)
+    if matched is None:
+        return None
+    year = int(matched["year"])
+    try:
+        released = date(
+            year + 2000 if year < 100 else year, int(matched["month"]), int(matched["day"])
+        )
+    except ValueError:
+        return None
+    words = [word for word in re.split(r"[._ ]+", matched["rest"]) if word]
+    scene_title = []
+    for word in words:
+        if _RELEASE_TOKEN.match(word) or _GROUP.search(word):
+            break
+        scene_title.append(word)
+    if not scene_title:
+        return None
+    return (
+        " ".join(word for word in re.split(r"[._]+", matched["site"]) if word),
+        released,
+        " ".join(scene_title),
     )
 
 

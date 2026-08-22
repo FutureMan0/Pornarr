@@ -20,10 +20,21 @@ services:
 
   api:
     <<: *pornarr-dev
-    command: api --reload
+    # Watched by directory rather than by default, which is the whole of `/app`
+    # and therefore includes `/app/.venv`. Anything that writes into the
+    # virtualenv — `uv run` re-syncing it, a package installed by hand — was
+    # otherwise a server restart, taking every request in flight with it. Only
+    # the two trees that are bind-mounted from the checkout are worth watching.
+    command: api --reload --reload-dir /app/apps --reload-dir /app/packages
     environment:
       APP_ENV: development
       LOG_LEVEL: debug
+      # Development is served over plain HTTP on localhost, and a browser will
+      # not store a `Secure` cookie from an http:// origin, so signing in would
+      # not work at all. This is the opt-out documented in
+      # docs/operations/installation.md; `Settings` refuses it under
+      # APP_ENV=production.
+      SESSION_COOKIE_SECURE: "false"
     volumes:
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini
@@ -33,6 +44,10 @@ services:
       # Maintenance commands are run by hand in this container; without this the
       # repository's own scripts are not there to run.
       - ./scripts:/app/scripts
+      # `make test` runs pytest in here. Without the suite mounted, pytest finds
+      # nothing under the `testpaths` in pyproject.toml, warns, and exits 0 -
+      # so the target reports success having run no tests at all.
+      - ./tests:/app/tests
     ports:
       - "8000:8000"
       - "5678:5678"   # debugpy
