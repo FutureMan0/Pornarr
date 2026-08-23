@@ -210,6 +210,21 @@ test.describe
       expect(probe.status()).toBe(200);
       expect(await probe.json()).toEqual(body);
 
+      // The gate covers the API and nothing else. This suite reaches the
+      // frontend through the Vite dev server, so until now nothing here asked
+      // the gated instance itself for a document -- and in a deployment that is
+      // exactly where the wizard comes from. It answered `503 SETUP_REQUIRED`
+      // for `/` and for every hashed asset, so the one screen that can unlock
+      // an instance could not load in a browser. The development image carries
+      // no web build, so the claim is that the document is not gated, not that
+      // it is there.
+      const document = await page.request.get(`${API_URL}/`);
+      const gatedDocument = await document.json().catch(() => ({}) as { code?: string });
+      expect(
+        (gatedDocument as { code?: string }).code,
+        "the setup screen must not sit behind the setup gate",
+      ).not.toBe("SETUP_REQUIRED");
+
       // The three the wizard itself cannot work without.
       const status = await page.request.get("/api/setup/status");
       expect(status.status()).toBe(200);

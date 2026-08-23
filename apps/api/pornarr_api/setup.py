@@ -9,16 +9,17 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
+from pornarr_api.spa import is_api_path
 from pornarr_db.models.user import User
 
 # `/api/health` is exempt on purpose. installation.md and backup.md tell an
 # operator to verify a deployment by reading a health report, and an unconfigured
 # instance is exactly when the mounts that report checks are most likely to be
 # wrong. It exposes nothing a configured instance keeps back either — the report
-# is unauthenticated there too — so exempting it widens no boundary.
+# is unauthenticated there too — so exempting it widens no boundary. `/health`
+# needs no entry: it is not an API path, and neither is the web application.
 _ALLOWED = frozenset(
     {
-        "/health",
         "/api/health",
         "/api/setup/status",
         "/api/setup/validate-library-path",
@@ -35,7 +36,10 @@ class SetupMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
 
     async def dispatch(self, request: Request, call_next):
-        if request.url.path in _ALLOWED:
+        # Only the API is gated. The wizard that completes setup is a client
+        # route served from `index.html`, so gating the document and its assets
+        # locks an operator out of the one screen that can unlock the instance.
+        if not is_api_path(request.url.path) or request.url.path in _ALLOWED:
             return await call_next(request)
         engine = getattr(request.app.state, "engine", None)
         if not isinstance(engine, AsyncEngine):
