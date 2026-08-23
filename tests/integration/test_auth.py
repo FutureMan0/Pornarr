@@ -26,7 +26,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SECRET = "0123456789abcdef0123456789abcdef"
 
 
-def settings() -> Settings:
+def settings(data_path: Path) -> Settings:
     database_url = os.environ.get("DATABASE_URL")
     redis_url = os.environ.get("REDIS_URL")
     if not database_url or not redis_url:
@@ -42,6 +42,11 @@ def settings() -> Settings:
         redis_url=redis_url,
         app_env="test",
         session_cookie_secure=False,
+        # Lifespan creates the data tree, and without a path of its own that
+        # is `/data` on the machine running the suite — which a hosted runner
+        # neither has nor lets the job user create.
+        data_path=data_path,
+        backup_path=data_path / "backups",
     )
 
 
@@ -57,9 +62,9 @@ def upgrade_database() -> None:
 
 
 @pytest.fixture
-async def app() -> AsyncIterator[FastAPI]:
+async def app(tmp_path: Path) -> AsyncIterator[FastAPI]:
     upgrade_database()
-    application = create_app(settings())
+    application = create_app(settings(tmp_path))
     async with lifespan(application):
         yield application
 
