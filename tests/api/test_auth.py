@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import AsyncIterator
+from pathlib import Path
 
 import pytest
 from fastapi import APIRouter, Depends, FastAPI
@@ -128,12 +129,14 @@ def settings_from_environment(monkeypatch: pytest.MonkeyPatch, **variables: str)
     )
 
 
-async def build_app(settings: Settings | None = None) -> tuple[FastAPI, AsyncEngine]:
+async def build_app(
+    settings: Settings | None = None, static_root: Path | None = None
+) -> tuple[FastAPI, AsyncEngine]:
     engine = create_async_engine("sqlite+aiosqlite://")
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
 
-    application = create_app(settings or build_settings())
+    application = create_app(settings or build_settings(), static_root=static_root)
     application.state.engine = engine
     application.state.redis = MemoryRedis()
     application.state.queue = MemoryQueue()

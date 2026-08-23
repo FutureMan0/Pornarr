@@ -7,6 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,7 +23,7 @@ from pornarr_db.types import set_cipher
 from pornarr_integrations.indexers import IndexerCategory
 from pornarr_shared.crypto import CredentialCipher
 from tests.api.test_app import SECRET
-from tests.api.test_auth import login
+from tests.api.test_auth import build_app, login
 
 pytest_plugins = ("tests.api.test_auth",)
 
@@ -128,6 +129,38 @@ async def test_fresh_instance_serves_only_setup_then_unlocks(app, client, tmp_pa
     assert validation_after_setup.json()["code"] == "SETUP_ALREADY_COMPLETED"
     await login(client, "admin", ADMIN_PASSWORD)
     assert (await client.get("/api/auth/me")).status_code == 200
+
+
+async def test_a_fresh_instance_still_serves_the_screen_that_completes_setup(
+    tmp_path: Path,
+) -> None:
+    """The gate must close the API and leave the web application alone.
+
+    Its allow list names API paths only, and it sat in front of the SPA mount as
+    well: `/`, `/setup` and every hashed asset answered `503 SETUP_REQUIRED`, so
+    the screen an operator is told to open could not load in a browser at all.
+    The end-to-end suite serves the frontend from the Vite dev server and sends
+    only `/api` to the API, so nothing there ever requested a document from the
+    gated instance.
+    """
+    static_root = tmp_path / "web"
+    (static_root / "assets").mkdir(parents=True)
+    (static_root / "index.html").write_text("<!doctype html><title>Pornarr</title>")
+    (static_root / "assets" / "index.js").write_text("// the wizard")
+
+    app, engine = await build_app(static_root=static_root)
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            assert (await client.get("/api/auth/me")).status_code == 503
+
+            document = await client.get("/setup")
+            assert document.status_code == 200
+            assert document.headers["content-type"].startswith("text/html")
+
+            asset = await client.get("/assets/index.js")
+            assert asset.status_code == 200
+    finally:
+        await engine.dispose()
 
 
 async def test_setup_reports_a_different_filesystem(
