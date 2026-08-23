@@ -31,7 +31,7 @@ concurrency:
 jobs:
   guard:
     name: Workspace present
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     outputs:
       web: ${{ steps.check.outputs.web }}
     steps:
@@ -43,7 +43,7 @@ jobs:
     name: Playwright
     needs: guard
     if: needs.guard.outputs.web == 'true'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     # A project name of this job's own. Compose otherwise derives one from the
     # checkout directory, which on a persistent runner can be the same name a
     # developer's own stack is using -- and the teardown below removes volumes.

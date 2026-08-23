@@ -23,7 +23,7 @@ concurrency:
 jobs:
   build:
     name: Build image
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write

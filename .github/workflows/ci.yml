@@ -33,7 +33,7 @@ jobs:
   # always reports true and costs a few seconds.
   guard:
     name: Workspace present
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     outputs:
       python: ${{ steps.check.outputs.python }}
       web: ${{ steps.check.outputs.web }}
@@ -50,7 +50,7 @@ jobs:
     name: Python
     needs: guard
     if: needs.guard.outputs.python == 'true'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     # `get_settings()` builds `Settings` from the environment, and a developer
     # machine always has the `.env` that `make setup` wrote. A runner has none,
     # so the tests that reach that accessor failed here and nowhere else. Same
@@ -98,7 +98,7 @@ jobs:
     name: Web
     needs: guard
     if: needs.guard.outputs.web == 'true'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       # No version input on purpose: the version comes from the `packageManager`
@@ -124,7 +124,7 @@ jobs:
     name: Contract and migrations
     needs: guard
     if: needs.guard.outputs.alembic == 'true'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:17
