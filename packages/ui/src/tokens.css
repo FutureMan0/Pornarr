@@ -1,0 +1,312 @@
+/**
+ * Design tokens. DESIGN.md is the prose that explains these; this file is what
+ * ships. Nothing outside this file may hardcode a colour, radius, duration or
+ * spacing value.
+ *
+ * Every pair a component actually uses is verified against WCAG in
+ * contrast.test.ts. Adding a token here without adding it there is how the
+ * guarantee rots.
+ */
+
+:root {
+  /* Surfaces. These are aliases onto the delivered ground stack at the bottom
+     of this file, which is what switches the whole application to the design in
+     one place instead of screen by screen. The names stay because every
+     component and every Tailwind utility already resolves through them.
+
+     They were neutral and zero-chroma; they are now tinted, and they follow
+     `data-theme`. `--pa-bg-00` is deeper still and is the ground behind video —
+     nothing in the four-surface stack maps onto it. */
+  --bg: var(--pa-bg-0);
+  --surface: var(--pa-bg-1);
+  --surface-2: var(--pa-bg-2);
+  --surface-3: var(--pa-bg-3);
+
+  /* Lines. --border and --border-strong separate and decorate; neither reaches
+     3:1 on any surface, so neither may be the only thing identifying a control.
+     --border-control is the resting edge of an interactive control and is the
+     one that clears WCAG 1.4.11 against all four surfaces.
+
+     Not aliased: the delivered set draws its edges with a white alpha hairline,
+     which cannot be held to a measured ratio because its result depends on what
+     is behind it. These stay opaque and measured. The value clears 3:1 on all
+     four surfaces in both accents with room to spare — 3.38:1 at its worst. */
+  --border: oklch(0.28 0.012 300);
+  --border-strong: oklch(0.38 0.014 300);
+  --border-control: #857f91;
+
+  /* Ink. --ink-faint is for disabled states only, never for readable content.
+     --ink-muted takes the delivered `muted` step rather than `dim`: it clears
+     4.5:1 on all four surfaces here (4.86:1 at worst), and `dim` would waste
+     the contrast the ramp is spending. */
+  --ink: var(--pa-text);
+  --ink-muted: var(--pa-text-muted);
+  --ink-faint: var(--pa-text-faint);
+
+  /* Brand. Text on --primary is --primary-ink.
+
+     --primary-ink is the deepest ground rather than the accent's own 900 step:
+     on the rose accent, accent-900 measures 4.29:1, which is under the bar for
+     a button label. The delivered design sidesteps this by drawing its primary
+     button as an outline; this application fills it, so it needs an ink that
+     actually holds — 5.51:1 in rose, 6.39:1 in amber.
+
+     --primary-weak is a background, so what matters is the darkest ink that can
+     land on it. The 800 step carries --ink at 8.87:1 but --ink-muted at only
+     3.76:1, and muted secondary text on a tinted background is exactly what a
+     -weak surface is for. The 900 step carries both: 12.52:1 and 5.31:1. */
+  --primary: var(--pa-accent-500);
+  --primary-hover: var(--pa-accent-400);
+  --primary-ink: var(--pa-bg-00);
+  --primary-weak: var(--pa-accent-900);
+
+  /* Semantic. The -weak variants are backgrounds. Text on them is --ink, never
+     the matching hue — see contrast.test.ts. */
+  --success: oklch(0.7 0.15 150);
+  --warning: oklch(0.78 0.15 75);
+  --danger: oklch(0.62 0.2 25);
+  --info: oklch(0.7 0.12 240);
+  --success-weak: oklch(0.28 0.06 150);
+  --warning-weak: oklch(0.28 0.06 75);
+  --danger-weak: oklch(0.28 0.06 25);
+  --info-weak: oklch(0.28 0.06 240);
+
+  /* Type. One family: a display face in a label is a category error. Mono is
+     reserved for content where character identity matters — paths, hashes,
+     job identifiers, indexer GUIDs, log output. */
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  /* Fixed rem scale, ratio ~1.15. Nothing above 1.5rem exists; there is no hero. */
+  --text-2xs: 0.6875rem;
+  --text-2xs-leading: 1.4;
+  --text-2xs-weight: 500;
+
+  --text-xs: 0.75rem;
+  --text-xs-leading: 1.45;
+  --text-xs-weight: 400;
+
+  --text-sm: 0.8125rem;
+  --text-sm-leading: 1.5;
+  --text-sm-weight: 400;
+
+  --text-base: 0.9375rem;
+  --text-base-leading: 1.55;
+  --text-base-weight: 400;
+
+  --text-md: 1.0625rem;
+  --text-md-leading: 1.4;
+  --text-md-weight: 600;
+
+  --text-lg: 1.25rem;
+  --text-lg-leading: 1.3;
+  --text-lg-weight: 600;
+
+  --text-xl: 1.5rem;
+  --text-xl-leading: 1.25;
+  --text-xl-weight: 650;
+
+  /* Spacing, 4px base. Related controls sit at --space-2, groups separate at
+     --space-6, sections at --space-10. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 1.75rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* Shell geometry. Application code names these but never owns their values. */
+  --layout-sidebar-width: 15rem;
+  --layout-sidebar-rail-width: 3.5rem;
+  --layout-content-max-width: 100rem;
+
+  /* Radius, aliased onto the delivered scale.
+   *
+   * The palette migration moved colour onto `--pa-*` and left geometry behind,
+   * so every surface in the application kept rendering at the pre-delivery
+   * 4/8/12 while the design was drawn at 5/8/14. That is small per corner and
+   * unmistakable across a screen — it is what "not quite finished" looks like.
+   *
+   * Aliased rather than replaced, so the names the components already use keep
+   * working and the delivered file stays the single source. */
+  --radius-sm: var(--pa-radius-sm);
+  --radius-md: var(--pa-radius);
+  --radius-lg: var(--pa-radius-lg);
+  --radius-full: var(--pa-radius-pill);
+
+  /* Elevation is carried by surface lightness first. A shadow appears only on a
+     genuinely floating layer, and never on the same element as a 1px border.
+     The delivered set pairs its shadow with a hairline ring, which is what
+     keeps a floating panel legible on a ground this dark. */
+  --shadow-floating: var(--pa-shadow-lg);
+
+  /* Layers. No arbitrary values; nothing is 999 or 9999. */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-backdrop: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+
+  /* Components never name their own durations, which is what makes the
+     reduced-motion override below impossible to opt out of. */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 250ms;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* How far something travels while arriving.
+   *
+   * Two steps, because there are two distances worth having: a surface leaving
+   * the control that opened it, and a screen settling into place. Anything
+   * further reads as a slide rather than as arriving, which is the line between
+   * polish and choreography.
+   *
+   * Named rather than written inline so the whole system's sense of movement is
+   * one edit, the same way durations are. */
+  --lift-sm: 4px;
+  --lift-md: 10px;
+
+  /* What a surface rises by under the pointer. A scale rather than a translate:
+     a card that moves leaves a gap at its old edge, and a card that grows does
+     not. Small enough that a grid does not appear to breathe. */
+  --hover-scale: 1.015;
+}
+
+/**
+ * Reduced motion is a supported path, not a degraded one. Collapsing the
+ * duration tokens turns every transition in the system into an instant change
+ * without a single component opting in.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 1ms;
+    --duration-base: 1ms;
+    --duration-slow: 1ms;
+
+    /* The distances go too, not only the durations. A 1ms transition over 10px
+       is not a reduced animation, it is a jump — which is exactly the thing the
+       preference asks not to happen. Zeroing the travel means the element is
+       simply where it belongs from the first frame. */
+    --lift-sm: 0px;
+    --lift-md: 0px;
+    --hover-scale: 1;
+  }
+}
+
+/**
+ * ---------------------------------------------------------------------------
+ * The delivered design token set (2026-08-16).
+ * ---------------------------------------------------------------------------
+ *
+ * Namespaced `--pa-*` and kept beside the existing tokens rather than replacing
+ * them, because the two disagree on purpose and the swap is a screen-by-screen
+ * migration, not a find-and-replace. The semantic layer at the top of this file
+ * now aliases onto these — colour, radius and elevation alike — so these are
+ * the values that reach the screen and `contrast.test.ts` measures them.
+ *
+ * Two differences worth knowing before using one set or the other:
+ *
+ * - The tokens above are neutral, zero-chroma surfaces. These are a tinted
+ *   ground stack, and they drive placeholder artwork from a hue relative to the
+ *   accent. Mixing the two on one screen produces a grey card on a purple page.
+ * - These ship two accents, switched with `<html data-theme="rose|amber">`.
+ *   Rose is the default and matches `--primary` above closely enough that the
+ *   brand does not shift during the migration.
+ *
+ * The delivered source is `docs/design/pornarr-ui/src/styles/tokens.css`, whose
+ * README states the rules these encode. Re-export replaces this block wholesale.
+ */
+
+:root,
+[data-theme="rose"] {
+  --pa-accent-100: #fdf3f8;
+  --pa-accent-200: #f9e2ee;
+  --pa-accent-300: #f2c9de;
+  --pa-accent-400: #e79ac0;
+  --pa-accent-500: #d9629f;
+  --pa-accent-600: #b34f83;
+  --pa-accent-700: #8b3e66;
+  --pa-accent-800: #62304a;
+  --pa-accent-900: #3b2130;
+  --pa-accent: var(--pa-accent-500);
+  --pa-accent-rgb: 217, 98, 159;
+
+  --pa-bg-00: #14111b;
+  --pa-bg-0: #1b1724;
+  --pa-bg-1: #241f2e;
+  --pa-bg-2: #2c2638;
+  --pa-bg-3: #322b40;
+  --pa-bg-4: #40374f;
+
+  --pa-text: #eceef4;
+  --pa-text-dim: #c8c1d2;
+  --pa-text-muted: #a199ae;
+  --pa-text-faint: #9c94a8;
+
+  --pa-art-hue: 268deg;
+  --pa-art-sat: 1;
+  --pa-art-blur: 26px;
+  --pa-art-blur-md: 17px;
+  --pa-art-blur-sm: 12px;
+  --pa-logo-filter: none;
+}
+
+[data-theme="amber"] {
+  --pa-accent-100: #fdf6ef;
+  --pa-accent-200: #f9e8d7;
+  --pa-accent-300: #f2d4b1;
+  --pa-accent-400: #e7aa6b;
+  --pa-accent-500: #d9833f;
+  --pa-accent-600: #b36a2e;
+  --pa-accent-700: #8b5324;
+  --pa-accent-800: #623c1e;
+  --pa-accent-900: #3b2718;
+  --pa-accent: var(--pa-accent-500);
+  --pa-accent-rgb: 217, 131, 63;
+
+  --pa-bg-00: #171310;
+  --pa-bg-0: #1e1916;
+  --pa-bg-1: #29221c;
+  --pa-bg-2: #322a22;
+  --pa-bg-3: #392f26;
+  --pa-bg-4: #483c31;
+
+  --pa-text: #eceef4;
+  --pa-text-dim: #d2c8bd;
+  --pa-text-muted: #a89c8e;
+  --pa-text-faint: #a2968a;
+
+  --pa-art-hue: 28deg;
+  --pa-art-sat: 1.05;
+  --pa-logo-filter: hue-rotate(63deg) saturate(1.08);
+}
+
+:root {
+  /* spacing — 0.7x density, the scale the screens were drawn on */
+  --pa-space-1: 4px;
+  --pa-space-2: 5.6px;
+  --pa-space-3: 8.4px;
+  --pa-space-4: 11.2px;
+  --pa-space-5: 16.8px;
+  --pa-space-6: 22.4px;
+  --pa-space-7: 33.6px;
+
+  --pa-radius-sm: 5px;
+  --pa-radius: 8px;
+  --pa-radius-lg: 14px;
+  --pa-radius-pill: 999px;
+
+  --pa-hairline: inset 0 0 0 1px rgba(236, 238, 244, 0.09);
+  --pa-shadow-sm: 0 0 0 1px rgba(236, 238, 244, 0.09);
+  --pa-shadow-md: 0 0 0 1px rgba(236, 238, 244, 0.09), 0 10px 24px rgba(0, 0, 0, 0.4);
+  --pa-shadow-lg: 0 0 0 1px rgba(236, 238, 244, 0.12), 0 28px 64px rgba(0, 0, 0, 0.55);
+
+  --pa-font: Inter, system-ui, -apple-system, sans-serif;
+  --pa-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

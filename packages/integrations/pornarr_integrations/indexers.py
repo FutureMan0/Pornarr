@@ -1,0 +1,48 @@
+"""Small adapter interface for configured indexers."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Protocol
+
+
+@dataclass(frozen=True, slots=True)
+class IndexerCategory:
+    id: str
+    name: str
+
+
+@dataclass(frozen=True, slots=True)
+class Release:
+    """A transport-neutral search result from an external indexer."""
+
+    guid: str
+    title: str
+    details_url: str | None
+    download_url: str | None
+    published_at: datetime | None
+    size: int | None
+    categories: tuple[str, ...]
+    seeders: int | None = None
+    peers: int | None = None
+    info_hash: str | None = None
+    magnet_url: str | None = None
+    groups: tuple[str, ...] = ()
+    poster: str | None = None
+    parts: int | None = None
+    password_protected: bool | None = None
+
+
+class IndexerAdapter(Protocol):
+    async def test_connection(self, *, base_url: str, api_key: str) -> list[IndexerCategory]: ...
+
+
+class SearchIndexerAdapter(IndexerAdapter, Protocol):
+    async def search(
+        self, *, base_url: str, api_key: str, query: str, categories: tuple[str, ...] = ()
+    ) -> list[Release]: ...
+
+    async def rss(
+        self, *, base_url: str, api_key: str, categories: tuple[str, ...] = ()
+    ) -> list[Release]: ...

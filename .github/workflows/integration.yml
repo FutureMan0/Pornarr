@@ -1,0 +1,93 @@
+name: Integration
+
+on:
+  pull_request:
+    # Stacked pull requests target another feature branch, and with only
+    # develop and main listed here they ran no checks at all: #279 through
+    # #284 arrived on develop as one red pipeline. See #309.
+    branches: [develop, main, "feat/**", "fix/**", "chore/**", "docs/**", "test/**"]
+    paths:
+      - "packages/integrations/**"
+      - "packages/db/**"
+      - "packages/media/**"
+      - "apps/api/**"
+      - "apps/worker/**"
+      # Without this, adding an integration test does not run the integration
+      # suite — the change is skipped silently, which is the worst kind of gap.
+      - "tests/integration/**"
+      - ".github/workflows/integration.yml"
+  push:
+    branches: [develop]
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: Workspace present
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.check.outputs.python }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        # pytest exits 5 when it collects nothing, so the job waits until
+        # integration tests actually exist rather than failing on an empty suite.
+        run: test -d tests/integration && echo "python=true" >> "$GITHUB_OUTPUT" || echo "python=false" >> "$GITHUB_OUTPUT"
+
+  integration:
+    name: Integration tests
+    needs: guard
+    if: needs.guard.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: pornarr
+          POSTGRES_PASSWORD: pornarr
+          POSTGRES_DB: pornarr
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+        ports: ["5432:5432"]
+      redis:
+        image: redis:8
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+        ports: ["6379:6379"]
+    env:
+      DATABASE_URL: postgresql+psycopg://pornarr:pornarr@localhost:5432/pornarr
+      REDIS_URL: redis://localhost:6379/0
+      # Throwaway value for a throwaway database. Not a secret, and deliberately
+      # not stored as one: a repository secret here would imply it matters.
+      APP_SECRET: 0123456789abcdef0123456789abcdef
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --all-packages --dev
+
+      # The download client fixtures are large images and only the downloader
+      # tests need them. Starting them for a migration test would add minutes
+      # and a failure mode unrelated to what is being tested.
+      - id: fixtures
+        run: test -d tests/integration/downloaders && echo "needed=true" >> "$GITHUB_OUTPUT" || echo "needed=false" >> "$GITHUB_OUTPUT"
+      - name: Start download client fixtures
+        if: steps.fixtures.outputs.needed == 'true'
+        run: docker compose -f infrastructure/docker/compose.test.yml up -d --wait
+
+      - run: uv run pytest -m integration
+
+      - if: always() && steps.fixtures.outputs.needed == 'true'
+        run: docker compose -f infrastructure/docker/compose.test.yml logs --tail=50
+
+      # Same reason as in e2e.yml: on a self-hosted runner the fixtures outlive
+      # the job unless the job removes them.
+      - name: Tear down the fixtures
+        if: always() && steps.fixtures.outputs.needed == 'true'
+        run: docker compose -f infrastructure/docker/compose.test.yml down --volumes --remove-orphans

@@ -1,0 +1,13 @@
+[project]
+name = "pornarr-integrations"
+version = "0.0.0"
+description = "Indexer, downloader, metadata and notification adapters"
+requires-python = "==3.13.*"
+dependencies = ["httpx>=0.28", "pornarr-core", "pornarr-shared"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pornarr_integrations"]

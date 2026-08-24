@@ -1,0 +1,86 @@
+/**
+ * Tokens only, same contract as the other controls.
+ *
+ * `appearance` is deliberately left alone. Setting `appearance: none` would
+ * mean drawing our own chevron, and the only ways to draw one are an inline SVG
+ * data URI or a gradient — both of which hardcode a colour that tokens.css can
+ * no longer reach. Letting the UA draw the arrow keeps it tinted by `color`,
+ * which is a token, and keeps the native popup on touch.
+ */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* --border-control is the resting edge: it is the only line token that clears
+   3:1 on all four surfaces, so it is the only one that can legally identify a
+   control (WCAG 1.4.11). */
+.select {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-2);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease), border-color var(--duration-fast)
+    var(--ease);
+}
+
+.select:hover:not(:disabled) {
+  background-color: var(--surface-3);
+}
+
+.select:focus-visible {
+  border-color: var(--primary);
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Held while the popup is open. */
+.select:active:not(:disabled) {
+  border-color: var(--primary);
+  background-color: var(--surface-3);
+}
+
+/* --border is legal here only because 1.4.11 exempts disabled controls. */
+.select:disabled {
+  border-color: var(--border);
+  background-color: var(--surface);
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+/* Follows :disabled so it wins the tie — loading disables the control too. */
+.select.loading {
+  color: var(--ink-muted);
+  cursor: progress;
+}
+
+.select.error:not(:disabled) {
+  border-color: var(--danger);
+  background-color: var(--danger-weak);
+  color: var(--ink);
+}
+
+.select.error:hover:not(:disabled) {
+  background-color: var(--danger-weak);
+}
+
+/* --ink on a --danger-weak tint, never --danger as text: --danger only reaches
+   3:1 on a surface, which is an icon threshold, not a text one. */
+.message {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background-color: var(--danger-weak);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}

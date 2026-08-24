@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node
+node_modules/
+.pnpm-store/
+dist/
+.vite/
+*.tsbuildinfo
+playwright-report/
+test-results/
+.playwright-cli/
+
+# Environment
+.env
+.env.local
+*.local
+
+# Data (never commit media or runtime state)
+/data/
+/media/
+
+# Tooling caches (local only)
+.codegraph/
+graphify-out/
+.impeccable/
+.gauntlet/
+
+# Editors
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Per-developer Claude Code settings. The shared ones belong in
+# .claude/settings.json; this file is the local override and is never shared.
+.claude/settings.local.json
+
+# Live third-party accounts for the acquisition campaign.
+.env.live

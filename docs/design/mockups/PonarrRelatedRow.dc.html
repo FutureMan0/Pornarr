@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-167c3630-4a16-4056-855f-ba15d3f3fc74/styles.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<script src="_ds/nocturne-167c3630-4a16-4056-855f-ba15d3f3fc74/_ds_bundle.js"></script>
+<link rel="stylesheet" href="theme-rose.css">
+<link rel="stylesheet" href="theme-amber.css">
+</helmet>
+<div style="{{ rowStyle }}">
+  <div style="{{ thumbStyle }}">
+    <div style="position:absolute;inset:-12%;background:{{ art }};filter:{{ blurCss }}"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(29,32,48,0.78), transparent 60%)"></div>
+    <sc-if value="{{ isBlurred }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;inset:0;display:grid;place-items:center;color:rgba(236,238,244,0.45);font-size:15px"><i class="ph ph-eye-closed"></i></div>
+    </sc-if>
+    <div style="position:absolute;right:5px;bottom:4px;font-size:10px;padding:1px 5px;border-radius:4px;background:color-mix(in srgb, var(--pa-bg-00) 82%, transparent);color:var(--pa-text);font-variant-numeric:tabular-nums">{{ dur }}</div>
+  </div>
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+    <div style="font-size:{{ titleSize }};line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ title }}</div>
+    <div style="font-size:11.5px;color:var(--pa-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ meta }}</div>
+    <div style="display:flex;align-items:center;gap:7px;margin-top:1px;min-width:0">
+      <span style="display:flex;gap:1px;flex:none">
+        <sc-for list="{{ stars }}" as="s" hint-placeholder-count="5">
+          <i class="{{ s.icon }}" style="{{ s.style }}"></i>
+        </sc-for>
+      </span>
+      <span style="font-size:10.5px;color:var(--pa-text-dim);font-variant-numeric:tabular-nums;flex:none">{{ score }}</span>
+      <span class="tag tag-outline" style="flex:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ reason }}</span>
+      <span style="{{ whyStyle }}">{{ why }}</span>
+    </div>
+  </div>
+  <sc-if value="{{ showPlay }}" hint-placeholder-val="{{ true }}">
+    <button class="btn btn-secondary" style="flex:none;font-size:12px"><i class="ph ph-play"></i>Play</button>
+  </sc-if>
+  <sc-if value="{{ showChevron }}" hint-placeholder-val="{{ false }}">
+    <i class="ph ph-caret-right" style="flex:none;color:var(--pa-text-faint);font-size:14px"></i>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:420,&quot;height&quot;:96},&quot;item&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{title:string,meta:string,dur:string,res:string,rating:number,hue:number}&quot;},&quot;reason&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Same studio&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;blur&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;thumbWidth&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:128,&quot;min&quot;:80,&quot;max&quot;:200,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;},&quot;ratio&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;16/10&quot;,&quot;9/16&quot;],&quot;default&quot;:&quot;16/10&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;showPlay&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;compact&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const it = this.props.item || {};
+    const h = it.hue == null ? 280 : it.hue;
+    const blurred = this.props.blur !== false;
+    const rating = it.rating == null ? 0 : it.rating;
+    const hue = (extra) => 'calc(var(--pa-art-hue, 268deg) + ' +
+      (Math.round((((h - 268 + 540) % 360) - 180) * 0.28) + extra) + 'deg)';
+    const w = this.props.thumbWidth || 128;
+    const ratio = this.props.ratio || '16/10';
+    const play = this.props.showPlay === true;
+    return {
+      title: it.title || 'Untitled',
+      meta: [it.meta, it.dur, it.res].filter(Boolean).join(' · '),
+      dur: it.dur || '',
+      score: rating ? rating.toFixed(1) : '—',
+      reason: this.props.reason || 'Related',
+      why: this.props.why || '',
+      whyStyle: 'font-size:11px;color:var(--pa-text-faint);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' +
+        (this.props.why ? '' : ';display:none'),
+      isBlurred: blurred,
+      showPlay: play,
+      showChevron: !play && this.props.chevron !== false,
+      titleSize: (this.props.compact ? 13 : 14) + 'px',
+      stars: [1, 2, 3, 4, 5].map(n => ({
+        icon: rating >= n - 0.5 ? 'ph-fill ph-star' : 'ph ph-star',
+        style: 'font-size:10px;color:' + (rating >= n - 0.5 ? 'var(--pa-accent-500)' : 'var(--pa-bg-4)')
+      })),
+      rowStyle: 'display:flex;align-items:center;gap:11.2px;padding:8px;border-radius:8px;background:var(--pa-bg-3);min-width:0',
+      thumbStyle: 'position:relative;flex:none;width:' + w + 'px;aspect-ratio:' + ratio +
+        ';border-radius:6px;overflow:hidden;background:var(--pa-bg-1)',
+      blurCss: blurred
+        ? 'blur(var(--pa-art-blur-sm, 12px)) saturate(calc(1.2 * var(--pa-art-sat, 1)))'
+        : 'blur(2px) saturate(calc(1.1 * var(--pa-art-sat, 1)))',
+      art: 'radial-gradient(58% 66% at 32% 34%, hsl(' + hue(0) + ' 34% 54%), transparent 72%),' +
+           'radial-gradient(52% 62% at 74% 64%, hsl(' + hue(26) + ' 32% 44%), transparent 74%),' +
+           'linear-gradient(155deg,var(--pa-bg-3),var(--pa-bg-1))'
+    };
+  }
+}
+
+</script>
+</body>
+</html>

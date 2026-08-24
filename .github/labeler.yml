@@ -1,0 +1,14 @@
+"area:api":
+  - changed-files: [{ any-glob-to-any-file: ["apps/api/**"] }]
+"area:worker":
+  - changed-files: [{ any-glob-to-any-file: ["apps/worker/**"] }]
+"area:web":
+  - changed-files: [{ any-glob-to-any-file: ["apps/web/**", "packages/ui/**"] }]
+"area:db":
+  - changed-files: [{ any-glob-to-any-file: ["packages/db/**"] }]
+"area:infra":
+  - changed-files: [{ any-glob-to-any-file: ["infrastructure/**", "Dockerfile", "docker-compose*.yml", "Makefile"] }]
+"area:docs":
+  - changed-files: [{ any-glob-to-any-file: ["docs/**", "*.md"] }]
+"area:ci":
+  - changed-files: [{ any-glob-to-any-file: [".github/**"] }]

@@ -1,0 +1,25 @@
+# Download client fixtures for integration tests. Real clients, real APIs.
+# Started by .github/workflows/integration.yml and by `make test-integration`.
+name: pornarr-test
+
+services:
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    environment:
+      WEBUI_PORT: 8080
+      QBT_WEBUI_PASSWORD_BYPASS_LOCALHOST: "true"
+    ports: ["8080:8080"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    ports: ["8081:8080"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20

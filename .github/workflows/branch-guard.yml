@@ -1,0 +1,20 @@
+name: Branch guard
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  source-branch:
+    name: Only develop may merge to main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require develop as the source branch
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [ "$HEAD_REF" = "develop" ]; then
+            exit 0
+          fi
+          echo "::error title=Invalid source branch::Only develop may merge into main. Open the pull request from develop; see docs/contributing/workflow.md."
+          exit 1

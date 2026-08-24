@@ -1,0 +1,166 @@
+/**
+ * Global utility classes. Plain CSS, not a CSS Module: these are named contracts
+ * that appear in markup across the app, so the authored name has to survive.
+ *
+ * Two rules earn a place here — a rule is global only when it is a system-wide
+ * typographic or accessibility guarantee rather than a component's own styling.
+ * Everything else belongs in that component's .module.css.
+ */
+
+/**
+ * DESIGN.md: "Numbers are tabular everywhere. Sizes, durations, speeds,
+ * bitrates, scores, counts, dates ... right-aligned in tables. Columns must
+ * compare without the eye re-anchoring."
+ */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/**
+ * Text for assistive technology only. Used for the label that names a loading
+ * region whose skeletons are themselves aria-hidden, and anywhere else a
+ * control's visual affordance carries meaning that has no text beside it.
+ *
+ * Clipped rather than `display: none` — a hidden element is not announced.
+ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/**
+ * ---------------------------------------------------------------------------
+ * Arrival
+ * ---------------------------------------------------------------------------
+ *
+ * Three named contracts for things that appear: a floating surface, a screen,
+ * and a row in a list. Global rather than per-component because "arriving" has
+ * to look the same in the search suggestions, a dropdown and a route — three
+ * components inventing it separately is three slightly different products.
+ *
+ * All three are `@starting-style` plus a transition, so there is no keyframe
+ * animation to interrupt, nothing to re-trigger on a re-render, and no state to
+ * hold in JavaScript. The element renders at its final values; the browser
+ * interpolates from the starting ones exactly once, on insertion.
+ *
+ * Every distance and duration is a token, so `prefers-reduced-motion` zeroes
+ * both and these become the instant appearance they always were. Nothing here
+ * can be opted out of by a component.
+ */
+
+/**
+ * A floating surface: dropdowns, suggestion lists, popovers.
+ *
+ * It comes from the control that opened it — up a few pixels, a hair of scale —
+ * which is what makes the surface read as belonging to the button rather than as
+ * a panel that happened to land there. `transform-origin` is the caller's, since
+ * only the caller knows which edge it is pinned to.
+ */
+.pa-pop {
+  opacity: 1;
+  translate: 0 0;
+  scale: 1;
+  transform-origin: top center;
+  transition: opacity var(--duration-fast) var(--ease), translate var(--duration-fast) var(--ease),
+    scale var(--duration-fast) var(--ease);
+}
+
+@starting-style {
+  .pa-pop {
+    opacity: 0;
+    translate: 0 calc(var(--lift-sm) * -1);
+    scale: 0.98;
+  }
+}
+
+/**
+ * A screen settling in.
+ *
+ * The main region only, and only on the way in — the outgoing screen is gone
+ * before this runs, because React Router replaces rather than crossfades. One
+ * rise over the base duration. Deliberately not per-element: a page whose parts
+ * arrive one after another is a page you have to wait for.
+ *
+ * NO FADE, UNLIKE `.pa-pop`. This carries a whole screen's worth of text, and
+ * text at partial opacity over the page ground is text below its contrast
+ * minimum — for two tenths of a second, but below it. The accessibility suite
+ * caught exactly that: with the fade in place, axe measured a primary button at
+ * 4.43:1 against a required 4.5:1, and moved on to a different screen each run,
+ * which is what a genuine race looks like from the outside.
+ *
+ * The distinction that survives: something *appearing from nothing* may fade in,
+ * because there is no readable state to degrade. Content that is already the
+ * page may only move.
+ */
+.pa-enter {
+  translate: 0 0;
+  transition: translate var(--duration-base) var(--ease);
+}
+
+@starting-style {
+  .pa-enter {
+    translate: 0 var(--lift-md);
+  }
+}
+
+/**
+ * A surface that answers the pointer.
+ *
+ * Scale, not translate: a card that moves leaves a hole at its old edge and
+ * nudges its neighbours' apparent alignment; a card that grows does neither. The
+ * shadow comes with it, because something nearer the reader casts more.
+ *
+ * `:focus-visible` too — a keyboard walking a grid should get the same feedback
+ * a pointer does, and without this the tile under focus is the only one that
+ * never lifts.
+ */
+.pa-raise {
+  transition: scale var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
+}
+
+.pa-raise:hover,
+.pa-raise:focus-visible,
+.pa-raise:focus-within {
+  scale: var(--hover-scale);
+  box-shadow: var(--pa-shadow-md);
+}
+
+/**
+ * A navigation entry, and the marker that says which one you are on.
+ *
+ * The sidebar's own comment said "accent as a line, not a flood" while the code
+ * painted a flood. This is the line: a bar on the leading edge that grows from
+ * nothing when the entry becomes current and shrinks away when it stops being.
+ *
+ * `scale` on a pseudo-element rather than a width, because scale is composited
+ * and a width is a layout pass per frame down the whole sidebar. Keyed off
+ * `aria-current`, which the router sets anyway — a second `is-active` class would
+ * be a second source of truth for the same fact.
+ */
+.pa-nav {
+  position: relative;
+}
+
+.pa-nav::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: var(--space-2);
+  bottom: var(--space-2);
+  width: 2px;
+  border-radius: var(--radius-full);
+  background: var(--pa-accent-400);
+  scale: 1 0;
+  transition: scale var(--duration-base) var(--ease);
+}
+
+.pa-nav[aria-current="page"]::before {
+  scale: 1 1;
+}

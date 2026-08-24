@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-167c3630-4a16-4056-855f-ba15d3f3fc74/styles.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<script src="_ds/nocturne-167c3630-4a16-4056-855f-ba15d3f3fc74/_ds_bundle.js"></script>
+<link rel="stylesheet" href="theme-rose.css">
+<link rel="stylesheet" href="theme-amber.css">
+</helmet>
+<div style="width:228px;flex:none;height:100%;display:flex;flex-direction:column;gap:14px;padding:16.8px 11.2px;background:var(--pa-bg-00);box-shadow:inset -1px 0 0 rgba(236,238,244,0.06)">
+  <div style="display:flex;align-items:center;gap:8px;padding:0 8.4px">
+    <img class="pa-logo" src="assets/logo-text.png" alt="Pornarr" style="height:22px;width:auto">
+    <div style="margin-left:auto;font-size:10px;letter-spacing:0.08em;color:var(--pa-text-muted)">LOCAL</div>
+  </div>
+  <div style="{{ roleStyle }}">
+    <i class="{{ roleIcon }}" style="font-size:14px"></i>
+    <span style="font-size:12px">{{ roleLabel }}</span>
+    <span style="margin-left:auto;font-size:10px;color:var(--pa-text-muted)">{{ roleUser }}</span>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:2px">
+    <sc-for list="{{ items }}" as="it" hint-placeholder-count="7">
+      <div style="{{ it.style }}"><i class="{{ it.icon }}" style="font-size:17px"></i><span>{{ it.label }}</span><span style="{{ it.badgeStyle }}">{{ it.badge }}</span></div>
+    </sc-for>
+  </div>
+  <div style="margin-top:auto;display:flex;flex-direction:column;gap:8.4px;padding:11.2px 8.4px;border-radius:8px;background:var(--pa-bg-1)">
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--pa-text-dim)"><span>{{ footTitle }}</span><span>{{ footValue }}</span></div>
+    <div style="height:4px;border-radius:2px;background:var(--pa-bg-4);overflow:hidden"><div style="width:{{ footPct }};height:100%;background:var(--pa-accent-500)"></div></div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--pa-text-muted)"><i class="{{ footIcon }}"></i><span>{{ footNote }}</span></div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:228,&quot;height&quot;:700},&quot;active&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Library&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;role&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;admin&quot;,&quot;user&quot;],&quot;default&quot;:&quot;admin&quot;,&quot;tsType&quot;:&quot;'admin' | 'user'&quot;},&quot;user&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;kai&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const base = 'display:flex;align-items:center;gap:10px;padding:7px 8.4px;border-radius:8px;font-size:14px;';
+    const admin = [
+      ['Dashboard', 'ph-gauge', ''],
+      ['Library', 'ph-squares-four', '3,482'],
+      ['Search', 'ph-magnifying-glass', ''],
+      ['Shorts', 'ph-device-mobile', '412'],
+      ['Collections', 'ph-users-three', ''],
+      ['Tags', 'ph-tag', '214'],
+      ['Requests', 'ph-hand-pointing', '8'],
+      ['Monitors', 'ph-crosshair', '5'],
+      ['Queue', 'ph-arrow-circle-down', '4'],
+      ['Scan & Import', 'ph-folder-open', '12'],
+      ['Settings', 'ph-gear-six', '']
+    ];
+    const user = [
+      ['Feed', 'ph-broadcast', '7'],
+      ['Continue', 'ph-play-circle', '3'],
+      ['My library', 'ph-lock-simple', '1,204'],
+      ['Search all', 'ph-magnifying-glass', ''],
+      ['Shorts', 'ph-device-mobile', '412'],
+      ['Collections', 'ph-users-three', ''],
+      ['Tags', 'ph-tag', ''],
+      ['Watchlist', 'ph-bookmark-simple', '9'],
+      ['History', 'ph-clock-counter-clockwise', '']
+    ];
+    const isAdmin = this.props.role !== 'user';
+    const active = this.props.active;
+    return {
+      roleStyle: 'display:flex;align-items:center;gap:8px;padding:6px 8.4px;border-radius:8px;background:' +
+        (isAdmin ? 'rgba(var(--pa-accent-rgb),0.14);color:var(--pa-accent-300)' : 'var(--pa-bg-1);color:var(--pa-text-dim)'),
+      roleIcon: isAdmin ? 'ph ph-shield-check' : 'ph ph-user',
+      roleLabel: isAdmin ? 'Admin' : 'Guest',
+      roleUser: this.props.user || (isAdmin ? 'kai' : 'jonas'),
+      footTitle: isAdmin ? 'Storage' : 'Watched',
+      footValue: isAdmin ? '6.1 / 9.0 TB' : '41 h',
+      footPct: isAdmin ? '68%' : '34%',
+      footIcon: isAdmin ? 'ph ph-hard-drives' : 'ph ph-wifi-high',
+      footNote: isAdmin ? '3 volumes · 2 guests online' : 'On the house network',
+      items: (isAdmin ? admin : user).map(([label, icon, badge]) => {
+        const on = label === active;
+        return {
+          label, badge,
+          icon: 'ph ' + icon,
+          style: base + (on
+            ? 'color:var(--pa-accent-300);background:rgba(var(--pa-accent-rgb),0.14);box-shadow:inset 2px 0 0 var(--pa-accent-500);'
+            : 'color:var(--pa-text-dim);'),
+          badgeStyle: 'margin-left:auto;font-size:10px;color:' + (on ? 'var(--pa-accent-400)' : 'var(--pa-text-muted)')
+        };
+      })
+    };
+  }
+}
+
+</script>
+</body>
+</html>

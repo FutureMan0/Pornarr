@@ -1,0 +1,162 @@
+name: CI
+
+on:
+  pull_request:
+    # Stacked pull requests target another feature branch, and with only
+    # develop and main listed here they ran no checks at all: #279 through
+    # #284 arrived on develop as one red pipeline. See #309.
+    branches: [develop, main, "feat/**", "fix/**", "chore/**", "docs/**", "test/**"]
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "openapi.json"
+      - ".github/workflows/**"
+  push:
+    branches: [develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.13"
+  NODE_VERSION: "22"
+
+jobs:
+  # The workspace does not exist until #12 lands. Without this guard every job
+  # fails red on a repository that simply has no code yet, which trains everyone
+  # to ignore a red pipeline. Remove nothing here once #12 lands: the guard then
+  # always reports true and costs a few seconds.
+  guard:
+    name: Workspace present
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.check.outputs.python }}
+      web: ${{ steps.check.outputs.web }}
+      alembic: ${{ steps.check.outputs.alembic }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          test -f pyproject.toml && echo "python=true"  >> "$GITHUB_OUTPUT" || echo "python=false"  >> "$GITHUB_OUTPUT"
+          test -f package.json  && echo "web=true"     >> "$GITHUB_OUTPUT" || echo "web=false"     >> "$GITHUB_OUTPUT"
+          test -f alembic.ini   && echo "alembic=true" >> "$GITHUB_OUTPUT" || echo "alembic=false" >> "$GITHUB_OUTPUT"
+
+  python:
+    name: Python
+    needs: guard
+    if: needs.guard.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    # `get_settings()` builds `Settings` from the environment, and a developer
+    # machine always has the `.env` that `make setup` wrote. A runner has none,
+    # so the tests that reach that accessor failed here and nowhere else. Same
+    # throwaway values as the `contract` job below, and for the same reason:
+    # nothing reads them, so a repository secret would only imply they matter.
+    env:
+      APP_SECRET: 0123456789abcdef0123456789abcdef
+      DATABASE_URL: postgresql+psycopg://pornarr:pornarr@localhost:5432/pornarr
+      REDIS_URL: redis://localhost:6379/0
+    steps:
+      # Full history: diff-cover needs a merge base with the target branch, and
+      # a shallow clone has none.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+      - run: uv sync --all-packages --dev
+      # The media tests guard themselves on `which("ffmpeg")` and were therefore
+      # skipping in every run: sprite tiling and scene detection are both ffmpeg
+      # filter graphs whose only real verification never executed. See #307.
+      - name: FFmpeg for the media tests
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Lint
+        run: uv run ruff check .
+      - name: Format
+        run: uv run ruff format --check .
+      - name: Types
+        run: uv run ty check
+      - name: Unit tests
+        run: uv run pytest -m "not integration" --cov --cov-report=xml
+      # Only meaningful on a pull request: on a push to develop there is nothing
+      # to compare against.
+      - name: Diff coverage
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --no-tags origin "+refs/heads/${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
+          uv run diff-cover coverage.xml \
+            --compare-branch=origin/${{ github.base_ref }} \
+            --fail-under=80
+
+  web:
+    name: Web
+    needs: guard
+    if: needs.guard.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # No version input on purpose: the version comes from the `packageManager`
+      # field in package.json, which is the single source of truth. #12 must set it.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Lint and format
+        run: pnpm run lint
+      # Project references are composite, so this is `tsc --build`, not
+      # `tsc --noEmit` — the two are mutually exclusive.
+      - name: Types
+        run: pnpm run typecheck
+      - name: Unit tests
+        run: pnpm run test
+
+  # Alembic arrives with #15 and the FastAPI application with #16, so this job
+  # keys off alembic.ini rather than off the workspace existing.
+  contract:
+    name: Contract and migrations
+    needs: guard
+    if: needs.guard.outputs.alembic == 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: pornarr
+          POSTGRES_PASSWORD: pornarr
+          POSTGRES_DB: pornarr
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+        ports: ["5432:5432"]
+    env:
+      DATABASE_URL: postgresql+psycopg://pornarr:pornarr@localhost:5432/pornarr
+      REDIS_URL: redis://localhost:6379/0
+      APP_SECRET: 0123456789abcdef0123456789abcdef
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+      - run: uv sync --all-packages --dev
+      - name: Migrations apply cleanly
+        run: uv run alembic upgrade head
+      - name: No undeclared schema drift
+        run: |
+          uv run alembic check
+      # The export script and the committed document arrive with #25.
+      - id: contract
+        run: test -f openapi.json && echo "exists=true" >> "$GITHUB_OUTPUT" || echo "exists=false" >> "$GITHUB_OUTPUT"
+      - name: OpenAPI document is current
+        if: steps.contract.outputs.exists == 'true'
+        run: |
+          uv run python -m pornarr_api.scripts.export_openapi > /tmp/openapi.json
+          diff -u openapi.json /tmp/openapi.json

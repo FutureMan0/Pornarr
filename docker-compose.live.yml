@@ -1,0 +1,56 @@
+# Real third-party services, so the acquisition chain can be proven against
+# software an operator actually runs rather than against `infrastructure/testing`.
+#
+#   set -a; . ./.env.live; set +a
+#   docker compose -p pornarr_gauntlet -f docker-compose.yml \
+#     -f docker-compose.override.yml -f docker-compose.testing.yml \
+#     -f docker-compose.live.yml up -d
+#
+# `.env.live` carries the Usenet account and is not in the repository; see
+# `.env.live.example`. Nothing here belongs in a deployment: the client's API
+# key is written from the environment at start so the suite can talk to it
+# without a human clicking through its wizard.
+services:
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: UTC
+      SAB_API_KEY: ${SAB_API_KEY:?set SAB_API_KEY in .env.live}
+      SAB_NZB_KEY: ${SAB_NZB_KEY:?set SAB_NZB_KEY in .env.live}
+      USENET_HOST: ${USENET_HOST:?set USENET_HOST in .env.live}
+      USENET_PORT: ${USENET_PORT:-563}
+      USENET_USERNAME: ${USENET_USERNAME:?set USENET_USERNAME in .env.live}
+      USENET_PASSWORD: ${USENET_PASSWORD:?set USENET_PASSWORD in .env.live}
+    entrypoint: ["/bin/sh", "-c"]
+    # The seed is written once. A container that already holds a configured
+    # SABnzbd keeps it, so a restart does not throw away what the client
+    # learned about the server it is talking to.
+    command:
+      - |
+        if [ ! -f /config/sabnzbd.ini ]; then
+          mkdir -p /config
+          sed -e "s|\$${SAB_API_KEY}|$${SAB_API_KEY}|g" \
+              -e "s|\$${SAB_NZB_KEY}|$${SAB_NZB_KEY}|g" \
+              -e "s|\$${USENET_HOST}|$${USENET_HOST}|g" \
+              -e "s|\$${USENET_PORT}|$${USENET_PORT}|g" \
+              -e "s|\$${USENET_USERNAME}|$${USENET_USERNAME}|g" \
+              -e "s|\$${USENET_PASSWORD}|$${USENET_PASSWORD}|g" \
+              /seed/sabnzbd.ini > /config/sabnzbd.ini
+          chown 1000:1000 /config/sabnzbd.ini
+        fi
+        exec /init
+    volumes:
+      - ./infrastructure/testing/sabnzbd.ini:/seed/sabnzbd.ini:ro
+      - sabnzbd-config:/config
+      # The one mount rule applies here too: the incomplete directory and the
+      # library have to share a filesystem or the import cannot hardlink.
+      - ${DATA_PATH_HOST:-./data}:/data
+    ports:
+      # 8080 is busy on a developer machine; the client is reached inside the
+      # network by name, so the published port is only for looking.
+      - "8085:8080"
+
+volumes:
+  sabnzbd-config:

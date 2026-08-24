@@ -1,0 +1,100 @@
+/* Pornarr — Amber. Same perceptual steps as Rose, hue rotated to orange. */
+[data-theme="amber"] {
+  --pa-accent-100: #fdf6ef;
+  --pa-accent-200: #f9e8d7;
+  --pa-accent-300: #f2d4b1;
+  --pa-accent-400: #e7aa6b;
+  --pa-accent-500: #d9833f;
+  --pa-accent-600: #b36a2e;
+  --pa-accent-700: #8b5324;
+  --pa-accent-800: #623c1e;
+  --pa-accent-900: #3b2718;
+  --pa-accent: var(--pa-accent-500);
+  --pa-accent-rgb: 217, 131, 63;
+  /* artwork + logo follow the accent */
+  --pa-hue-shift: -230deg;
+  --pa-art-hue: 28deg;
+  --pa-art-sat: 1.05;
+  --pa-logo-filter: hue-rotate(63deg) saturate(1.08);
+  --pa-art-blur: 26px;
+  --pa-art-blur-md: 17px;
+  --pa-art-blur-sm: 14px;
+
+
+  /* Nocturne token mapping — design-system classes follow the theme */
+
+  /* ground stack — board #171a26 < frame #212436 < card #2a2e42 < row #2f3347 */
+
+  /* neutral text steps — one scale with the ground */
+  --pa-text: #eceef4;
+  --pa-text-dim: #d2c8bd;
+  --pa-text-muted: #a89c8e;
+  --pa-text-faint: #a2968a;
+
+
+  /* ground stack — tinted toward the accent, not neutral grey */
+  --pa-bg-00: #171310;
+  --pa-bg-0: #1e1916;
+  --pa-bg-1: #29221c;
+  --pa-bg-2: #322a22;
+  --pa-bg-3: #392f26;
+  --pa-bg-4: #483c31;
+
+
+  /* neutrals + elevation, tinted with the ground (was #3f424d & friends) */
+  --color-neutral-600: var(--pa-text-muted);
+  --color-neutral-700: #5c4d3f;
+  --color-neutral-800: #483c31;
+  --shadow-sm: 0 0 0 1px rgba(236,238,244,0.09);
+  --shadow-md: 0 0 0 1px rgba(236,238,244,0.09), 0 10px 24px rgba(0,0,0,0.4);
+  --shadow-lg: 0 0 0 1px rgba(236,238,244,0.12), 0 24px 56px rgba(0,0,0,0.5);
+
+  --color-bg: var(--pa-bg-1);
+  --color-surface: var(--pa-bg-2);
+  --color-neutral-900: var(--pa-bg-4);
+
+  --color-accent: var(--pa-accent-500);
+  --color-accent-100: var(--pa-accent-100);
+  --color-accent-200: var(--pa-accent-200);
+  --color-accent-300: var(--pa-accent-300);
+  --color-accent-400: var(--pa-accent-400);
+  --color-accent-500: var(--pa-accent-500);
+  --color-accent-600: var(--pa-accent-600);
+  --color-accent-700: var(--pa-accent-700);
+  --color-accent-800: var(--pa-accent-800);
+  --color-accent-900: var(--pa-accent-900);
+  --color-accent-2: var(--pa-accent-400);
+  --color-accent-2-100: var(--pa-accent-100);
+  --color-accent-2-200: var(--pa-accent-200);
+  --color-accent-2-300: var(--pa-accent-300);
+  --color-accent-2-400: var(--pa-accent-400);
+  --color-accent-2-500: var(--pa-accent-500);
+  --color-accent-2-600: var(--pa-accent-600);
+  --color-accent-2-700: var(--pa-accent-700);
+  --color-accent-2-800: var(--pa-accent-800);
+  --color-accent-2-900: var(--pa-accent-900);
+}
+
+/* accent as small text uses the 300 step — 500 stays for icons, rules, bars, glow */
+[data-theme] .tag-outline,
+[data-theme] .tag-accent,
+[data-theme] .tag-accent-2,
+[data-theme] a,
+:root .tag-outline,
+:root .tag-accent,
+:root .tag-accent-2,
+:root a,
+[data-theme] .btn-ghost,
+[data-theme] .btn-primary,
+[data-theme] .seg-opt input:checked + span,
+:root .btn-ghost,
+:root .btn-primary,
+:root .seg-opt input:checked + span { color: var(--pa-accent-300); }
+
+/* catch-all: any design-system class that paints small text in the accent */
+[data-theme] :is(.card-kicker, .tag, .btn, .seg-opt, .card-meta, .nav-brand, .field label),
+:root :is(.card-kicker, .tag, .btn, .seg-opt, .card-meta, .nav-brand, .field label) {
+  --color-accent: var(--pa-accent-300);
+}
+[data-theme] .card-kicker,
+:root .card-kicker { color: var(--pa-accent-300); }

@@ -1,0 +1,42 @@
+/**
+ * Two stacked rows of the same five glyphs. The filled row is clipped to the
+ * score, which is what makes a half star exactly half.
+ */
+
+.stars {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  line-height: 0;
+}
+
+.track,
+.fill {
+  display: inline-flex;
+  gap: 1px;
+}
+
+/* The empty state has to be visible as an empty state, not invisible.
+ *
+ * `--pa-bg-4`, which is the ground four steps up and follows the accent, not
+ * `--border-strong`, which is a near-neutral grey fixed at hue 300. The
+ * difference is invisible in rose and glaring in amber: three warm stars beside
+ * two cold blue ones, one row, two palettes. The delivered design uses this
+ * token here for exactly that reason. */
+.track {
+  color: var(--pa-bg-4);
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  width: var(--stars-fill, 0%);
+  color: var(--primary);
+}
+
+.star {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex: none;
+}

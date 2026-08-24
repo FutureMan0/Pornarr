@@ -1,0 +1,116 @@
+# Development overrides. Applied automatically by `docker compose up`.
+# Source is bind-mounted and every process reloads on change.
+# See docs/adr/0014-containerized-development.md
+
+x-pornarr-dev: &pornarr-dev
+  image: ghcr.io/futureman0/pornarr:${PORNARR_TAG:-latest}-dev
+  build:
+    context: .
+    target: development
+
+services:
+  migrate:
+    <<: *pornarr-dev
+    volumes:
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+
+  api:
+    <<: *pornarr-dev
+    # Watched by directory rather than by default, which is the whole of `/app`
+    # and therefore includes `/app/.venv`. Anything that writes into the
+    # virtualenv — `uv run` re-syncing it, a package installed by hand — was
+    # otherwise a server restart, taking every request in flight with it. Only
+    # the two trees that are bind-mounted from the checkout are worth watching.
+    command: api --reload --reload-dir /app/apps --reload-dir /app/packages
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+      # Development is served over plain HTTP on localhost, and a browser will
+      # not store a `Secure` cookie from an http:// origin, so signing in would
+      # not work at all. This is the opt-out documented in
+      # docs/operations/installation.md; `Settings` refuses it under
+      # APP_ENV=production.
+      SESSION_COOKIE_SECURE: "false"
+    volumes:
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+      # Maintenance commands are run by hand in this container; without this the
+      # repository's own scripts are not there to run.
+      - ./scripts:/app/scripts
+      # `make test` runs pytest in here. Without the suite mounted, pytest finds
+      # nothing under the `testpaths` in pyproject.toml, warns, and exits 0 -
+      # so the target reports success having run no tests at all.
+      - ./tests:/app/tests
+    ports:
+      - "8000:8000"
+      - "5678:5678"   # debugpy
+
+  worker:
+    <<: *pornarr-dev
+    command: worker --watch /app
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    volumes:
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+    ports:
+      - "5679:5678"   # debugpy
+
+  worker-import:
+    <<: *pornarr-dev
+    command: worker import --watch /app
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    volumes:
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+
+  worker-transcode:
+    <<: *pornarr-dev
+    command: worker transcode --watch /app
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    volumes:
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+
+  worker-indexer:
+    <<: *pornarr-dev
+    command: worker indexer --watch /app
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    volumes:
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+
+  beat:
+    <<: *pornarr-dev
+    volumes:
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+
+  # The Vite dev server does not use the application image: it needs Node, and
+  # the production image deliberately has none — the built assets are served by
+  # FastAPI. See docs/adr/0008-vite-spa.md
+  web:
+    image: node:22-slim
+    working_dir: /app
+    environment:
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+      VITE_API_URL: http://api:8000
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @pornarr/web run dev --host"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports: ["5173:5173"]

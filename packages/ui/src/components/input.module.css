@@ -1,0 +1,157 @@
+/**
+ * Tokens only. The single literal border width and the 2px focus ring are the
+ * only lengths not read from tokens.css, and every duration is a
+ * var(--duration-*) so prefers-reduced-motion cannot be opted out of.
+ */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Holds the field and its optional leading glyph. Position is here rather than
+   on the input so the glyph can sit over the padding the input reserves. */
+.control {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+
+.leading {
+  position: absolute;
+  left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  color: var(--ink-muted);
+  /* Clicks belong to the field beneath, not to the decoration on top of it. */
+  pointer-events: none;
+}
+
+/* The text starts clear of the glyph. Set here rather than by the caller: a
+   utility class from outside is in the same specificity band as `.input` and
+   loses on source order. */
+.control:has(.leading) .input {
+  padding-left: calc(var(--space-3) + var(--space-5));
+}
+
+/* The trailing slot holds controls, so unlike `.leading` it keeps its clicks.
+   No fixed width: a keyboard hint and a clear button are different sizes, and
+   the input's padding follows whatever is actually there. */
+.trailing {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--ink-muted);
+}
+
+/* Reserving room by hand would mean guessing the slot's width. `field-sizing`
+   is not the tool either — this is a padding problem. A generous reserve is the
+   honest answer: too little and the text slides under the control. */
+.control:has(.trailing) .input {
+  padding-right: calc(var(--space-3) + var(--space-8));
+}
+
+/* The resting boundary is --border-control, the one line token that clears 3:1
+   on all four surfaces. --border would look right and fail WCAG 1.4.11. */
+.input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-2);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  transition: background-color var(--duration-fast) var(--ease), border-color var(--duration-fast)
+    var(--ease);
+}
+
+/* Placeholder text is held to the body requirement, not to a muted grey that
+   fails it: --ink-muted is verified at 4.5:1 on every surface. */
+.input::placeholder {
+  color: var(--ink-muted);
+}
+
+/* Hover lifts the surface and leaves the boundary alone — raising it to
+   --primary on mere hover would make every form flicker pink. */
+.input:hover:not(:disabled) {
+  background-color: var(--surface-3);
+}
+
+.input:focus-visible {
+  border-color: var(--primary);
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.input:active:not(:disabled) {
+  border-color: var(--primary);
+  background-color: var(--surface-3);
+}
+
+/* --border is legal here only because 1.4.11 exempts disabled controls. */
+.input:disabled {
+  border-color: var(--border);
+  background-color: var(--surface);
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+/* Loading sets disabled too, so this must follow :disabled to win the tie. */
+.input.loading {
+  color: var(--ink-muted);
+  cursor: progress;
+}
+
+/* Specificity is raised past :hover on purpose: an invalid field stays visibly
+   invalid while the pointer is over it. */
+.input.error:not(:disabled) {
+  border-color: var(--danger);
+  background-color: var(--danger-weak);
+  color: var(--ink);
+}
+
+.input.error:hover:not(:disabled) {
+  background-color: var(--danger-weak);
+}
+
+/* The message is --ink on a --danger-weak tint, never --danger as text:
+   --danger reaches 3:1 on a surface, which is an icon threshold. The tint plus
+   the position under the field is what says "error"; hue never carries it
+   alone. */
+.message {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background-color: var(--danger-weak);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}
+
+/* A field that is a place to start something rather than one row of a form. The
+   radius is the pill token; the horizontal padding grows with it, because text
+   set against a fully rounded edge reads as touching it. */
+.pill {
+  border-radius: var(--radius-full);
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+
+/* The two slots move with it. Written after `.pill` and at equal specificity so
+   source order settles the tie in favour of the rounder field. */
+.control:has(.leading) .pill {
+  padding-left: calc(var(--space-4) + var(--space-5));
+}
+
+.control:has(.trailing) .pill {
+  padding-right: calc(var(--space-4) + var(--space-8));
+}

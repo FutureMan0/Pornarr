@@ -1,0 +1,55 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "files": {
+    "ignore": [
+      "dist",
+      "node_modules",
+      ".pnpm-store",
+      "**/*.gen.ts",
+      "openapi.json",
+      ".venv",
+      ".ruff_cache",
+      ".pytest_cache",
+      "htmlcov",
+      "coverage.xml",
+      "playwright-report",
+      "test-results",
+      "graphify-out",
+      ".codegraph",
+      "docs/design/mockups",
+      "docs/design/pornarr-ui",
+      ".gauntlet",
+      ".claude"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error"
+      },
+      "suspicious": {
+        "noExplicitAny": "error",
+        "noConsoleLog": "warn"
+      },
+      "a11y": {
+        "recommended": true
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "trailingCommas": "all",
+      "semicolons": "always"
+    }
+  }
+}
