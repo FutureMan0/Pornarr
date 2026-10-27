@@ -17,7 +17,10 @@ playback in the browser, and per-user recommendations that state their reason.
 > [v1.0 Automation and release](https://github.com/FutureMan0/Pornarr/milestone/10): the
 > release itself, and load-testing baselines.
 
-<img src="docs/design/screenshots/dashboard.png" alt="The administration dashboard: title and storage counts, recently added titles, library health, and a live activity stream">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/readme/hero-dark.svg">
+  <img src=".github/readme/hero-light.svg" alt="Screenshots of the running application in turn: the administration dashboard with counts, recently added titles, library health and activity; the search screen with local matches and per-indexer results; the library with filters and a grid of titles" width="100%">
+</picture>
 
 ## Quick start
 
