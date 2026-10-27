@@ -1,14 +1,11 @@
-<div align="center">
-
-<img src="assets/logo-text.png" alt="Pornarr" width="420">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/readme/banner-dark.svg">
+  <img src=".github/readme/banner-light.svg" alt="Pornarr: self-hosted, multi-user media platform" width="100%">
+</picture>
 
 **Self-hosted, multi-user adult media platform.** One search across your library and your
 indexers, releases handed to your download client, imports categorised into your library,
 playback in the browser, and per-user recommendations that state their reason.
-
-</div>
-
----
 
 > **Status: feature-complete, unreleased.** Every feature milestone from
 > [v0.1 Foundation](https://github.com/FutureMan0/Pornarr/milestone/1) through
@@ -21,6 +18,20 @@ playback in the browser, and per-user recommendations that state their reason.
 > release itself, and load-testing baselines.
 
 <img src="docs/design/screenshots/dashboard.png" alt="The administration dashboard: title and storage counts, recently added titles, library health, and a live activity stream">
+
+## Quick start
+
+Docker with the Compose plugin, and one filesystem shared by downloads and library. There is
+no published image yet, so build from a checkout:
+
+```sh
+git clone https://github.com/FutureMan0/Pornarr.git
+cd Pornarr
+make up      # writes .env with a generated APP_SECRET, then starts the stack
+```
+
+Then open the web client and complete the first-run wizard. [Running it](#running-it) and the
+[installation guide](docs/operations/installation.md) cover the rest.
 
 ## What works
 
