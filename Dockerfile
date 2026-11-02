@@ -8,7 +8,7 @@
 # ---------------------------------------------------------------------------
 # Stage 1 — build the frontend
 # ---------------------------------------------------------------------------
-FROM node:22-slim AS web-build
+FROM node:26-slim AS web-build
 
 WORKDIR /build
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
