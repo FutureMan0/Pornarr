@@ -87,7 +87,7 @@ RUN git clone --depth 1 https://github.com/FFmpeg/nv-codec-headers.git /nv-codec
 # ---------------------------------------------------------------------------
 # Stage 3 — resolve Python dependencies
 # ---------------------------------------------------------------------------
-FROM python:3.13-alpine3.22 AS python-deps
+FROM python:3.14-alpine3.22 AS python-deps
 
 COPY --from=ghcr.io/astral-sh/uv@sha256:e9a8312ed6a98f515208dd792c61178a0b7c8fbfb807af01534f0e6fe10b24f5 \
     /usr/local/bin/uv /usr/local/bin/uv
@@ -137,7 +137,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ---------------------------------------------------------------------------
 # Stage 4 — runtime base, shared by development and production
 # ---------------------------------------------------------------------------
-FROM python:3.13-alpine3.22 AS base
+FROM python:3.14-alpine3.22 AS base
 
 # Apply all currently available Alpine fixes. This is deliberately not
 # --ignore-unfixed: the release gate rejects any remaining HIGH or CRITICAL CVE.
