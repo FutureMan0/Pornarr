@@ -43,7 +43,7 @@ RUN pnpm --filter @pornarr/web run build \
 # NVENC, so build a pinned upstream release with both NVENC and VAAPI instead.
 # The proprietary NVIDIA libraries themselves are mounted from the host by the
 # NVIDIA container toolkit at runtime.
-FROM alpine:3.22 AS ffmpeg-build
+FROM alpine:3.24 AS ffmpeg-build
 
 ARG FFMPEG_REF=38b88335f99e76ed89ff3c93f877fdefce736c13
 ARG NV_CODEC_HEADERS_REF=c69278340ab1d5559c7d7bf0edf615dc33ddbba7
